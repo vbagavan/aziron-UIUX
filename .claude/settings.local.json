@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create:*)",
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(curl -fsSL https://get.pnpm.io/install.sh)",
+      "Bash(sh -)",
+      "Bash(export PNPM_HOME=\"/Users/vbagavan/Library/pnpm\")",
+      "Bash(export PATH=\"$PNPM_HOME:$PATH\")",
+      "Read(//private/tmp/**)",
+      "Bash(cp -r /tmp/claudecodefigma/. /Users/vbagavan/AIUX/claudecodefigma/)",
+      "Bash(rm -rf /tmp/claudecodefigma)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm add:*)"
+    ]
+  }
+}
