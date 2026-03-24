@@ -7,6 +7,7 @@ import KudosPage from "./components/KudosPage";
 import SettingsAppearancePage from "./components/SettingsAppearancePage";
 import NotificationsPage from "./components/NotificationsPage";
 import FlowsPage from "./components/FlowsPage";
+import FlowViewPage from "./components/FlowViewPage";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("new-chat"); // first screen after login
@@ -14,6 +15,7 @@ export default function App() {
   const [viewedAgent, setViewedAgent] = useState(null);
   const [initialMessage, setInitialMessage] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // shared across all pages
+  const [viewedFlow, setViewedFlow] = useState(null);
 
   const navigate = (page) => {
     setCurrentPage(page);
@@ -32,6 +34,11 @@ export default function App() {
   const viewAgent = (agent) => {
     setViewedAgent(agent);
     setCurrentPage("agent-detail");
+  };
+
+  const viewFlow = (flow) => {
+    setViewedFlow(flow);
+    setCurrentPage("flow-view");
   };
 
   const startChat = (message) => {
@@ -93,7 +100,11 @@ export default function App() {
   }
 
   if (currentPage === "flows") {
-    return <FlowsPage onNavigate={navigate} {...sharedSidebarProps} />;
+    return <FlowsPage onNavigate={navigate} onViewFlow={viewFlow} {...sharedSidebarProps} />;
+  }
+
+  if (currentPage === "flow-view") {
+    return <FlowViewPage flow={viewedFlow} onNavigate={navigate} {...sharedSidebarProps} />;
   }
 
   // 404 — unhandled page

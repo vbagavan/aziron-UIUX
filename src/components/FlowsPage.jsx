@@ -198,7 +198,7 @@ function SuccessBar({ pct }) {
 
 // ─── Flow card (grid view) ─────────────────────────────────────────────────────
 
-function FlowCard({ flow, openMenu, setOpenMenu }) {
+function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
   const cfg = STATUS_CONFIG[flow.status] ?? STATUS_CONFIG.draft;
   const btnRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -225,7 +225,7 @@ function FlowCard({ flow, openMenu, setOpenMenu }) {
           onCancel={() => setConfirmDelete(false)}
         />
       )}
-      <div className="group bg-white border border-[#e2e8f0] rounded-[10px] p-4 flex flex-col gap-3 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden">
+      <div className="group bg-white border border-[#e2e8f0] rounded-[10px] p-4 flex flex-col gap-3 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden" onClick={() => onViewFlow && onViewFlow(flow)}>
         {/* Status accent top bar */}
         <div
           className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
@@ -316,7 +316,7 @@ function FlowCard({ flow, openMenu, setOpenMenu }) {
 
 // ─── Flow row (list view) ──────────────────────────────────────────────────────
 
-function FlowRow({ flow, openMenu, setOpenMenu, zebra }) {
+function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
   const cfg = STATUS_CONFIG[flow.status] ?? STATUS_CONFIG.draft;
   const rowBtnRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -349,6 +349,7 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra }) {
         style={hovered ? { backgroundColor: "#f0f7ff", boxShadow: `inset 3px 0 0 ${cfg.dot}` } : {}}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onClick={() => onViewFlow && onViewFlow(flow)}
       >
         {/* Icon */}
         <td className="px-4 py-3 w-[52px]">
@@ -481,7 +482,7 @@ function AnimCount({ to, className = "" }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default function FlowsPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, onToggleSidebar }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
@@ -690,7 +691,7 @@ export default function FlowsPage({ onNavigate, sidebarCollapsed, onToggleSideba
                 viewMode === "grid" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filtered.map((flow) => (
-                      <FlowCard key={flow.id} flow={flow} openMenu={openMenu} setOpenMenu={setOpenMenu} />
+                      <FlowCard key={flow.id} flow={flow} openMenu={openMenu} setOpenMenu={setOpenMenu} onViewFlow={onViewFlow} />
                     ))}
                   </div>
                 ) : (
@@ -716,6 +717,7 @@ export default function FlowsPage({ onNavigate, sidebarCollapsed, onToggleSideba
                             openMenu={openMenu}
                             setOpenMenu={setOpenMenu}
                             zebra={i % 2 !== 0}
+                            onViewFlow={onViewFlow}
                           />
                         ))}
                       </tbody>
