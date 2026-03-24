@@ -6,6 +6,7 @@ import AgentDetailPage from "./components/AgentDetailPage";
 import KudosPage from "./components/KudosPage";
 import SettingsAppearancePage from "./components/SettingsAppearancePage";
 import NotificationsPage from "./components/NotificationsPage";
+import FlowsPage from "./components/FlowsPage";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("new-chat"); // first screen after login
@@ -89,6 +90,10 @@ export default function App() {
 
   if (currentPage === "notifications") {
     return <NotificationsPage onNavigate={navigate} {...sharedSidebarProps} />;
+  }
+
+  if (currentPage === "flows") {
+    return <FlowsPage onNavigate={navigate} {...sharedSidebarProps} />;
   }
 
   // 404 — unhandled page
