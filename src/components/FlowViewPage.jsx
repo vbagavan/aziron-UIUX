@@ -997,58 +997,103 @@ function FlowCreationMode({ flow, runState }) {
   );
 }
 
-// ─── Right panel (3-mode) ─────────────────────────────────────────────────────
-function RightPanel({ flow, selectedIdx, runState }) {
+// ─── Right panel (contextual — shown only when a node is selected) ────────────
+function RightPanel({ flow, selectedIdx, runState, onClose }) {
   const [panelMode, setPanelMode] = useState("configure");
-  const step = selectedIdx !== null ? flow.steps[selectedIdx] : null;
-  const isRunning = runState.activeIdx !== -1;
 
-  // Auto-switch to execution while running
-  useEffect(() => { if (isRunning && step) setPanelMode("execution"); }, [isRunning, step]);
-  useEffect(() => { if (!step) setPanelMode(flow.steps.length === 0 ? "askai" : "configure"); }, [step, flow.steps.length]);
+  const step      = flow.steps[selectedIdx];
+  const isRunning = runState.activeIdx === selectedIdx;
+  const isDone    = runState.doneIdxs.has(selectedIdx);
+  const execKey   = getExecStatus(flow.status, selectedIdx, flow.steps.length);
+  const dynInfo   = isRunning ? STEP_EXEC.running : isDone ? STEP_EXEC.success : STEP_EXEC[execKey] ?? STEP_EXEC.pending;
+  const io        = NODE_IO[step?.icon] ?? { input:{}, output:{} };
 
-  const MODES = [
-    { id:"configure", icon:Hammer,   label:"Configure" },
-    { id:"askai",     icon:Sparkles, label:"Ask AI"    },
-    { id:"execution", icon:Gauge,    label:"Execution" },
+  // Auto-switch to Execution tab when this node starts running
+  useEffect(() => { if (isRunning) setPanelMode("execution"); }, [isRunning]);
+
+  const TABS = [
+    { id:"configure", icon:Hammer,     label:"Configuration" },
+    { id:"execution", icon:Gauge,      label:"Execution"     },
+    { id:"logs",      icon:ScrollText, label:"Logs"          },
   ];
 
   return (
     <div className="w-[360px] flex-shrink-0 flex flex-col border-l border-[#e2e8f0] bg-white overflow-hidden">
-      {step ? (
-        <>
-          {/* Mode tabs — modern underline design */}
-          <div className="flex items-center gap-0 px-0 border-b border-[#e2e8f0] bg-white flex-shrink-0">
-            {MODES.map(({ id, icon:MIcon, label }) => (
-              <button key={id} onClick={()=>setPanelMode(id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 px-2 text-sm font-medium transition-all border-b-2 relative ${
-                  panelMode===id
-                    ? id==="askai"
-                      ? "text-[#6366f1] border-b-[#6366f1]"
-                      : "text-[#0f172a] border-b-[#2563eb]"
-                    : "text-[#94a3b8] border-b-transparent hover:text-[#64748b]"
-                }`}>
-                <MIcon size={14} /> <span>{label}</span>
-              </button>
+      {/* Node header */}
+      <div className="flex items-center gap-2.5 px-4 h-12 border-b border-[#e2e8f0] flex-shrink-0 bg-white">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#0f172a] truncate">{step?.label ?? "Node"}</p>
+          <p className="text-[11px] text-[#94a3b8] truncate">{step?.icon ?? ""}</p>
+        </div>
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+          style={{ background: dynInfo.bg, color: dynInfo.color }}>
+          {isRunning ? "Running…" : isDone ? "Done" : dynInfo.label}
+        </span>
+        <button onClick={onClose}
+          className="size-6 flex items-center justify-center rounded-[5px] text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0">
+          <X size={13} />
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-[#e2e8f0] flex-shrink-0">
+        {TABS.map(({ id, icon: TIcon, label }) => (
+          <button key={id} onClick={() => setPanelMode(id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
+              panelMode === id
+                ? "text-[#0f172a] border-b-[#2563eb]"
+                : "text-[#94a3b8] border-b-transparent hover:text-[#64748b]"
+            }`}>
+            <TIcon size={12} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+
+        {/* ── Configuration ── */}
+        {panelMode === "configure" && (
+          <ConfigureMode step={step} selectedIdx={selectedIdx} flow={flow} />
+        )}
+
+        {/* ── Execution ── */}
+        {panelMode === "execution" && (
+          <div className="flex flex-col gap-4 px-4 py-3">
+            {[["Input", io.input], ["Output", io.output]].map(([lbl, data]) => (
+              <div key={lbl}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">{lbl}</span>
+                  <div className="flex-1 h-px bg-[#f1f5f9]" />
+                </div>
+                <pre className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] px-3 py-2.5 text-xs font-mono text-[#374151] overflow-x-auto whitespace-pre-wrap break-all leading-5">
+                  {JSON.stringify(data, null, 2)}
+                </pre>
+              </div>
             ))}
           </div>
-          {/* Content */}
-          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            {panelMode==="configure" && <ConfigureMode step={step} selectedIdx={selectedIdx} flow={flow} />}
-            {panelMode==="askai"     && <AskAIMode     step={step} selectedIdx={selectedIdx} flow={flow} runState={runState} />}
-            {panelMode==="execution" && <ExecutionMode step={step} selectedIdx={selectedIdx} flow={flow} runState={runState} />}
+        )}
+
+        {/* ── Logs ── */}
+        {panelMode === "logs" && (
+          <div className="px-3 py-2 font-mono flex flex-col gap-0.5">
+            {[
+              { ts: "15:49:00.000", level: "INFO",    msg: `[${step?.label}] started` },
+              { ts: "15:49:00.180", level: "INFO",    msg: "Authenticating with upstream service" },
+              { ts: "15:49:00.312", level: "INFO",    msg: "Request dispatched" },
+              { ts: "15:49:00.501", level: execKey === "error" ? "ERROR" : "SUCCESS",
+                msg: execKey === "error" ? "Connection timeout after 5000ms" : `Completed in ${230 + (selectedIdx ?? 0) * 80}ms` },
+            ].map((entry, i) => (
+              <div key={i} className="flex items-start gap-2 py-1 hover:bg-[#f8fafc] rounded px-1">
+                <span className="text-[#94a3b8] flex-shrink-0 tabular-nums text-[11px]">{entry.ts}</span>
+                <span className={`flex-shrink-0 w-[52px] text-center px-1 py-0.5 rounded text-[10px] font-bold uppercase ${LOG_BADGES[entry.level]}`}>{entry.level}</span>
+                <span className={`text-[11px] ${LOG_COLORS[entry.level]}`}>{entry.msg}</span>
+              </div>
+            ))}
           </div>
-        </>
-      ) : flow.steps.length === 0 ? (
-        <FlowCreationMode flow={flow} runState={runState} />
-      ) : (
-        <>
-          <div className="px-4 py-3 border-b border-[#f1f5f9] flex-shrink-0">
-            <p className="text-sm font-semibold text-[#94a3b8] uppercase tracking-widest">Panel</p>
-          </div>
-          <FlowOverview flow={flow} />
-        </>
-      )}
+        )}
+
+      </div>
     </div>
   );
 }
@@ -2133,13 +2178,22 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, sidebarCollap
         />
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <Canvas flow={flow} selectedIdx={selectedIdx} onSelectNode={setSelectedIdx} onAddNode={handleAddNode} runState={runState} />
-          <ConversationPanel
-            flow={flow}
-            runState={runState}
-            messages={convMessages}
-            onAddMessage={(msg) => setConvMessages(prev => [...prev, msg])}
-            onRunFlow={handleRunNow}
-          />
+          {selectedIdx !== null ? (
+            <RightPanel
+              flow={flow}
+              selectedIdx={selectedIdx}
+              runState={runState}
+              onClose={() => setSelectedIdx(null)}
+            />
+          ) : (
+            <ConversationPanel
+              flow={flow}
+              runState={runState}
+              messages={convMessages}
+              onAddMessage={(msg) => setConvMessages(prev => [...prev, msg])}
+              onRunFlow={handleRunNow}
+            />
+          )}
         </div>
         <ExecutionTimeline
           flow={flow} runState={runState} logs={logs}
