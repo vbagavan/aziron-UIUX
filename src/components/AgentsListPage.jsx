@@ -87,7 +87,7 @@ function ProviderLogo({ provider, size = 4 }) {
   if (logo) return <img src={logo} alt={provider} className={cls} />;
   return (
     <div className={`size-${size} rounded bg-[#e0e7ff] flex items-center justify-center flex-shrink-0`}>
-      <span className="text-[8px] font-bold text-[#4f46e5]">{provider[0]}</span>
+      <span className="text-xs font-bold text-[#4f46e5]">{provider[0]}</span>
     </div>
   );
 }
@@ -301,7 +301,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
           <ProviderLogo provider={agent.provider} size={4} />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[#475569] leading-none">{agent.provider}</span>
-            <span className="text-[11px] text-[#94a3b8] leading-none">{agent.model}</span>
+            <span className="text-sm text-[#94a3b8] leading-none">{agent.model}</span>
           </div>
         </div>
       </td>
@@ -309,7 +309,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
       {/* Status */}
       <td className="px-3 py-2.5 w-[120px]">
         <span
-          className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-full border"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold px-2 py-1 rounded-full border"
           style={{ color: statusCfg.text, backgroundColor: statusCfg.bg, borderColor: statusCfg.border }}
         >
           <span className="size-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusCfg.dot }} />
@@ -330,7 +330,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
       {/* Access */}
       <td className="px-3 py-2.5 w-[100px]">
         <span
-          className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+          className={`text-sm font-semibold px-2 py-0.5 rounded-full border ${
             agent.accessEnabled
               ? "bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]"
               : "bg-[#f8fafc] text-[#94a3b8] border-[#e2e8f0]"
@@ -395,7 +395,7 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
       onClick={() => sortKey && onSort(sortKey)}
     >
       <div className="flex items-center gap-1 group/col">
-        <span className={`text-[11px] font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
+        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
           {label}
         </span>
         {sortKey && (
@@ -440,7 +440,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
         <SlidersHorizontal size={14} />
         Filters
         {activeCount > 0 && (
-          <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-[10px] font-bold">
+          <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-xs font-bold">
             {activeCount}
           </span>
         )}
@@ -460,7 +460,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
 
           {/* Status */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Status</span>
+            <span className="text-sm font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Status</span>
             <div className="flex flex-wrap gap-1">
               {STATUS_FILTERS.map((s) => {
                 const isActive = statusFilter === s;
@@ -487,7 +487,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
 
           {/* Provider */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Provider</span>
+            <span className="text-sm font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Provider</span>
             <div className="flex flex-wrap gap-1">
               {PROVIDER_FILTERS.map((p) => {
                 const isActive = providerFilter === p;
@@ -607,7 +607,7 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent, s
                         exit={{ opacity: 0, scale: 0.8, x: -6 }}
                         transition={{ duration: 0.15 }}
                         onClick={() => setStatusFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-[11px] font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
+                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
                       >
                         {statusFilter}
                         <X size={10} />
@@ -621,7 +621,7 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent, s
                         exit={{ opacity: 0, scale: 0.8, x: -6 }}
                         transition={{ duration: 0.15 }}
                         onClick={() => setProviderFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-[11px] font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
+                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
                       >
                         {providerFilter}
                         <X size={10} />

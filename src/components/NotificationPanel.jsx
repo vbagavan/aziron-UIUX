@@ -188,7 +188,7 @@ function NotificationRow({ item, selected, onSelect }) {
         {/* Avatar + badge */}
         <div className="relative flex-shrink-0">
           <div
-            className="size-10 rounded-full flex items-center justify-center text-white text-[13px] font-bold select-none"
+            className="size-10 rounded-full flex items-center justify-center text-white text-sm font-bold select-none"
             style={{ backgroundColor: item.avatarBg }}
           >
             {item.avatarInitials}
@@ -214,20 +214,20 @@ function NotificationRow({ item, selected, onSelect }) {
           {/* Tag + time */}
           <div className="flex items-center gap-2 mt-2">
             <span
-              className="px-[6px] py-[2px] rounded text-[10px] font-bold tracking-wide border"
+              className="px-[6px] py-[2px] rounded text-xs font-bold tracking-wide border"
               style={{ color: cfg.labelColor, backgroundColor: `${cfg.bar}12`, borderColor: `${cfg.bar}30` }}
             >
               {item.tag}
             </span>
             <span
-              className="px-[6px] py-[2px] rounded text-[10px] font-semibold border"
+              className="px-[6px] py-[2px] rounded text-xs font-semibold border"
               style={{ color: cfg.labelColor, backgroundColor: `${cfg.bar}10`, borderColor: `${cfg.bar}20` }}
             >
               {cfg.label}
             </span>
-            <span className="text-[11px] text-[#94a3b8]">{item.time}</span>
+            <span className="text-sm text-[#94a3b8]">{item.time}</span>
             {item.persistent && (
-              <span className="text-[10px] font-medium px-1.5 py-[2px] rounded bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0]">
+              <span className="text-xs font-medium px-1.5 py-[2px] rounded bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0]">
                 persistent
               </span>
             )}
@@ -284,7 +284,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
 
       {/* Avatar + badge */}
       <div className="relative flex-shrink-0">
-        <div className="size-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white text-[13px] font-bold select-none">
+        <div className="size-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white text-sm font-bold select-none">
           KD
         </div>
         <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-white flex items-center justify-center bg-[#2563eb]">
@@ -305,17 +305,17 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
         </p>
 
         <div className="flex items-center gap-2 mt-2">
-          <span className="px-[6px] py-[2px] rounded text-[10px] font-bold tracking-wide bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe]">
+          <span className="px-[6px] py-[2px] rounded text-xs font-bold tracking-wide bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe]">
             KUDOS
           </span>
-          <span className="text-[11px] text-[#94a3b8]">Just now</span>
+          <span className="text-sm text-[#94a3b8]">Just now</span>
           {!isApproved && (
-            <span className="text-[10px] font-semibold px-1.5 py-[2px] rounded-full text-[#2563eb] bg-[#eff6ff]">
+            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#2563eb] bg-[#eff6ff]">
               pending
             </span>
           )}
           {isApproved && (
-            <span className="text-[10px] font-semibold px-1.5 py-[2px] rounded-full text-[#15803d] bg-[#dcfce7]">
+            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#15803d] bg-[#dcfce7]">
               approved
             </span>
           )}
@@ -387,11 +387,11 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <h2 className="text-[18px] font-semibold text-[#0f172a] leading-none">
+            <h2 className="text-lg font-semibold text-[#0f172a] leading-none">
               Notifications
             </h2>
             {unreadCount > 0 && (
-              <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#ef4444] text-white text-[10px] font-bold">
+              <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#ef4444] text-white text-xs font-bold">
                 {unreadCount}
               </span>
             )}
@@ -425,7 +425,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                 {label}
                 {cnt > 0 && (
                   <span
-                    className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                    className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
                       active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] text-[#64748b]"
                     }`}
                   >
@@ -453,7 +453,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
               {visibleKudos.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 px-5 py-2 bg-white">
-                    <span className="text-[10px] font-bold tracking-[0.09em] uppercase text-[#2563eb]">
+                    <span className="text-xs font-bold tracking-[0.09em] uppercase text-[#2563eb]">
                       KUDOS
                     </span>
                     <div className="flex-1 h-px bg-[#f1f5f9]" />
@@ -479,7 +479,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                       <div key={type}>
                         <div className="flex items-center gap-2 px-5 py-2 bg-white">
                           <span
-                            className="text-[10px] font-bold tracking-[0.09em] uppercase"
+                            className="text-xs font-bold tracking-[0.09em] uppercase"
                             style={{ color: cfg.labelColor }}
                           >
                             {cfg.label}

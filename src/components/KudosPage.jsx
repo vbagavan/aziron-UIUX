@@ -1218,14 +1218,14 @@ function InlineEmailCard({ approval, onUpdate }) {
       <div className="flex items-center gap-2 px-3 py-2 border-b border-[#f1f5f9] bg-[#f8fafc]">
         <Mail size={13} className="text-[#2563eb] flex-shrink-0" />
         <span className="text-xs font-semibold text-[#0f172a] flex-1">Send Appreciation Email</span>
-        <span className="text-[10px] font-medium text-[#15803d] bg-[#dcfce7] border border-[#bbf7d0] rounded-full px-2 py-0.5">
+        <span className="text-xs font-medium text-[#15803d] bg-[#dcfce7] border border-[#bbf7d0] rounded-full px-2 py-0.5">
           Approved ✓
         </span>
       </div>
 
       {/* To: */}
       <div className="flex items-start gap-2 px-3 py-2 border-b border-[#f1f5f9]">
-        <span className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">To</span>
+        <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">To</span>
         <div className="flex-1 min-w-0">
           <EmailTagInput
             tags={approval.emailTo}
@@ -1240,7 +1240,7 @@ function InlineEmailCard({ approval, onUpdate }) {
 
       {/* CC: */}
       <div className="flex items-start gap-2 px-3 py-2 border-b border-[#f1f5f9]">
-        <span className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">CC</span>
+        <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">CC</span>
         <div className="flex-1 min-w-0">
           <EmailTagInput
             tags={approval.emailCc}
@@ -1263,7 +1263,7 @@ function InlineEmailCard({ approval, onUpdate }) {
           <Mail size={12} /> Send Email
         </button>
         {approval.emailTo.length === 0 && (
-          <p className="text-[10px] text-[#94a3b8] text-center mt-1">Add at least one recipient</p>
+          <p className="text-xs text-[#94a3b8] text-center mt-1">Add at least one recipient</p>
         )}
       </div>
     </div>
@@ -1696,17 +1696,17 @@ export default function KudosPage({ agent, onNavigate, sidebarCollapsed, onToggl
                 {/* How it works */}
                 <div className="flex items-center gap-6 text-xs text-[#94a3b8]">
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-[9px]">1</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">1</span>
                     Type <code className="bg-[#f1f5f9] px-1 rounded text-[#475569]">/kudos @Name</code>
                   </div>
                   <div className="w-4 h-px bg-[#e2e8f0]" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-[9px]">2</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">2</span>
                     AI generates a card
                   </div>
                   <div className="w-4 h-px bg-[#e2e8f0]" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-[9px]">3</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">3</span>
                     Pick a template & send
                   </div>
                 </div>

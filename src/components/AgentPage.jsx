@@ -208,13 +208,13 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
             className="absolute top-0 right-0 w-2 h-2"
             style={{ background: "#e2e8f0", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
           />
-          <span className="text-[8px] font-bold text-[#64748b] leading-none">{chip.type}</span>
+          <span className="text-xs font-bold text-[#64748b] leading-none">{chip.type}</span>
         </div>
 
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium text-[#0f172a] truncate">{chip.name}</p>
           {saved && (
-            <p className="text-[10px] text-[#16a34a] leading-none mt-0.5 truncate">
+            <p className="text-xs text-[#16a34a] leading-none mt-0.5 truncate">
               Saved to {saved.hubName} · {saved.chunks} chunks
             </p>
           )}
@@ -645,9 +645,9 @@ export default function AgentPage({ agent, onNavigate, sidebarCollapsed, onToggl
                                     className="absolute top-0 right-0 w-3 h-3"
                                     style={{ background: "#e2e8f0", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
                                   />
-                                  <span className="text-[10px] font-bold text-[#64748b] leading-none">{att.type}</span>
+                                  <span className="text-xs font-bold text-[#64748b] leading-none">{att.type}</span>
                                 </div>
-                                <span className="text-[10px] text-[#64748b] leading-none px-1 text-center truncate w-full">
+                                <span className="text-xs text-[#64748b] leading-none px-1 text-center truncate w-full">
                                   {att.name}
                                 </span>
                               </div>

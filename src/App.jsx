@@ -41,6 +41,20 @@ export default function App() {
     setCurrentPage("flow-view");
   };
 
+  const createFlow = () => {
+    setViewedFlow({
+      id: Date.now(),
+      name: "Untitled Flow",
+      status: "draft",
+      steps: [],
+      runs: 0,
+      success: null,
+      lastRun: "—",
+      createdAt: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    });
+    setCurrentPage("flow-view");
+  };
+
   const startChat = (message) => {
     setInitialMessage(message);
     setSelectedAgent(null);
@@ -100,7 +114,7 @@ export default function App() {
   }
 
   if (currentPage === "flows") {
-    return <FlowsPage onNavigate={navigate} onViewFlow={viewFlow} {...sharedSidebarProps} />;
+    return <FlowsPage onNavigate={navigate} onViewFlow={viewFlow} onCreateFlow={createFlow} {...sharedSidebarProps} />;
   }
 
   if (currentPage === "flow-view") {

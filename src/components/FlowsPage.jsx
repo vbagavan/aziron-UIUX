@@ -169,7 +169,7 @@ function MiniPipeline({ steps, compact = false }) {
               style={{ borderColor: `${step.color}30`, background: `${step.color}10` }}
             >
               <Icon size={compact ? 10 : 11} style={{ color: step.color }} />
-              {!compact && <span className="text-[10px] font-medium leading-none whitespace-nowrap" style={{ color: step.color }}>{step.label}</span>}
+              {!compact && <span className="text-xs font-medium leading-none whitespace-nowrap" style={{ color: step.color }}>{step.label}</span>}
             </div>
             {i < steps.length - 1 && (
               <ArrowRight size={compact ? 8 : 10} className="text-[#cbd5e1] flex-shrink-0" />
@@ -240,7 +240,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+              className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border"
               style={{ color: cfg.text, background: cfg.bg, borderColor: cfg.border }}
             >
               <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
@@ -297,8 +297,8 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
             <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
               <Play size={13} className="text-[#64748b]" /> Run now
             </button>
-            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-              <Pencil size={13} className="text-[#64748b]" /> Edit
+            <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
+              <Pencil size={13} className="text-[#64748b]" /> Edit flow
             </button>
             <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
               <Copy size={13} className="text-[#64748b]" /> Duplicate
@@ -373,7 +373,7 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
         {/* Status */}
         <td className="px-3 py-3 w-[110px]">
           <span
-            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full border"
+            className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full border"
             style={{ color: cfg.text, background: cfg.bg, borderColor: cfg.border }}
           >
             <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
@@ -418,8 +418,8 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
                 <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
                   <Play size={13} className="text-[#64748b]" /> Run now
                 </button>
-                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-                  <Pencil size={13} className="text-[#64748b]" /> Edit
+                <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
+                  <Pencil size={13} className="text-[#64748b]" /> Edit flow
                 </button>
                 <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
                   <Copy size={13} className="text-[#64748b]" /> Duplicate
@@ -447,7 +447,7 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
       onClick={() => sortKey && onSort(sortKey)}
     >
       <div className="flex items-center gap-1 group/col">
-        <span className={`text-[11px] font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
+        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
           {label}
         </span>
         {sortKey && (
@@ -482,7 +482,7 @@ function AnimCount({ to, className = "" }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, onToggleSidebar }) {
+export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sidebarCollapsed, onToggleSidebar }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
@@ -577,7 +577,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, on
                       <SlidersHorizontal size={14} />
                       Filters
                       {statusFilter !== "All" && (
-                        <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-[10px] font-bold">1</span>
+                        <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-xs font-bold">1</span>
                       )}
                     </button>
 
@@ -623,7 +623,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, on
                         exit={{ opacity: 0, scale: 0.8, x: -6 }}
                         transition={{ duration: 0.15 }}
                         onClick={() => setStatusFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-[11px] font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
+                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
                       >
                         {statusFilter} <X size={10} />
                       </motion.button>
@@ -650,7 +650,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, on
                     </button>
                   </div>
 
-                  <button className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0">
+                  <button onClick={onCreateFlow} className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0">
                     <Plus size={16} />
                     Create Flow
                   </button>
@@ -740,7 +740,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, on
                   >
                     Clear filters
                   </button>
-                  <button className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors">
+                  <button onClick={onCreateFlow} className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors">
                     <Plus size={16} /> Create your first flow
                   </button>
                 </div>
@@ -750,6 +750,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, sidebarCollapsed, on
           </div>
         </div>
       </div>
+
     </>
   );
 }

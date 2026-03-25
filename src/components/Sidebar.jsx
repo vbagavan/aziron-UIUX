@@ -312,7 +312,7 @@ function LogoutModal({ onConfirm, onCancel }) {
             </Avatar>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-[#0f172a] leading-4">Admin</span>
-              <span className="text-[11px] text-[#64748b] leading-4">admin@aziro.com</span>
+              <span className="text-sm text-[#64748b] leading-4">admin@aziro.com</span>
             </div>
           </div>
 
@@ -417,7 +417,7 @@ function UserFooter({ collapsed, onNavigate }) {
             </Avatar>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-[#0f172a] leading-4 truncate">Admin</span>
-              <span className="text-[10px] text-[#64748b] leading-4 truncate">admin@aziro.com</span>
+              <span className="text-xs text-[#64748b] leading-4 truncate">admin@aziro.com</span>
             </div>
           </div>
 
@@ -478,7 +478,7 @@ function UserFooter({ collapsed, onNavigate }) {
           </Avatar>
           <div className="flex flex-col items-start flex-1 min-w-0">
             <span className="text-sm font-semibold text-[#fafafa] leading-none">Admin</span>
-            <span className="text-[11px] text-[#fafafa]/70 leading-4 tracking-[0.12px] truncate w-full">
+            <span className="text-sm text-[#fafafa]/70 leading-4 tracking-[0.12px] truncate w-full">
               admin@aziro.com
             </span>
           </div>

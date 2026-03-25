@@ -251,7 +251,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
           <SlidersHorizontal size={14} className="text-[#475569]" />
           <span className="text-sm font-semibold text-[#0f172a]">Filters</span>
           {hasAny && (
-            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#2563eb] text-white text-[10px] font-bold">
+            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#2563eb] text-white text-xs font-bold">
               {countActiveFilters(filters)}
             </span>
           )}
@@ -269,7 +269,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
       <div className="flex flex-col gap-4 p-4">
         {/* Type */}
         <div>
-          <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Type</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Type</p>
           <div className="flex flex-col gap-1">
             {FILTER_TYPE_OPTIONS.map(({ value, label, color }) => {
               const active = filters.types.includes(value);
@@ -299,7 +299,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   <span className={`text-sm ${active ? "font-medium text-[#0f172a]" : "text-[#475569]"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-[11px] text-[#94a3b8]">
+                  <span className="ml-auto text-sm text-[#94a3b8]">
                     {NOTIFICATIONS.filter((n) => n.type === value).length}
                   </span>
                 </button>
@@ -310,7 +310,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Status */}
         <div>
-          <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Status</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Status</p>
           <div className="flex flex-col gap-1">
             {FILTER_STATUS_OPTIONS.map(({ value, label }) => {
               const active = filters.statuses.includes(value);
@@ -336,7 +336,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   <span className={`text-sm ${active ? "font-medium text-[#0f172a]" : "text-[#475569]"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-[11px] text-[#94a3b8]">
+                  <span className="ml-auto text-sm text-[#94a3b8]">
                     {value === "unread"     ? NOTIFICATIONS.filter((n) => n.unread).length
                     : value === "read"      ? NOTIFICATIONS.filter((n) => !n.unread).length
                     : NOTIFICATIONS.filter((n) => n.persistent).length}
@@ -349,7 +349,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Tags */}
         <div>
-          <p className="text-[11px] font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Tag</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Tag</p>
           <div className="flex flex-wrap gap-1.5">
             {ALL_TAGS.map((tag) => {
               const active = filters.tags.includes(tag);
@@ -360,7 +360,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                 <button
                   key={tag}
                   onClick={() => toggle("tags", tag)}
-                  className={`px-2 py-[3px] rounded text-[11px] font-bold tracking-wide border transition-all ${
+                  className={`px-2 py-[3px] rounded text-sm font-bold tracking-wide border transition-all ${
                     active
                       ? "text-white border-transparent"
                       : "text-[#475569] bg-[#f8fafc] border-[#e2e8f0] hover:border-[#cbd5e1]"
@@ -397,14 +397,14 @@ function FilterChips({ filters, onChange }) {
 
   return (
     <div className="flex items-center gap-2 px-6 py-2 flex-wrap border-b border-[#f1f5f9] bg-[#fafbfc]">
-      <span className="text-[11px] text-[#94a3b8] font-medium flex-shrink-0">Active:</span>
+      <span className="text-sm text-[#94a3b8] font-medium flex-shrink-0">Active:</span>
       {chips.map(({ key, value, label, color }) => (
         <button
           key={`${key}-${value}`}
           onClick={() =>
             onChange((prev) => ({ ...prev, [key]: prev[key].filter((v) => v !== value) }))
           }
-          className="flex items-center gap-1 px-2 py-[3px] rounded-full text-[11px] font-semibold text-white border border-transparent transition-opacity hover:opacity-80"
+          className="flex items-center gap-1 px-2 py-[3px] rounded-full text-sm font-semibold text-white border border-transparent transition-opacity hover:opacity-80"
           style={{ backgroundColor: color }}
         >
           {label}
@@ -413,7 +413,7 @@ function FilterChips({ filters, onChange }) {
       ))}
       <button
         onClick={() => onChange(EMPTY_FILTERS)}
-        className="text-[11px] text-[#64748b] hover:text-[#ef4444] font-medium transition-colors ml-1"
+        className="text-sm text-[#64748b] hover:text-[#ef4444] font-medium transition-colors ml-1"
       >
         Clear all
       </button>
@@ -486,26 +486,26 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
           {/* Tags row */}
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             <span
-              className="px-2 py-[2px] rounded text-[10px] font-bold tracking-wide border"
+              className="px-2 py-[2px] rounded text-xs font-bold tracking-wide border"
               style={{ color: cfg.labelColor, backgroundColor: `${cfg.bar}12`, borderColor: `${cfg.bar}30` }}
             >
               {item.tag}
             </span>
             <span
-              className="text-[10px] font-semibold px-2 py-[2px] rounded border"
+              className="text-xs font-semibold px-2 py-[2px] rounded border"
               style={{ color: cfg.labelColor, backgroundColor: `${cfg.bar}10`, borderColor: `${cfg.bar}20` }}
             >
               {cfg.label}
             </span>
             {item.persistent && (
-              <span className="text-[10px] text-[#94a3b8] bg-[#f8fafc] border border-[#e2e8f0] px-2 py-[2px] rounded font-medium">
+              <span className="text-xs text-[#94a3b8] bg-[#f8fafc] border border-[#e2e8f0] px-2 py-[2px] rounded font-medium">
                 persistent
               </span>
             )}
             {item.unread && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMarkRead(item.id); }}
-                className="text-[10px] text-[#2563eb] hover:text-[#1d4ed8] font-medium transition-colors ml-auto"
+                className="text-xs text-[#2563eb] hover:text-[#1d4ed8] font-medium transition-colors ml-auto"
               >
                 Mark as read
               </button>
@@ -547,11 +547,11 @@ function SectionHeader({ type, count }) {
   const cfg = TYPE_CONFIG[type];
   return (
     <div className="flex items-center gap-3 mt-6 mb-2 first:mt-0">
-      <span className="text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: cfg.labelColor }}>
+      <span className="text-sm font-bold tracking-[0.08em] uppercase" style={{ color: cfg.labelColor }}>
         {cfg.label}
       </span>
       <span
-        className="text-[10px] font-bold px-1.5 py-[1px] rounded-full"
+        className="text-xs font-bold px-1.5 py-[1px] rounded-full"
         style={{ color: cfg.labelColor, backgroundColor: `${cfg.bar}15` }}
       >
         {count}
@@ -661,7 +661,7 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                   <Filter size={14} />
                   Filter
                   {activeFilterCount > 0 && (
-                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#2563eb] text-[10px] font-bold">
+                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#2563eb] text-xs font-bold">
                       {activeFilterCount}
                     </span>
                   )}
@@ -694,7 +694,7 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                 >
                   {label}
                   {cnt > 0 && (
-                    <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                    <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
                       active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] text-[#64748b]"
                     }`}>
                       {cnt}

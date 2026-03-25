@@ -52,7 +52,7 @@ function genTokensUsed(agent) {
 function StatCard({ label, value, sub, highlight }) {
   return (
     <div className="flex-1 min-w-0 bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-5 py-4 flex flex-col gap-1.5">
-      <span className="text-[11px] font-semibold tracking-widest uppercase text-[#94a3b8]">{label}</span>
+      <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">{label}</span>
       <span className={`text-2xl font-bold leading-8 ${highlight ? "text-[#16a34a]" : "text-[#0f172a]"}`}>
         {value}
       </span>
@@ -108,7 +108,7 @@ function OverviewTab({ agent }) {
 
       {/* Description */}
       <div className="flex flex-col gap-2">
-        <span className="text-[11px] font-semibold tracking-widest uppercase text-[#94a3b8]">Description</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Description</span>
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3">
           <p className="text-sm text-[#0f172a] leading-6">{agent.description}</p>
         </div>
@@ -116,7 +116,7 @@ function OverviewTab({ agent }) {
 
       {/* Tags */}
       <div className="flex flex-col gap-2">
-        <span className="text-[11px] font-semibold tracking-widest uppercase text-[#94a3b8]">Tags</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Tags</span>
         <div className="flex flex-wrap gap-2">
           {tags.map((t) => (
             <span
@@ -132,15 +132,15 @@ function OverviewTab({ agent }) {
 
       {/* Recent Runs */}
       <div className="flex flex-col gap-2">
-        <span className="text-[11px] font-semibold tracking-widest uppercase text-[#94a3b8]">Recent Runs</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Recent Runs</span>
         <div className="bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase w-full">Run ID</th>
-                <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Duration</th>
-                <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Tokens</th>
-                <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Status</th>
+                <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase w-full">Run ID</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Duration</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Tokens</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +190,7 @@ function ConfigurationTab({ agent }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-[11px] font-semibold tracking-widest uppercase text-[#94a3b8]">System Prompt</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">System Prompt</span>
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 font-mono text-xs text-[#475569] leading-5 whitespace-pre-wrap">
           {`You are an AI assistant specializing in "${agent.name}" tasks.\n\nAlways respond clearly and concisely. Prioritize accuracy and helpfulness.\n\nWhen uncertain, ask clarifying questions before proceeding.`}
         </div>
@@ -241,10 +241,10 @@ function RunHistoryTab({ agent }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase">Run ID</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase">Duration</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase">Tokens</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-semibold text-[#94a3b8] tracking-widest uppercase">Status</th>
+              <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Run ID</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Duration</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Tokens</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Status</th>
             </tr>
           </thead>
           <tbody>
