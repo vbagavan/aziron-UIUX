@@ -99,11 +99,11 @@ export default function SettingsAppearancePage({
         <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate}>
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-[#e2e8f0]" />
+            <div className="w-px h-6 bg-[#e2e8f0] dark:bg-[#334155]" />
             <nav className="flex items-center gap-[10px]">
-              <span className="text-sm text-[#64748b] whitespace-nowrap">Settings</span>
-              <ChevronRight size={14} className="text-[#94a3b8]" />
-              <span className="text-sm text-[#0f172a] whitespace-nowrap">Appearance</span>
+              <span className="text-sm text-[#64748b] dark:text-[#94a3b8] whitespace-nowrap">Settings</span>
+              <ChevronRight size={14} className="text-[#94a3b8] dark:text-[#64748b]" />
+              <span className="text-sm text-[#0f172a] dark:text-[#f1f5f9] whitespace-nowrap">Appearance</span>
             </nav>
           </div>
         </AppHeader>
@@ -112,10 +112,10 @@ export default function SettingsAppearancePage({
         <div className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-4 gap-4">
           {/* Page heading */}
           <div className="flex flex-col gap-0">
-            <h1 className="text-2xl font-semibold text-[#0f172a] tracking-[-0.6px] leading-8">
+            <h1 className="text-2xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] tracking-[-0.6px] leading-8">
               Settings
             </h1>
-            <p className="text-sm text-[#64748b] leading-5">Manage your preferences</p>
+            <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5">Manage your preferences</p>
           </div>
 
           {/* Two-column layout */}
@@ -143,7 +143,7 @@ export default function SettingsAppearancePage({
             <div className="flex-1 min-w-0 bg-card border-2 border-border rounded-xl shadow-2xs p-6 flex flex-col gap-8">
               {/* Card header */}
               <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-medium text-[#0f172a] leading-7">Appearance</h2>
+                <h2 className="text-lg font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-7">Appearance</h2>
                 <p className="text-base text-[#4e4d4d] leading-6">
                   Manage your appearance settings and preferences.
                 </p>
@@ -151,7 +151,7 @@ export default function SettingsAppearancePage({
 
               {/* Theme Color */}
               <div className="flex flex-col gap-4">
-                <p className="text-base font-semibold text-[#0f172a] leading-6">Theme Color</p>
+                <p className="text-base font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-6">Theme Color</p>
                 <div className="flex items-center gap-4">
                   {themeColors.map(({ id, label, img }) => (
                     <button
@@ -174,7 +174,7 @@ export default function SettingsAppearancePage({
 
               {/* Theme Mode */}
               <div className="flex flex-col gap-4">
-                <p className="text-xl font-medium text-[#0f172a] leading-7 tracking-[-0.6px]">
+                <p className="text-xl font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-7 tracking-[-0.6px]">
                   Theme Mode
                 </p>
                 <div className="flex gap-4">
@@ -190,7 +190,7 @@ export default function SettingsAppearancePage({
                     </div>
                     <span
                       className={`text-sm font-medium leading-5 ${
-                        themeMode === "light" ? "text-[#0f172a]" : "text-[#64748b]"
+                        themeMode === "light" ? "text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#64748b] dark:text-[#94a3b8]"
                       }`}
                     >
                       Light
@@ -209,7 +209,7 @@ export default function SettingsAppearancePage({
                     </div>
                     <span
                       className={`text-sm font-medium leading-5 ${
-                        themeMode === "dark" ? "text-[#0f172a]" : "text-[#64748b]"
+                        themeMode === "dark" ? "text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#64748b] dark:text-[#94a3b8]"
                       }`}
                     >
                       Dark
@@ -228,7 +228,7 @@ export default function SettingsAppearancePage({
                     </div>
                     <span
                       className={`text-sm font-medium leading-5 ${
-                        themeMode === "system" ? "text-[#0f172a]" : "text-[#64748b]"
+                        themeMode === "system" ? "text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#64748b] dark:text-[#94a3b8]"
                       }`}
                     >
                       System

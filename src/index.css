@@ -72,7 +72,7 @@
   --radius: 0.5000rem;
   --font-sans: Inter;
   --font-serif: Playfair Display;
-  --font-mono: Geist Mono;
+  --font-mono: Chivo Mono;
   --shadow-x: 0px;
   --shadow-y: 5px;
   --shadow-blur: 10px;
@@ -253,3 +253,70 @@ body {
     @apply bg-background text-foreground;}
   html {
     @apply font-sans;}}
+
+/* Smooth transitions for theme switching */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Dark-mode fallbacks for components that lack explicit `dark:` classes. */
+.dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-\[\#f8fafc\] { background-color: #0f172a !important; }
+.dark .bg-\[\#f1f5f9\] { background-color: #0b1728 !important; }
+.dark .bg-\[\#eff6ff\] { background-color: #0f172a !important; }
+.dark .bg-\[\#f0f7ff\] { background-color: #0f172a !important; }
+
+.dark .border-\[\#e2e8f0\] { border-color: #334155 !important; }
+.dark .border-\[\#f1f5f9\] { border-color: #1e293b !important; }
+
+.dark .text-\[\#0f172a\] { color: #f1f5f9 !important; }
+.dark .text-\[\#475569\] { color: #cbd5e1 !important; }
+.dark .text-\[\#64748b\] { color: #94a3b8 !important; }
+
+.dark .hover\:bg-\[\#f8fafc\]:hover { background-color: #1e293b !important; }
+.dark .hover\:bg-\[\#f1f5f9\]:hover { background-color: #1e293b !important; }
+.dark .hover\:bg-\[\#eff6ff\]:hover { background-color: #1e293b !important; }
+
+@keyframes nodeGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.2));
+    stroke-width: 2.5;
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)) drop-shadow(0 0 16px rgba(59, 130, 246, 0.5));
+    stroke-width: 2.8;
+  }
+}
+
+@keyframes nodePulse {
+  0%, 100% {
+    opacity: 0.15;
+    r: 5px;
+  }
+  50% {
+    opacity: 0.3;
+    r: 8px;
+  }
+}
+
+@keyframes nodeRunDash {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 16;
+  }
+}
+
+@keyframes nodeBounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 0.8;
+  }
+}

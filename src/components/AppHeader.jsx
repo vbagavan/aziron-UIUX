@@ -39,7 +39,11 @@ function ThemeToggle() {
     <button
       onClick={() => setDark((v) => !v)}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="relative flex items-center justify-center size-8 rounded-full text-[#64748b] hover:bg-[#f1f5f9] transition-colors overflow-hidden"
+      className={`relative flex items-center justify-center size-8 rounded-full transition-all duration-300 overflow-hidden ${
+        dark
+          ? "text-[#d1d5db] hover:bg-[#374151]"
+          : "text-[#64748b] hover:bg-[#f1f5f9] dark:hover:bg-[#334155]"
+      }`}
     >
       {/* Sun icon — visible in light mode */}
       <Sun
@@ -87,20 +91,20 @@ function LanguageSelector() {
       {/* Trigger */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 h-8 px-2.5 rounded-[8px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+        className="flex items-center gap-1.5 h-8 px-2.5 rounded-[8px] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
       >
         <span className="text-base leading-none">{selected.flag}</span>
-        <span className="text-xs font-medium text-[#475569] hidden sm:block">{selected.code.toUpperCase()}</span>
+        <span className="text-xs font-medium text-[#475569] dark:text-[#94a3b8] hidden sm:block">{selected.code.toUpperCase()}</span>
         <ChevronDown
           size={12}
-          className={`text-[#94a3b8] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          className={`text-[#94a3b8] dark:text-[#64748b] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {/* Dropdown */}
       {open && (
         <div
-          className="absolute right-0 top-[calc(100%+6px)] w-[188px] bg-white border border-[#e2e8f0] rounded-[12px] overflow-hidden z-[999]"
+          className="absolute right-0 top-[calc(100%+6px)] w-[188px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[12px] overflow-hidden z-[999]"
           style={{
             boxShadow: "0 8px 28px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)",
             animation: "langIn 0.15s cubic-bezier(0.34,1.2,0.64,1)",
@@ -114,8 +118,8 @@ function LanguageSelector() {
           `}</style>
 
           {/* Header */}
-          <div className="px-3 py-2 border-b border-[#f1f5f9]">
-            <span className="text-sm font-semibold text-[#94a3b8] uppercase tracking-wider">Language</span>
+          <div className="px-3 py-2 border-b border-[#f1f5f9] dark:border-[#1e293b]">
+            <span className="text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] uppercase tracking-wider">Language</span>
           </div>
 
           {/* Options */}
@@ -127,14 +131,16 @@ function LanguageSelector() {
                   key={lang.code}
                   onClick={() => { setSelected(lang); setOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 transition-colors text-left ${
-                    isActive ? "bg-[#f0f7ff]" : "hover:bg-[#f8fafc]"
+                    isActive
+                      ? "bg-[#f0f7ff] dark:bg-[#1e3a8a]"
+                      : "hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]"
                   }`}
                 >
                   <span className="text-base leading-none flex-shrink-0">{lang.flag}</span>
-                  <span className={`flex-1 text-sm ${isActive ? "font-semibold text-[#2563eb]" : "font-medium text-[#0f172a]"}`}>
+                  <span className={`flex-1 text-sm ${isActive ? "font-semibold text-[#2563eb] dark:text-[#60a5fa]" : "font-medium text-[#0f172a] dark:text-[#f1f5f9]"}`}>
                     {lang.label}
                   </span>
-                  {isActive && <Check size={13} className="text-[#2563eb] flex-shrink-0" />}
+                  {isActive && <Check size={13} className="text-[#2563eb] dark:text-[#60a5fa] flex-shrink-0" />}
                 </button>
               );
             })}
@@ -166,12 +172,12 @@ export default function AppHeader({
 
   return (
     <>
-      <header className="flex items-center justify-between h-12 px-4 border-b border-[#e2e8f0] flex-shrink-0 bg-white">
+      <header className="flex items-center justify-between h-12 px-4 border-b border-[#e2e8f0] dark:border-[#334155] flex-shrink-0 bg-white dark:bg-[#1e293b]">
         {/* Left: sidebar toggle + optional children */}
         <div className="flex items-center gap-2">
           <button
             onClick={onToggleSidebar}
-            className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+            className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
           >
             <PanelLeft size={16} />
           </button>
@@ -182,18 +188,18 @@ export default function AppHeader({
         <div className="flex items-center gap-1">
           <LanguageSelector />
 
-          <div className="w-px h-4 bg-[#e2e8f0] mx-1" />
+          <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155] mx-1" />
 
           <ThemeToggle />
 
-          <div className="w-px h-4 bg-[#e2e8f0] mx-1" />
+          <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155] mx-1" />
 
           <button
             onClick={toggleNotifications}
-            className="relative flex items-center justify-center size-8 rounded-full text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+            className="relative flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
           >
             <Bell size={16} />
-            <span className="absolute top-[7px] right-[7px] size-[7px] bg-[#ef4444] rounded-full border border-white" />
+            <span className="absolute top-[7px] right-[7px] size-[7px] bg-[#ef4444] rounded-full border border-white dark:border-[#1e293b]" />
             {hasBadge && (
               <span className="absolute top-[5px] right-[5px] size-[11px] rounded-full bg-[#ef4444] opacity-40 animate-ping" />
             )}

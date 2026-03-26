@@ -1,177 +1,507 @@
-import { useState, useRef } from "react";
-import { Paperclip, Send, ChevronDown, Database, Cpu } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import {
+  Paperclip, Send, ChevronDown, Database, Cpu, Bot,
+  RefreshCw, Copy, ThumbsUp, ThumbsDown, Plus,
+} from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
+import RichMessage from "@/components/RichMessage";
 
 const imgAzironLogo =
   "https://www.figma.com/api/mcp/asset/f4c83c9c-c4ed-4c76-880e-b0d714d34c1e";
 const imgToolsIcon =
   "https://www.figma.com/api/mcp/asset/ff2b2176-1ed2-4a50-a2df-65dd00a693ff";
 
-// Simple donut-progress SVG representing token usage
+/* ── Donut usage indicator ─────────────────────────────────────── */
 function UsageDonut({ pct = 65 }) {
-  const r = 5;
-  const cx = 7;
-  const cy = 7;
-  const circ = 2 * Math.PI * r;
+  const r = 5, cx = 7, cy = 7, circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" style={{ rotate: "-90deg" }}>
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke="#e2e8f0"
-        strokeWidth="2"
-      />
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        stroke="#2563eb"
-        strokeWidth="2"
-        strokeDasharray={`${dash} ${circ}`}
-        strokeLinecap="round"
-      />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e2e8f0" strokeWidth="2" />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2563eb" strokeWidth="2"
+        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
     </svg>
   );
 }
 
-export default function NewChatPage({ onNavigate, onStartChat, sidebarCollapsed, onToggleSidebar }) {
-  const [message, setMessage] = useState("");
-  const textareaRef = useRef(null);
+/* ── Typing indicator ──────────────────────────────────────────── */
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-1 py-0.5">
+      {[0, 1, 2].map(i => (
+        <span key={i} className="size-1.5 rounded-full bg-[#94a3b8] dark:bg-[#64748b]"
+          style={{ animation: `ncBounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+      ))}
+      <style>{`@keyframes ncBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-4px)}}`}</style>
+    </div>
+  );
+}
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    onStartChat?.(message);
+/* ── Pre-populated showcase conversation ──────────────────────── */
+const DEMO_MESSAGES = [
+  /* ── 1. Thinking + Generating ── */
+  {
+    id: 1, role: "user",
+    content: "Walk me through the different response types you support.",
+  },
+  {
+    id: 2, role: "assistant",
+    blocks: [
+      { type: "thinking", duration: "2.4s" },
+      { type: "generating" },
+      { type: "text", content: "Here's a showcase of every response format I can produce — from streaming states to generated documents." },
+    ],
+  },
+
+  /* ── 2. Headings ── */
+  {
+    id: 3, role: "user",
+    content: "Show me heading hierarchy.",
+  },
+  {
+    id: 4, role: "assistant",
+    blocks: [
+      { type: "heading", level: 1, content: "H1 — Page Title" },
+      { type: "heading", level: 2, content: "H2 — Section Header" },
+      { type: "heading", level: 3, content: "H3 — Subsection" },
+      { type: "heading", level: 4, content: "H4 — Group Label" },
+      { type: "heading", level: 5, content: "H5 — Detail" },
+      { type: "heading", level: 6, content: "H6 — Caption / Micro-label" },
+      { type: "text", content: "Each heading level carries its own weight, size, and spacing to create a clear visual hierarchy." },
+    ],
+  },
+
+  /* ── 3. Blockquote ── */
+  {
+    id: 5, role: "user",
+    content: "Give me a blockquote example.",
+  },
+  {
+    id: 6, role: "assistant",
+    blocks: [
+      { type: "text", content: "Here's an excerpt from a geographic study:" },
+      {
+        type: "blockquote",
+        content: "Chennai's coastal geography, shaped by the Bay of Bengal, creates a unique microclimate that significantly influences monsoon patterns across the broader Tamil Nadu region.",
+      },
+      { type: "text", content: "Block quotes are great for citing sources, highlighting key insights, or drawing attention to important passages." },
+    ],
+  },
+
+  /* ── 4. Code Block ── */
+  {
+    id: 7, role: "user",
+    content: "Show me a JSON code block.",
+  },
+  {
+    id: 8, role: "assistant",
+    blocks: [
+      { type: "text", content: "Here's a sample API request payload:" },
+      {
+        type: "code",
+        language: "json",
+        content: `{
+  "model": "claude-sonnet-4-6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarise the quarterly report."
+    }
+  ],
+  "max_tokens": 1024,
+  "temperature": 0.7,
+  "stream": true
+}`,
+      },
+      { type: "text", content: "Click the Copy button in the top-right corner of the block to copy the code to your clipboard." },
+    ],
+  },
+
+  /* ── 5. Table ── */
+  {
+    id: 9, role: "user",
+    content: "Compare the three pricing tiers.",
+  },
+  {
+    id: 10, role: "assistant",
+    blocks: [
+      { type: "text", content: "Here's a side-by-side comparison:" },
+      {
+        type: "table",
+        headers: ["Plan", "Speed", "Accuracy", "Cost / 1K tokens"],
+        rows: [
+          ["Starter",    "Fast",   "Good",    "$0.003"],
+          ["Pro",        "Medium", "Better",  "$0.015"],
+          ["Enterprise", "Varies", "Best",    "$0.075"],
+        ],
+      },
+      { type: "text", content: "Use the Export button to download this table as a CSV." },
+    ],
+  },
+
+  /* ── 6. Steps ── */
+  {
+    id: 11, role: "user",
+    content: "Show me a step-by-step reasoning breakdown.",
+  },
+  {
+    id: 12, role: "assistant",
+    blocks: [
+      { type: "heading", level: 3, content: "Analysis Workflow" },
+      {
+        type: "steps",
+        items: [
+          {
+            num: 1, title: "Problem Definition",
+            description: "Clearly articulate the problem statement and success criteria.",
+            timestamp: "0.3s", status: "done",
+          },
+          {
+            num: 2, title: "Data Gathering",
+            description: "Collect all relevant context, constraints, and existing knowledge.",
+            timestamp: "1.1s", status: "done",
+          },
+          {
+            num: 3, title: "Analysis",
+            description: "Examine the data, identify patterns, and surface key insights.",
+            timestamp: "2.4s", status: "active",
+          },
+          {
+            num: 4, title: "Synthesis",
+            description: "Combine findings into a coherent, actionable recommendation.",
+            status: "pending",
+          },
+          {
+            num: 5, title: "Validation",
+            description: "Verify the solution against the original requirements.",
+            status: "pending",
+          },
+        ],
+      },
+    ],
+  },
+
+  /* ── 7. Terminal Logs ── */
+  {
+    id: 13, role: "user",
+    content: "What happened during the last deployment?",
+  },
+  {
+    id: 14, role: "assistant",
+    blocks: [
+      { type: "text", content: "The deployment completed with one warning. Expand the logs below for details:" },
+      {
+        type: "terminal",
+        logs: [
+          { timestamp: "09:41:02", level: "INFO",  message: "Starting deployment pipeline v2.4.1…" },
+          { timestamp: "09:41:04", level: "INFO",  message: "Building Docker image — layer cache hit (3 layers reused)" },
+          { timestamp: "09:41:07", level: "DEBUG", message: "Injecting environment variables from vault" },
+          { timestamp: "09:41:09", level: "WARN",  message: "TIMEOUT not set — defaulting to 30s" },
+          { timestamp: "09:41:12", level: "INFO",  message: "Pushing image to registry: sha256:4f2acd…" },
+          { timestamp: "09:41:17", level: "INFO",  message: "Rolling update: 3/3 pods healthy" },
+          { timestamp: "09:41:18", level: "READY", message: "Service live at https://api.example.com ✓" },
+        ],
+      },
+    ],
+  },
+
+  /* ── 8. Alerts ── */
+  {
+    id: 15, role: "user",
+    content: "Show me error and success alerts.",
+  },
+  {
+    id: 16, role: "assistant",
+    blocks: [
+      {
+        type: "alert",
+        variant: "error",
+        title: "Unable to process your payment",
+        description: "Your card was declined. Please check your billing details or try a different payment method.",
+      },
+      {
+        type: "alert",
+        variant: "success",
+        title: "Success! Your changes have been saved.",
+        description: "The updated configuration is now live. Changes will take effect within 60 seconds.",
+      },
+    ],
+  },
+
+  /* ── 9. Generated Files ── */
+  {
+    id: 17, role: "user",
+    content: "Generate the project documents.",
+  },
+  {
+    id: 18, role: "assistant",
+    blocks: [
+      { type: "text", content: "I've prepared the following documents based on your brief:" },
+      {
+        type: "files",
+        items: [
+          { name: "Project-Brief.pdf",         size: "1.2 MB" },
+          { name: "Proposal-Draft.docx",        size: "340 KB" },
+          { name: "Budget-Breakdown.xlsx",      size: "88 KB"  },
+          { name: "Pitch-Deck.pptx",            size: "4.7 MB" },
+          { name: "Architecture-Diagram.png",   size: "512 KB" },
+        ],
+      },
+      { type: "text", content: "Click the download icon next to any file to save it locally." },
+    ],
+  },
+];
+
+/* ── Rotating new-message replies ─────────────────────────────── */
+const NEXT_REPLIES = [
+  [
+    { type: "thinking", duration: "1.8s" },
+    { type: "text", content: "I can help with that! Let me think through the best approach." },
+    { type: "heading", level: 3, content: "Suggested Next Steps" },
+    {
+      type: "steps",
+      items: [
+        { num: 1, title: "Clarify goals",    description: "Understand the desired outcome.", status: "done" },
+        { num: 2, title: "Build a plan",     description: "Map out the key milestones.",     status: "active" },
+        { num: 3, title: "Execute & review", description: "Iterate and validate quickly.",   status: "pending" },
+      ],
+    },
+  ],
+  [
+    { type: "text", content: "Great question. Here's a code snippet to get you started:" },
+    { type: "code", language: "typescript", content: `async function fetchData(url: string) {\n  const res = await fetch(url);\n  if (!res.ok) throw new Error(\`HTTP \${res.status}\`);\n  return res.json();\n}` },
+  ],
+  [
+    { type: "alert", variant: "success", title: "Done!", description: "Your request has been processed successfully." },
+    { type: "text", content: "Is there anything else you'd like me to help with?" },
+  ],
+  [
+    { type: "text", content: "Here's the data you asked for:" },
+    { type: "table", headers: ["Name", "Value", "Status"], rows: [["Alpha", "142", "Active"], ["Beta", "89", "Idle"], ["Gamma", "210", "Active"]] },
+  ],
+];
+let replyIdx = 0;
+function getNextReply() {
+  return NEXT_REPLIES[replyIdx++ % NEXT_REPLIES.length];
+}
+
+const SUGGESTIONS = [
+  "Summarise my recent tasks",
+  "Help me draft a message",
+  "Analyse this data",
+  "Create a workflow",
+];
+
+export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+  const [messages, setMessages] = useState(DEMO_MESSAGES);
+  const [message, setMessage]   = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const textareaRef             = useRef(null);
+  const bottomRef               = useRef(null);
+  const hasMessages             = messages.length > 0;
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  const sendMessage = () => {
+    const text = message.trim();
+    if (!text) return;
+    const userMsg = { id: Date.now(), role: "user", content: text };
+    setMessages(prev => [...prev, userMsg]);
+    setMessage("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", blocks: getNextReply() }]);
+    }, 1200 + Math.random() * 800);
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  // Auto-grow textarea
   const handleInput = (e) => {
     setMessage(e.target.value);
     const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-    }
+    if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 160)}px`; }
   };
 
-  return (
-    <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        activePage="new-chat"
-        onNavigate={onNavigate}
-      />
+  const copyMessage = (id, blocks) => {
+    const text = (blocks || []).map(b => b.content || "").join("\n");
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
 
-      <div className="flex flex-col flex-1 min-w-0">
+  const startNew = () => { setMessages([]); setIsTyping(false); setMessage(""); };
+
+  return (
+    <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+      <Sidebar collapsed={sidebarCollapsed} activePage="new-chat" onNavigate={onNavigate} />
+
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
 
-        {/* Centered content */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-8 px-8 pb-12">
-          {/* Large Aziron logo */}
-          <img
-            src={imgAzironLogo}
-            alt="Aziron"
-            className="object-contain"
-            style={{ width: 88, height: 80 }}
-          />
-
-          {/* Greeting */}
-          <h1
-            className="text-2xl font-medium text-[#0f172a]"
-            style={{ letterSpacing: "-0.6px" }}
-          >
-            Hi John, Where should we start?
-          </h1>
-
-          {/* Prompt box — responsive width, blue active border */}
-          <div
-            className="bg-[#f8fafc] rounded-[12px] overflow-hidden w-full max-w-[680px]"
-            style={{ border: "2px solid #2563eb" }}
-          >
-            {/* ── Top panel: attachment · input · send ── */}
-            <div className="flex items-start gap-3 px-4 py-4">
-              <button aria-label="Attach file" className="flex items-center justify-center size-10 rounded-full text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0 mt-0.5">
-                <Paperclip size={18} />
-              </button>
-
-              <textarea
-                ref={textareaRef}
-                value={message}
-                onInput={handleInput}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask anything, or describe your task…"
-                rows={1}
-                className="flex-1 bg-transparent text-base text-[#0f172a] placeholder:text-[#64748b] outline-none resize-none leading-6 py-2"
-                style={{ minHeight: 40, maxHeight: 160 }}
-              />
-
-              <button
-                onClick={handleSend}
-                disabled={!message.trim()}
-                aria-label="Send message"
-                className={`flex items-center justify-center size-10 rounded-full border flex-shrink-0 mt-0.5 transition-colors ${
-                  message.trim()
-                    ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                    : "bg-white border-[#cbd5e1] text-[#cbd5e1] cursor-not-allowed"
-                }`}
-              >
-                <Send size={16} />
-              </button>
+        {/* ── Messages ── */}
+        <div className="flex-1 overflow-y-auto">
+          {!hasMessages ? (
+            <div className="flex flex-col items-center justify-center h-full gap-6 px-8 pb-32">
+              <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
+              <h1 className="text-2xl font-medium text-[#0f172a] dark:text-[#f1f5f9]" style={{ letterSpacing: "-0.6px" }}>
+                Hi John, where should we start?
+              </h1>
+              <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+                {SUGGESTIONS.map(s => (
+                  <button key={s} onClick={() => { setMessage(s); textareaRef.current?.focus(); }}
+                    className="px-3 py-1.5 rounded-full border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-xs text-[#475569] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb] dark:hover:border-[#2563eb] dark:hover:text-[#60a5fa] transition-colors">
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
+          ) : (
+            <div className="max-w-[720px] mx-auto px-4 py-6 flex flex-col gap-6">
+              {messages.map(msg => (
+                <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
 
-            {/* Divider */}
-            <div className="h-px bg-[#e2e8f0]" />
+                  {/* AI avatar */}
+                  {msg.role === "assistant" && (
+                    <div className="size-8 rounded-full bg-[#eff6ff] dark:bg-[#1e3a8a] border border-[#bfdbfe] dark:border-[#1d4ed8] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot size={14} className="text-[#2563eb] dark:text-[#60a5fa]" />
+                    </div>
+                  )}
 
-            {/* ── Control panel ── */}
-            <div className="flex items-center justify-between px-4 h-9">
-              {/* Left controls */}
-              <div className="flex items-center gap-2.5">
-                {/* Tools */}
-                <button aria-label="Select tools" aria-haspopup="true" className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#0f172a] transition-colors whitespace-nowrap">
-                  <img
-                    src={imgToolsIcon}
-                    alt=""
-                    className="size-3.5 object-contain opacity-60"
-                  />
-                  <span>Tools</span>
-                  <ChevronDown size={11} />
-                </button>
+                  <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end max-w-[75%]" : "items-start flex-1 min-w-0"}`}>
+                    {msg.role === "user" ? (
+                      <div className="px-4 py-3 rounded-[14px] rounded-br-[4px] bg-[#2563eb] text-white text-sm leading-6">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <div className="w-full px-4 py-3 rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] shadow-sm">
+                        <RichMessage blocks={msg.blocks} />
+                      </div>
+                    )}
 
-                <div className="w-px h-4 bg-[#e2e8f0]" />
+                    {/* AI actions */}
+                    {msg.role === "assistant" && (
+                      <div className="flex items-center gap-0.5 opacity-0 hover:opacity-100 transition-opacity pl-1"
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                        <button onClick={() => copyMessage(msg.id, msg.blocks)}
+                          className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
+                          title="Copy">
+                          {copiedId === msg.id
+                            ? <span className="text-[9px] font-bold text-[#16a34a]">✓</span>
+                            : <Copy size={11} />}
+                        </button>
+                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Good">
+                          <ThumbsUp size={11} />
+                        </button>
+                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Bad">
+                          <ThumbsDown size={11} />
+                        </button>
+                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Regenerate">
+                          <RefreshCw size={11} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Knowledge hub */}
-                <button aria-label="Select knowledge hub" aria-haspopup="true" className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#0f172a] transition-colors whitespace-nowrap">
-                  <Database size={13} />
-                  <span>Knowledge hub</span>
-                  <ChevronDown size={11} />
-                </button>
-
-                <div className="w-px h-4 bg-[#e2e8f0]" />
-
-                {/* Chat status */}
-                <div className="flex items-center gap-1 text-xs font-medium text-[#64748b]">
-                  <UsageDonut pct={65} />
-                  <span>65% used</span>
+                  {/* User avatar */}
+                  {msg.role === "user" && (
+                    <div className="size-8 rounded-full bg-[#0f172a] dark:bg-[#1e293b] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-white">J</span>
+                    </div>
+                  )}
                 </div>
+              ))}
+
+              {isTyping && (
+                <div className="flex gap-3 justify-start">
+                  <div className="size-8 rounded-full bg-[#eff6ff] dark:bg-[#1e3a8a] border border-[#bfdbfe] dark:border-[#1d4ed8] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Bot size={14} className="text-[#2563eb] dark:text-[#60a5fa]" />
+                  </div>
+                  <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[14px] rounded-bl-[4px] px-4 py-3 shadow-sm">
+                    <TypingIndicator />
+                  </div>
+                </div>
+              )}
+
+              <div ref={bottomRef} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Input ── */}
+        <div className="flex-shrink-0 px-4 pb-4 pt-2">
+          <div className="max-w-[720px] mx-auto">
+            {hasMessages && (
+              <div className="flex justify-center mb-2">
+                <button onClick={startNew}
+                  className="flex items-center gap-1.5 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors px-3 py-1 rounded-full hover:bg-[#f1f5f9] dark:hover:bg-[#334155]">
+                  <Plus size={12} /> New conversation
+                </button>
+              </div>
+            )}
+
+            <div className="bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"
+              style={{ border: `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}` }}>
+              <div className="flex items-end gap-3 px-4 py-3">
+                <button aria-label="Attach file"
+                  className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
+                  <Paperclip size={16} />
+                </button>
+                <textarea
+                  ref={textareaRef}
+                  value={message}
+                  onInput={handleInput}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Continue the conversation…"
+                  rows={1}
+                  className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
+                  style={{ minHeight: 28, maxHeight: 160 }}
+                />
+                <button onClick={sendMessage} disabled={!message.trim() || isTyping}
+                  aria-label="Send"
+                  className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
+                    message.trim() && !isTyping
+                      ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                      : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
+                  }`}>
+                  <Send size={14} />
+                </button>
               </div>
 
-              {/* Model selector */}
-              <button aria-label="Select AI model" aria-haspopup="true" className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#0f172a] transition-colors whitespace-nowrap">
-                <Cpu size={12} />
-                <span>Claude-sonnet</span>
-                <ChevronDown size={11} />
-              </button>
+              <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />
+              <div className="flex items-center justify-between px-4 h-9">
+                <div className="flex items-center gap-2.5">
+                  <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+                    <img src={imgToolsIcon} alt="" className="size-3.5 object-contain opacity-60" />
+                    <span>Tools</span>
+                    <ChevronDown size={11} />
+                  </button>
+                  <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
+                  <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+                    <Database size={13} />
+                    <span>Knowledge hub</span>
+                    <ChevronDown size={11} />
+                  </button>
+                  <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
+                  <div className="flex items-center gap-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
+                    <UsageDonut pct={65} />
+                    <span>65% used</span>
+                  </div>
+                </div>
+                <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+                  <Cpu size={12} />
+                  <span>Claude-sonnet</span>
+                  <ChevronDown size={11} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

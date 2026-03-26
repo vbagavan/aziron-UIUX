@@ -153,8 +153,8 @@ const TYPE_CONFIG = {
 
 const ACTION_STYLE = {
   Approve: "bg-[#22c55e] text-white hover:bg-[#16a34a]",
-  Reject:  "border border-[#ef4444] text-[#ef4444] bg-white hover:bg-[#fef2f2]",
-  Review:  "border border-[#2563eb] text-[#2563eb] bg-white hover:bg-[#eff6ff]",
+  Reject:  "border border-[#ef4444] text-[#ef4444] bg-white dark:bg-[#1e293b] hover:bg-[#fef2f2] dark:hover:bg-[#1e293b]",
+  Review:  "border border-[#2563eb] text-[#2563eb] bg-white dark:bg-[#1e293b] hover:bg-[#eff6ff] dark:hover:bg-[#1e3a8a]",
 };
 
 const TABS = [
@@ -242,14 +242,14 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 z-50 bg-white border border-[#e2e8f0] rounded-[12px] w-[280px] flex flex-col"
+      className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[12px] w-[280px] flex flex-col"
       style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#f1f5f9]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#f1f5f9] dark:border-[#1e293b]">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal size={14} className="text-[#475569]" />
-          <span className="text-sm font-semibold text-[#0f172a]">Filters</span>
+          <SlidersHorizontal size={14} className="text-[#475569] dark:text-[#94a3b8]" />
+          <span className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">Filters</span>
           {hasAny && (
             <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#2563eb] text-white text-xs font-bold">
               {countActiveFilters(filters)}
@@ -269,7 +269,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
       <div className="flex flex-col gap-4 p-4">
         {/* Type */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Type</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Type</p>
           <div className="flex flex-col gap-1">
             {FILTER_TYPE_OPTIONS.map(({ value, label, color }) => {
               const active = filters.types.includes(value);
@@ -278,7 +278,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   key={value}
                   onClick={() => toggle("types", value)}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[6px] text-sm transition-colors w-full text-left ${
-                    active ? "bg-[#f8fafc]" : "hover:bg-[#f8fafc]"
+                    active ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
                   }`}
                 >
                   {/* Checkbox */}
@@ -296,10 +296,10 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   </span>
                   {/* Color dot */}
                   <span className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <span className={`text-sm ${active ? "font-medium text-[#0f172a]" : "text-[#475569]"}`}>
+                  <span className={`text-sm ${active ? "font-medium text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#475569] dark:text-[#94a3b8]"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-sm text-[#94a3b8]">
+                  <span className="ml-auto text-sm text-[#94a3b8] dark:text-[#64748b]">
                     {NOTIFICATIONS.filter((n) => n.type === value).length}
                   </span>
                 </button>
@@ -310,7 +310,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Status */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Status</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Status</p>
           <div className="flex flex-col gap-1">
             {FILTER_STATUS_OPTIONS.map(({ value, label }) => {
               const active = filters.statuses.includes(value);
@@ -319,7 +319,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   key={value}
                   onClick={() => toggle("statuses", value)}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[6px] text-sm transition-colors w-full text-left ${
-                    active ? "bg-[#f8fafc]" : "hover:bg-[#f8fafc]"
+                    active ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
                   }`}
                 >
                   <span
@@ -333,10 +333,10 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                       </svg>
                     )}
                   </span>
-                  <span className={`text-sm ${active ? "font-medium text-[#0f172a]" : "text-[#475569]"}`}>
+                  <span className={`text-sm ${active ? "font-medium text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#475569] dark:text-[#94a3b8]"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-sm text-[#94a3b8]">
+                  <span className="ml-auto text-sm text-[#94a3b8] dark:text-[#64748b]">
                     {value === "unread"     ? NOTIFICATIONS.filter((n) => n.unread).length
                     : value === "read"      ? NOTIFICATIONS.filter((n) => !n.unread).length
                     : NOTIFICATIONS.filter((n) => n.persistent).length}
@@ -349,7 +349,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Tags */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] mb-2">Tag</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Tag</p>
           <div className="flex flex-wrap gap-1.5">
             {ALL_TAGS.map((tag) => {
               const active = filters.tags.includes(tag);
@@ -363,7 +363,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   className={`px-2 py-[3px] rounded text-sm font-bold tracking-wide border transition-all ${
                     active
                       ? "text-white border-transparent"
-                      : "text-[#475569] bg-[#f8fafc] border-[#e2e8f0] hover:border-[#cbd5e1]"
+                      : "text-[#475569] dark:text-[#94a3b8] bg-[#f8fafc] dark:bg-[#0f172a] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1]"
                   }`}
                   style={active ? { backgroundColor: color, borderColor: color } : {}}
                 >
@@ -396,8 +396,8 @@ function FilterChips({ filters, onChange }) {
   if (!chips.length) return null;
 
   return (
-    <div className="flex items-center gap-2 px-6 py-2 flex-wrap border-b border-[#f1f5f9] bg-[#fafbfc]">
-      <span className="text-sm text-[#94a3b8] font-medium flex-shrink-0">Active:</span>
+    <div className="flex items-center gap-2 px-6 py-2 flex-wrap border-b border-[#f1f5f9] dark:border-[#1e293b] bg-[#fafbfc] dark:bg-[#0f172a]">
+      <span className="text-sm text-[#94a3b8] dark:text-[#64748b] font-medium flex-shrink-0">Active:</span>
       {chips.map(({ key, value, label, color }) => (
         <button
           key={`${key}-${value}`}
@@ -413,7 +413,7 @@ function FilterChips({ filters, onChange }) {
       ))}
       <button
         onClick={() => onChange(EMPTY_FILTERS)}
-        className="text-sm text-[#64748b] hover:text-[#ef4444] font-medium transition-colors ml-1"
+        className="text-sm text-[#64748b] dark:text-[#94a3b8] hover:text-[#ef4444] font-medium transition-colors ml-1"
       >
         Clear all
       </button>
@@ -429,8 +429,8 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
 
   return (
     <div
-      className={`group relative rounded-[12px] border border-[#e2e8f0] bg-white transition-all duration-200 cursor-pointer ${
-        expanded ? "shadow-md" : "hover:shadow-sm"
+      className={`group relative rounded-[12px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] transition-all duration-200 cursor-pointer ${
+        expanded ? "shadow-md dark:shadow-none" : "hover:shadow-sm dark:hover:shadow-none"
       }`}
       onClick={() => onToggle(item.id)}
     >
@@ -456,7 +456,7 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
             {item.avatarInitials}
           </div>
           <div
-            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white flex items-center justify-center"
+            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white dark:border-[#1e293b] flex items-center justify-center"
             style={{ backgroundColor: item.badgeBg }}
           >
             <BadgeIcon size={10} color="white" strokeWidth={2.5} />
@@ -467,16 +467,16 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className={`text-sm text-[#0f172a] leading-snug ${item.unread ? "font-semibold" : "font-medium"}`}>
+              <p className={`text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-snug ${item.unread ? "font-semibold" : "font-medium"}`}>
                 {item.title}
               </p>
-              <p className="text-sm text-[#64748b] mt-0.5 leading-snug">{item.desc}</p>
+              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5 leading-snug">{item.desc}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs text-[#94a3b8] whitespace-nowrap">{item.time}</span>
+              <span className="text-xs text-[#94a3b8] dark:text-[#64748b] whitespace-nowrap">{item.time}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
-                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-6 rounded-full text-[#94a3b8] hover:bg-[#f1f5f9] hover:text-[#475569] transition-all"
+                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-6 rounded-full text-[#94a3b8] dark:text-[#64748b] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-all"
               >
                 <X size={13} />
               </button>
@@ -498,7 +498,7 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
               {cfg.label}
             </span>
             {item.persistent && (
-              <span className="text-xs text-[#94a3b8] bg-[#f8fafc] border border-[#e2e8f0] px-2 py-[2px] rounded font-medium">
+              <span className="text-xs text-[#94a3b8] dark:text-[#64748b] bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] px-2 py-[2px] rounded font-medium">
                 persistent
               </span>
             )}
@@ -566,12 +566,12 @@ function SectionHeader({ type, count }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-4">
-      <div className="size-16 rounded-full bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center">
+      <div className="size-16 rounded-full bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] flex items-center justify-center">
         <BellOff size={24} className="text-[#cbd5e1]" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-base font-medium text-[#475569]">No notifications match</p>
-        <p className="text-sm text-[#94a3b8]">Try adjusting your filters</p>
+        <p className="text-base font-medium text-[#475569] dark:text-[#94a3b8]">No notifications match</p>
+        <p className="text-sm text-[#94a3b8] dark:text-[#64748b]">Try adjusting your filters</p>
       </div>
     </div>
   );
@@ -609,11 +609,11 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
       <div className="flex flex-col flex-1 min-w-0">
         <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-[#e2e8f0]" />
+            <div className="w-px h-6 bg-[#e2e8f0] dark:bg-[#334155]" />
             <nav className="flex items-center gap-[10px]">
-              <span className="text-sm text-[#64748b]">Settings</span>
-              <ChevronRight size={14} className="text-[#94a3b8]" />
-              <span className="text-sm text-[#0f172a]">Notifications</span>
+              <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">Settings</span>
+              <ChevronRight size={14} className="text-[#94a3b8] dark:text-[#64748b]" />
+              <span className="text-sm text-[#0f172a] dark:text-[#f1f5f9]">Notifications</span>
             </nav>
           </div>
         </AppHeader>
@@ -622,14 +622,14 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
           {/* Page title + actions */}
           <div className="flex items-end justify-between px-6 pt-5 pb-0 flex-shrink-0">
             <div>
-              <h1 className="text-2xl font-semibold text-[#0f172a] tracking-[-0.6px] leading-8">
+              <h1 className="text-2xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] tracking-[-0.6px] leading-8">
                 Notifications
               </h1>
-              <p className="text-sm text-[#64748b] leading-5 mt-0.5">
+              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5 mt-0.5">
                 {unreadCount > 0 ? (
                   <span>
                     You have{" "}
-                    <span className="font-semibold text-[#0f172a]">{unreadCount} unread</span>{" "}
+                    <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{unreadCount} unread</span>{" "}
                     notification{unreadCount !== 1 ? "s" : ""}
                   </span>
                 ) : "All notifications are read"}
@@ -655,7 +655,7 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                   className={`flex items-center gap-1.5 text-sm font-medium border rounded-[8px] px-3 py-1.5 transition-colors ${
                     filterOpen || activeFilterCount > 0
                       ? "bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1d4ed8]"
-                      : "text-[#64748b] border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#0f172a]"
+                      : "text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
                   }`}
                 >
                   <Filter size={14} />
@@ -680,7 +680,7 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-0 px-6 mt-4 border-b border-[#e2e8f0] flex-shrink-0">
+          <div className="flex items-center gap-0 px-6 mt-4 border-b border-[#e2e8f0] dark:border-[#334155] flex-shrink-0">
             {TABS.map(({ key, label }) => {
               const cnt    = tabCount(key);
               const active = activeTab === key;
@@ -689,13 +689,13 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                   key={key}
                   onClick={() => { setActiveTab(key); setExpandedId(null); }}
                   className={`relative flex items-center gap-1.5 mr-7 pb-3 text-sm font-medium transition-colors ${
-                    active ? "text-[#2563eb]" : "text-[#64748b] hover:text-[#0f172a]"
+                    active ? "text-[#2563eb]" : "text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
                   }`}
                 >
                   {label}
                   {cnt > 0 && (
                     <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                      active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] text-[#64748b]"
+                      active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8]"
                     }`}>
                       {cnt}
                     </span>
@@ -754,8 +754,8 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-3 border-t border-[#e2e8f0] flex-shrink-0 bg-white">
-            <span className="text-sm text-[#94a3b8]">
+          <div className="flex items-center justify-between px-6 py-3 border-t border-[#e2e8f0] dark:border-[#334155] flex-shrink-0 bg-white dark:bg-[#1e293b]">
+            <span className="text-sm text-[#94a3b8] dark:text-[#64748b]">
               {displayItems.length} notification{displayItems.length !== 1 ? "s" : ""}
               {activeFilterCount > 0 && (
                 <span className="text-[#2563eb] font-medium"> (filtered)</span>

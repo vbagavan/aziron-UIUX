@@ -137,8 +137,8 @@ function buildAIResponse(query, step, execKey) {
 
 // ─── Canvas node ───────────────────────────────────────────────────────────────
 const NODE_TOOLBAR_BTNS = [
-  { icon: Clock,     label: "Logs",   color: "#7c3aed", hoverBg: "#f5f3ff" },
-  { icon: RefreshCw, label: "Retry",  color: "#0891b2", hoverBg: "#ecfeff" },
+  { icon: Play,      label: "Play",   color: "#22c55e", hoverBg: "#f0fdf4" },
+  { icon: Activity,  label: "Logs",   color: "#7c3aed", hoverBg: "#f5f3ff" },
   { icon: Trash2,    label: "Delete", color: "#ef4444", hoverBg: "#fef2f2" },
 ];
 const TB_BTN     = 26;
@@ -177,10 +177,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
 
       {/* Run animation rings */}
       {isRunning && (
-        <>
-          <rect x={x-5} y={y-5} width={NODE_W+10} height={NODE_H+10} rx={15} fill="none" stroke="#3b82f6" strokeWidth={6} opacity={0.15} style={{ animation: "nodePulse 1s ease-in-out infinite" }} />
-          <rect x={x-3} y={y-3} width={NODE_W+6} height={NODE_H+6} rx={13} fill="none" stroke="#3b82f6" strokeWidth={2} strokeDasharray="10 6" style={{ animation: "nodeRunDash 0.55s linear infinite" }} />
-        </>
+        <rect x={x-5} y={y-5} width={NODE_W+10} height={NODE_H+10} rx={15} fill="none" stroke="#3b82f6" strokeWidth={6} opacity={0.15} style={{ animation: "nodePulse 1s ease-in-out infinite" }} />
       )}
       {isDone && !isRunning && (
         <rect x={x-3} y={y-3} width={NODE_W+6} height={NODE_H+6} rx={13} fill="none" stroke="#22c55e" strokeWidth={2} opacity={0.85} />
@@ -189,7 +186,10 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
       {/* Card */}
       <rect x={x+2} y={y+3} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.06)" />
       <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={10} fill="white"
-        stroke={selected ? "#2563eb" : hovered ? "#94a3b8" : "#e2e8f0"} strokeWidth={selected ? 2 : 1} />
+        stroke={isRunning ? "url(#activeGlow)" : selected ? "#2563eb" : hovered ? "#94a3b8" : "#e2e8f0"}
+        strokeWidth={isRunning ? 3 : selected ? 2 : 1}
+        filter={isRunning ? "url(#nodeGlowFilter)" : "none"}
+        style={isRunning ? { animation: "activeGlowAnim 2s ease-in-out infinite" } : {}} />
 
       {/* Status badge */}
       <circle cx={x+NODE_W-14} cy={y+14} r={7} fill={exec.bg} stroke={exec.ring} strokeWidth={1} />
@@ -274,10 +274,10 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
                 // Delete node action
                 console.log(`Delete node ${index}`);
                 alert('Node deleted successfully');
-              } else if (btn.label === "Retry") {
-                // Retry node action
-                console.log(`Retry node ${index}`);
-                alert(`Retrying node "${step.label}"...`);
+              } else if (btn.label === "Play") {
+                // Run/Execute node action
+                console.log(`Run node ${index}`);
+                alert(`Executing node "${step.label}"...`);
               } else if (btn.label === "Logs") {
                 // View logs action
                 console.log(`View logs for node ${index}`);
@@ -511,14 +511,15 @@ function ConfigureMode({ step, selectedIdx, flow }) {
         <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
       </div>
 
-      {/* Primary fields */}
+      {/* Primary fields — key/value list */}
       <div className="px-4 py-3 border-b border-[#f1f5f9]">
         <p className="text-xs font-bold text-[#94a3b8] uppercase tracking-widest mb-3">Configuration</p>
-        <div className="flex flex-col gap-2.5">
-          {(cfg.fields ?? []).slice(0, 2).map(([k, v]) => (
-            <div key={k} className="flex flex-col gap-1">
-              <label className="text-xs text-[#94a3b8] font-medium uppercase tracking-wide">{k}</label>
-              <input defaultValue={v} className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px] px-3 py-1.5 text-xs text-[#0f172a] font-mono outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 transition-all" />
+        <div className="rounded-[8px] border border-[#e2e8f0] overflow-hidden">
+          {(cfg.fields ?? []).slice(0, 2).map(([k, v], i, arr) => (
+            <div key={k} className={`flex items-center gap-3 px-3 py-2.5 bg-white ${i < arr.length - 1 ? "border-b border-[#f1f5f9]" : ""}`}>
+              <span className="text-xs font-medium text-[#64748b] w-20 flex-shrink-0">{k}</span>
+              <span className="flex-1 h-px bg-[#f1f5f9]" />
+              <span className="text-xs font-mono text-[#0f172a] text-right truncate max-w-[140px]">{v}</span>
             </div>
           ))}
         </div>
@@ -1224,11 +1225,37 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, runState }) {
 
       <svg width={svgW} height={canvasH} className="block" onClick={e=>e.stopPropagation()}>
         <defs>
+          {/* Multicolor gradient for active running nodes */}
+          <linearGradient id="activeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="25%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#06b6d4" />
+            <stop offset="75%" stopColor="#8b5cf6" />
+            <stop offset="100%" stopColor="#ec4899" />
+          </linearGradient>
+
+          {/* Enhanced glow filter for running nodes */}
+          <filter id="nodeGlowFilter" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
           <style>{`
             @keyframes nodeRunDash { to { stroke-dashoffset: -24; } }
             @keyframes connFlow    { to { stroke-dashoffset: -18; } }
             @keyframes nodePulse   { 0%,100%{opacity:0.25} 50%{opacity:0.55} }
             @keyframes emptyPulse  { 0%,100%{r:18} 50%{r:21} }
+            @keyframes activeGlowAnim {
+              0%, 100% {
+                filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.5)) drop-shadow(0 0 12px rgba(59, 130, 246, 0.4)) drop-shadow(0 0 20px rgba(6, 182, 212, 0.3));
+              }
+              50% {
+                filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 20px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 32px rgba(6, 182, 212, 0.5)) drop-shadow(0 0 16px rgba(236, 72, 153, 0.4));
+              }
+            }
           `}</style>
         </defs>
 
@@ -1427,16 +1454,6 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
           </div>
           <span className="text-sm font-semibold text-[#0f172a]">Conversation</span>
         </div>
-        <button onClick={onRunFlow} disabled={isRunning}
-          className={`flex items-center gap-1.5 h-7 px-3 rounded-[6px] text-xs font-semibold transition-all ${
-            isRunning
-              ? "bg-[#dbeafe] text-[#1d4ed8] cursor-not-allowed"
-              : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white"
-          }`}>
-          {isRunning
-            ? <><RefreshCw size={10} className="animate-spin" /> Running…</>
-            : <><Play size={10} fill="white" /> Run Flow</>}
-        </button>
       </div>
 
       {/* Messages */}
@@ -2020,7 +2037,7 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, sidebarCollap
   const [steps, setSteps]             = useState(flowProp?.steps ?? []);
   const [flowName, setFlowName]       = useState(flowProp?.name ?? "Untitled Flow");
   const [selectedIdx, setSelectedIdx] = useState(null);
-  const [tlCollapsed, setTLCollapsed] = useState(false);
+  const [tlCollapsed, setTLCollapsed] = useState(true);
   const [runState, setRunState]       = useState({ activeIdx:-1, doneIdxs:new Set() });
   const [logs, setLogs]               = useState([]);
   const runTimers                     = useRef([]);

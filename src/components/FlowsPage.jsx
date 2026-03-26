@@ -172,7 +172,7 @@ function MiniPipeline({ steps, compact = false }) {
               {!compact && <span className="text-xs font-medium leading-none whitespace-nowrap" style={{ color: step.color }}>{step.label}</span>}
             </div>
             {i < steps.length - 1 && (
-              <ArrowRight size={compact ? 8 : 10} className="text-[#cbd5e1] flex-shrink-0" />
+              <ArrowRight size={compact ? 8 : 10} className="text-[#cbd5e1] dark:text-[#475569] flex-shrink-0" />
             )}
           </div>
         );
@@ -184,11 +184,11 @@ function MiniPipeline({ steps, compact = false }) {
 // ─── Success bar ───────────────────────────────────────────────────────────────
 
 function SuccessBar({ pct }) {
-  if (pct === null) return <span className="text-xs text-[#94a3b8]">—</span>;
+  if (pct === null) return <span className="text-xs text-[#94a3b8] dark:text-[#64748b]">—</span>;
   const color = pct >= 90 ? "#22c55e" : pct >= 70 ? "#f97316" : "#ef4444";
   return (
     <div className="flex items-center gap-2 w-full">
-      <div className="flex-1 h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#f1f5f9] dark:bg-[#1e293b] rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-xs font-medium w-8 text-right flex-shrink-0" style={{ color }}>{pct}%</span>
@@ -225,7 +225,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           onCancel={() => setConfirmDelete(false)}
         />
       )}
-      <div className="group bg-white border border-[#e2e8f0] rounded-[10px] p-4 flex flex-col gap-3 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden" onClick={() => onViewFlow && onViewFlow(flow)}>
+      <div className="group bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] p-4 flex flex-col gap-3 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden" onClick={() => onViewFlow && onViewFlow(flow)}>
         {/* Status accent top bar */}
         <div
           className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
@@ -252,7 +252,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
               aria-label="Flow options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] hover:bg-[#f1f5f9] opacity-0 group-hover:opacity-100 transition-colors"
+              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] opacity-0 group-hover:opacity-100 transition-colors"
             >
               <MoreVertical size={14} />
             </button>
@@ -261,17 +261,17 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
 
         {/* Name + description */}
         <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-[#0f172a] leading-5 line-clamp-1">{flow.name}</p>
-          <p className="text-xs text-[#64748b] leading-4 line-clamp-2">{flow.description}</p>
+          <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-5 line-clamp-1">{flow.name}</p>
+          <p className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 line-clamp-2">{flow.description}</p>
         </div>
 
         {/* Pipeline steps */}
         <MiniPipeline steps={flow.steps} />
 
-        <div className="h-px bg-[#f1f5f9]" />
+        <div className="h-px bg-[#f1f5f9] dark:bg-[#334155]" />
 
         {/* Footer stats */}
-        <div className="flex items-center justify-between text-xs text-[#64748b]">
+        <div className="flex items-center justify-between text-xs text-[#64748b] dark:text-[#94a3b8]">
           <div className="flex items-center gap-1">
             <Clock size={11} />
             <span>{flow.lastRun}</span>
@@ -290,21 +290,21 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
         {/* Context menu */}
         {isMenuOpen && (
           <div
-            className="fixed z-[9999] bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden w-[160px]"
+            className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
             style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-              <Play size={13} className="text-[#64748b]" /> Run now
+            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+              <Play size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Run now
             </button>
-            <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-              <Pencil size={13} className="text-[#64748b]" /> Edit flow
+            <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+              <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit flow
             </button>
-            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-              <Copy size={13} className="text-[#64748b]" /> Duplicate
+            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+              <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
             </button>
-            <div className="h-px bg-[#e2e8f0]" />
-            <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2]">
+            <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
+            <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d]">
               <Trash2 size={13} className="text-[#ef4444]" /> Delete
             </button>
           </div>
@@ -345,7 +345,7 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
         />
       )}
       <tr
-        className={`group border-b border-[#f1f5f9] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa]" : "bg-white"}`}
+        className={`group border-b border-[#f1f5f9] dark:border-[#1e293b] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b]"}`}
         style={hovered ? { backgroundColor: "#f0f7ff", boxShadow: `inset 3px 0 0 ${cfg.dot}` } : {}}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -361,8 +361,8 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
 
         {/* Name */}
         <td className="px-3 py-3 min-w-[200px]">
-          <p className="text-sm font-medium text-[#0f172a] truncate max-w-[260px]">{flow.name}</p>
-          <p className="text-xs text-[#94a3b8]">{flow.createdAt}</p>
+          <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] truncate max-w-[260px]">{flow.name}</p>
+          <p className="text-xs text-[#94a3b8] dark:text-[#64748b]">{flow.createdAt}</p>
         </td>
 
         {/* Steps */}
@@ -383,12 +383,12 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
 
         {/* Last run */}
         <td className="px-3 py-3 w-[110px]">
-          <span className="text-xs text-[#64748b]">{flow.lastRun}</span>
+          <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{flow.lastRun}</span>
         </td>
 
         {/* Runs */}
         <td className="px-3 py-3 w-[90px]">
-          <span className="text-xs text-[#475569] tabular-nums">{flow.runs.toLocaleString()}</span>
+          <span className="text-xs text-[#475569] dark:text-[#94a3b8] tabular-nums">{flow.runs.toLocaleString()}</span>
         </td>
 
         {/* Success rate */}
@@ -405,27 +405,27 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
               aria-label="Flow options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] hover:bg-[#e2e8f0] hover:text-[#475569] transition-colors opacity-30 group-hover:opacity-100"
+              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#e2e8f0] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-colors opacity-30 group-hover:opacity-100"
             >
               <MoreVertical size={14} />
             </button>
             {isMenuOpen && (
               <div
-                className="fixed z-[9999] bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden w-[160px]"
+                className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
                 style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-                  <Play size={13} className="text-[#64748b]" /> Run now
+                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+                  <Play size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Run now
                 </button>
-                <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-                  <Pencil size={13} className="text-[#64748b]" /> Edit flow
+                <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+                  <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit flow
                 </button>
-                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc]">
-                  <Copy size={13} className="text-[#64748b]" /> Duplicate
+                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
+                  <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
                 </button>
-                <div className="h-px bg-[#e2e8f0]" />
-                <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2]">
+                <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
+                <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d]">
                   <Trash2 size={13} className="text-[#ef4444]" /> Delete
                 </button>
               </div>
@@ -447,14 +447,14 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
       onClick={() => sortKey && onSort(sortKey)}
     >
       <div className="flex items-center gap-1 group/col">
-        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
+        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8] dark:text-[#64748b]"}`}>
           {label}
         </span>
         {sortKey && (
           <span className={`transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover/col:opacity-50"}`}>
             {active && sort.dir === "asc" ? <ChevronUp size={12} className="text-[#2563eb]" />
               : active && sort.dir === "desc" ? <ChevronDown size={12} className="text-[#2563eb]" />
-              : <ChevronsUpDown size={12} className="text-[#94a3b8]" />}
+              : <ChevronsUpDown size={12} className="text-[#94a3b8] dark:text-[#64748b]" />}
           </span>
         )}
       </div>
@@ -527,7 +527,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
+      <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} activePage="flows" onNavigate={onNavigate} />
 
         <div className="flex flex-col flex-1 min-w-0">
@@ -539,23 +539,23 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
               {/* Page title + toolbar */}
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-semibold text-[#0f172a] leading-8 tracking-[-0.6px]">Flows</h1>
-                  <p className="text-sm text-[#64748b] leading-5">Design and automate multi-step AI workflows.</p>
+                  <h1 className="text-2xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-8 tracking-[-0.6px]">Flows</h1>
+                  <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5">Design and automate multi-step AI workflows.</p>
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
                   {/* Search */}
-                  <div className="flex items-center gap-2 h-9 px-3 bg-white border border-[#e2e8f0] rounded-[6px] w-[220px]">
-                    <Search size={14} className="text-[#94a3b8] flex-shrink-0" />
+                  <div className="flex items-center gap-2 h-9 px-3 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] w-[220px]">
+                    <Search size={14} className="text-[#94a3b8] dark:text-[#64748b] flex-shrink-0" />
                     <input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search flows…"
                       aria-label="Search flows"
-                      className="flex-1 text-sm text-[#0f172a] placeholder:text-[#94a3b8] outline-none bg-transparent"
+                      className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none bg-transparent"
                     />
                     {searchQuery && (
-                      <button onClick={() => setSearchQuery("")} aria-label="Clear search" className="text-[#94a3b8] hover:text-[#475569]">
+                      <button onClick={() => setSearchQuery("")} aria-label="Clear search" className="text-[#94a3b8] dark:text-[#64748b] hover:text-[#475569] dark:hover:text-[#94a3b8]">
                         <X size={13} />
                       </button>
                     )}
@@ -570,8 +570,8 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                       aria-expanded={filterOpen}
                       className={`flex items-center gap-1.5 h-9 px-3 rounded-[6px] border text-sm font-medium transition-colors ${
                         statusFilter !== "All"
-                          ? "bg-[#eff6ff] border-[#bfdbfe] text-[#2563eb]"
-                          : "bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1]"
+                          ? "bg-[#eff6ff] dark:bg-[#1e3a8a] border-[#bfdbfe] dark:border-[#1d4ed8] text-[#2563eb] dark:text-[#60a5fa]"
+                          : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#cbd5e1] dark:hover:border-[#475569]"
                       }`}
                     >
                       <SlidersHorizontal size={14} />
@@ -582,11 +582,11 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                     </button>
 
                     {filterOpen && (
-                      <div className="absolute left-0 top-11 z-30 bg-white border border-[#e2e8f0] rounded-[10px] shadow-lg w-[200px] p-3 flex flex-col gap-2">
+                      <div className="absolute left-0 top-11 z-30 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-lg w-[200px] p-3 flex flex-col gap-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#0f172a] uppercase tracking-[0.06em]">Status</span>
+                          <span className="text-xs font-bold text-[#0f172a] dark:text-[#f1f5f9] uppercase tracking-[0.06em]">Status</span>
                           {statusFilter !== "All" && (
-                            <button onClick={() => setStatusFilter("All")} className="text-xs text-[#64748b] hover:text-[#0f172a] flex items-center gap-0.5">
+                            <button onClick={() => setStatusFilter("All")} className="text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] flex items-center gap-0.5">
                               <X size={10} /> Clear
                             </button>
                           )}
@@ -600,7 +600,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                                 key={s}
                                 onClick={() => { setStatusFilter(s); setFilterOpen(false); }}
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                  isActive ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]"
+                                  isActive ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-[#f8fafc] dark:bg-[#0f172a] text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1] dark:hover:border-[#475569]"
                                 }`}
                               >
                                 {cfg && !isActive && <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />}
@@ -623,7 +623,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                         exit={{ opacity: 0, scale: 0.8, x: -6 }}
                         transition={{ duration: 0.15 }}
                         onClick={() => setStatusFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
+                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] dark:border-[#1d4ed8] bg-[#eff6ff] dark:bg-[#1e3a8a] text-[#2563eb] dark:text-[#60a5fa] hover:bg-[#dbeafe] dark:hover:bg-[#1e3a8a] transition-colors"
                       >
                         {statusFilter} <X size={10} />
                       </motion.button>
@@ -631,12 +631,12 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                   </AnimatePresence>
 
                   {/* View toggle */}
-                  <div className="flex items-center bg-white border border-[#e2e8f0] rounded-[6px] h-9 p-1 gap-0.5">
+                  <div className="flex items-center bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] h-9 p-1 gap-0.5">
                     <button
                       onClick={() => setViewMode("grid")}
                       aria-label="Switch to grid view"
                       aria-pressed={viewMode === "grid"}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-[#f1f5f9] text-[#0f172a]" : "text-[#94a3b8] hover:text-[#64748b]"}`}
+                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-[#f1f5f9] dark:bg-[#334155] text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8]"}`}
                     >
                       <LayoutGrid size={15} />
                     </button>
@@ -644,7 +644,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                       onClick={() => setViewMode("list")}
                       aria-label="Switch to list view"
                       aria-pressed={viewMode === "list"}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-[#f1f5f9] text-[#0f172a]" : "text-[#94a3b8] hover:text-[#64748b]"}`}
+                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-[#f1f5f9] dark:bg-[#334155] text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8]"}`}
                     >
                       <List size={15} />
                     </button>
@@ -659,28 +659,28 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
 
               {/* Summary bar */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-[#64748b]">
-                  <AnimCount to={total} className="font-semibold text-[#0f172a]" /> flows
+                <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">
+                  <AnimCount to={total} className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]" /> flows
                 </span>
-                <span className="text-[#e2e8f0]">·</span>
+                <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
                 <span className="flex items-center gap-1.5 text-sm">
                   <span className="size-2 rounded-full bg-[#22c55e]" />
-                  <AnimCount to={active} className="font-semibold text-[#15803d]" />
-                  <span className="text-[#64748b]">active</span>
+                  <AnimCount to={active} className="font-semibold text-[#15803d] dark:text-[#4ade80]" />
+                  <span className="text-[#64748b] dark:text-[#94a3b8]">active</span>
                 </span>
-                <span className="text-[#e2e8f0]">·</span>
+                <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
                 <span className="flex items-center gap-1.5 text-sm">
-                  <span className="size-2 rounded-full bg-[#94a3b8]" />
-                  <AnimCount to={drafts} className="font-semibold text-[#475569]" />
-                  <span className="text-[#64748b]">drafts</span>
+                  <span className="size-2 rounded-full bg-[#94a3b8] dark:bg-[#64748b]" />
+                  <AnimCount to={drafts} className="font-semibold text-[#475569] dark:text-[#94a3b8]" />
+                  <span className="text-[#64748b] dark:text-[#94a3b8]">drafts</span>
                 </span>
                 {errors > 0 && (
                   <>
-                    <span className="text-[#e2e8f0]">·</span>
+                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
                     <span className="flex items-center gap-1.5 text-sm">
                       <span className="size-2 rounded-full bg-[#ef4444]" />
                       <AnimCount to={errors} className="font-semibold text-[#dc2626]" />
-                      <span className="text-[#64748b]">errors</span>
+                      <span className="text-[#64748b] dark:text-[#94a3b8]">errors</span>
                     </span>
                   </>
                 )}
@@ -695,9 +695,9 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white border border-[#e2e8f0] rounded-[8px] overflow-hidden">
+                  <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] overflow-hidden">
                     <table className="w-full border-collapse">
-                      <thead className="sticky top-0 z-10 border-b border-[#e2e8f0]" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
+                      <thead className="sticky top-0 z-10 border-b border-[#e2e8f0] dark:border-[#334155]" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
                         <tr>
                           <th className="px-4 py-3 w-[52px]" />
                           <ColHeader label="Flow"        sortKey="name"    sort={sort} onSort={handleSort} className="min-w-[200px]" />
@@ -727,16 +727,16 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
               ) : (
                 /* Empty state */
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="size-14 bg-[#f1f5f9] rounded-[12px] flex items-center justify-center">
-                    <Workflow size={28} className="text-[#94a3b8]" />
+                  <div className="size-14 bg-[#f1f5f9] dark:bg-[#1e293b] rounded-[12px] flex items-center justify-center">
+                    <Workflow size={28} className="text-[#94a3b8] dark:text-[#64748b]" />
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <p className="text-sm font-semibold text-[#0f172a]">No flows found</p>
-                    <p className="text-sm text-[#64748b]">Try adjusting your search or filters.</p>
+                    <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">No flows found</p>
+                    <p className="text-sm text-[#64748b] dark:text-[#94a3b8]">Try adjusting your search or filters.</p>
                   </div>
                   <button
                     onClick={() => { setSearchQuery(""); setStatusFilter("All"); }}
-                    className="text-sm font-medium text-[#2563eb] hover:underline"
+                    className="text-sm font-medium text-[#2563eb] dark:text-[#60a5fa] hover:underline"
                   >
                     Clear filters
                   </button>

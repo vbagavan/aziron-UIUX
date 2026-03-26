@@ -51,12 +51,12 @@ function genTokensUsed(agent) {
 
 function StatCard({ label, value, sub, highlight }) {
   return (
-    <div className="flex-1 min-w-0 bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-5 py-4 flex flex-col gap-1.5">
-      <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">{label}</span>
-      <span className={`text-2xl font-bold leading-8 ${highlight ? "text-[#16a34a]" : "text-[#0f172a]"}`}>
+    <div className="flex-1 min-w-0 bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-5 py-4 flex flex-col gap-1.5">
+      <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">{label}</span>
+      <span className={`text-2xl font-bold leading-8 ${highlight ? "text-[#16a34a]" : "text-[#0f172a] dark:text-[#f1f5f9]"}`}>
         {value}
       </span>
-      <span className="text-xs text-[#64748b]">{sub}</span>
+      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{sub}</span>
     </div>
   );
 }
@@ -108,20 +108,20 @@ function OverviewTab({ agent }) {
 
       {/* Description */}
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Description</span>
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3">
-          <p className="text-sm text-[#0f172a] leading-6">{agent.description}</p>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Description</span>
+        <div className="bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 py-3">
+          <p className="text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-6">{agent.description}</p>
         </div>
       </div>
 
       {/* Tags */}
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Tags</span>
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Tags</span>
         <div className="flex flex-wrap gap-2">
           {tags.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium text-[#475569] bg-white border-[#e2e8f0]"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium text-[#475569] dark:text-[#94a3b8] bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155]"
             >
               <Tag size={10} className="text-[#94a3b8]" />
               {t}
@@ -132,28 +132,28 @@ function OverviewTab({ agent }) {
 
       {/* Recent Runs */}
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">Recent Runs</span>
-        <div className="bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden">
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Recent Runs</span>
+        <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase w-full">Run ID</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Duration</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Tokens</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase whitespace-nowrap">Status</th>
+              <tr className="bg-[#f8fafc] dark:bg-[#0f172a] border-b border-[#e2e8f0] dark:border-[#334155]">
+                <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase w-full">Run ID</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Duration</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Tokens</th>
+                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody>
               {runs.map((run, i) => (
                 <tr
                   key={run.id}
-                  className={`border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition-colors ${
-                    i % 2 === 0 ? "" : "bg-[#fafafa]"
+                  className={`border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors ${
+                    i % 2 === 0 ? "" : "bg-[#fafafa] dark:bg-[#0f172a]"
                   }`}
                 >
-                  <td className="px-4 py-3 font-mono text-sm text-[#0f172a]">{run.id}</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#475569] tabular-nums">{run.duration}s</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#475569] tabular-nums">{run.tokens.toLocaleString()}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-[#0f172a] dark:text-[#f1f5f9]">{run.id}</td>
+                  <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.duration}s</td>
+                  <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.tokens.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right"><RunBadge status={run.status} /></td>
                 </tr>
               ))}
@@ -169,9 +169,9 @@ function OverviewTab({ agent }) {
 
 function ConfigRow({ label, value, mono }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-[#f1f5f9] last:border-0">
-      <span className="text-sm text-[#64748b]">{label}</span>
-      <span className={`text-sm font-medium text-[#0f172a] ${mono ? "font-mono" : ""}`}>{value}</span>
+    <div className="flex items-center justify-between py-3 border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0">
+      <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">{label}</span>
+      <span className={`text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -179,7 +179,7 @@ function ConfigRow({ label, value, mono }) {
 function ConfigurationTab({ agent }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-white border border-[#e2e8f0] rounded-[10px] px-4 divide-y divide-[#f1f5f9]">
+      <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 divide-y divide-[#f1f5f9] dark:divide-[#1e293b]">
         <ConfigRow label="Agent Name"       value={agent.name} />
         <ConfigRow label="Provider"         value={agent.provider} />
         <ConfigRow label="Model"            value={agent.model} mono />
@@ -190,8 +190,8 @@ function ConfigurationTab({ agent }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8]">System Prompt</span>
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-4 py-3 font-mono text-xs text-[#475569] leading-5 whitespace-pre-wrap">
+        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">System Prompt</span>
+        <div className="bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 py-3 font-mono text-xs text-[#475569] dark:text-[#94a3b8] leading-5 whitespace-pre-wrap">
           {`You are an AI assistant specializing in "${agent.name}" tasks.\n\nAlways respond clearly and concisely. Prioritize accuracy and helpfulness.\n\nWhen uncertain, ask clarifying questions before proceeding.`}
         </div>
       </div>
@@ -213,9 +213,9 @@ function RunHistoryTab({ agent }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#64748b]">{allRuns.length} runs shown</span>
+        <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">{allRuns.length} runs shown</span>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[#94a3b8]">Filter:</span>
+          <span className="text-xs text-[#94a3b8] dark:text-[#64748b]">Filter:</span>
           {[
             { label: "All", title: "Show all runs" },
             { label: "Success", title: "Runs that completed successfully" },
@@ -228,7 +228,7 @@ function RunHistoryTab({ agent }) {
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 label === "All"
                   ? "bg-[#0f172a] text-white border-[#0f172a]"
-                  : "bg-white text-[#475569] border-[#e2e8f0] hover:bg-[#f8fafc]"
+                  : "bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]"
               }`}
             >
               {label}
@@ -237,25 +237,25 @@ function RunHistoryTab({ agent }) {
         </div>
       </div>
 
-      <div className="bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden">
+      <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-              <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Run ID</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Duration</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Tokens</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] tracking-widest uppercase">Status</th>
+            <tr className="bg-[#f8fafc] dark:bg-[#0f172a] border-b border-[#e2e8f0] dark:border-[#334155]">
+              <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Run ID</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Duration</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Tokens</th>
+              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Status</th>
             </tr>
           </thead>
           <tbody>
             {allRuns.map((run, i) => (
               <tr
                 key={run.id}
-                className="border-b border-[#f1f5f9] last:border-0 hover:bg-[#f8fafc] transition-colors cursor-pointer"
+                className="border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors cursor-pointer"
               >
-                <td className="px-4 py-3 font-mono text-sm text-[#0f172a]">{run.id}</td>
-                <td className="px-4 py-3 text-right text-sm text-[#475569] tabular-nums">{run.duration}s</td>
-                <td className="px-4 py-3 text-right text-sm text-[#475569] tabular-nums">{run.tokens.toLocaleString()}</td>
+                <td className="px-4 py-3 font-mono text-sm text-[#0f172a] dark:text-[#f1f5f9]">{run.id}</td>
+                <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.duration}s</td>
+                <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.tokens.toLocaleString()}</td>
                 <td className="px-4 py-3 text-right"><RunBadge status={run.status} /></td>
               </tr>
             ))}
@@ -294,7 +294,7 @@ export default function AgentDetailPage({ agent, onNavigate, sidebarCollapsed, o
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
+    <div className="flex h-screen bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
       <Sidebar collapsed={sidebarCollapsed} activePage="agents" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -304,34 +304,34 @@ export default function AgentDetailPage({ agent, onNavigate, sidebarCollapsed, o
           <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
 
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 text-xs text-[#94a3b8]">
+            <nav className="flex items-center gap-1.5 text-xs text-[#94a3b8] dark:text-[#64748b]">
               <button
                 onClick={() => onNavigate("agents")}
-                className="hover:text-[#64748b] transition-colors"
+                className="hover:text-[#64748b] dark:hover:text-[#94a3b8] transition-colors"
               >
                 Agents
               </button>
               <ChevronRight size={12} />
-              <span className="text-[#475569] font-medium">{agent.name}</span>
+              <span className="text-[#475569] dark:text-[#94a3b8] font-medium">{agent.name}</span>
             </nav>
 
             {/* Page header */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 {/* Agent icon */}
-                <div className="size-14 bg-white border border-[#e2e8f0] rounded-[10px] flex items-center justify-center flex-shrink-0 shadow-sm">
+                <div className="size-14 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] flex items-center justify-center flex-shrink-0 shadow-sm dark:shadow-none">
                   <img src={imgAvatarRobot} alt="" className="w-[55%] h-[55%] object-contain opacity-60" />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2.5">
-                    <h1 className="text-xl font-semibold text-[#0f172a] leading-7">{agent.name}</h1>
+                    <h1 className="text-xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-7">{agent.name}</h1>
                     <StatusPill status={agent.status} />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-2 text-xs text-[#64748b] dark:text-[#94a3b8]">
                     <img src={imgOpenAI} alt="" className="size-3.5 object-contain" />
                     <span>{agent.model}</span>
-                    <span className="text-[#e2e8f0]">·</span>
+                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
                     <Clock size={11} />
                     <span>Last run {agent.lastRun}</span>
                   </div>
@@ -344,18 +344,18 @@ export default function AgentDetailPage({ agent, onNavigate, sidebarCollapsed, o
                   <Play size={12} fill="white" />
                   Run Now
                 </button>
-                <button aria-label="Edit agent" className="flex items-center gap-1.5 h-8 px-3.5 rounded-[8px] bg-white border border-[#e2e8f0] text-[#0f172a] text-xs font-medium hover:bg-[#f8fafc] transition-colors">
+                <button aria-label="Edit agent" className="flex items-center gap-1.5 h-8 px-3.5 rounded-[8px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#0f172a] dark:text-[#f1f5f9] text-xs font-medium hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors">
                   <Pencil size={12} />
                   Edit
                 </button>
-                <button aria-label="More options" aria-haspopup="true" className="flex items-center justify-center size-8 rounded-[8px] bg-white border border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc] transition-colors">
+                <button aria-label="More options" aria-haspopup="true" className="flex items-center justify-center size-8 rounded-[8px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors">
                   <MoreVertical size={15} />
                 </button>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-0 border-b border-[#e2e8f0]">
+            <div className="flex items-center gap-0 border-b border-[#e2e8f0] dark:border-[#334155]">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -365,8 +365,8 @@ export default function AgentDetailPage({ agent, onNavigate, sidebarCollapsed, o
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
                       active
-                        ? "border-[#0f172a] text-[#0f172a]"
-                        : "border-transparent text-[#64748b] hover:text-[#0f172a] hover:border-[#e2e8f0]"
+                        ? "border-[#0f172a] dark:border-[#f1f5f9] text-[#0f172a] dark:text-[#f1f5f9]"
+                        : "border-transparent text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] hover:border-[#e2e8f0] dark:hover:border-[#334155]"
                     }`}
                   >
                     <Icon size={14} />

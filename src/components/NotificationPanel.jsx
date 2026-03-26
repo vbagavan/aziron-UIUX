@@ -155,8 +155,8 @@ const TYPE = {
 
 const ACTION_STYLE = {
   Approve: "bg-[#22c55e] text-white hover:bg-[#16a34a]",
-  Reject:  "border border-[#ef4444] text-[#ef4444] bg-white hover:bg-[#fef2f2]",
-  Review:  "border border-[#2563eb] text-[#2563eb] bg-white hover:bg-[#eff6ff]",
+  Reject:  "border border-[#ef4444] text-[#ef4444] bg-white dark:bg-[#1e293b] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d]",
+  Review:  "border border-[#2563eb] text-[#2563eb] dark:text-[#60a5fa] bg-white dark:bg-[#1e293b] hover:bg-[#eff6ff] dark:hover:bg-[#1e3a8a]",
 };
 
 // ─── Notification Row ─────────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ function NotificationRow({ item, selected, onSelect }) {
   return (
     <div
       className={`group relative flex items-stretch cursor-pointer transition-colors ${
-        selected ? "bg-[#f8fafc]" : "bg-white hover:bg-[#f8fafc]"
+        selected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
       }`}
       onClick={() => onSelect(selected ? null : item.id)}
     >
@@ -181,7 +181,7 @@ function NotificationRow({ item, selected, onSelect }) {
               style={{ backgroundColor: cfg.dot }}
             />
           ) : (
-            <div className="size-2 rounded-full bg-[#e2e8f0]" />
+            <div className="size-2 rounded-full bg-[#e2e8f0] dark:bg-[#334155]" />
           )}
         </div>
 
@@ -194,7 +194,7 @@ function NotificationRow({ item, selected, onSelect }) {
             {item.avatarInitials}
           </div>
           <div
-            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white flex items-center justify-center"
+            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white dark:border-[#1e293b] flex items-center justify-center"
             style={{ backgroundColor: item.badgeBg }}
           >
             <BadgeIcon size={10} color="white" strokeWidth={2.5} />
@@ -204,12 +204,12 @@ function NotificationRow({ item, selected, onSelect }) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <p className="text-sm text-[#0f172a] leading-snug">
+          <p className="text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-snug">
             <span className="font-semibold">{item.title}</span>
           </p>
 
           {/* Description */}
-          <p className="text-xs text-[#64748b] mt-0.5 leading-snug">{item.desc}</p>
+          <p className="text-xs text-[#64748b] dark:text-[#94a3b8] mt-0.5 leading-snug">{item.desc}</p>
 
           {/* Tag + time */}
           <div className="flex items-center gap-2 mt-2">
@@ -225,9 +225,9 @@ function NotificationRow({ item, selected, onSelect }) {
             >
               {cfg.label}
             </span>
-            <span className="text-sm text-[#94a3b8]">{item.time}</span>
+            <span className="text-sm text-[#94a3b8] dark:text-[#64748b]">{item.time}</span>
             {item.persistent && (
-              <span className="text-xs font-medium px-1.5 py-[2px] rounded bg-[#f8fafc] text-[#94a3b8] border border-[#e2e8f0]">
+              <span className="text-xs font-medium px-1.5 py-[2px] rounded bg-[#f8fafc] dark:bg-[#0f172a] text-[#94a3b8] dark:text-[#64748b] border border-[#e2e8f0] dark:border-[#334155]">
                 persistent
               </span>
             )}
@@ -276,7 +276,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
   const isApproved = approval.status === "approved";
 
   return (
-    <div className="flex items-start gap-3 px-4 py-4 bg-white hover:bg-[#f8fafc] transition-colors border-b border-[#f1f5f9]">
+    <div className="flex items-start gap-3 px-4 py-4 bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors border-b border-[#f1f5f9] dark:border-[#1e293b]">
       {/* Unread dot */}
       <div className="w-2.5 flex-shrink-0 flex justify-center mt-[18px]">
         {!isApproved && <div className="size-2 rounded-full bg-[#2563eb]" />}
@@ -287,7 +287,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
         <div className="size-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white text-sm font-bold select-none">
           KD
         </div>
-        <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-white flex items-center justify-center bg-[#2563eb]">
+        <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-white dark:border-[#1e293b] flex items-center justify-center bg-[#2563eb]">
           {isApproved
             ? <CheckCircle2 size={9} color="white" strokeWidth={2.5} />
             : <UserCheck size={9} color="white" strokeWidth={2.5} />
@@ -297,25 +297,25 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-[#0f172a] leading-snug font-semibold">
+        <p className="text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-snug font-semibold">
           {isApproved ? "Kudos card approved ✓" : "Kudos approval requested"}
         </p>
-        <p className="text-xs text-[#64748b] mt-0.5 leading-snug">
+        <p className="text-xs text-[#64748b] dark:text-[#94a3b8] mt-0.5 leading-snug">
           {recipientNames} · {KUDOS_TEMPLATE_LABELS[approval.template] ?? approval.template}
         </p>
 
         <div className="flex items-center gap-2 mt-2">
-          <span className="px-[6px] py-[2px] rounded text-xs font-bold tracking-wide bg-[#eff6ff] text-[#2563eb] border border-[#bfdbfe]">
+          <span className="px-[6px] py-[2px] rounded text-xs font-bold tracking-wide bg-[#eff6ff] dark:bg-[#1e3a8a] text-[#2563eb] dark:text-[#60a5fa] border border-[#bfdbfe] dark:border-[#1d4ed8]">
             KUDOS
           </span>
-          <span className="text-sm text-[#94a3b8]">Just now</span>
+          <span className="text-sm text-[#94a3b8] dark:text-[#64748b]">Just now</span>
           {!isApproved && (
-            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#2563eb] bg-[#eff6ff]">
+            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#2563eb] dark:text-[#60a5fa] bg-[#eff6ff] dark:bg-[#1e3a8a]">
               pending
             </span>
           )}
           {isApproved && (
-            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#15803d] bg-[#dcfce7]">
+            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-[#15803d] dark:text-[#4ade80] bg-[#dcfce7] dark:bg-[#14532d]">
               approved
             </span>
           )}
@@ -332,7 +332,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onReject(approval.id); }}
-              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold border border-[#ef4444] text-[#ef4444] bg-white hover:bg-[#fef2f2] transition-colors"
+              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold border border-[#ef4444] text-[#ef4444] bg-white dark:bg-[#1e293b] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d] transition-colors"
             >
               <X size={11} /> Reject
             </button>
@@ -378,7 +378,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
       <div className="fixed inset-0 z-40" onClick={onClose} />
 
       <div
-        className="fixed z-50 bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden flex flex-col"
+        className="fixed z-50 bg-white dark:bg-[#1e293b] rounded-2xl border border-[#e2e8f0] dark:border-[#334155] overflow-hidden flex flex-col"
         style={{
           top: 56, right: 16, width: 460, maxHeight: 640,
           boxShadow: "0 24px 64px -12px rgba(15,23,42,0.18), 0 4px 16px -4px rgba(15,23,42,0.08)",
@@ -387,7 +387,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <h2 className="text-lg font-semibold text-[#0f172a] leading-none">
+            <h2 className="text-lg font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-none">
               Notifications
             </h2>
             {unreadCount > 0 && (
@@ -397,12 +397,12 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
             )}
           </div>
           <div className="flex items-center gap-3">
-            <button className="text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] transition-colors whitespace-nowrap">
+            <button className="text-sm font-medium text-[#2563eb] dark:text-[#60a5fa] hover:text-[#1d4ed8] dark:hover:text-[#93c5fd] transition-colors whitespace-nowrap">
               Mark all as read
             </button>
             <button
               onClick={onClose}
-              className="flex items-center justify-center size-8 rounded-full bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] transition-colors"
+              className="flex items-center justify-center size-8 rounded-full bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#e2e8f0] dark:hover:bg-[#475569] transition-colors"
             >
               <X size={15} />
             </button>
@@ -410,7 +410,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
         </div>
 
         {/* ── Tabs ── */}
-        <div className="flex items-center gap-0 px-5 border-b border-[#e2e8f0] flex-shrink-0">
+        <div className="flex items-center gap-0 px-5 border-b border-[#e2e8f0] dark:border-[#334155] flex-shrink-0">
           {TABS.map(({ key, label }) => {
             const cnt   = getFiltered(key).filter((n) => n.unread).length;
             const active = activeTab === key;
@@ -419,21 +419,21 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                 key={key}
                 onClick={() => { setActiveTab(key); setSelectedId(null); }}
                 className={`relative flex items-center gap-1.5 mr-6 pb-3 text-sm font-medium transition-colors ${
-                  active ? "text-[#2563eb]" : "text-[#64748b] hover:text-[#0f172a]"
+                  active ? "text-[#2563eb] dark:text-[#60a5fa]" : "text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
                 }`}
               >
                 {label}
                 {cnt > 0 && (
                   <span
                     className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                      active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] text-[#64748b]"
+                      active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8]"
                     }`}
                   >
                     {cnt}
                   </span>
                 )}
                 {active && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2563eb] rounded-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2563eb] dark:bg-[#60a5fa] rounded-full" />
                 )}
               </button>
             );
@@ -441,22 +441,22 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
         </div>
 
         {/* ── List ── */}
-        <div className="flex-1 overflow-y-auto divide-y divide-[#f1f5f9]">
+        <div className="flex-1 overflow-y-auto divide-y divide-[#f1f5f9] dark:divide-[#1e293b]">
           {items.length === 0 && visibleKudos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <CheckCircle2 size={32} className="text-[#cbd5e1]" />
-              <p className="text-sm text-[#94a3b8]">All caught up!</p>
+              <CheckCircle2 size={32} className="text-[#cbd5e1] dark:text-[#475569]" />
+              <p className="text-sm text-[#94a3b8] dark:text-[#64748b]">All caught up!</p>
             </div>
           ) : (
             <>
               {/* Kudos approval section — injected at top when present */}
               {visibleKudos.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 px-5 py-2 bg-white">
-                    <span className="text-xs font-bold tracking-[0.09em] uppercase text-[#2563eb]">
+                  <div className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-[#1e293b]">
+                    <span className="text-xs font-bold tracking-[0.09em] uppercase text-[#2563eb] dark:text-[#60a5fa]">
                       KUDOS
                     </span>
-                    <div className="flex-1 h-px bg-[#f1f5f9]" />
+                    <div className="flex-1 h-px bg-[#f1f5f9] dark:bg-[#334155]" />
                   </div>
                   {visibleKudos.map((approval) => (
                     <KudosApprovalRow
@@ -477,16 +477,16 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                     const cfg = TYPE[type];
                     return (
                       <div key={type}>
-                        <div className="flex items-center gap-2 px-5 py-2 bg-white">
+                        <div className="flex items-center gap-2 px-5 py-2 bg-white dark:bg-[#1e293b]">
                           <span
                             className="text-xs font-bold tracking-[0.09em] uppercase"
                             style={{ color: cfg.labelColor }}
                           >
                             {cfg.label}
                           </span>
-                          <div className="flex-1 h-px bg-[#f1f5f9]" />
+                          <div className="flex-1 h-px bg-[#f1f5f9] dark:bg-[#334155]" />
                         </div>
-                        <div className="divide-y divide-[#f1f5f9]">
+                        <div className="divide-y divide-[#f1f5f9] dark:divide-[#1e293b]">
                           {group.map((item) => (
                             <NotificationRow
                               key={item.id}
@@ -513,13 +513,13 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
         </div>
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[#e2e8f0] flex-shrink-0 bg-white">
-          <span className="text-sm text-[#94a3b8]">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[#e2e8f0] dark:border-[#334155] flex-shrink-0 bg-white dark:bg-[#1e293b]">
+          <span className="text-sm text-[#94a3b8] dark:text-[#64748b]">
             {items.length} Total &bull; {items.filter((n) => n.unread).length} unread
           </span>
           <button
             onClick={() => { onClose(); onNavigate?.("notifications"); }}
-            className="flex items-center gap-1.5 text-sm font-semibold text-[#0f172a] hover:text-[#2563eb] transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold text-[#0f172a] dark:text-[#e2e8f0] hover:text-[#2563eb] dark:hover:text-[#60a5fa] transition-colors"
           >
             View all notifications
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">

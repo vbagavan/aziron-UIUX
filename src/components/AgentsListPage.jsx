@@ -118,7 +118,7 @@ function SuccessBar({ pct }) {
   const color = pct >= 90 ? "#22c55e" : pct >= 70 ? "#f97316" : "#ef4444";
   return (
     <div className="flex items-center gap-2 w-full">
-      <div className="flex-1 h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#f1f5f9] dark:bg-[#334155] rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-xs font-medium w-8 text-right flex-shrink-0" style={{ color }}>{pct}%</span>
@@ -156,7 +156,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
       />
     )}
     <div
-      className="group bg-white border border-[#e2e8f0] rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden"
+      className="group bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden"
       style={{ "--accent": statusCfg.dot }}
       onClick={() => onOpen(agent)}
     >
@@ -179,9 +179,9 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {agent.accessEnabled && (
-              <div className="bg-[#dc2626] border-2 border-[#f8fafc] rounded-full size-2 flex-shrink-0" />
+              <div className="bg-[#dc2626] border-2 border-[#f8fafc] dark:border-[#1e293b] rounded-full size-2 flex-shrink-0" />
             )}
-            <p className="flex-1 text-base font-medium text-[#0f172a] leading-6 truncate">
+            <p className="flex-1 text-base font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-6 truncate">
               {agent.name}
             </p>
             <button
@@ -190,13 +190,13 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
               aria-label="Agent options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-8 rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+              className="flex items-center justify-center size-8 rounded-[6px] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
             >
               <MoreVertical size={16} />
             </button>
           </div>
           <p
-            className="text-xs text-[#64748b] leading-4 tracking-[0.12px] overflow-hidden"
+            className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 tracking-[0.12px] overflow-hidden"
             style={{ height: 35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
           >
             {agent.description}
@@ -204,36 +204,36 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
         </div>
       </div>
 
-      <div className="h-px bg-[#e2e8f0] w-full flex-shrink-0" />
+      <div className="h-px bg-[#e2e8f0] dark:bg-[#334155] w-full flex-shrink-0" />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[#64748b] leading-4 whitespace-nowrap">{agent.date}</span>
+        <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.date}</span>
         <div className="flex items-center gap-1">
           <ProviderLogo provider={agent.provider} size={3} />
-          <span className="text-xs font-medium text-[#64748b] leading-4 whitespace-nowrap">{agent.model}</span>
+          <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.model}</span>
         </div>
       </div>
 
       {/* Context menu — fixed so it escapes any overflow:hidden ancestor */}
       {isMenuOpen && (
         <div
-          className="fixed z-[9999] bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden w-[160px]"
+          className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
           style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-            <Eye size={14} className="text-[#64748b]" /> View
+          <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+            <Eye size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> View
           </button>
-          <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-            <Bot size={14} className="text-[#64748b]" /> Open
+          <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+            <Bot size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-            <Pencil size={14} className="text-[#64748b]" /> Edit
+          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+            <Pencil size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-            <Copy size={14} className="text-[#64748b]" /> Duplicate
+          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+            <Copy size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
           </button>
-          <div className="h-px bg-[#e2e8f0]" />
+          <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
           <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
             <Trash2 size={14} className="text-[#ef4444]" /> Delete
           </button>
@@ -275,7 +275,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
       />
     )}
     <tr
-      className={`group border-b border-[#f1f5f9] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa]" : "bg-white"}`}
+      className={`group border-b border-[#f1f5f9] dark:border-[#1e293b] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b]"}`}
       style={hovered ? {
         backgroundColor: "#f0f7ff",
         boxShadow: `inset 3px 0 0 ${statusCfg.dot}, inset 0 0 0 1px rgba(37,99,235,0.06)`,
@@ -291,8 +291,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
 
       {/* Agent name */}
       <td className="px-3 py-2.5 min-w-[180px]">
-        <p className="text-sm font-medium text-[#0f172a] truncate max-w-[220px]">{agent.name}</p>
-        <p className="text-xs text-[#94a3b8] truncate max-w-[220px]">{agent.date}</p>
+        <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] truncate max-w-[220px]">{agent.name}</p>
+        <p className="text-xs text-[#94a3b8] dark:text-[#64748b] truncate max-w-[220px]">{agent.date}</p>
       </td>
 
       {/* Provider / Model */}
@@ -300,8 +300,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
         <div className="flex items-center gap-1.5">
           <ProviderLogo provider={agent.provider} size={4} />
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#475569] leading-none">{agent.provider}</span>
-            <span className="text-sm text-[#94a3b8] leading-none">{agent.model}</span>
+            <span className="text-xs font-medium text-[#475569] dark:text-[#94a3b8] leading-none">{agent.provider}</span>
+            <span className="text-sm text-[#94a3b8] dark:text-[#64748b] leading-none">{agent.model}</span>
           </div>
         </div>
       </td>
@@ -319,7 +319,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
 
       {/* Last run */}
       <td className="px-3 py-2.5 w-[120px]">
-        <span className="text-xs text-[#64748b]">{agent.lastRun}</span>
+        <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{agent.lastRun}</span>
       </td>
 
       {/* Success rate */}
@@ -349,30 +349,30 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
             aria-label="Agent options"
             aria-haspopup="true"
             aria-expanded={isMenuOpen}
-            className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] hover:bg-[#e2e8f0] hover:text-[#475569] transition-colors opacity-30 group-hover:opacity-100"
+            className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#e2e8f0] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-colors opacity-30 group-hover:opacity-100"
           >
             <MoreVertical size={14} />
           </button>
 
           {isMenuOpen && (
             <div
-              className="fixed z-[9999] bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden w-[160px]"
+              className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
               style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-                <Eye size={13} className="text-[#64748b]" /> View
+              <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+                <Eye size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> View
               </button>
-              <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-                <Bot size={13} className="text-[#64748b]" /> Open
+              <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+                <Bot size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
               </button>
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-                <Pencil size={13} className="text-[#64748b]" /> Edit
+              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+                <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
               </button>
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-                <Copy size={13} className="text-[#64748b]" /> Duplicate
+              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+                <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
               </button>
-              <div className="h-px bg-[#e2e8f0]" />
+              <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
               <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
                 <Trash2 size={13} className="text-[#ef4444]" /> Delete
               </button>
@@ -395,7 +395,7 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
       onClick={() => sortKey && onSort(sortKey)}
     >
       <div className="flex items-center gap-1 group/col">
-        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8]"}`}>
+        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8] dark:text-[#64748b]"}`}>
           {label}
         </span>
         {sortKey && (
@@ -433,8 +433,8 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-1.5 h-9 px-3 rounded-[6px] border text-sm font-medium transition-colors ${
           activeCount > 0
-            ? "bg-[#eff6ff] border-[#bfdbfe] text-[#2563eb]"
-            : "bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#cbd5e1] hover:text-[#475569]"
+            ? "bg-[#eff6ff] dark:bg-[#1e3a8a] border-[#bfdbfe] text-[#2563eb]"
+            : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#cbd5e1] hover:text-[#475569] dark:hover:text-[#94a3b8]"
         }`}
       >
         <SlidersHorizontal size={14} />
@@ -447,12 +447,12 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
       </button>
 
       {open && (
-        <div className="absolute left-0 top-11 z-30 bg-white border border-[#e2e8f0] rounded-[10px] shadow-lg w-[260px] p-3 flex flex-col gap-3">
+        <div className="absolute left-0 top-11 z-30 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-lg dark:shadow-none w-[260px] p-3 flex flex-col gap-3">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#0f172a] uppercase tracking-[0.06em]">Filters</span>
+            <span className="text-xs font-bold text-[#0f172a] dark:text-[#f1f5f9] uppercase tracking-[0.06em]">Filters</span>
             {activeCount > 0 && (
-              <button onClick={onClear} className="flex items-center gap-1 text-xs text-[#64748b] hover:text-[#0f172a] transition-colors">
+              <button onClick={onClear} className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors">
                 <X size={11} /> Clear all
               </button>
             )}
@@ -460,7 +460,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
 
           {/* Status */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Status</span>
+            <span className="text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] uppercase tracking-[0.06em]">Status</span>
             <div className="flex flex-wrap gap-1">
               {STATUS_FILTERS.map((s) => {
                 const isActive = statusFilter === s;
@@ -472,7 +472,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                       isActive
                         ? "bg-[#2563eb] text-white border-[#2563eb]"
-                        : "bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]"
+                        : "bg-[#f8fafc] dark:bg-[#0f172a] text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1]"
                     }`}
                   >
                     {cfg && !isActive && (
@@ -487,7 +487,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
 
           {/* Provider */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[#94a3b8] uppercase tracking-[0.06em]">Provider</span>
+            <span className="text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] uppercase tracking-[0.06em]">Provider</span>
             <div className="flex flex-wrap gap-1">
               {PROVIDER_FILTERS.map((p) => {
                 const isActive = providerFilter === p;

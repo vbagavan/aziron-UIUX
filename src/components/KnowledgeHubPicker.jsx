@@ -39,11 +39,11 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
   };
 
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-[6px] shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.1),0px_2px_4px_-3px_rgba(0,0,0,0.1)] overflow-hidden w-[240px]">
+    <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.1),0px_2px_4px_-3px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden w-[240px]">
       {/* Search */}
-      <div className="border-b border-[#e2e8f0] flex items-center px-3 py-2.5">
+      <div className="border-b border-[#e2e8f0] dark:border-[#334155] flex items-center px-3 py-2.5">
         <div className="pr-2 flex-shrink-0">
-          <Search size={16} className="text-[#64748b]" />
+          <Search size={16} className="text-[#64748b] dark:text-[#94a3b8]" />
         </div>
         <input
           autoFocus
@@ -51,7 +51,7 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search Knowledge Hub..."
           aria-label="Search knowledge hubs"
-          className="flex-1 text-sm text-[#0f172a] leading-5 outline-none placeholder:text-[#64748b] bg-transparent"
+          className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-5 outline-none placeholder:text-[#64748b] dark:placeholder:text-[#94a3b8] bg-transparent"
         />
       </div>
 
@@ -64,11 +64,11 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
               onSelect(hub);
               onClose?.();
             }}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] hover:bg-[#f8fafc] transition-colors"
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
           >
             <div className="flex flex-col items-start">
               <span className="text-sm text-[#0a0a0a] leading-5">{hub.name}</span>
-              <span className="text-xs text-[#64748b] tracking-[0.12px] leading-4 whitespace-nowrap">
+              <span className="text-xs text-[#64748b] dark:text-[#94a3b8] tracking-[0.12px] leading-4 whitespace-nowrap">
                 {hub.fileCount === 1 ? "1 File" : `${hub.fileCount} Files`}
               </span>
             </div>
@@ -86,14 +86,14 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
       </div>
 
       {/* Create section */}
-      <div className="border-t border-[#e2e8f0] p-1">
+      <div className="border-t border-[#e2e8f0] dark:border-[#334155] p-1">
         {!creating ? (
           <button
             onClick={() => setCreating(true)}
-            className="w-full flex items-center justify-center gap-2 h-9 px-4 py-2 bg-white border border-[#cbd5e1] rounded-[6px] hover:bg-[#f8fafc] transition-colors"
+            className="w-full flex items-center justify-center gap-2 h-9 px-4 py-2 bg-white dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-[6px] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
           >
-            <Plus size={20} className="text-[#0f172a] flex-shrink-0" />
-            <span className="text-sm font-medium text-[#0f172a] leading-5 whitespace-nowrap">
+            <Plus size={20} className="text-[#0f172a] dark:text-[#f1f5f9] flex-shrink-0" />
+            <span className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-5 whitespace-nowrap">
               Create new knowledge hub
             </span>
           </button>
@@ -108,7 +108,7 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
               }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               placeholder="Hub name..."
-              className="text-sm border border-[#cbd5e1] rounded-[6px] px-3 py-1.5 outline-none focus:border-[#2563eb] placeholder:text-[#94a3b8]"
+              className="text-sm text-[#0f172a] dark:text-[#f1f5f9] bg-white dark:bg-[#0f172a] border border-[#cbd5e1] dark:border-[#334155] rounded-[6px] px-3 py-1.5 outline-none focus:border-[#2563eb] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b]"
             />
             {error && <p className="text-xs text-[#ef4444]">{error}</p>}
             <div className="flex gap-1.5">
@@ -118,7 +118,7 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
                   setNewHubName("");
                   setError("");
                 }}
-                className="flex-1 text-xs font-medium text-[#64748b] border border-[#e2e8f0] rounded-[6px] py-1.5 hover:bg-[#f8fafc] transition-colors"
+                className="flex-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] py-1.5 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
               >
                 Cancel
               </button>
