@@ -272,7 +272,9 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
   );
 }
 
-export default function AgentPage({ agent, onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function AgentPage({ agent, onNavigate
+
+}) {
 
   // KB state
   const [hubs, setHubs] = useState(defaultHubs);
@@ -382,11 +384,11 @@ export default function AgentPage({ agent, onNavigate, sidebarCollapsed, onToggl
       )}
 
       <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} activePage="chat" onNavigate={onNavigate} />
+        <Sidebar activePage="chat" onNavigate={onNavigate} />
 
         {/* Main Content */}
         <div className="flex flex-col flex-1 min-w-0">
-          <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
+          <AppHeader onNavigate={onNavigate} />
 
           {/* Agent Panel */}
           <div className="flex flex-col flex-1 min-h-0">

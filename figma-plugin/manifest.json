@@ -1,0 +1,8 @@
+{
+  "name": "claudecodefigma – Import Screens",
+  "id": "claudecodefigma-import-screens",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"]
+}

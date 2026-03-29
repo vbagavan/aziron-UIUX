@@ -378,49 +378,6 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
   );
 }
 
-// ─── Active filter chips ───────────────────────────────────────────────────────
-
-function FilterChips({ filters, onChange }) {
-  const chips = [
-    ...filters.types.map((v) => ({ key: "types", value: v, label: v.charAt(0).toUpperCase() + v.slice(1), color: TYPE_CONFIG[v].bar })),
-    ...filters.statuses.map((v) => {
-      const opt = FILTER_STATUS_OPTIONS.find((o) => o.value === v);
-      return { key: "statuses", value: v, label: opt?.label ?? v, color: "#64748b" };
-    }),
-    ...filters.tags.map((v) => {
-      const sample = NOTIFICATIONS.find((n) => n.tag === v);
-      return { key: "tags", value: v, label: v, color: sample ? TYPE_CONFIG[sample.type].bar : "#64748b" };
-    }),
-  ];
-
-  if (!chips.length) return null;
-
-  return (
-    <div className="flex items-center gap-2 px-6 py-2 flex-wrap border-b border-[#f1f5f9] dark:border-[#1e293b] bg-[#fafbfc] dark:bg-[#0f172a]">
-      <span className="text-sm text-[#94a3b8] dark:text-[#64748b] font-medium flex-shrink-0">Active:</span>
-      {chips.map(({ key, value, label, color }) => (
-        <button
-          key={`${key}-${value}`}
-          onClick={() =>
-            onChange((prev) => ({ ...prev, [key]: prev[key].filter((v) => v !== value) }))
-          }
-          className="flex items-center gap-1 px-2 py-[3px] rounded-full text-sm font-semibold text-white border border-transparent transition-opacity hover:opacity-80"
-          style={{ backgroundColor: color }}
-        >
-          {label}
-          <X size={10} strokeWidth={2.5} />
-        </button>
-      ))}
-      <button
-        onClick={() => onChange(EMPTY_FILTERS)}
-        className="text-sm text-[#64748b] dark:text-[#94a3b8] hover:text-[#ef4444] font-medium transition-colors ml-1"
-      >
-        Clear all
-      </button>
-    </div>
-  );
-}
-
 // ─── Notification Row ─────────────────────────────────────────────────────────
 
 function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
@@ -579,7 +536,9 @@ function EmptyState() {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function NotificationsPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function NotificationsPage({ onNavigate
+
+}) {
   const [activeTab, setActiveTab]   = useState("all");
   const [expandedId, setExpandedId] = useState(null);
   const [items, setItems]           = useState(NOTIFICATIONS);
@@ -603,118 +562,140 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
   const tabCount = (key) => applyTab(items, key).filter((n) => n.unread).length;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-      <Sidebar collapsed={sidebarCollapsed} activePage="notifications" onNavigate={onNavigate} />
+    <div className="flex h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <Sidebar activePage="notifications" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0">
-        <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate}>
-          <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-[#e2e8f0] dark:bg-[#334155]" />
-            <nav className="flex items-center gap-[10px]">
-              <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">Settings</span>
-              <ChevronRight size={14} className="text-[#94a3b8] dark:text-[#64748b]" />
-              <span className="text-sm text-[#0f172a] dark:text-[#f1f5f9]">Notifications</span>
-            </nav>
-          </div>
+        <AppHeader onNavigate={onNavigate}>
+          <nav className="flex items-center gap-1.5 text-sm ml-1">
+            <span className="text-[#64748b] dark:text-[#94a3b8]">Settings</span>
+            <ChevronRight size={13} className="text-[#cbd5e1] dark:text-[#475569]" />
+            <span className="text-[#0f172a] dark:text-[#f1f5f9] font-medium">Notifications</span>
+          </nav>
         </AppHeader>
 
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {/* Page title + actions */}
-          <div className="flex items-end justify-between px-6 pt-5 pb-0 flex-shrink-0">
-            <div>
-              <h1 className="text-2xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] tracking-[-0.6px] leading-8">
-                Notifications
-              </h1>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5 mt-0.5">
-                {unreadCount > 0 ? (
-                  <span>
-                    You have{" "}
-                    <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{unreadCount} unread</span>{" "}
-                    notification{unreadCount !== 1 ? "s" : ""}
-                  </span>
-                ) : "All notifications are read"}
-              </p>
-            </div>
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          <div className="px-6 py-5 flex flex-col gap-4 max-w-[1400px] mx-auto flex-1 min-h-0">
 
-            <div className="flex items-center gap-3 pb-1">
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="flex items-center gap-1.5 text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
-                >
-                  <CheckCheck size={15} />
-                  Mark all as read
-                </button>
-              )}
-
-              {/* Filter button */}
-              <div className="relative">
-                <button
-                  ref={filterBtnRef}
-                  onClick={() => setFilterOpen((v) => !v)}
-                  className={`flex items-center gap-1.5 text-sm font-medium border rounded-[8px] px-3 py-1.5 transition-colors ${
-                    filterOpen || activeFilterCount > 0
-                      ? "bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1d4ed8]"
-                      : "text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
-                  }`}
-                >
-                  <Filter size={14} />
-                  Filter
-                  {activeFilterCount > 0 && (
-                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#2563eb] text-xs font-bold">
-                      {activeFilterCount}
+            {/* ── Heading ── */}
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h1 className="text-[22px] font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-8 tracking-[-0.4px]">
+                  Notifications
+                </h1>
+                <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5">
+                  {unreadCount > 0 ? (
+                    <span>
+                      You have{" "}
+                      <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{unreadCount} unread</span>{" "}
+                      notification{unreadCount !== 1 ? "s" : ""}
                     </span>
-                  )}
-                </button>
+                  ) : "All notifications are read"}
+                </p>
+              </div>
 
-                {filterOpen && (
-                  <FilterPanel
-                    filters={filters}
-                    onChange={setFilters}
-                    onClose={() => setFilterOpen(false)}
-                    anchorRef={filterBtnRef}
-                  />
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                  >
+                    <CheckCheck size={14} />
+                    Mark all as read
+                  </button>
                 )}
+
+                {/* Filter button */}
+                <div className="relative">
+                  <button
+                    ref={filterBtnRef}
+                    onClick={() => setFilterOpen((v) => !v)}
+                    className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
+                      filterOpen || activeFilterCount > 0
+                        ? "bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1d4ed8]"
+                        : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"
+                    }`}
+                  >
+                    <Filter size={14} />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#2563eb] text-xs font-bold">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {filterOpen && (
+                    <FilterPanel
+                      filters={filters}
+                      onChange={setFilters}
+                      onClose={() => setFilterOpen(false)}
+                      anchorRef={filterBtnRef}
+                    />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex items-center gap-0 px-6 mt-4 border-b border-[#e2e8f0] dark:border-[#334155] flex-shrink-0">
-            {TABS.map(({ key, label }) => {
-              const cnt    = tabCount(key);
-              const active = activeTab === key;
-              return (
+            {/* ── Tabs ── */}
+            <div className="flex items-center gap-1 border-b border-[#e2e8f0] dark:border-[#334155] -mb-1">
+              {TABS.map(({ key, label }) => {
+                const cnt    = tabCount(key);
+                const active = activeTab === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => { setActiveTab(key); setExpandedId(null); }}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                      active
+                        ? "border-[#2563eb] text-[#2563eb]"
+                        : "border-transparent text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
+                    }`}
+                  >
+                    {label}
+                    {cnt > 0 && (
+                      <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
+                        active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8]"
+                      }`}>
+                        {cnt}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── Active filter chips ── */}
+            {countActiveFilters(filters) > 0 && (
+              <div className="flex items-center gap-2 flex-wrap -mt-1">
+                <span className="text-xs text-[#94a3b8]">Active:</span>
+                {[
+                  ...filters.types.map((v) => ({ key: "types", value: v, label: v.charAt(0).toUpperCase() + v.slice(1), color: TYPE_CONFIG[v].bar })),
+                  ...filters.statuses.map((v) => { const opt = FILTER_STATUS_OPTIONS.find((o) => o.value === v); return { key: "statuses", value: v, label: opt?.label ?? v, color: "#64748b" }; }),
+                  ...filters.tags.map((v) => { const sample = NOTIFICATIONS.find((n) => n.tag === v); return { key: "tags", value: v, label: v, color: sample ? TYPE_CONFIG[sample.type].bar : "#64748b" }; }),
+                ].map(({ key, value, label, color }) => (
+                  <button
+                    key={`${key}-${value}`}
+                    onClick={() => setFilters((prev) => ({ ...prev, [key]: prev[key].filter((v) => v !== value) }))}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-white border border-transparent transition-opacity hover:opacity-80"
+                    style={{ backgroundColor: color }}
+                  >
+                    {label} <X size={10} strokeWidth={2.5} />
+                  </button>
+                ))}
                 <button
-                  key={key}
-                  onClick={() => { setActiveTab(key); setExpandedId(null); }}
-                  className={`relative flex items-center gap-1.5 mr-7 pb-3 text-sm font-medium transition-colors ${
-                    active ? "text-[#2563eb]" : "text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
-                  }`}
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  className="text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#ef4444] font-medium transition-colors"
                 >
-                  {label}
-                  {cnt > 0 && (
-                    <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                      active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8]"
-                    }`}>
-                      {cnt}
-                    </span>
-                  )}
-                  {active && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2563eb] rounded-full" />}
+                  Clear all
                 </button>
-              );
-            })}
-          </div>
+              </div>
+            )}
 
-          {/* Active filter chips */}
-          <FilterChips filters={filters} onChange={setFilters} />
-
-          {/* Notification list */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {/* ── Notification list ── */}
             {displayItems.length === 0 ? (
               <EmptyState />
             ) : activeTab === "all" && activeFilterCount === 0 ? (
-              // Grouped by type (only when no extra filters, to avoid empty groups)
               ["critical", "warning", "approval", "success"].map((type) => {
                 const group = displayItems.filter((n) => n.type === type);
                 if (!group.length) return null;
@@ -737,7 +718,6 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                 );
               })
             ) : (
-              // Flat list when filters are active or on non-"all" tabs
               <div className="flex flex-col gap-2">
                 {displayItems.map((item) => (
                   <NotificationRow
@@ -751,29 +731,28 @@ export default function NotificationsPage({ onNavigate, sidebarCollapsed, onTogg
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-3 border-t border-[#e2e8f0] dark:border-[#334155] flex-shrink-0 bg-white dark:bg-[#1e293b]">
-            <span className="text-sm text-[#94a3b8] dark:text-[#64748b]">
-              {displayItems.length} notification{displayItems.length !== 1 ? "s" : ""}
-              {activeFilterCount > 0 && (
-                <span className="text-[#2563eb] font-medium"> (filtered)</span>
-              )}
-              {" "}· {displayItems.filter((n) => n.unread).length} unread
-            </span>
-            <div className="flex items-center gap-3 text-xs">
-              {items.filter((n) => n.type === "critical" && n.unread).length > 0 && (
-                <span className="text-[#ef4444] font-medium">
-                  {items.filter((n) => n.type === "critical" && n.unread).length} critical
-                </span>
-              )}
-              {items.filter((n) => n.type === "approval" && n.unread).length > 0 && (
-                <span className="text-[#2563eb] font-medium">
-                  {items.filter((n) => n.type === "approval" && n.unread).length} pending approval
-                </span>
-              )}
+            {/* ── Footer stats ── */}
+            <div className="flex items-center justify-between py-1 text-xs text-[#94a3b8] dark:text-[#64748b]">
+              <span>
+                {displayItems.length} notification{displayItems.length !== 1 ? "s" : ""}
+                {activeFilterCount > 0 && <span className="text-[#2563eb] font-medium"> (filtered)</span>}
+                {" "}· {displayItems.filter((n) => n.unread).length} unread
+              </span>
+              <div className="flex items-center gap-3">
+                {items.filter((n) => n.type === "critical" && n.unread).length > 0 && (
+                  <span className="text-[#ef4444] font-medium">
+                    {items.filter((n) => n.type === "critical" && n.unread).length} critical
+                  </span>
+                )}
+                {items.filter((n) => n.type === "approval" && n.unread).length > 0 && (
+                  <span className="text-[#2563eb] font-medium">
+                    {items.filter((n) => n.type === "approval" && n.unread).length} pending approval
+                  </span>
+                )}
+              </div>
             </div>
+
           </div>
         </div>
       </div>

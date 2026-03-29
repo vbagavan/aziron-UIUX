@@ -1,16 +1,43 @@
 import { useState, useRef, useEffect } from "react";
 import {
   Paperclip, Send, ChevronDown, Database, Cpu, Bot,
-  RefreshCw, Copy, ThumbsUp, ThumbsDown, Plus,
+  RefreshCw, Copy, ThumbsUp, ThumbsDown, Plus, Mic,
+  Square,
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
 import RichMessage from "@/components/RichMessage";
+import VoiceOrb from "@/components/VoiceOrb";
 
 const imgAzironLogo =
   "https://www.figma.com/api/mcp/asset/f4c83c9c-c4ed-4c76-880e-b0d714d34c1e";
 const imgToolsIcon =
   "https://www.figma.com/api/mcp/asset/ff2b2176-1ed2-4a50-a2df-65dd00a693ff";
+
+// ─── Voice States (matches VoiceOrb state strings) ────────────────────────
+const VS = {
+  IDLE:       "idle",
+  CONNECTING: "connecting",
+  LISTENING:  "listening",
+  SENDING:    "sending",
+  SPEAKING:   "speaking",
+  ERROR:      "error",
+};
+
+const VOICE_TURNS = [
+  {
+    transcript: "Create a customer support agent with email automation and WhatsApp fallback",
+    assistant: "Absolutely. I can set that up as a continuous support workflow with email handling, WhatsApp fallback, and escalation rules for urgent customer issues.",
+  },
+  {
+    transcript: "Now add a triage step so billing requests go to finance and bugs go to product support",
+    assistant: "Done. I would route billing to finance, technical bugs to product support, and keep a shared inbox summary so the team still has one source of truth.",
+  },
+  {
+    transcript: "Give it a warmer brand voice and make sure every response offers a next step",
+    assistant: "I would tune the tone to feel warmer, more reassuring, and action-oriented. Each response can end with a concrete next step, such as confirming ownership or proposing a follow-up.",
+  },
+];
 
 /* ── Donut usage indicator ─────────────────────────────────────── */
 function UsageDonut({ pct = 65 }) {
@@ -253,6 +280,106 @@ const DEMO_MESSAGES = [
   },
 ];
 
+/* ── Organic voice waveform ────────────────────────────────────── */
+const WAVE_KF = `
+  @keyframes drift {
+    from { transform: translateX(0); }
+    to { transform: translateX(-120px); }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.3); }
+  }
+`;
+
+const VOICE_COLOR = {
+  connecting: '#c4b5fd',
+  listening:  '#a78bfa',
+  sending:    '#93c5fd',
+  speaking:   '#c4b5fd',
+  error:      '#f87171',
+};
+
+function VoiceInputCenter({ state }) {
+  const color  = VOICE_COLOR[state] || '#c4b5fd';
+  const active = state === 'listening' || state === 'speaking' || state === 'sending';
+  const baseOpacity = active ? 0.88 : 0.45;
+
+  const gradientId = `voice-wave-gradient-${state}`;
+  const filterId = `${gradientId}-blur`;
+
+  return (
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 40,
+      overflow: 'hidden',
+      opacity: baseOpacity,
+    }}>
+      <style>{WAVE_KF}</style>
+      <svg
+        width="200%"
+        height="40"
+        viewBox="0 0 240 80"
+        preserveAspectRatio="none"
+        style={{ overflow: "visible" }}
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.2" />
+            <stop offset="25%" stopColor="#93c5fd" stopOpacity="0.5" />
+            <stop offset="50%" stopColor={color} stopOpacity="1" />
+            <stop offset="75%" stopColor="#5eead4" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#d9f99d" stopOpacity="0.2" />
+          </linearGradient>
+          <filter id={filterId}>
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+        </defs>
+
+        <path
+          className="wave1"
+          d="M0 40 C 14 28, 28 52, 42 40 C 56 24, 72 58, 88 40 C 100 10, 112 74, 120 40 C 128 6, 142 78, 154 40 C 168 18, 184 60, 198 40 C 212 26, 226 50, 240 40"
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth="3"
+          filter={`url(#${filterId})`}
+          style={{
+            transformOrigin: "center",
+            animation: active ? "drift 5.6s linear infinite, pulse 1.8s ease-in-out infinite" : "none",
+          }}
+        />
+        <path
+          className="wave2"
+          d="M0 40 C 14 46, 28 34, 42 40 C 56 52, 72 28, 88 40 C 102 22, 112 56, 120 40 C 128 18, 140 60, 154 40 C 168 26, 184 54, 198 40 C 212 32, 226 48, 240 40"
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth="2.5"
+          opacity="0.6"
+          style={{
+            transformOrigin: "center",
+            animation: active ? "drift 3.8s linear infinite reverse, pulse 2.3s ease-in-out infinite" : "none",
+          }}
+        />
+        <path
+          className="wave3"
+          d="M0 40 C 16 36, 28 44, 42 40 C 58 32, 72 48, 88 40 C 102 26, 112 54, 120 40 C 128 24, 140 56, 154 40 C 168 30, 184 50, 198 40 C 214 34, 226 46, 240 40"
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth="2"
+          opacity="0.3"
+          style={{
+            transformOrigin: "center",
+            animation: active ? "drift 6.8s linear infinite, pulse 2.8s ease-in-out infinite" : "none",
+          }}
+        />
+      </svg>
+    </div>
+  );
+}
+
 /* ── Rotating new-message replies ─────────────────────────────── */
 const NEXT_REPLIES = [
   [
@@ -286,6 +413,11 @@ function getNextReply() {
   return NEXT_REPLIES[replyIdx++ % NEXT_REPLIES.length];
 }
 
+let voiceTurnIdx = 0;
+function getNextVoiceTurn() {
+  return VOICE_TURNS[voiceTurnIdx++ % VOICE_TURNS.length];
+}
+
 const SUGGESTIONS = [
   "Summarise my recent tasks",
   "Help me draft a message",
@@ -293,18 +425,117 @@ const SUGGESTIONS = [
   "Create a workflow",
 ];
 
-export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function NewChatPage({ onNavigate }) {
   const [messages, setMessages] = useState(DEMO_MESSAGES);
   const [message, setMessage]   = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+
+  // Voice input state
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [voiceState, setVoiceState]   = useState(VS.IDLE);
+  const [assistantPreview, setAssistantPreview] = useState("");
+  const [lastVoiceTurn, setLastVoiceTurn] = useState(null);
+
   const textareaRef             = useRef(null);
   const bottomRef               = useRef(null);
+  const voiceTimersRef          = useRef([]);
+  const activeVoiceTurnRef      = useRef(VOICE_TURNS[0]);
+  const nextMessageIdRef        = useRef(1000);
   const hasMessages             = messages.length > 0;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // Cleanup voice timers on unmount
+  useEffect(() => {
+    return () => {
+      voiceTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  const clearVoiceTimers = () => {
+    voiceTimersRef.current.forEach(clearTimeout);
+    voiceTimersRef.current = [];
+  };
+
+  const scheduleVoiceTimer = (fn, ms) => {
+    const id = setTimeout(fn, ms);
+    voiceTimersRef.current.push(id);
+    return id;
+  };
+
+  const nextMessageId = () => {
+    const id = nextMessageIdRef.current;
+    nextMessageIdRef.current += 1;
+    return id;
+  };
+
+  const beginListeningCycle = (turn = getNextVoiceTurn()) => {
+    clearVoiceTimers();
+    activeVoiceTurnRef.current = turn;
+    setVoiceState(VS.CONNECTING);
+    setAssistantPreview("");
+
+    scheduleVoiceTimer(() => {
+      setVoiceState(VS.LISTENING);
+
+      const source = turn.transcript;
+      let index = 0;
+      const streamTranscript = () => {
+        if (index < source.length) {
+          index += 1;
+          scheduleVoiceTimer(streamTranscript, 34);
+        } else {
+          scheduleVoiceTimer(() => {
+            if (voiceActive) autoSendVoiceTurn(turn, source);
+          }, 320);
+        }
+      };
+      scheduleVoiceTimer(streamTranscript, 240);
+    }, 700);
+  };
+
+  const startVoiceInput = () => {
+    setVoiceActive(true);
+    beginListeningCycle();
+  };
+
+  const closeVoiceMode = () => {
+    clearVoiceTimers();
+    setVoiceActive(false);
+    setVoiceState(VS.IDLE);
+    setAssistantPreview("");
+    setTimeout(() => textareaRef.current?.focus(), 180);
+  };
+
+  const autoSendVoiceTurn = (turn, transcript) => {
+    if (!transcript) return;
+
+    const userMsg = { id: nextMessageId(), role: "user", content: transcript };
+    setMessages((prev) => [...prev, userMsg]);
+    clearVoiceTimers();
+    setVoiceActive(false);
+    setVoiceState(VS.IDLE);
+    setAssistantPreview("");
+    setIsTyping(true);
+    setTimeout(() => textareaRef.current?.focus(), 180);
+
+    const reply = turn.assistant;
+    setTimeout(() => {
+      setIsTyping(false);
+      setLastVoiceTurn({ transcript, assistant: reply });
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: "assistant", blocks: [{ type: "text", content: reply }] },
+      ]);
+    }, 900);
+  };
+
+  const stopVoiceInput = () => {
+    closeVoiceMode();
+  };
 
   const sendMessage = () => {
     const text = message.trim();
@@ -338,13 +569,15 @@ export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSide
   };
 
   const startNew = () => { setMessages([]); setIsTyping(false); setMessage(""); };
+  const assistantPanelText = assistantPreview || lastVoiceTurn?.assistant || "";
 
   return (
+    <>
     <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} activePage="new-chat" onNavigate={onNavigate} />
+      <Sidebar activePage="new-chat" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
+        <AppHeader onNavigate={onNavigate} />
 
         {/* ── Messages ── */}
         <div className="flex-1 overflow-y-auto">
@@ -439,7 +672,8 @@ export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSide
         {/* ── Input ── */}
         <div className="flex-shrink-0 px-4 pb-4 pt-2">
           <div className="max-w-[720px] mx-auto">
-            {hasMessages && (
+
+            {hasMessages && !voiceActive && (
               <div className="flex justify-center mb-2">
                 <button onClick={startNew}
                   className="flex items-center gap-1.5 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors px-3 py-1 rounded-full hover:bg-[#f1f5f9] dark:hover:bg-[#334155]">
@@ -448,36 +682,136 @@ export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSide
               </div>
             )}
 
-            <div className="bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"
-              style={{ border: `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}` }}>
-              <div className="flex items-end gap-3 px-4 py-3">
-                <button aria-label="Attach file"
-                  className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
-                  <Paperclip size={16} />
-                </button>
-                <textarea
-                  ref={textareaRef}
-                  value={message}
-                  onInput={handleInput}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Continue the conversation…"
-                  rows={1}
-                  className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
-                  style={{ minHeight: 28, maxHeight: 160 }}
-                />
-                <button onClick={sendMessage} disabled={!message.trim() || isTyping}
-                  aria-label="Send"
-                  className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
-                    message.trim() && !isTyping
-                      ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                      : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
-                  }`}>
-                  <Send size={14} />
-                </button>
-              </div>
+            {/* ── Prompt box — same shell for every state ── */}
+            <div className={`${voiceActive ? "rounded-[18px] sm:rounded-[22px] overflow-hidden bg-white dark:bg-[#050816] shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)]" : "bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"}`}
+              style={{
+                border: voiceActive
+                  ? "1px solid rgba(37,87,255,.45)"
+                  : `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}`,
+                boxShadow: voiceActive
+                  ? "0 0 0 1px rgba(37,87,255,.18), 0 0 20px rgba(37,87,255,.10), 0 18px 70px -36px rgba(3,8,22,.30)"
+                  : "0 1px 2px rgba(0,0,0,.05)",
+                transition: "border-color .25s, box-shadow .25s",
+              }}>
 
-              <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />
-              <div className="flex items-center justify-between px-4 h-9">
+              {/* ── TOP ROW: voice orb OR normal textarea ── */}
+              {voiceActive ? (
+                <div className="relative min-h-[172px] px-3 pt-3 pb-2 sm:min-h-[200px] sm:px-4 sm:pt-4 sm:pb-2 lg:min-h-[220px] lg:px-10 lg:pt-6 lg:pb-4">
+                  <style>{`
+                    @keyframes voiceReferenceFade {
+                      from { opacity: 0; transform: translateY(10px); }
+                      to { opacity: 1; transform: translateY(0); }
+                    }
+                    @keyframes voiceReferenceRing {
+                      0%,100% { opacity: .42; transform: scale(1); }
+                      50% { opacity: .72; transform: scale(1.03); }
+                    }
+                    @keyframes voiceListeningFade {
+                      0%,100% { opacity: .18; }
+                      50% { opacity: .62; }
+                    }
+                  `}</style>
+
+                  <div
+                    className="mx-auto w-full max-w-[460px] rounded-[16px] sm:rounded-[18px] px-3 pt-3 pb-2 sm:px-6 sm:pt-4 sm:pb-4 lg:px-8 lg:pt-5"
+                    style={{ animation: "voiceReferenceFade .24s ease-out" }}
+                  >
+                    {voiceState === VS.LISTENING && (
+                      <div className="mb-2 flex justify-center">
+                        <span
+                          className="text-[11px] sm:text-[12px] font-medium tracking-[0.02em] text-[#c4b5fd] drop-shadow-[0_0_10px_rgba(196,181,253,.28)] dark:text-white/80"
+                          style={{ animation: "voiceListeningFade 2.2s ease-in-out infinite" }}
+                        >
+                          Listening...
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="text-center">
+                      <p
+                        className="mx-auto max-w-[380px] overflow-hidden text-[12px] font-medium leading-[1.45] text-white/96 sm:text-[13px] sm:leading-[1.5] lg:text-[15px] lg:leading-[1.55]"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                      >
+                        {assistantPanelText}
+                      </p>
+                    </div>
+
+                    <div className="relative mt-4 sm:mt-6 flex items-center justify-center">
+                      <div className="absolute inset-x-[-18px] top-1/2 -translate-y-1/2 sm:inset-x-[-56px] lg:inset-x-[-92px]">
+                        <div className="relative">
+                          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
+                          <div className="opacity-95">
+                            <VoiceInputCenter state={voiceState} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="relative z-10">
+                        <div
+                          className="absolute inset-[-12px] rounded-full border border-[#8b5cf6]/28 sm:inset-[-14px] lg:inset-[-18px]"
+                          style={{ animation: "voiceReferenceRing 2.8s ease-in-out infinite" }}
+                        />
+                        <div className="absolute inset-[-20px] rounded-full border border-[#6366f1]/18 sm:inset-[-24px] lg:inset-[-30px]" />
+                        <div className="rounded-full scale-[0.58] sm:scale-[0.84] lg:scale-100 shadow-[0_0_28px_rgba(236,72,153,0.18),0_0_66px_rgba(99,102,241,0.2)]">
+                          <VoiceOrb state={voiceState === VS.SENDING ? VS.CONNECTING : voiceState} size={82} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 sm:mt-4 flex justify-center">
+                      <button
+                        onClick={stopVoiceInput}
+                        aria-label="Stop voice mode"
+                        className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#0f172a]/8 dark:bg-white/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-[#0f172a] dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-[#0f172a]/12 dark:hover:bg-white/14"
+                      >
+                        <Square size={14} className="fill-current" />
+                        <span>Stop</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Normal textarea */
+                <div className="flex items-end gap-3 px-4 py-3">
+                  <button aria-label="Attach file"
+                    className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
+                    <Paperclip size={16} />
+                  </button>
+                  <textarea
+                    ref={textareaRef}
+                    value={message}
+                    onInput={handleInput}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Continue the conversation…"
+                    rows={1}
+                    className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
+                    style={{ minHeight: 28, maxHeight: 160 }}
+                  />
+                  <button
+                    onClick={startVoiceInput}
+                    aria-label="Start voice input"
+                    className="relative flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb]">
+                    <Mic size={14} />
+                  </button>
+                  <button onClick={sendMessage} disabled={!message.trim() || isTyping}
+                    aria-label="Send"
+                    className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
+                      message.trim() && !isTyping
+                        ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                        : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
+                    }`}>
+                    <Send size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* ── BOTTOM TOOLBAR — hidden in voice mode ── */}
+              {!voiceActive && <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />}
+              {!voiceActive && <div className="flex items-center justify-between px-4 h-9">
                 <div className="flex items-center gap-2.5">
                   <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
                     <img src={imgToolsIcon} alt="" className="size-3.5 object-contain opacity-60" />
@@ -501,11 +835,13 @@ export default function NewChatPage({ onNavigate, sidebarCollapsed, onToggleSide
                   <span>Claude-sonnet</span>
                   <ChevronDown size={11} />
                 </button>
-              </div>
+              </div>}
             </div>
           </div>
         </div>
       </div>
     </div>
+
+  </>
   );
 }

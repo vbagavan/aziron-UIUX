@@ -517,7 +517,9 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent, sidebarCollapsed, onToggleSidebar }) {
+export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
+
+}) {
   const [searchQuery, setSearchQuery]   = useState("");
   const [openMenu, setOpenMenu]         = useState(null);
   const [viewMode, setViewMode]         = useState("grid");
@@ -560,10 +562,10 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent, s
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
       <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} activePage="agents" onNavigate={onNavigate} />
+        <Sidebar activePage="agents" onNavigate={onNavigate} />
 
         <div className="flex flex-col flex-1 min-w-0">
-          <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
+          <AppHeader onNavigate={onNavigate} />
 
           <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4 flex flex-col gap-4">

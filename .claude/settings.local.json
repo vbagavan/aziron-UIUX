@@ -13,7 +13,20 @@
       "Bash(rm -rf /tmp/claudecodefigma)",
       "Bash(pnpm install:*)",
       "Bash(pnpm dlx:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(node --input-type=module:*)",
+      "Bash(npm run:*)",
+      "Read(//Users/vbagavan/**)",
+      "Bash(npm -v)",
+      "Bash(pnpm exec:*)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(grep -r \"text-\\\\[[0-9]\\\\{1,2\\\\}px\\\\]\" /Users/vbagavan/AIUX/claudecodefigma/src/components --include=\"*.jsx\")",
+      "Bash(grep -r \"text-\\\\[[0-9]\\\\{1,2\\\\}px\\\\]\" /Users/vbagavan/AIUX/claudecodefigma/src --include=\"*.jsx\" --include=\"*.css\")",
+      "mcp__shadcn__get_project_registries",
+      "mcp__shadcn__get_add_command_for_items",
+      "Bash(npx shadcn@latest mcp init --client claude)",
+      "Bash(find /Users/vbagavan -type d -name *AIUX* -o -name *Aziron*)"
     ]
   }
 }

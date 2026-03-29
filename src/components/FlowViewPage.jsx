@@ -2033,7 +2033,9 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
 }
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
-export default function FlowViewPage({ flow: flowProp, onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function FlowViewPage({ flow: flowProp, onNavigate
+
+}) {
   const [steps, setSteps]             = useState(flowProp?.steps ?? []);
   const [flowName, setFlowName]       = useState(flowProp?.name ?? "Untitled Flow");
   const [selectedIdx, setSelectedIdx] = useState(null);
@@ -2184,7 +2186,7 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, sidebarCollap
 
   return (
     <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} activePage="flows" onNavigate={onNavigate} />
+      <Sidebar activePage="flows" onNavigate={onNavigate} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           flow={flow} onBack={()=>onNavigate("flows")}

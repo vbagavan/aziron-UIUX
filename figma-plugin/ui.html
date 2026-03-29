@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      background: #f8fafc;
+      padding: 16px;
+      font-size: 13px;
+      color: #0f172a;
+    }
+    h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    p {
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .screens {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .screen-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .screen-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2563eb;
+      flex-shrink: 0;
+    }
+    .screen-name {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    button {
+      width: 100%;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    #status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+      min-height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <h2>claudecodefigma – Import Screens</h2>
+  <p>Generates all 5 app screens as Figma frames with full layout, sidebar, header, and screen-specific content.</p>
+
+  <div class="screens">
+    <div class="screen-row"><div class="screen-dot"></div><span class="screen-name">1. New Chat</span></div>
+    <div class="screen-row"><div class="screen-dot"></div><span class="screen-name">2. Agents List</span></div>
+    <div class="screen-row"><div class="screen-dot"></div><span class="screen-name">3. Agent Chat (CV Agent)</span></div>
+    <div class="screen-row"><div class="screen-dot"></div><span class="screen-name">4. Kudos – Empty State</span></div>
+    <div class="screen-row"><div class="screen-dot" style="background:#c9a227"></div><span class="screen-name">5. Kudos – Gold Classic Preview</span></div>
+  </div>
+
+  <button id="btn" onclick="run()">Generate All Screens</button>
+  <div id="status"></div>
+
+  <script>
+    function run() {
+      const btn = document.getElementById('btn');
+      const status = document.getElementById('status');
+      btn.disabled = true;
+      btn.textContent = 'Generating…';
+      status.textContent = 'Building frames in Figma…';
+      parent.postMessage({ pluginMessage: { type: 'generate' } }, '*');
+    }
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      const btn = document.getElementById('btn');
+      const status = document.getElementById('status');
+      if (msg.type === 'done') {
+        btn.disabled = false;
+        btn.textContent = 'Generate All Screens';
+        status.textContent = `✓ ${msg.count} screens created successfully!`;
+        status.style.color = '#16a34a';
+      } else if (msg.type === 'error') {
+        btn.disabled = false;
+        btn.textContent = 'Generate All Screens';
+        status.textContent = '✗ Error: ' + msg.message;
+        status.style.color = '#ef4444';
+      }
+    };
+  </script>
+</body>
+</html>

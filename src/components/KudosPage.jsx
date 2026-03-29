@@ -1477,7 +1477,9 @@ function TemplateSelectorBar({ activeTemplate, onSelect }) {
 // Main KudosPage component
 // ---------------------------------------------------------------------------
 
-export default function KudosPage({ agent, onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function KudosPage({ agent, onNavigate
+
+}) {
   // Stage machine: "empty" | "generating" | "preview"
   const [stage, setStage] = useState("empty");
 
@@ -1613,12 +1615,11 @@ export default function KudosPage({ agent, onNavigate, sidebarCollapsed, onToggl
 
   return (
     <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} activePage="agents" onNavigate={onNavigate} />
+      <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       {/* Main content wrapper */}
       <div className="flex flex-col flex-1 min-w-0">
         <AppHeader
-          onToggleSidebar={onToggleSidebar}
           approvals={approvals}
           onApprove={handleApprove}
           onReject={handleReject}

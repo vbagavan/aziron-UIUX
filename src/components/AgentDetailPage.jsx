@@ -290,15 +290,17 @@ function StatusPill({ status }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function AgentDetailPage({ agent, onNavigate, sidebarCollapsed, onToggleSidebar }) {
+export default function AgentDetailPage({ agent, onNavigate
+
+}) {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <div className="flex h-screen bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} activePage="agents" onNavigate={onNavigate} />
+      <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
+        <AppHeader onNavigate={onNavigate} />
 
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">

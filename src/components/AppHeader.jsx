@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { PanelLeft, Bell, ChevronDown, Check, Sun, Moon } from "lucide-react";
+import { Bell, ChevronDown, Check, Sun, Moon } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import NotificationPanel from "@/components/NotificationPanel";
 
 // ─── Language data ─────────────────────────────────────────────────────────────
@@ -153,7 +154,6 @@ function LanguageSelector() {
 
 // ─── App header ────────────────────────────────────────────────────────────────
 export default function AppHeader({
-  onToggleSidebar,
   onNavigate,
   children,
   approvals,
@@ -175,12 +175,7 @@ export default function AppHeader({
       <header className="flex items-center justify-between h-12 px-4 border-b border-[#e2e8f0] dark:border-[#334155] flex-shrink-0 bg-white dark:bg-[#1e293b]">
         {/* Left: sidebar toggle + optional children */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={onToggleSidebar}
-            className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
-          >
-            <PanelLeft size={16} />
-          </button>
+          <SidebarTrigger className="size-7 text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155]" />
           {children}
         </div>
 

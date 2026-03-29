@@ -482,7 +482,9 @@ function AnimCount({ to, className = "" }) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sidebarCollapsed, onToggleSidebar }) {
+export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
+
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
@@ -528,10 +530,10 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow, sideba
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
       <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
-        <Sidebar collapsed={sidebarCollapsed} activePage="flows" onNavigate={onNavigate} />
+        <Sidebar activePage="flows" onNavigate={onNavigate} />
 
         <div className="flex flex-col flex-1 min-w-0">
-          <AppHeader onToggleSidebar={onToggleSidebar} onNavigate={onNavigate} />
+          <AppHeader onNavigate={onNavigate} />
 
           <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4 flex flex-col gap-4">
