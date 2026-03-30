@@ -425,8 +425,10 @@ const SUGGESTIONS = [
   "Create a workflow",
 ];
 
+const VOICE_AUTO_SEND_DELAY_MS = 4000;
+
 export default function NewChatPage({ onNavigate }) {
-  const [messages, setMessages] = useState(DEMO_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [message, setMessage]   = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -440,6 +442,7 @@ export default function NewChatPage({ onNavigate }) {
   const textareaRef             = useRef(null);
   const bottomRef               = useRef(null);
   const voiceTimersRef          = useRef([]);
+  const voiceActiveRef          = useRef(false);
   const activeVoiceTurnRef      = useRef(VOICE_TURNS[0]);
   const nextMessageIdRef        = useRef(1000);
   const hasMessages             = messages.length > 0;
@@ -447,6 +450,10 @@ export default function NewChatPage({ onNavigate }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    voiceActiveRef.current = voiceActive;
+  }, [voiceActive]);
 
   // Cleanup voice timers on unmount
   useEffect(() => {
@@ -489,8 +496,8 @@ export default function NewChatPage({ onNavigate }) {
           scheduleVoiceTimer(streamTranscript, 34);
         } else {
           scheduleVoiceTimer(() => {
-            if (voiceActive) autoSendVoiceTurn(turn, source);
-          }, 320);
+            if (voiceActiveRef.current) autoSendVoiceTurn(turn, source);
+          }, VOICE_AUTO_SEND_DELAY_MS);
         }
       };
       scheduleVoiceTimer(streamTranscript, 240);
@@ -498,12 +505,14 @@ export default function NewChatPage({ onNavigate }) {
   };
 
   const startVoiceInput = () => {
+    voiceActiveRef.current = true;
     setVoiceActive(true);
     beginListeningCycle();
   };
 
   const closeVoiceMode = () => {
     clearVoiceTimers();
+    voiceActiveRef.current = false;
     setVoiceActive(false);
     setVoiceState(VS.IDLE);
     setAssistantPreview("");
@@ -516,6 +525,7 @@ export default function NewChatPage({ onNavigate }) {
     const userMsg = { id: nextMessageId(), role: "user", content: transcript };
     setMessages((prev) => [...prev, userMsg]);
     clearVoiceTimers();
+    voiceActiveRef.current = false;
     setVoiceActive(false);
     setVoiceState(VS.IDLE);
     setAssistantPreview("");
@@ -545,10 +555,19 @@ export default function NewChatPage({ onNavigate }) {
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setIsTyping(true);
+
+    const isTimeline = text.toLowerCase() === "timeline";
+    const isTools    = text.toLowerCase() === "tools";
+    const delay = (isTimeline || isTools) ? 900 : 1200 + Math.random() * 800;
     setTimeout(() => {
       setIsTyping(false);
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", blocks: getNextReply() }]);
-    }, 1200 + Math.random() * 800);
+      const reply = isTimeline
+        ? [{ type: "timeline",       duration: "3.1s" }]
+        : isTools
+        ? [{ type: "tool_execution" }]
+        : getNextReply();
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", blocks: reply }]);
+    }, delay);
   };
 
   const handleKeyDown = (e) => {
@@ -570,6 +589,161 @@ export default function NewChatPage({ onNavigate }) {
 
   const startNew = () => { setMessages([]); setIsTyping(false); setMessage(""); };
   const assistantPanelText = assistantPreview || lastVoiceTurn?.assistant || "";
+  const promptBox = (
+    <div className={`${voiceActive ? "rounded-[18px] sm:rounded-[22px] overflow-hidden bg-white dark:bg-[#050816] shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)]" : "bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"}`}
+      style={{
+        border: voiceActive
+          ? "1px solid rgba(37,87,255,.45)"
+          : `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}`,
+        boxShadow: voiceActive
+          ? "0 0 0 1px rgba(37,87,255,.18), 0 0 20px rgba(37,87,255,.10), 0 18px 70px -36px rgba(3,8,22,.30)"
+          : "0 1px 2px rgba(0,0,0,.05)",
+        transition: "border-color .25s, box-shadow .25s",
+      }}>
+
+      {voiceActive ? (
+        <div className="relative min-h-[172px] px-3 pt-3 pb-2 sm:min-h-[200px] sm:px-4 sm:pt-4 sm:pb-2 lg:min-h-[220px] lg:px-10 lg:pt-6 lg:pb-4">
+          <style>{`
+            @keyframes voiceReferenceFade {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes voiceReferenceRing {
+              0%,100% { opacity: .42; transform: scale(1); }
+              50% { opacity: .72; transform: scale(1.03); }
+            }
+            @keyframes voiceListeningFade {
+              0%,100% { opacity: .18; }
+              50% { opacity: .62; }
+            }
+          `}</style>
+
+          <div
+            className="mx-auto w-full max-w-[460px] rounded-[16px] sm:rounded-[18px] px-3 pt-3 pb-2 sm:px-6 sm:pt-4 sm:pb-4 lg:px-8 lg:pt-5"
+            style={{ animation: "voiceReferenceFade .24s ease-out" }}
+          >
+            {voiceState === VS.LISTENING && (
+              <div className="mb-2 flex justify-center">
+                <span
+                  className="text-[11px] sm:text-[12px] font-medium tracking-[0.02em] text-[#c4b5fd] drop-shadow-[0_0_10px_rgba(196,181,253,.28)] dark:text-white/80"
+                  style={{ animation: "voiceListeningFade 2.2s ease-in-out infinite" }}
+                >
+                  Listening...
+                </span>
+              </div>
+            )}
+
+            <div className="text-center">
+              <p
+                className="mx-auto max-w-[380px] overflow-hidden text-[12px] font-medium leading-[1.45] text-white/96 sm:text-[13px] sm:leading-[1.5] lg:text-[15px] lg:leading-[1.55]"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                }}
+              >
+                {assistantPanelText}
+              </p>
+            </div>
+
+            <div className="relative mt-4 sm:mt-6 flex items-center justify-center">
+              <div className="absolute inset-x-[-18px] top-1/2 -translate-y-1/2 sm:inset-x-[-56px] lg:inset-x-[-92px]">
+                <div className="relative">
+                  <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
+                  <div className="opacity-95">
+                    <VoiceInputCenter state={voiceState} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <div
+                  className="absolute inset-[-12px] rounded-full border border-[#8b5cf6]/28 sm:inset-[-14px] lg:inset-[-18px]"
+                  style={{ animation: "voiceReferenceRing 2.8s ease-in-out infinite" }}
+                />
+                <div className="absolute inset-[-20px] rounded-full border border-[#6366f1]/18 sm:inset-[-24px] lg:inset-[-30px]" />
+                <div className="rounded-full scale-[0.58] sm:scale-[0.84] lg:scale-100 shadow-[0_0_28px_rgba(236,72,153,0.18),0_0_66px_rgba(99,102,241,0.2)]">
+                  <VoiceOrb state={voiceState === VS.SENDING ? VS.CONNECTING : voiceState} size={82} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2 sm:mt-4 flex justify-center">
+              <button
+                onClick={stopVoiceInput}
+                aria-label="Stop voice mode"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#0f172a]/8 dark:bg-white/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-[#0f172a] dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-[#0f172a]/12 dark:hover:bg-white/14"
+              >
+                <Square size={14} className="fill-current" />
+                <span>Stop</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-end gap-3 px-4 py-3">
+            <button aria-label="Attach file"
+              className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
+              <Paperclip size={16} />
+            </button>
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              placeholder="Continue the conversation…"
+              rows={1}
+              className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
+              style={{ minHeight: 28, maxHeight: 160 }}
+            />
+            <button
+              onClick={startVoiceInput}
+              aria-label="Start voice input"
+              className="relative flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb]">
+              <Mic size={14} />
+            </button>
+            <button onClick={sendMessage} disabled={!message.trim() || isTyping}
+              aria-label="Send"
+              className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
+                message.trim() && !isTyping
+                  ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                  : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
+              }`}>
+              <Send size={14} />
+            </button>
+          </div>
+
+          <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />
+          <div className="flex items-center justify-between px-4 h-9">
+            <div className="flex items-center gap-2.5">
+              <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+                <img src={imgToolsIcon} alt="" className="size-3.5 object-contain opacity-60" />
+                <span>Tools</span>
+                <ChevronDown size={11} />
+              </button>
+              <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
+              <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+                <Database size={13} />
+                <span>Knowledge hub</span>
+                <ChevronDown size={11} />
+              </button>
+              <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
+              <div className="flex items-center gap-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
+                <UsageDonut pct={65} />
+                <span>65% used</span>
+              </div>
+            </div>
+            <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
+              <Cpu size={12} />
+              <span>Claude-sonnet</span>
+              <ChevronDown size={11} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -582,7 +756,9 @@ export default function NewChatPage({ onNavigate }) {
         {/* ── Messages ── */}
         <div className="flex-1 overflow-y-auto">
           {!hasMessages ? (
-            <div className="flex flex-col items-center justify-center h-full gap-6 px-8 pb-32">
+            <div className="flex h-full items-center justify-center px-4 py-10">
+              <div className="w-full max-w-[720px]">
+                <div className="flex flex-col items-center justify-center gap-6">
               <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
               <h1 className="text-2xl font-medium text-[#0f172a] dark:text-[#f1f5f9]" style={{ letterSpacing: "-0.6px" }}>
                 Hi John, where should we start?
@@ -594,6 +770,11 @@ export default function NewChatPage({ onNavigate }) {
                     {s}
                   </button>
                 ))}
+              </div>
+                  <div className="w-full pt-2">
+                    {promptBox}
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -613,11 +794,18 @@ export default function NewChatPage({ onNavigate }) {
                       <div className="px-4 py-3 rounded-[14px] rounded-br-[4px] bg-[#2563eb] text-white text-sm leading-6">
                         {msg.content}
                       </div>
-                    ) : (
-                      <div className="w-full px-4 py-3 rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] shadow-sm">
-                        <RichMessage blocks={msg.blocks} />
-                      </div>
-                    )}
+                    ) : (() => {
+                      const isTimelineOnly = msg.blocks?.length === 1 &&
+                        ["timeline", "tool_execution"].includes(msg.blocks[0].type);
+                      return (
+                        <div className={isTimelineOnly
+                          ? "w-full"
+                          : "w-full px-4 py-3 rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] shadow-sm"
+                        }>
+                          <RichMessage blocks={msg.blocks} />
+                        </div>
+                      );
+                    })()}
 
                     {/* AI actions */}
                     {msg.role === "assistant" && (
@@ -670,175 +858,21 @@ export default function NewChatPage({ onNavigate }) {
         </div>
 
         {/* ── Input ── */}
-        <div className="flex-shrink-0 px-4 pb-4 pt-2">
-          <div className="max-w-[720px] mx-auto">
-
-            {hasMessages && !voiceActive && (
+        {hasMessages && (
+          <div className="flex-shrink-0 px-4 pb-4 pt-2">
+            <div className="max-w-[720px] mx-auto">
+              {!voiceActive && (
               <div className="flex justify-center mb-2">
                 <button onClick={startNew}
                   className="flex items-center gap-1.5 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors px-3 py-1 rounded-full hover:bg-[#f1f5f9] dark:hover:bg-[#334155]">
                   <Plus size={12} /> New conversation
                 </button>
               </div>
-            )}
-
-            {/* ── Prompt box — same shell for every state ── */}
-            <div className={`${voiceActive ? "rounded-[18px] sm:rounded-[22px] overflow-hidden bg-white dark:bg-[#050816] shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)]" : "bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"}`}
-              style={{
-                border: voiceActive
-                  ? "1px solid rgba(37,87,255,.45)"
-                  : `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}`,
-                boxShadow: voiceActive
-                  ? "0 0 0 1px rgba(37,87,255,.18), 0 0 20px rgba(37,87,255,.10), 0 18px 70px -36px rgba(3,8,22,.30)"
-                  : "0 1px 2px rgba(0,0,0,.05)",
-                transition: "border-color .25s, box-shadow .25s",
-              }}>
-
-              {/* ── TOP ROW: voice orb OR normal textarea ── */}
-              {voiceActive ? (
-                <div className="relative min-h-[172px] px-3 pt-3 pb-2 sm:min-h-[200px] sm:px-4 sm:pt-4 sm:pb-2 lg:min-h-[220px] lg:px-10 lg:pt-6 lg:pb-4">
-                  <style>{`
-                    @keyframes voiceReferenceFade {
-                      from { opacity: 0; transform: translateY(10px); }
-                      to { opacity: 1; transform: translateY(0); }
-                    }
-                    @keyframes voiceReferenceRing {
-                      0%,100% { opacity: .42; transform: scale(1); }
-                      50% { opacity: .72; transform: scale(1.03); }
-                    }
-                    @keyframes voiceListeningFade {
-                      0%,100% { opacity: .18; }
-                      50% { opacity: .62; }
-                    }
-                  `}</style>
-
-                  <div
-                    className="mx-auto w-full max-w-[460px] rounded-[16px] sm:rounded-[18px] px-3 pt-3 pb-2 sm:px-6 sm:pt-4 sm:pb-4 lg:px-8 lg:pt-5"
-                    style={{ animation: "voiceReferenceFade .24s ease-out" }}
-                  >
-                    {voiceState === VS.LISTENING && (
-                      <div className="mb-2 flex justify-center">
-                        <span
-                          className="text-[11px] sm:text-[12px] font-medium tracking-[0.02em] text-[#c4b5fd] drop-shadow-[0_0_10px_rgba(196,181,253,.28)] dark:text-white/80"
-                          style={{ animation: "voiceListeningFade 2.2s ease-in-out infinite" }}
-                        >
-                          Listening...
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="text-center">
-                      <p
-                        className="mx-auto max-w-[380px] overflow-hidden text-[12px] font-medium leading-[1.45] text-white/96 sm:text-[13px] sm:leading-[1.5] lg:text-[15px] lg:leading-[1.55]"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
-                        {assistantPanelText}
-                      </p>
-                    </div>
-
-                    <div className="relative mt-4 sm:mt-6 flex items-center justify-center">
-                      <div className="absolute inset-x-[-18px] top-1/2 -translate-y-1/2 sm:inset-x-[-56px] lg:inset-x-[-92px]">
-                        <div className="relative">
-                          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
-                          <div className="opacity-95">
-                            <VoiceInputCenter state={voiceState} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="relative z-10">
-                        <div
-                          className="absolute inset-[-12px] rounded-full border border-[#8b5cf6]/28 sm:inset-[-14px] lg:inset-[-18px]"
-                          style={{ animation: "voiceReferenceRing 2.8s ease-in-out infinite" }}
-                        />
-                        <div className="absolute inset-[-20px] rounded-full border border-[#6366f1]/18 sm:inset-[-24px] lg:inset-[-30px]" />
-                        <div className="rounded-full scale-[0.58] sm:scale-[0.84] lg:scale-100 shadow-[0_0_28px_rgba(236,72,153,0.18),0_0_66px_rgba(99,102,241,0.2)]">
-                          <VoiceOrb state={voiceState === VS.SENDING ? VS.CONNECTING : voiceState} size={82} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 sm:mt-4 flex justify-center">
-                      <button
-                        onClick={stopVoiceInput}
-                        aria-label="Stop voice mode"
-                        className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#0f172a]/8 dark:bg-white/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-[#0f172a] dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-[#0f172a]/12 dark:hover:bg-white/14"
-                      >
-                        <Square size={14} className="fill-current" />
-                        <span>Stop</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Normal textarea */
-                <div className="flex items-end gap-3 px-4 py-3">
-                  <button aria-label="Attach file"
-                    className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
-                    <Paperclip size={16} />
-                  </button>
-                  <textarea
-                    ref={textareaRef}
-                    value={message}
-                    onInput={handleInput}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Continue the conversation…"
-                    rows={1}
-                    className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
-                    style={{ minHeight: 28, maxHeight: 160 }}
-                  />
-                  <button
-                    onClick={startVoiceInput}
-                    aria-label="Start voice input"
-                    className="relative flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb]">
-                    <Mic size={14} />
-                  </button>
-                  <button onClick={sendMessage} disabled={!message.trim() || isTyping}
-                    aria-label="Send"
-                    className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
-                      message.trim() && !isTyping
-                        ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                        : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
-                    }`}>
-                    <Send size={14} />
-                  </button>
-                </div>
               )}
-
-              {/* ── BOTTOM TOOLBAR — hidden in voice mode ── */}
-              {!voiceActive && <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />}
-              {!voiceActive && <div className="flex items-center justify-between px-4 h-9">
-                <div className="flex items-center gap-2.5">
-                  <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-                    <img src={imgToolsIcon} alt="" className="size-3.5 object-contain opacity-60" />
-                    <span>Tools</span>
-                    <ChevronDown size={11} />
-                  </button>
-                  <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
-                  <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-                    <Database size={13} />
-                    <span>Knowledge hub</span>
-                    <ChevronDown size={11} />
-                  </button>
-                  <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
-                  <div className="flex items-center gap-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
-                    <UsageDonut pct={65} />
-                    <span>65% used</span>
-                  </div>
-                </div>
-                <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-                  <Cpu size={12} />
-                  <span>Claude-sonnet</span>
-                  <ChevronDown size={11} />
-                </button>
-              </div>}
+              {promptBox}
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
 
