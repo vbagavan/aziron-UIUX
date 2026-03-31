@@ -11,6 +11,7 @@ import FlowViewPage from "./components/FlowViewPage";
 import NotFoundPage from "./components/NotFoundPage";
 import UsersListPage from "./components/UsersListPage";
 import UserDetailPage from "./components/UserDetailPage";
+import UserGroupsPage from "./components/UserGroupsPage";
 
 export default function App() {
   const [currentPage, setCurrentPage]   = useState("new-chat");
@@ -54,6 +55,7 @@ export default function App() {
       case "flows":       return <FlowsPage onNavigate={navigate} onViewFlow={viewFlow} onCreateFlow={createFlow} />;
       case "flow-view":   return <FlowViewPage flow={viewedFlow} onNavigate={navigate} />;
       case "users-list":  return <UsersListPage onNavigate={navigate} onViewUser={u=>{ setViewedUser(u); setCurrentPage("user-detail"); }} />;
+      case "user-groups": return <UserGroupsPage onNavigate={navigate} />;
       case "user-detail": return <UserDetailPage user={viewedUser} onNavigate={navigate} />;
       default: return <NotFoundPage onNavigate={navigate} />;
     }

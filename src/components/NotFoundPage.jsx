@@ -1,6 +1,6 @@
 export default function NotFoundPage({ onNavigate }) {
   return (
-    <div className="flex h-screen w-full bg-gradient-to-br from-white via-blue-50 to-indigo-50 overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-50">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }

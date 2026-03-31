@@ -58,7 +58,7 @@ function Action({ className = "" }) {
       layoutId={layoutId}
       onClick={() => setOpen(true)}
       style={{ borderRadius: 6 }}
-      className={`flex items-center justify-center size-9 bg-white border border-[#e2e8f0] text-[#64748b] hover:text-[#0f172a] hover:border-[#cbd5e1] transition-colors flex-shrink-0 ${className}`}
+      className={`flex size-9 flex-shrink-0 items-center justify-center border border-[#e2e8f0] bg-white text-[#64748b] transition-colors hover:border-[#cbd5e1] hover:text-[#0f172a] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#94a3b8] dark:hover:border-[#475569] dark:hover:text-[#f8fafc] ${className}`}
       title="Search"
     >
       <motion.span layoutId={`${layoutId}-icon`}>
@@ -79,7 +79,7 @@ function Input({ placeholder = "Search…", className = "" }) {
     <motion.div
       layoutId={layoutId}
       style={{ borderRadius: 6 }}
-      className={`flex items-center gap-2 bg-white border border-[#2563eb] shadow-[0_0_0_3px_rgba(37,99,235,0.12)] px-3 h-9 ${className}`}
+      className={`flex h-9 items-center gap-2 border border-[#2563eb] bg-white px-3 shadow-[0_0_0_3px_rgba(37,99,235,0.12)] dark:bg-[#1e293b] ${className}`}
     >
       <motion.span layoutId={`${layoutId}-icon`} className="text-[#2563eb] flex-shrink-0">
         <Search size={14} />
@@ -90,7 +90,7 @@ function Input({ placeholder = "Search…", className = "" }) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         onKeyDown={(e) => e.key === "Escape" && close()}
-        className="flex-1 text-sm text-[#0f172a] placeholder:text-[#94a3b8] outline-none bg-transparent min-w-0"
+        className="min-w-0 flex-1 bg-transparent text-sm text-[#0f172a] placeholder:text-[#94a3b8] outline-none dark:text-[#f8fafc] dark:placeholder:text-[#64748b]"
       />
       <AnimatePresence>
         {value && (
@@ -100,7 +100,7 @@ function Input({ placeholder = "Search…", className = "" }) {
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.12 }}
             onClick={() => onChange("")}
-            className="flex items-center justify-center size-4 rounded-full bg-[#e2e8f0] text-[#64748b] hover:bg-[#cbd5e1] flex-shrink-0"
+            className="flex size-4 flex-shrink-0 items-center justify-center rounded-full bg-[#e2e8f0] text-[#64748b] hover:bg-[#cbd5e1] dark:bg-[#334155] dark:text-[#cbd5e1] dark:hover:bg-[#475569]"
           >
             <X size={10} />
           </motion.button>
@@ -108,7 +108,7 @@ function Input({ placeholder = "Search…", className = "" }) {
       </AnimatePresence>
       <button
         onClick={close}
-        className="flex-shrink-0 text-[#94a3b8] hover:text-[#64748b] transition-colors ml-0.5"
+        className="ml-0.5 flex-shrink-0 text-[#94a3b8] transition-colors hover:text-[#64748b] dark:text-[#64748b] dark:hover:text-[#cbd5e1]"
       >
         <X size={14} />
       </button>

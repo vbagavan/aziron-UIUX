@@ -32,7 +32,7 @@ const recentChatsData = [
 
 const navGroups = [
   {
-    id: "build", label: "Build",
+    id: "build", label: "BUILD",
     items: [
       { icon: Sparkles, label: "New Chat", page: "new-chat" },
       { icon: Bot,      label: "Agents",   page: "agents"   },
@@ -40,7 +40,7 @@ const navGroups = [
     ],
   },
   {
-    id: "platform", label: "Platform",
+    id: "platform", label: "PLATFORM",
     items: [
       { icon: BrainCog,  label: "Knowledge Hub",  page: "knowledge" },
       { icon: Vault,     label: "Vault",           page: "vault"     },
@@ -48,6 +48,7 @@ const navGroups = [
         icon: Users, label: "User Management", page: "users",
         subItems: [
           { icon: UserCircle, label: "Users", page: "users-list"  },
+          { icon: Users, label: "User Groups", page: "user-groups" },
           { icon: ShieldCheck,label: "Roles", page: "users-roles" },
         ],
       },
@@ -56,10 +57,12 @@ const navGroups = [
         icon: Clock,
         label: "History",
         page: "history",
+        activeFor: ["chat"],
         subItems: recentChatsData.map(chat => ({
           label: chat,
           page: "chat",
-          noIcon: true
+          noIcon: true,
+          trackActive: false,
         })),
       },
     ],
@@ -70,13 +73,14 @@ const navGroups = [
  * Determines if a navigation item or page is currently active
  * Handles parent-child relationships and routing aliases
  */
-function isActive(itemPage, activePage) {
+function isActive(itemPage, activePage, activeFor = []) {
   // Direct match
   if (itemPage === activePage) return true;
 
+  if (activeFor.includes(activePage)) return true;
+
   // Handle routing aliases and related pages
-  if (itemPage === "agents" && activePage === "chat") return true;
-  if (itemPage === "users" && (activePage === "users-list" || activePage === "users-roles")) return true;
+  if (itemPage === "users" && (activePage === "users-list" || activePage === "user-groups" || activePage === "users-roles")) return true;
 
   return false;
 }
@@ -274,8 +278,8 @@ function UserFooter({ onNavigate }) {
 function NavItem({ item, activePage, onNavigate }) {
   const { state } = useSidebar();
   const sidebarCollapsed = state === "collapsed";
-  const active = isActive(item.page, activePage);
-  const subActive = item.subItems?.some(s => s.page === activePage);
+  const active = isActive(item.page, activePage, item.activeFor || []);
+  const subActive = item.subItems?.some(s => s.trackActive !== false && s.page === activePage);
   const isParentActive = active || subActive;
 
   // Initialize submenu open state: open if sidebar not collapsed AND (item is active OR child is active)
@@ -423,7 +427,7 @@ function NavItem({ item, activePage, onNavigate }) {
               <CollapsibleContent>
                 <SidebarMenuSub>
                   {item.subItems.map(sub => {
-                    const subIsActive = sub.page === activePage;
+                    const subIsActive = sub.trackActive !== false && sub.page === activePage;
                     return (
                       <SidebarMenuSubItem key={sub.label}>
                         <SidebarMenuSubButton
@@ -458,7 +462,7 @@ function NavItem({ item, activePage, onNavigate }) {
             }}
           >
             {item.subItems.map(sub => {
-              const subIsActive = sub.page === activePage;
+              const subIsActive = sub.trackActive !== false && sub.page === activePage;
               return (
                 <button
                   key={sub.label}
@@ -593,7 +597,7 @@ function LogoHeader({ onNavigate }) {
   return (
     <SidebarHeader className="p-2">
       <button onClick={() => onNavigate?.("agents")} aria-label="Go to Aziron home"
-        className="flex items-center justify-center w-full rounded-[8px] px-1 py-1">
+        className={`flex w-full items-center rounded-[8px] px-1 py-1 ${isCollapsed ? "justify-center" : "justify-start"}`}>
         <img
           src={isCollapsed ? imgAzironLogo : imgAzironLogoExpanded}
           alt="Aziron"

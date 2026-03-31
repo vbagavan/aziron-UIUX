@@ -1,363 +1,508 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  ChevronRight,
+  Clock,
+  LayoutDashboard,
+  History,
   Play,
   Pencil,
   MoreVertical,
-  ArrowLeft,
-  Activity,
-  CheckCircle2,
-  Timer,
-  Zap,
-  ChevronRight,
-  Tag,
-  AlignLeft,
   Settings2,
-  History,
-  LayoutDashboard,
-  CircleCheck,
-  CircleX,
-  Clock,
-  Cpu,
 } from "lucide-react";
+
 import AppHeader from "@/components/AppHeader";
+import ProviderLogo from "@/components/ProviderLogo";
 import Sidebar from "@/components/Sidebar";
+import InsightBanner from "@/components/agent-detail/InsightBanner";
+import InsightCard from "@/components/agent-detail/InsightCard";
+import RunTimeline from "@/components/agent-detail/RunTimeline";
+import FailureInsightsPanel from "@/components/agent-detail/FailureInsightsPanel";
+import RunDetailsDrawer from "@/components/agent-detail/RunDetailsDrawer";
+import ConfigSectionCard from "@/components/agent-detail/ConfigSectionCard";
+import TestPromptPanel from "@/components/agent-detail/TestPromptPanel";
+import OperationsTimelineChart from "@/components/agent-detail/OperationsTimelineChart";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const imgAvatarRobot = "https://www.figma.com/api/mcp/asset/30669545-e841-413b-80af-a7db03ab0d8c";
-const imgOpenAI     = "https://www.figma.com/api/mcp/asset/8933db25-5a1e-4a78-ae17-f0251297e0e4";
-
-// ─── Deterministic fake run history seeded from agent id ─────────────────────
-
-function genRuns(agent) {
-  const statuses = ["Success", "Success", "Success", "Failed", "Success"];
-  const durations = [1.9, 2.1, 1.7, 3.2, 1.8];
-  const tokens    = [1240, 1380, 1100, 1890, 1220];
-  const suffixes  = ["8f3a", "7e2b", "6d1c", "5c0a", "4b9f"];
-  return suffixes.map((s, i) => ({
-    id:       `run_${s}`,
-    duration: durations[i],
-    tokens:   tokens[i],
-    status:   statuses[i],
-  }));
-}
-
-function genTotalRuns(agent) { return 2800 + (agent.id * 47) % 200; }
-function genAvgLatency(agent) { return (1.5 + (agent.id * 0.13) % 1.2).toFixed(1); }
-function genTokensUsed(agent) {
-  const n = 3.8 + (agent.id * 0.4) % 2;
-  return `${n.toFixed(1)}M`;
-}
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({ label, value, sub, highlight }) {
-  return (
-    <div className="flex-1 min-w-0 bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-5 py-4 flex flex-col gap-1.5">
-      <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">{label}</span>
-      <span className={`text-2xl font-bold leading-8 ${highlight ? "text-[#16a34a]" : "text-[#0f172a] dark:text-[#f1f5f9]"}`}>
-        {value}
-      </span>
-      <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{sub}</span>
-    </div>
-  );
-}
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-function RunBadge({ status }) {
-  const ok = status === "Success";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-        ok ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fef2f2] text-[#dc2626]"
-      }`}
-    >
-      {ok ? <CircleCheck size={11} /> : <CircleX size={11} />}
-      {status}
-    </span>
-  );
-}
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
+const imgAvatarRobot = "/astronaut.svg";
 
 const TABS = [
-  { id: "overview",       label: "Overview",       icon: LayoutDashboard },
-  { id: "configuration",  label: "Configuration",  icon: Settings2 },
-  { id: "run-history",    label: "Run History",    icon: History },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "configuration", label: "Configuration", icon: Settings2 },
+  { id: "run-history", label: "Run History", icon: History },
 ];
 
-// ─── Overview tab ─────────────────────────────────────────────────────────────
-
-function OverviewTab({ agent }) {
-  const runs       = genRuns(agent);
-  const totalRuns  = genTotalRuns(agent);
-  const todayRuns  = 10 + (agent.id * 4) % 8;
-  const avgLatency = genAvgLatency(agent);
-  const tokens     = genTokensUsed(agent);
-
-  const tags = [agent.provider === "Anthropic" ? "claude-opus-4" : "gpt-4o", "DevOps", "Monitoring"];
-
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Stats row */}
-      <div className="flex gap-3">
-        <StatCard label="Total Runs"   value={totalRuns.toLocaleString()} sub={`${todayRuns} today`} />
-        <StatCard label="Success Rate" value={`${agent.success}%`} sub="last 30 days" highlight />
-        <StatCard label="Avg Latency"  value={`${avgLatency}s`}    sub="p50 execution" />
-        <StatCard label="Tokens Used"  value={tokens}              sub="lifetime total" />
-      </div>
-
-      {/* Description */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Description</span>
-        <div className="bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 py-3">
-          <p className="text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-6">{agent.description}</p>
-        </div>
-      </div>
-
-      {/* Tags */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Tags</span>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium text-[#475569] dark:text-[#94a3b8] bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155]"
-            >
-              <Tag size={10} className="text-[#94a3b8]" />
-              {t}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Runs */}
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">Recent Runs</span>
-        <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-[#f8fafc] dark:bg-[#0f172a] border-b border-[#e2e8f0] dark:border-[#334155]">
-                <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase w-full">Run ID</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Duration</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Tokens</th>
-                <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase whitespace-nowrap">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run, i) => (
-                <tr
-                  key={run.id}
-                  className={`border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors ${
-                    i % 2 === 0 ? "" : "bg-[#fafafa] dark:bg-[#0f172a]"
-                  }`}
-                >
-                  <td className="px-4 py-3 font-mono text-sm text-[#0f172a] dark:text-[#f1f5f9]">{run.id}</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.duration}s</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.tokens.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right"><RunBadge status={run.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Configuration tab ────────────────────────────────────────────────────────
-
-function ConfigRow({ label, value, mono }) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0">
-      <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">{label}</span>
-      <span className={`text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] ${mono ? "font-mono" : ""}`}>{value}</span>
-    </div>
-  );
-}
-
-function ConfigurationTab({ agent }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 divide-y divide-[#f1f5f9] dark:divide-[#1e293b]">
-        <ConfigRow label="Agent Name"       value={agent.name} />
-        <ConfigRow label="Provider"         value={agent.provider} />
-        <ConfigRow label="Model"            value={agent.model} mono />
-        <ConfigRow label="Status"           value={agent.status.charAt(0).toUpperCase() + agent.status.slice(1)} />
-        <ConfigRow label="Created"          value={agent.date} />
-        <ConfigRow label="Last Run"         value={agent.lastRun} />
-        <ConfigRow label="Access Enabled"   value={agent.accessEnabled ? "Yes" : "No"} />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-semibold tracking-widest uppercase text-[#94a3b8] dark:text-[#64748b]">System Prompt</span>
-        <div className="bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] px-4 py-3 font-mono text-xs text-[#475569] dark:text-[#94a3b8] leading-5 whitespace-pre-wrap">
-          {`You are an AI assistant specializing in "${agent.name}" tasks.\n\nAlways respond clearly and concisely. Prioritize accuracy and helpfulness.\n\nWhen uncertain, ask clarifying questions before proceeding.`}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Run History tab ──────────────────────────────────────────────────────────
-
-function RunHistoryTab({ agent }) {
-  const allRuns = [
-    ...genRuns(agent),
-    { id: "run_3a8c", duration: 2.4, tokens: 1560, status: "Success" },
-    { id: "run_2f1d", duration: 1.5, tokens:  980, status: "Success" },
-    { id: "run_1b7e", duration: 4.1, tokens: 2100, status: "Failed"  },
-    { id: "run_0d9a", duration: 1.9, tokens: 1330, status: "Success" },
-  ];
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">{allRuns.length} runs shown</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#94a3b8] dark:text-[#64748b]">Filter:</span>
-          {[
-            { label: "All", title: "Show all runs" },
-            { label: "Success", title: "Runs that completed successfully" },
-            { label: "Failed", title: "Runs that encountered an error" },
-          ].map(({ label, title }) => (
-            <button
-              key={label}
-              title={title}
-              aria-label={title}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                label === "All"
-                  ? "bg-[#0f172a] text-white border-[#0f172a]"
-                  : "bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-[#f8fafc] dark:bg-[#0f172a] border-b border-[#e2e8f0] dark:border-[#334155]">
-              <th className="text-left px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Run ID</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Duration</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Tokens</th>
-              <th className="text-right px-4 py-2.5 text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] tracking-widest uppercase">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allRuns.map((run, i) => (
-              <tr
-                key={run.id}
-                className="border-b border-[#f1f5f9] dark:border-[#1e293b] last:border-0 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors cursor-pointer"
-              >
-                <td className="px-4 py-3 font-mono text-sm text-[#0f172a] dark:text-[#f1f5f9]">{run.id}</td>
-                <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.duration}s</td>
-                <td className="px-4 py-3 text-right text-sm text-[#475569] dark:text-[#94a3b8] tabular-nums">{run.tokens.toLocaleString()}</td>
-                <td className="px-4 py-3 text-right"><RunBadge status={run.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── Status pill ──────────────────────────────────────────────────────────────
+const FALLBACK_AGENT = {
+  id: 0,
+  name: "Customer Appreciation",
+  description: "AI-powered recognition workflow that creates personalized appreciation cards and messages for clients.",
+  date: "23 Mar 2025",
+  provider: "OpenAI",
+  model: "GPT-4.5",
+  status: "active",
+  lastRun: "2 min ago",
+  success: 98,
+  accessEnabled: true,
+};
 
 const STATUS_STYLE = {
-  active:   { dot: "#22c55e", bg: "#dcfce7", text: "#15803d", label: "Active" },
-  idle:     { dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", label: "Idle" },
-  error:    { dot: "#ef4444", bg: "#fef2f2", text: "#dc2626", label: "Error" },
+  active: { dot: "#22c55e", bg: "#dcfce7", text: "#15803d", label: "Active" },
+  idle: { dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", label: "Idle" },
+  error: { dot: "#ef4444", bg: "#fef2f2", text: "#dc2626", label: "Error" },
   disabled: { dot: "#cbd5e1", bg: "#f8fafc", text: "#94a3b8", label: "Disabled" },
 };
 
+function generateRuns(agent) {
+  const base = [
+    {
+      suffix: "8f3a",
+      duration: 1.9,
+      tokens: 1240,
+      status: "Success",
+      timestamp: "Today, 12:04 PM",
+      preview: "Processed customer appreciation workflow and generated personalized summary.",
+      errorType: null,
+      errorMessage: null,
+      logs: ["12:04:01 INFO Starting workflow", "12:04:02 INFO Enrichment step completed", "12:04:03 INFO Response delivered to CRM"],
+      tools: [
+        { name: "fetch_customer_context", status: "completed", detail: "Resolved customer metadata from CRM." },
+        { name: "compose_response", status: "completed", detail: "Generated appreciation response with recommended next step." },
+      ],
+    },
+    {
+      suffix: "7e2b",
+      duration: 2.1,
+      tokens: 1380,
+      status: "Success",
+      timestamp: "Today, 10:48 AM",
+      preview: "Summarized outbound message draft and attached a follow-up recommendation.",
+      errorType: null,
+      errorMessage: null,
+      logs: ["10:48:11 INFO Request accepted", "10:48:12 INFO Template expansion succeeded", "10:48:13 INFO Run completed"],
+      tools: [
+        { name: "load_template", status: "completed", detail: "Loaded active response template." },
+        { name: "score_tone", status: "completed", detail: "Tone validation passed with warm confidence 0.94." },
+      ],
+    },
+    {
+      suffix: "6d1c",
+      duration: 2.9,
+      tokens: 1510,
+      status: "Success",
+      timestamp: "Today, 08:22 AM",
+      preview: "Created a new appreciation sequence for a priority account owner.",
+      errorType: null,
+      errorMessage: null,
+      logs: ["08:22:05 INFO Trigger received", "08:22:06 INFO Account priority = high", "08:22:08 INFO Delivery confirmed"],
+      tools: [
+        { name: "rank_customer_priority", status: "completed", detail: "Marked account as high priority." },
+        { name: "send_email", status: "completed", detail: "Queued delivery to outbound channel." },
+      ],
+    },
+    {
+      suffix: "5c0a",
+      duration: 3.6,
+      tokens: 1980,
+      status: "Failed",
+      timestamp: "Yesterday, 05:41 PM",
+      preview: "Failed while posting the final message to the webhook destination.",
+      errorType: "Webhook timeout",
+      errorMessage: "The destination webhook did not acknowledge within the configured timeout window.",
+      logs: ["17:41:02 INFO Request accepted", "17:41:03 INFO Generated message payload", "17:41:06 ERROR Webhook request timed out after 3.0s"],
+      tools: [
+        { name: "compose_response", status: "completed", detail: "Response generated successfully." },
+        { name: "post_webhook", status: "failed", detail: "Destination webhook did not return 200 before timeout." },
+      ],
+    },
+    {
+      suffix: "4b9f",
+      duration: 1.8,
+      tokens: 1220,
+      status: "Success",
+      timestamp: "Yesterday, 03:10 PM",
+      preview: "Delivered an appreciative message and stored summary in CRM notes.",
+      errorType: null,
+      errorMessage: null,
+      logs: ["15:10:44 INFO CRM lookup finished", "15:10:45 INFO Message approved", "15:10:46 INFO Summary written to CRM"],
+      tools: [
+        { name: "lookup_account", status: "completed", detail: "Account resolved by ID." },
+        { name: "write_summary", status: "completed", detail: "Outcome appended to CRM timeline." },
+      ],
+    },
+    {
+      suffix: "3a8c",
+      duration: 4.1,
+      tokens: 2100,
+      status: "Failed",
+      timestamp: "2 days ago, 11:15 AM",
+      preview: "Token budget exceeded while compiling a long-form response variant.",
+      errorType: "Token limit",
+      errorMessage: "Execution exceeded the configured generation limit before final response assembly.",
+      logs: ["11:15:21 INFO Run initialized", "11:15:24 WARN Context size approaching limit", "11:15:25 ERROR Token ceiling hit during generation"],
+      tools: [
+        { name: "assemble_context", status: "completed", detail: "Large context window assembled." },
+        { name: "generate_variant", status: "failed", detail: "Generation stopped after token ceiling was reached." },
+      ],
+    },
+    {
+      suffix: "2f1d",
+      duration: 1.5,
+      tokens: 980,
+      status: "Success",
+      timestamp: "2 days ago, 09:03 AM",
+      preview: "Quick follow-up run with low token footprint and healthy latency.",
+      errorType: null,
+      errorMessage: null,
+      logs: ["09:03:15 INFO Start", "09:03:16 INFO Action generated", "09:03:16 INFO Completed"],
+      tools: [
+        { name: "create_summary", status: "completed", detail: "Summary generated in one pass." },
+      ],
+    },
+  ];
+
+  return base.map((run, index) => ({
+    ...run,
+    id: `run_${run.suffix}`,
+    isAnomaly: run.status === "Failed" || run.duration > 3 || run.tokens > 1800,
+    tokens: run.tokens + agent.id * (index % 2 === 0 ? 4 : 7),
+  }));
+}
+
+function buildInsights(agent, runs) {
+  const failures = runs.filter((run) => run.status === "Failed");
+  const successRate = Math.round(((runs.length - failures.length) / runs.length) * 100);
+  const avgLatency = Number((runs.reduce((sum, run) => sum + run.duration, 0) / runs.length).toFixed(1));
+  const tokensTotal = runs.reduce((sum, run) => sum + run.tokens, 0);
+
+  const successSpark = runs.map((run, index) => Math.max(72, 100 - index * 2 - (run.status === "Failed" ? 12 : 0)));
+  const latencySpark = runs.map((run) => Number((run.duration + 0.2).toFixed(1)));
+  const tokenSpark = runs.map((run) => Math.round(run.tokens / 20));
+  const throughputSpark = [28, 31, 33, 35, 37, 36, 39];
+
+  const successTrend = failures.length >= 2 ? -4 : 3;
+  const latencyTrend = avgLatency > 3 ? 18 : avgLatency > 2.2 ? 6 : -8;
+  const tokenTrend = 9;
+  const throughputTrend = 12;
+
+  const insightState = failures.length >= 2 ? "critical" : avgLatency > 2.8 ? "warning" : "healthy";
+  const insightTitle = insightState === "critical" ? "Operational drift detected" : insightState === "warning" ? "System needs attention" : "System healthy";
+  const insightMessage = failures.length >= 2
+    ? `${failures.length} failures appeared in the last ${runs.length} runs, mostly tied to ${failures[0]?.errorType?.toLowerCase() || "execution issues"}.`
+    : avgLatency > 2.8
+    ? `Latency is up by ${(avgLatency - 2.4).toFixed(1)}s compared with the previous 7-day baseline.`
+    : `${agent.name} is meeting success and latency targets with only isolated issues.`;
+  const insightMeta = failures.length >= 2 ? "Immediate review recommended" : avgLatency > 2.8 ? "Monitor next 24h" : "Stable vs last 7 days";
+
+  return {
+    banner: {
+      state: insightState,
+      title: insightTitle,
+      message: insightMessage,
+      meta: insightMeta,
+    },
+    metrics: [
+      {
+        label: "Success Rate",
+        value: `${successRate}%`,
+        comparison: "vs last 7 days",
+        trendPercent: successTrend,
+        points: successSpark,
+        status: failures.length >= 2 ? "dropping" : failures.length === 1 ? "stable" : "improving",
+        accent: "#22c55e",
+        metric: failures.length > 0 ? `${failures.length} failed` : "All clear",
+      },
+      {
+        label: "Latency",
+        value: `${avgLatency}s`,
+        comparison: "vs last 7 days",
+        trendPercent: latencyTrend,
+        points: latencySpark,
+        status: avgLatency > 3 ? "critical" : avgLatency > 2.2 ? "warning" : "good",
+        accent: "#60a5fa",
+        metric: "p50 execution",
+      },
+      {
+        label: "Token Usage",
+        value: `${(tokensTotal / 1000).toFixed(1)}k`,
+        comparison: "vs last 7 days",
+        trendPercent: tokenTrend,
+        points: tokenSpark,
+        status: "stable",
+        accent: "#8b5cf6",
+        metric: "last 7 days",
+      },
+      {
+        label: "Daily Throughput",
+        value: `${28 + agent.id}`,
+        comparison: "vs last 7 days",
+        trendPercent: throughputTrend,
+        points: throughputSpark,
+        status: "improving",
+        accent: "#f59e0b",
+        metric: "runs per day",
+      },
+    ],
+  };
+}
+
 function StatusPill({ status }) {
-  const s = STATUS_STYLE[status] || STATUS_STYLE.idle;
+  const style = STATUS_STYLE[status] || STATUS_STYLE.idle;
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-      style={{ background: s.bg, color: s.text }}
-    >
-      <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: s.dot }} />
-      {s.label}
+    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" style={{ background: style.bg, color: style.text }}>
+      <span className="size-1.5 rounded-full" style={{ background: style.dot }} />
+      {style.label}
     </span>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+function OverviewTab({ insights, recentRuns, failures, onSelectRun, agent }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <InsightBanner insight={insights.banner} />
 
-export default function AgentDetailPage({ agent, onNavigate
+      <div className="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
+        {insights.metrics.map((metric) => <InsightCard key={metric.label} {...metric} />)}
+      </div>
 
-}) {
-  const [activeTab, setActiveTab] = useState("overview");
+      <OperationsTimelineChart runs={recentRuns} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_.95fr]">
+        <RunTimeline runs={recentRuns.slice(0, 5)} onSelectRun={onSelectRun} />
+        <FailureInsightsPanel failures={failures.slice(0, 2)} onSelectRun={onSelectRun} />
+      </div>
+
+      <TestPromptPanel agentName={agent.name} />
+    </div>
+  );
+}
+
+function ConfigurationTab({ config, setConfig, onOpenTestModal }) {
+  const sections = [
+    {
+      title: "Model Config",
+      description: "Tune the base model, prompt behavior, and safety defaults without leaving the page.",
+      fields: [
+        { key: "provider", label: "Provider", value: config.provider, tooltip: "Underlying model provider used for inference." },
+        { key: "model", label: "Model", value: config.model, tooltip: "Primary model identifier for this agent." },
+        { key: "temperature", label: "Temperature", value: config.temperature, tooltip: "Controls creativity and variance in responses." },
+        { key: "maxTokens", label: "Max tokens", value: config.maxTokens, tooltip: "Upper bound for generated completion size." },
+      ],
+    },
+    {
+      title: "Access Control",
+      description: "Define who can invoke, edit, or observe the agent.",
+      fields: [
+        { key: "owner", label: "Owner", value: config.owner, tooltip: "Primary owner responsible for this agent." },
+        { key: "workspace", label: "Workspace", value: config.workspace, tooltip: "Workspace or team scope for access." },
+        { key: "accessEnabled", label: "Access enabled", value: config.accessEnabled, tooltip: "Whether end users may invoke this agent." },
+        { key: "approvalMode", label: "Approval mode", value: config.approvalMode, tooltip: "Execution approvals before external actions." },
+      ],
+    },
+    {
+      title: "Runtime Settings",
+      description: "Keep runtime settings observable and editable inline for faster iteration.",
+      fields: [
+        { key: "timeout", label: "Timeout", value: config.timeout, tooltip: "Maximum end-to-end execution time before abort." },
+        { key: "retryPolicy", label: "Retry policy", value: config.retryPolicy, tooltip: "Automatic retry policy for transient failures." },
+        { key: "concurrency", label: "Concurrency", value: config.concurrency, tooltip: "Allowed parallel runs for this agent." },
+        { key: "webhookTarget", label: "Webhook target", value: config.webhookTarget, tooltip: "Primary outbound integration endpoint." },
+      ],
+    },
+  ];
+
+  const handleFieldChange = (key, value) => setConfig((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+    <div className="flex flex-col gap-6">
+      {sections.map((section) => (
+        <ConfigSectionCard
+          key={section.title}
+          title={section.title}
+          description={section.description}
+          fields={section.fields}
+          onFieldChange={handleFieldChange}
+          onTestConfiguration={onOpenTestModal}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RunHistoryTab({ runs, filters, setFilters, onSelectRun }) {
+  const filteredRuns = runs.filter((run) => {
+    if (filters.search && !run.id.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.status !== "all" && run.status.toLowerCase() !== filters.status) return false;
+    if (filters.anomaliesOnly && !run.isAnomaly) return false;
+    if (filters.duration !== "all") {
+      if (filters.duration === "lt2" && run.duration >= 2) return false;
+      if (filters.duration === "2to3" && (run.duration < 2 || run.duration > 3)) return false;
+      if (filters.duration === "gt3" && run.duration <= 3) return false;
+    }
+    if (filters.tokens !== "all") {
+      if (filters.tokens === "lt1200" && run.tokens >= 1200) return false;
+      if (filters.tokens === "1200to1800" && (run.tokens < 1200 || run.tokens > 1800)) return false;
+      if (filters.tokens === "gt1800" && run.tokens <= 1800) return false;
+    }
+    if (filters.range === "1h" && !run.timestamp.startsWith("Today")) return false;
+    if (filters.range === "24h" && run.timestamp.startsWith("2 days")) return false;
+    return true;
+  });
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] dark:border-[#334155] dark:bg-[#111827]">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <SearchField value={filters.search} onChange={(value) => setFilters((prev) => ({ ...prev, search: value }))} />
+          <SelectChip label="Status" value={filters.status} options={[["all", "All"], ["success", "Success"], ["failed", "Failed"]]} onChange={(value) => setFilters((prev) => ({ ...prev, status: value }))} />
+          <SelectChip label="Duration" value={filters.duration} options={[["all", "All"], ["lt2", "< 2s"], ["2to3", "2–3s"], ["gt3", "> 3s"]]} onChange={(value) => setFilters((prev) => ({ ...prev, duration: value }))} />
+          <SelectChip label="Tokens" value={filters.tokens} options={[["all", "All"], ["lt1200", "< 1200"], ["1200to1800", "1200–1800"], ["gt1800", "> 1800"]]} onChange={(value) => setFilters((prev) => ({ ...prev, tokens: value }))} />
+          <SelectChip label="Time Range" value={filters.range} options={[["1h", "1h"], ["24h", "24h"], ["7d", "7d"]]} onChange={(value) => setFilters((prev) => ({ ...prev, range: value }))} />
+          <label className="flex items-center justify-between rounded-xl border border-[#e2e8f0] px-3 py-2 text-sm dark:border-[#334155]">
+            <span className="text-[#475569] dark:text-[#cbd5e1]">Show anomalies</span>
+            <input type="checkbox" checked={filters.anomaliesOnly} onChange={(e) => setFilters((prev) => ({ ...prev, anomaliesOnly: e.target.checked }))} className="size-4 rounded accent-[#2563eb]" />
+          </label>
+        </div>
+      </div>
+
+      <OperationsTimelineChart runs={filteredRuns} />
+
+      <RunTimeline runs={filteredRuns} onSelectRun={onSelectRun} />
+    </div>
+  );
+}
+
+function SearchField({ value, onChange }) {
+  return (
+    <label className="rounded-xl border border-[#e2e8f0] px-3 py-2 dark:border-[#334155]">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#94a3b8] dark:text-[#64748b]">Search</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search run ID"
+        className="mt-2 w-full bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8] dark:text-[#f8fafc]"
+      />
+    </label>
+  );
+}
+
+function SelectChip({ label, value, options, onChange }) {
+  return (
+    <label className="rounded-xl border border-[#e2e8f0] px-3 py-2 dark:border-[#334155]">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#94a3b8] dark:text-[#64748b]">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full bg-transparent text-sm text-[#0f172a] outline-none dark:text-[#f8fafc]">
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>{optionLabel}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+export default function AgentDetailPage({ agent, onNavigate }) {
+  const currentAgent = agent || FALLBACK_AGENT;
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedRun, setSelectedRun] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [testConfigOpen, setTestConfigOpen] = useState(false);
+  const [runFilters, setRunFilters] = useState({
+    search: "",
+    status: "all",
+    duration: "all",
+    tokens: "all",
+    range: "7d",
+    anomaliesOnly: false,
+  });
+  const [config, setConfig] = useState({
+    provider: currentAgent.provider,
+    model: currentAgent.model,
+    temperature: "0.3",
+    maxTokens: "2048",
+    owner: "Jane Cooper",
+    workspace: "Customer Experience",
+    accessEnabled: currentAgent.accessEnabled ? "Enabled" : "Disabled",
+    approvalMode: "Ask on external actions",
+    timeout: "6s",
+    retryPolicy: "2 retries / exponential backoff",
+    concurrency: "3 parallel runs",
+    webhookTarget: "https://hooks.aziron.ai/agents/customer-appreciation",
+  });
+
+  const runs = useMemo(() => generateRuns(currentAgent), [currentAgent]);
+  const failures = useMemo(() => runs.filter((run) => run.status === "Failed"), [runs]);
+  const insights = useMemo(() => buildInsights(currentAgent, runs), [currentAgent, runs]);
+
+  const openRun = (run) => {
+    setSelectedRun(run);
+    setDrawerOpen(true);
+  };
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
-
-            {/* Breadcrumb */}
+          <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-6 py-6">
             <nav className="flex items-center gap-1.5 text-xs text-[#94a3b8] dark:text-[#64748b]">
-              <button
-                onClick={() => onNavigate("agents")}
-                className="hover:text-[#64748b] dark:hover:text-[#94a3b8] transition-colors"
-              >
-                Agents
-              </button>
+              <button onClick={() => onNavigate("agents")} className="transition-colors hover:text-[#64748b] dark:hover:text-[#94a3b8]">Agents</button>
               <ChevronRight size={12} />
-              <span className="text-[#475569] dark:text-[#94a3b8] font-medium">{agent.name}</span>
+              <span className="font-medium text-[#475569] dark:text-[#94a3b8]">{currentAgent.name}</span>
             </nav>
 
-            {/* Page header */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                {/* Agent icon */}
-                <div className="size-14 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] flex items-center justify-center flex-shrink-0 shadow-sm dark:shadow-none">
-                  <img src={imgAvatarRobot} alt="" className="w-[55%] h-[55%] object-contain opacity-60" />
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div className="flex items-start gap-4">
+                <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-[#e2e8f0] bg-white shadow-sm dark:border-[#334155] dark:bg-[#111827]">
+                  <img src={imgAvatarRobot} alt="" className="h-[58%] w-[58%] object-contain opacity-90" />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="text-xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-7">{agent.name}</h1>
-                    <StatusPill status={agent.status} />
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-[#0f172a] dark:text-[#f8fafc]">{currentAgent.name}</h1>
+                    <StatusPill status={currentAgent.status} />
+                    <div className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-medium text-[#1d4ed8] dark:bg-[#0f172a] dark:text-[#93c5fd]">
+                      {insights.metrics[0].value} success
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[#64748b] dark:text-[#94a3b8]">
-                    <img src={imgOpenAI} alt="" className="size-3.5 object-contain" />
-                    <span>{agent.model}</span>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748b] dark:text-[#94a3b8]">
+                    <ProviderLogo provider={currentAgent.provider} className="size-3.5 text-[#475569] dark:text-[#cbd5e1]" fallbackClassName="size-3.5" />
+                    <span>{currentAgent.model}</span>
                     <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
                     <Clock size={11} />
-                    <span>Last run {agent.lastRun}</span>
+                    <span>Last run {currentAgent.lastRun}</span>
+                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
+                    <span>{failures.length} recent failures</span>
                   </div>
+
+                  <p className="max-w-3xl text-sm leading-6 text-[#64748b] dark:text-[#94a3b8]">{currentAgent.description}</p>
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button aria-label="Run agent now" className="flex items-center gap-1.5 h-8 px-3.5 rounded-[8px] bg-[#0f172a] text-white text-xs font-medium hover:bg-[#1e293b] transition-colors">
-                  <Play size={12} fill="white" />
-                  Run Now
-                </button>
-                <button aria-label="Edit agent" className="flex items-center gap-1.5 h-8 px-3.5 rounded-[8px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#0f172a] dark:text-[#f1f5f9] text-xs font-medium hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors">
-                  <Pencil size={12} />
+              <div className="flex items-center gap-2">
+                <Button className="gap-1.5 bg-[#0f172a] text-white hover:bg-[#1e293b] dark:bg-[#f8fafc] dark:text-[#0f172a] dark:hover:bg-[#e2e8f0]">
+                  <Play size={14} />
+                  Run now
+                </Button>
+                <Button variant="outline" className="gap-1.5">
+                  <Pencil size={14} />
                   Edit
-                </button>
-                <button aria-label="More options" aria-haspopup="true" className="flex items-center justify-center size-8 rounded-[8px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors">
+                </Button>
+                <Button variant="outline" size="icon-sm" aria-label="More options">
                   <MoreVertical size={15} />
-                </button>
+                </Button>
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex items-center gap-0 border-b border-[#e2e8f0] dark:border-[#334155]">
+            <div className="flex items-center gap-1 border-b border-[#e2e8f0] dark:border-[#334155]">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -365,11 +510,7 @@ export default function AgentDetailPage({ agent, onNavigate
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                      active
-                        ? "border-[#0f172a] dark:border-[#f1f5f9] text-[#0f172a] dark:text-[#f1f5f9]"
-                        : "border-transparent text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] hover:border-[#e2e8f0] dark:hover:border-[#334155]"
-                    }`}
+                    className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active ? "border-[#0f172a] text-[#0f172a] dark:border-[#f8fafc] dark:text-[#f8fafc]" : "border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]"}`}
                   >
                     <Icon size={14} />
                     {tab.label}
@@ -378,13 +519,55 @@ export default function AgentDetailPage({ agent, onNavigate
               })}
             </div>
 
-            {/* Tab content */}
-            {activeTab === "overview"      && <OverviewTab agent={agent} />}
-            {activeTab === "configuration" && <ConfigurationTab agent={agent} />}
-            {activeTab === "run-history"   && <RunHistoryTab agent={agent} />}
+            {activeTab === "overview" && (
+              <OverviewTab
+                insights={insights}
+                recentRuns={runs}
+                failures={failures}
+                onSelectRun={openRun}
+                agent={currentAgent}
+              />
+            )}
+
+            {activeTab === "configuration" && (
+              <ConfigurationTab
+                config={config}
+                setConfig={setConfig}
+                onOpenTestModal={() => setTestConfigOpen(true)}
+              />
+            )}
+
+            {activeTab === "run-history" && (
+              <RunHistoryTab
+                runs={runs}
+                filters={runFilters}
+                setFilters={setRunFilters}
+                onSelectRun={openRun}
+              />
+            )}
           </div>
         </div>
       </div>
+
+      <RunDetailsDrawer run={selectedRun} open={drawerOpen} onOpenChange={setDrawerOpen} />
+
+      <Dialog open={testConfigOpen} onOpenChange={setTestConfigOpen}>
+        <DialogContent className="max-w-lg bg-white dark:bg-[#111827]">
+          <DialogHeader>
+            <DialogTitle>Test Configuration</DialogTitle>
+            <DialogDescription>Validate the current configuration with a dry-run before saving changes.</DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] px-4 py-4 text-sm leading-6 text-[#475569] dark:border-[#334155] dark:bg-[#0f172a] dark:text-[#cbd5e1]">
+            Dry-run succeeded. Expected latency is 1.8s with current timeout, and the webhook target responded normally.
+          </div>
+
+          <DialogFooter className="bg-transparent p-0 pt-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setTestConfigOpen(false)}>Close</Button>
+            <Button className="bg-[#2563eb] text-white hover:bg-[#1d4ed8]" onClick={() => setTestConfigOpen(false)}>Looks good</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

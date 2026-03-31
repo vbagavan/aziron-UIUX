@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
-@import "@fontsource-variable/geist-mono";
+@import "@fontsource/space-mono";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -72,7 +72,7 @@
   --radius: 0.5000rem;
   --font-sans: Inter;
   --font-serif: Playfair Display;
-  --font-mono: Chivo Mono;
+  --font-mono: "Space Mono";
   --shadow-x: 0px;
   --shadow-y: 5px;
   --shadow-blur: 10px;

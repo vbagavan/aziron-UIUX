@@ -529,7 +529,7 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
         <Sidebar activePage="flows" onNavigate={onNavigate} />
 
         <div className="flex flex-col flex-1 min-w-0">

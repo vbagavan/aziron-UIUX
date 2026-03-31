@@ -1,18 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Paperclip, Send, ChevronDown, Database, Cpu, Bot,
-  RefreshCw, Copy, ThumbsUp, ThumbsDown, Plus, Mic,
+  Plus,
   Square,
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
 import RichMessage from "@/components/RichMessage";
 import VoiceOrb from "@/components/VoiceOrb";
+import AIMessage from "@/components/chat/AIMessage";
+import ChatInput from "@/components/chat/ChatInput";
+import MessageActions from "@/components/chat/MessageActions";
+import UserMessage from "@/components/chat/UserMessage";
+import UserMessageActions from "@/components/chat/UserMessageActions";
 
 const imgAzironLogo =
-  "https://www.figma.com/api/mcp/asset/f4c83c9c-c4ed-4c76-880e-b0d714d34c1e";
-const imgToolsIcon =
-  "https://www.figma.com/api/mcp/asset/ff2b2176-1ed2-4a50-a2df-65dd00a693ff";
+  "/logo-mark.svg";
 
 // ─── Voice States (matches VoiceOrb state strings) ────────────────────────
 const VS = {
@@ -38,19 +40,6 @@ const VOICE_TURNS = [
     assistant: "I would tune the tone to feel warmer, more reassuring, and action-oriented. Each response can end with a concrete next step, such as confirming ownership or proposing a follow-up.",
   },
 ];
-
-/* ── Donut usage indicator ─────────────────────────────────────── */
-function UsageDonut({ pct = 65 }) {
-  const r = 5, cx = 7, cy = 7, circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" style={{ rotate: "-90deg" }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e2e8f0" strokeWidth="2" />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2563eb" strokeWidth="2"
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
-    </svg>
-  );
-}
 
 /* ── Typing indicator ──────────────────────────────────────────── */
 function TypingIndicator() {
@@ -384,16 +373,7 @@ function VoiceInputCenter({ state }) {
 const NEXT_REPLIES = [
   [
     { type: "thinking", duration: "1.8s" },
-    { type: "text", content: "I can help with that! Let me think through the best approach." },
-    { type: "heading", level: 3, content: "Suggested Next Steps" },
-    {
-      type: "steps",
-      items: [
-        { num: 1, title: "Clarify goals",    description: "Understand the desired outcome.", status: "done" },
-        { num: 2, title: "Build a plan",     description: "Map out the key milestones.",     status: "active" },
-        { num: 3, title: "Execute & review", description: "Iterate and validate quickly.",   status: "pending" },
-      ],
-    },
+    { type: "text", content: "I can help with that. I would start by clarifying the goal, outline a lean plan, and then execute in small reviewable steps." },
   ],
   [
     { type: "text", content: "Great question. Here's a code snippet to get you started:" },
@@ -550,7 +530,7 @@ export default function NewChatPage({ onNavigate }) {
   const sendMessage = () => {
     const text = message.trim();
     if (!text) return;
-    const userMsg = { id: Date.now(), role: "user", content: text };
+    const userMsg = { id: nextMessageId(), role: "user", content: text };
     setMessages(prev => [...prev, userMsg]);
     setMessage("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -558,15 +538,29 @@ export default function NewChatPage({ onNavigate }) {
 
     const isTimeline = text.toLowerCase() === "timeline";
     const isTools    = text.toLowerCase() === "tools";
-    const delay = (isTimeline || isTools) ? 900 : 1200 + Math.random() * 800;
+    const isTable    = text.toLowerCase() === "table";
+    const delay = (isTimeline || isTools || isTable) ? 900 : 1200 + Math.random() * 800;
     setTimeout(() => {
       setIsTyping(false);
       const reply = isTimeline
         ? [{ type: "timeline",       duration: "3.1s" }]
         : isTools
         ? [{ type: "tool_execution" }]
+        : isTable
+        ? [
+            { type: "text", content: "Here's the data you asked for:" },
+            {
+              type: "table",
+              headers: ["Name", "Value", "Status"],
+              rows: [
+                ["Alpha", "142", "Active"],
+                ["Beta", "89", "Idle"],
+                ["Gamma", "210", "Active"],
+              ],
+            },
+          ]
         : getNextReply();
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: "assistant", blocks: reply }]);
+      setMessages(prev => [...prev, { id: nextMessageId(), role: "assistant", blocks: reply }]);
     }, delay);
   };
 
@@ -580,6 +574,18 @@ export default function NewChatPage({ onNavigate }) {
     if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 160)}px`; }
   };
 
+  const handleSuggestionSelect = (suggestion) => {
+    setMessage(suggestion);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.style.height = "auto";
+        el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+        el.focus();
+      }
+    });
+  };
+
   const copyMessage = (id, blocks) => {
     const text = (blocks || []).map(b => b.content || "").join("\n");
     navigator.clipboard.writeText(text).catch(() => {});
@@ -587,21 +593,46 @@ export default function NewChatPage({ onNavigate }) {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
+  const copyUserPrompt = (id, text) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const editUserPrompt = (text) => {
+    setMessage(text);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.style.height = "auto";
+        el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+        el.focus();
+      }
+    });
+  };
+
+  const regenerateReply = () => {
+    if (isTyping) return;
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: "assistant", blocks: getNextReply() },
+      ]);
+    }, 900);
+  };
+
   const startNew = () => { setMessages([]); setIsTyping(false); setMessage(""); };
   const assistantPanelText = assistantPreview || lastVoiceTurn?.assistant || "";
   const promptBox = (
-    <div className={`${voiceActive ? "rounded-[18px] sm:rounded-[22px] overflow-hidden bg-white dark:bg-[#050816] shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)]" : "bg-white dark:bg-[#1e293b] rounded-[12px] overflow-hidden shadow-sm"}`}
-      style={{
-        border: voiceActive
-          ? "1px solid rgba(37,87,255,.45)"
-          : `2px solid ${message.trim() || hasMessages ? "#2563eb" : "#e2e8f0"}`,
-        boxShadow: voiceActive
-          ? "0 0 0 1px rgba(37,87,255,.18), 0 0 20px rgba(37,87,255,.10), 0 18px 70px -36px rgba(3,8,22,.30)"
-          : "0 1px 2px rgba(0,0,0,.05)",
-        transition: "border-color .25s, box-shadow .25s",
-      }}>
-
-      {voiceActive ? (
+    voiceActive ? (
+      <div
+        className="overflow-hidden rounded-[24px] border border-[#2557ff]/35 bg-white shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)] dark:bg-[#050816]"
+        style={{
+          boxShadow: "0 0 0 1px rgba(37,87,255,.12), 0 18px 70px -36px rgba(3,8,22,.30)",
+        }}
+      >
         <div className="relative min-h-[172px] px-3 pt-3 pb-2 sm:min-h-[200px] sm:px-4 sm:pt-4 sm:pb-2 lg:min-h-[220px] lg:px-10 lg:pt-6 lg:pb-4">
           <style>{`
             @keyframes voiceReferenceFade {
@@ -680,74 +711,26 @@ export default function NewChatPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="flex items-end gap-3 px-4 py-3">
-            <button aria-label="Attach file"
-              className="flex items-center justify-center size-8 rounded-full text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 mb-0.5">
-              <Paperclip size={16} />
-            </button>
-            <textarea
-              ref={textareaRef}
-              value={message}
-              onInput={handleInput}
-              onKeyDown={handleKeyDown}
-              placeholder="Continue the conversation…"
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none resize-none leading-6"
-              style={{ minHeight: 28, maxHeight: 160 }}
-            />
-            <button
-              onClick={startVoiceInput}
-              aria-label="Start voice input"
-              className="relative flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb]">
-              <Mic size={14} />
-            </button>
-            <button onClick={sendMessage} disabled={!message.trim() || isTyping}
-              aria-label="Send"
-              className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 mb-0.5 transition-all ${
-                message.trim() && !isTyping
-                  ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                  : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#cbd5e1] dark:text-[#475569] cursor-not-allowed"
-              }`}>
-              <Send size={14} />
-            </button>
-          </div>
-
-          <div className="h-px bg-[#f1f5f9] dark:bg-[#1e293b]" />
-          <div className="flex items-center justify-between px-4 h-9">
-            <div className="flex items-center gap-2.5">
-              <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-                <img src={imgToolsIcon} alt="" className="size-3.5 object-contain opacity-60" />
-                <span>Tools</span>
-                <ChevronDown size={11} />
-              </button>
-              <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
-              <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-                <Database size={13} />
-                <span>Knowledge hub</span>
-                <ChevronDown size={11} />
-              </button>
-              <div className="w-px h-4 bg-[#e2e8f0] dark:bg-[#334155]" />
-              <div className="flex items-center gap-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8]">
-                <UsageDonut pct={65} />
-                <span>65% used</span>
-              </div>
-            </div>
-            <button className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors whitespace-nowrap">
-              <Cpu size={12} />
-              <span>Claude-sonnet</span>
-              <ChevronDown size={11} />
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+      </div>
+    ) : (
+      <ChatInput
+        textareaRef={textareaRef}
+        value={message}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        onSend={sendMessage}
+        onVoice={startVoiceInput}
+        onAttach={() => {}}
+        onSuggestionSelect={handleSuggestionSelect}
+        disabled={!message.trim() || isTyping}
+        suggestions={!hasMessages ? SUGGESTIONS : []}
+      />
+    )
   );
 
   return (
     <>
-    <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
       <Sidebar activePage="new-chat" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -759,18 +742,15 @@ export default function NewChatPage({ onNavigate }) {
             <div className="flex h-full items-center justify-center px-4 py-10">
               <div className="w-full max-w-[720px]">
                 <div className="flex flex-col items-center justify-center gap-6">
-              <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
-              <h1 className="text-2xl font-medium text-[#0f172a] dark:text-[#f1f5f9]" style={{ letterSpacing: "-0.6px" }}>
-                Hi John, where should we start?
-              </h1>
-              <div className="flex flex-wrap gap-2 justify-center max-w-lg">
-                {SUGGESTIONS.map(s => (
-                  <button key={s} onClick={() => { setMessage(s); textareaRef.current?.focus(); }}
-                    className="px-3 py-1.5 rounded-full border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-xs text-[#475569] dark:text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb] dark:hover:border-[#2563eb] dark:hover:text-[#60a5fa] transition-colors">
-                    {s}
-                  </button>
-                ))}
-              </div>
+                  <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
+                  <div className="space-y-2 text-center">
+                    <h1 className="text-[30px] font-medium text-foreground" style={{ letterSpacing: "-0.8px" }}>
+                      Hi John, where should we start?
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Ask a question, sketch an idea, or start a voice conversation.
+                    </p>
+                  </div>
                   <div className="w-full pt-2">
                     {promptBox}
                   </div>
@@ -778,78 +758,54 @@ export default function NewChatPage({ onNavigate }) {
               </div>
             </div>
           ) : (
-            <div className="max-w-[720px] mx-auto px-4 py-6 flex flex-col gap-6">
-              {messages.map(msg => (
-                <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className="mx-auto flex w-full max-w-[760px] flex-col gap-4 px-4 py-6">
+              {messages.map((msg) => {
+                if (msg.role === "user") {
+                  return (
+                    <UserMessage
+                      key={msg.id}
+                      actions={
+                        <UserMessageActions
+                          copied={copiedId === msg.id}
+                          onCopy={() => copyUserPrompt(msg.id, msg.content)}
+                          onEdit={() => editUserPrompt(msg.content)}
+                        />
+                      }
+                    >
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{msg.content}</p>
+                    </UserMessage>
+                  );
+                }
 
-                  {/* AI avatar */}
-                  {msg.role === "assistant" && (
-                    <div className="size-8 rounded-full bg-[#eff6ff] dark:bg-[#1e3a8a] border border-[#bfdbfe] dark:border-[#1d4ed8] flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Bot size={14} className="text-[#2563eb] dark:text-[#60a5fa]" />
-                    </div>
-                  )}
+                const hasProtectedBlocks = msg.blocks?.some((block) =>
+                  ["thinking", "timeline", "tool_execution"].includes(block.type),
+                );
 
-                  <div className={`flex flex-col gap-1.5 ${msg.role === "user" ? "items-end max-w-[75%]" : "items-start flex-1 min-w-0"}`}>
-                    {msg.role === "user" ? (
-                      <div className="px-4 py-3 rounded-[14px] rounded-br-[4px] bg-[#2563eb] text-white text-sm leading-6">
-                        {msg.content}
-                      </div>
-                    ) : (() => {
-                      const isTimelineOnly = msg.blocks?.length === 1 &&
-                        ["timeline", "tool_execution"].includes(msg.blocks[0].type);
-                      return (
-                        <div className={isTimelineOnly
-                          ? "w-full"
-                          : "w-full px-4 py-3 rounded-[14px] rounded-bl-[4px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] shadow-sm"
-                        }>
-                          <RichMessage blocks={msg.blocks} />
-                        </div>
-                      );
-                    })()}
-
-                    {/* AI actions */}
-                    {msg.role === "assistant" && (
-                      <div className="flex items-center gap-0.5 opacity-0 hover:opacity-100 transition-opacity pl-1"
-                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                        onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                        <button onClick={() => copyMessage(msg.id, msg.blocks)}
-                          className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors"
-                          title="Copy">
-                          {copiedId === msg.id
-                            ? <span className="text-[9px] font-bold text-[#16a34a]">✓</span>
-                            : <Copy size={11} />}
-                        </button>
-                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Good">
-                          <ThumbsUp size={11} />
-                        </button>
-                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Bad">
-                          <ThumbsDown size={11} />
-                        </button>
-                        <button className="flex items-center justify-center size-6 rounded-[4px] text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors" title="Regenerate">
-                          <RefreshCw size={11} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* User avatar */}
-                  {msg.role === "user" && (
-                    <div className="size-8 rounded-full bg-[#0f172a] dark:bg-[#1e293b] flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-white">J</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                return (
+                  <AIMessage
+                    key={msg.id}
+                    className={hasProtectedBlocks ? "max-w-none bg-transparent px-0 py-0 ring-0" : undefined}
+                    actions={
+                      <MessageActions
+                        copied={copiedId === msg.id}
+                        onCopy={() => copyMessage(msg.id, msg.blocks)}
+                        onRegenerate={regenerateReply}
+                        onThumbsUp={() => {}}
+                        onThumbsDown={() => {}}
+                      />
+                    }
+                  >
+                    <RichMessage blocks={msg.blocks} />
+                  </AIMessage>
+                );
+              })}
 
               {isTyping && (
-                <div className="flex gap-3 justify-start">
-                  <div className="size-8 rounded-full bg-[#eff6ff] dark:bg-[#1e3a8a] border border-[#bfdbfe] dark:border-[#1d4ed8] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Bot size={14} className="text-[#2563eb] dark:text-[#60a5fa]" />
-                  </div>
-                  <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[14px] rounded-bl-[4px] px-4 py-3 shadow-sm">
+                <AIMessage>
+                  <div className="inline-flex items-center rounded-full bg-[#f8fafc] px-2 py-1 dark:bg-white/[0.04]">
                     <TypingIndicator />
                   </div>
-                </div>
+                </AIMessage>
               )}
 
               <div ref={bottomRef} />
@@ -859,15 +815,15 @@ export default function NewChatPage({ onNavigate }) {
 
         {/* ── Input ── */}
         {hasMessages && (
-          <div className="flex-shrink-0 px-4 pb-4 pt-2">
-            <div className="max-w-[720px] mx-auto">
+          <div className="sticky bottom-0 flex-shrink-0 border-t border-[#e8edf4] bg-[#f8fafc]/92 px-4 pb-4 pt-3 backdrop-blur dark:border-white/[0.05] dark:bg-[#0f172a]/88">
+            <div className="mx-auto max-w-[760px]">
               {!voiceActive && (
-              <div className="flex justify-center mb-2">
-                <button onClick={startNew}
-                  className="flex items-center gap-1.5 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors px-3 py-1 rounded-full hover:bg-[#f1f5f9] dark:hover:bg-[#334155]">
-                  <Plus size={12} /> New conversation
-                </button>
-              </div>
+                <div className="mb-3 flex justify-center">
+                  <button onClick={startNew}
+                    className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
+                    <Plus size={12} /> New conversation
+                  </button>
+                </div>
               )}
               {promptBox}
             </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Plus, MoreVertical, Bot, Pencil, Copy, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Cpu, SlidersHorizontal, X } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import AppHeader from "@/components/AppHeader";
+import ProviderLogo from "@/components/ProviderLogo";
 import Sidebar from "@/components/Sidebar";
 import ExpandableSearch from "@/components/ExpandableSearch";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -37,9 +38,7 @@ function AnimCount({ to, className = "" }) {
   return <span className={className}>{val}</span>;
 }
 
-// Figma asset URLs
-const imgAvatarRobot = "https://www.figma.com/api/mcp/asset/30669545-e841-413b-80af-a7db03ab0d8c";
-const imgOpenAI = "https://www.figma.com/api/mcp/asset/8933db25-5a1e-4a78-ae17-f0251297e0e4";
+const imgAvatarRobot = "/astronaut.svg";
 
 const agents = [
   { id: 0,  name: "Customer Appreciation",   description: "AI-powered recognition workflow that creates personalized appreciation cards and messages for clients.",                        date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "2 min ago",   success: 98,  accessEnabled: true  },
@@ -64,11 +63,6 @@ const agents = [
   { id: 19, name: "Continuous Learning Hub", description: "Recommends and tracks online courses and certifications to support your ongoing professional development.",                  date: "15 Jul 2026", provider: "OpenAI",    model: "GPT-4o",         status: "idle",     lastRun: "3 days ago",  success: 88,  accessEnabled: false },
 ];
 
-const PROVIDER_LOGOS = {
-  OpenAI:    imgOpenAI,
-  Anthropic: null,
-};
-
 const STATUS_CONFIG = {
   active:   { label: "Active",   dot: "#22c55e", bg: "#dcfce7", text: "#15803d", border: "#bbf7d0" },
   idle:     { label: "Idle",     dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" },
@@ -80,17 +74,6 @@ const STATUS_FILTERS = ["All", "Active", "Idle", "Error", "Disabled"];
 const PROVIDER_FILTERS = ["All", "OpenAI", "Anthropic"];
 
 // ─── Provider logo / avatar ───────────────────────────────────────────────────
-
-function ProviderLogo({ provider, size = 4 }) {
-  const logo = PROVIDER_LOGOS[provider];
-  const cls = `size-${size} object-contain flex-shrink-0`;
-  if (logo) return <img src={logo} alt={provider} className={cls} />;
-  return (
-    <div className={`size-${size} rounded bg-[#e0e7ff] flex items-center justify-center flex-shrink-0`}>
-      <span className="text-xs font-bold text-[#4f46e5]">{provider[0]}</span>
-    </div>
-  );
-}
 
 // ─── Agent avatar ─────────────────────────────────────────────────────────────
 
@@ -209,7 +192,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.date}</span>
         <div className="flex items-center gap-1">
-          <ProviderLogo provider={agent.provider} size={3} />
+          <ProviderLogo provider={agent.provider} className="size-3" fallbackClassName="size-3" />
           <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.model}</span>
         </div>
       </div>
@@ -298,7 +281,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
       {/* Provider / Model */}
       <td className="px-3 py-2.5 w-[180px]">
         <div className="flex items-center gap-1.5">
-          <ProviderLogo provider={agent.provider} size={4} />
+          <ProviderLogo provider={agent.provider} className="size-4" fallbackClassName="size-4" />
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium text-[#475569] dark:text-[#94a3b8] leading-none">{agent.provider}</span>
             <span className="text-sm text-[#94a3b8] dark:text-[#64748b] leading-none">{agent.model}</span>
@@ -491,7 +474,6 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
             <div className="flex flex-wrap gap-1">
               {PROVIDER_FILTERS.map((p) => {
                 const isActive = providerFilter === p;
-                const logo = p !== "All" ? PROVIDER_LOGOS[p] : null;
                 return (
                   <button
                     key={p}
@@ -502,7 +484,7 @@ function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProv
                         : "bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
                   >
-                    {logo && !isActive && <img src={logo} alt={p} className="size-3 object-contain" />}
+                    {p !== "All" && !isActive && <ProviderLogo provider={p} className="size-3 text-[#64748b] dark:text-[#94a3b8]" fallbackClassName="size-3" />}
                     {p}
                   </button>
                 );
@@ -561,7 +543,7 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
         <div className="flex flex-col flex-1 min-w-0">

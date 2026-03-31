@@ -129,7 +129,6 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
   // popovers (action bar)
   const [showRolePop,   setShowRolePop]   = useState(false);
-  const [showGroupPop,  setShowGroupPop]  = useState(false);
   const [showColPop,    setShowColPop]    = useState(false);
   // filter popovers
   const [showStatusFilt, setShowStatusFilt] = useState(false);
@@ -149,7 +148,6 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
   // refs
   const roleRef    = useRef(null);
-  const groupRef   = useRef(null);
   const colRef     = useRef(null);
   const statusFRef = useRef(null);
   const roleFRef   = useRef(null);
@@ -191,7 +189,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
   const notify = msg => setToast(msg);
 
   function closeAllPops(){
-    setShowRolePop(false); setShowGroupPop(false); setShowColPop(false);
+    setShowRolePop(false); setShowColPop(false);
     setShowStatusFilt(false); setShowRoleFilt(false); setShowGroupFilt(false);
   }
 
@@ -218,7 +216,6 @@ export default function UsersListPage({ onNavigate, onViewUser }){
     const checks = {};
     ALL_GROUPS.forEach(g=>{ checks[g.id]=false; });
     setAddGroupModal({ count: selected.length, groupChecks: checks });
-    setShowGroupPop(false);
   }
 
   function confirmAddToGroup(){
@@ -296,15 +293,15 @@ export default function UsersListPage({ onNavigate, onViewUser }){
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={()=>{ setRowMenu(null); setRowSubMenu(null); }}/>}
 
-      <div className="flex h-screen w-full bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
           <AppHeader onNavigate={onNavigate}>
             <nav className="flex items-center gap-1.5 text-sm ml-1">
-              <button onClick={()=>onNavigate("users")} className="text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors">
+              <Button variant="ghost" size="sm" onClick={()=>onNavigate("users")} className="h-auto px-0 text-[#64748b] dark:text-[#94a3b8] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9] transition-colors">
                 User Management
-              </button>
+              </Button>
               <ChevronRight size={13} className="text-[#cbd5e1] dark:text-[#475569]"/>
               <span className="text-[#0f172a] dark:text-[#f1f5f9] font-medium">Users</span>
             </nav>
@@ -332,33 +329,37 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}
                     placeholder="Search by name or email"
                     className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] outline-none bg-transparent"/>
-                  {search && <button onClick={()=>setSearch("")}><X size={13} className="text-[#94a3b8] hover:text-[#475569]"/></button>}
+                  {search && (
+                    <Button variant="ghost" size="icon-xs" onClick={()=>setSearch("")} className="size-5 rounded-full text-[#94a3b8] hover:bg-transparent hover:text-[#475569]">
+                      <X size={13} />
+                    </Button>
+                  )}
                 </div>
 
                 {/* Status filter */}
                 <div className="relative">
-                  <button ref={statusFRef} onClick={()=>{ closeAllPops(); setShowStatusFilt(v=>!v); }}
+                  <Button ref={statusFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowStatusFilt(v=>!v); }}
                     className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterStatus?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                     <Filter size={12}/> Status {filterStatus && <span className="font-semibold">: {filterStatus}</span>}
                     <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showStatusFilt?"rotate-180":""}`}/>
-                  </button>
+                  </Button>
                   <Popover open={showStatusFilt} onClose={()=>setShowStatusFilt(false)} anchor={statusFRef} width="w-44">
                     <div className="py-1">
-                      <button onClick={()=>{setFilterStatus(null);setShowStatusFilt(false);setPage(1);}}
+                      <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterStatus(null);setShowStatusFilt(false);setPage(1);}}
                         className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterStatus?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                         All Statuses {!filterStatus && <Check size={13} className="text-[#2563eb]"/>}
-                      </button>
+                      </Button>
                       {STATUSES.map(s=>{
                         const cfg=STATUS_CFG[s]; const active=filterStatus===s;
                         return(
-                          <button key={s} onClick={()=>{setFilterStatus(s);setShowStatusFilt(false);setPage(1);}}
+                          <Button key={s} type="button" variant="ghost" size="sm" onClick={()=>{setFilterStatus(s);setShowStatusFilt(false);setPage(1);}}
                             className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                             <span className="flex items-center gap-2">
                               <span className="size-2 rounded-full flex-shrink-0" style={{backgroundColor:cfg.dot}}/>
                               <span className={active?"text-[#2563eb] font-semibold":"text-[#374151] dark:text-[#cbd5e1]"}>{s}</span>
                             </span>
                             {active && <Check size={13} className="text-[#2563eb]"/>}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -367,26 +368,26 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                 {/* Role filter */}
                 <div className="relative">
-                  <button ref={roleFRef} onClick={()=>{ closeAllPops(); setShowRoleFilt(v=>!v); }}
+                  <Button ref={roleFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowRoleFilt(v=>!v); }}
                     className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterRole?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                     <ShieldCheck size={12}/> Role {filterRole && <span className="font-semibold">: {filterRole}</span>}
                     <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showRoleFilt?"rotate-180":""}`}/>
-                  </button>
+                  </Button>
                   <Popover open={showRoleFilt} onClose={()=>setShowRoleFilt(false)} anchor={roleFRef} width="w-44">
                     <div className="py-1">
-                      <button onClick={()=>{setFilterRole(null);setShowRoleFilt(false);setPage(1);}}
+                      <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterRole(null);setShowRoleFilt(false);setPage(1);}}
                         className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterRole?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                         All Roles {!filterRole && <Check size={13} className="text-[#2563eb]"/>}
-                      </button>
+                      </Button>
                       {ROLES.map(r=>{
                         const cfg=ROLE_CFG[r]; const active=filterRole===r;
                         return(
-                          <button key={r} onClick={()=>{setFilterRole(r);setShowRoleFilt(false);setPage(1);}}
+                          <Button key={r} type="button" variant="ghost" size="sm" onClick={()=>{setFilterRole(r);setShowRoleFilt(false);setPage(1);}}
                             className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
                               style={{color:cfg.text,backgroundColor:cfg.bg}}>{r}</span>
                             {active && <Check size={13} className="text-[#2563eb]"/>}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -395,28 +396,28 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                 {/* Group filter */}
                 <div className="relative">
-                  <button ref={groupFRef} onClick={()=>{ closeAllPops(); setShowGroupFilt(v=>!v); }}
+                  <Button ref={groupFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowGroupFilt(v=>!v); }}
                     className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterGroup?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                     <Users size={12}/> Group {filterGroup && <span className="font-semibold">: {ALL_GROUPS.find(g=>g.id===filterGroup)?.name}</span>}
                     <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showGroupFilt?"rotate-180":""}`}/>
-                  </button>
+                  </Button>
                   <Popover open={showGroupFilt} onClose={()=>setShowGroupFilt(false)} anchor={groupFRef} width="w-48">
                     <div className="py-1">
-                      <button onClick={()=>{setFilterGroup(null);setShowGroupFilt(false);setPage(1);}}
+                      <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterGroup(null);setShowGroupFilt(false);setPage(1);}}
                         className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterGroup?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                         All Groups {!filterGroup && <Check size={13} className="text-[#2563eb]"/>}
-                      </button>
+                      </Button>
                       {ALL_GROUPS.map(g=>{
                         const active=filterGroup===g.id;
                         return(
-                          <button key={g.id} onClick={()=>{setFilterGroup(g.id);setShowGroupFilt(false);setPage(1);}}
+                          <Button key={g.id} type="button" variant="ghost" size="sm" onClick={()=>{setFilterGroup(g.id);setShowGroupFilt(false);setPage(1);}}
                             className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
                             <span className={`flex items-center gap-2 ${active?"text-[#2563eb] font-semibold":"text-[#374151] dark:text-[#cbd5e1]"}`}>
                               <span className="size-2 rounded-full bg-[#3b82f6] flex-shrink-0"/>
                               {g.name}
                             </span>
                             {active && <Check size={13} className="text-[#2563eb]"/>}
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
@@ -425,22 +426,22 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                 {/* Columns toggle */}
                 <div className="relative ml-auto">
-                  <button ref={colRef} onClick={()=>{ closeAllPops(); setShowColPop(v=>!v); }}
+                  <Button ref={colRef} variant="outline" onClick={()=>{ closeAllPops(); setShowColPop(v=>!v); }}
                     className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                     <Settings size={13}/> Columns
                     <ChevronDown size={12} className={`text-[#94a3b8] transition-transform ${showColPop?"rotate-180":""}`}/>
-                  </button>
+                  </Button>
                   <Popover open={showColPop} onClose={()=>setShowColPop(false)} anchor={colRef} width="w-44">
                     <div className="py-1">
                       <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Toggle Columns</p>
                       {ALL_COLS.map(col=>(
-                        <button key={col.key} onClick={()=>toggleCol(col.key)}
+                        <Button key={col.key} type="button" variant="ghost" size="sm" onClick={()=>toggleCol(col.key)}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
                           <span className={`size-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${visCols.has(col.key)?"bg-[#2563eb] border-[#2563eb]":"border-[#cbd5e1] dark:border-[#475569]"}`}>
                             {visCols.has(col.key) && <Check size={10} className="text-white"/>}
                           </span>
                           {col.label}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </Popover>
@@ -454,13 +455,13 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                   {activeFilters.map(f=>(
                     <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb] border border-[#bfdbfe] dark:border-[#1e3a8a]">
                       {f.label}
-                      <button onClick={f.clear} className="ml-0.5 hover:text-[#1d4ed8]"><X size={11}/></button>
+                      <Button variant="ghost" size="icon-xs" onClick={f.clear} className="ml-0.5 size-4 rounded-full hover:bg-transparent hover:text-[#1d4ed8]"><X size={11}/></Button>
                     </span>
                   ))}
-                  <button onClick={()=>{setFilterStatus(null);setFilterRole(null);setFilterGroup(null);setPage(1);}}
+                  <Button variant="ghost" size="sm" onClick={()=>{setFilterStatus(null);setFilterRole(null);setFilterGroup(null);setPage(1);}}
                     className="text-xs text-[#64748b] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] underline underline-offset-2 transition-colors">
                     Clear all
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -474,53 +475,53 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                     {/* Change Role */}
                     <div className="relative">
-                      <button ref={roleRef} onClick={()=>{ closeAllPops(); setShowRolePop(v=>!v); }}
+                      <Button ref={roleRef} variant="outline" size="sm" onClick={()=>{ closeAllPops(); setShowRolePop(v=>!v); }}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
                         <ShieldCheck size={13}/> Change Role
                         <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showRolePop?"rotate-180":""}`}/>
-                      </button>
+                      </Button>
                       <Popover open={showRolePop} onClose={()=>setShowRolePop(false)} anchor={roleRef} width="w-44">
                         <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Select Role</p>
                         {ROLES.map(r=>{
                           const cfg=ROLE_CFG[r];
                           return(
-                            <button key={r} onClick={()=>applyBulkRole(r)}
+                            <Button key={r} type="button" variant="ghost" size="sm" onClick={()=>applyBulkRole(r)}
                               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
                                 style={{color:cfg.text,backgroundColor:cfg.bg}}>{r}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </Popover>
                     </div>
 
                     {/* Add to Group */}
-                    <button onClick={openAddGroupModal}
+                    <Button variant="outline" size="sm" onClick={openAddGroupModal}
                       className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
                       <UserPlus size={13}/> Add to Group
-                    </button>
+                    </Button>
 
                     {/* Deactivate */}
                     {selActive.length>0 && (
-                      <button onClick={()=>setDeactivateModal(true)}
+                      <Button variant="outline" size="sm" onClick={()=>setDeactivateModal(true)}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#dc2626] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a] transition-colors">
                         <UserX size={13}/> Deactivate
-                      </button>
+                      </Button>
                     )}
 
                     {/* Activate */}
                     {selInactive.length>0 && (
-                      <button onClick={()=>setActivateModal(true)}
+                      <Button variant="outline" size="sm" onClick={()=>setActivateModal(true)}
                         className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16] transition-colors">
                         <UserCheck size={13}/> Activate
-                      </button>
+                      </Button>
                     )}
 
                     {/* Clear selection */}
-                    <button onClick={clearSelection}
+                    <Button variant="outline" size="sm" onClick={clearSelection}
                       className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors ml-auto">
                       <X size={13}/> Clear Selection
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -533,11 +534,11 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                           className="rounded accent-[#2563eb] cursor-pointer size-[15px]"/>
                       </th>
                       {visCols.has("name")      && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Name</th>}
-                      {visCols.has("email")     && <th className="px-4 py-3 text-left"><button onClick={()=>toggleSort("email")} className="inline-flex items-center gap-1 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]">Email <SortIcon sortKey={sortKey} col="email" sortDir={sortDir}/></button></th>}
+                      {visCols.has("email")     && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("email")} className="inline-flex h-auto px-0 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Email <SortIcon sortKey={sortKey} col="email" sortDir={sortDir}/></Button></th>}
                       {visCols.has("role")      && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Role</th>}
                       {visCols.has("groups")    && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Groups</th>}
                       {visCols.has("status")    && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Status</th>}
-                      {visCols.has("lastLogin") && <th className="px-4 py-3 text-left"><button onClick={()=>toggleSort("lastLogin")} className="inline-flex items-center gap-1 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]">Last Login <SortIcon sortKey={sortKey} col="lastLogin" sortDir={sortDir}/></button></th>}
+                      {visCols.has("lastLogin") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("lastLogin")} className="inline-flex h-auto px-0 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Last Login <SortIcon sortKey={sortKey} col="lastLogin" sortDir={sortDir}/></Button></th>}
                       <th className="w-10 px-4 py-3"/>
                     </tr>
                   </thead>
@@ -719,10 +720,10 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                               </p>
                             </div>
                             {(search||filterStatus||filterRole||filterGroup) && (
-                              <button onClick={()=>{setSearch("");setFilterStatus(null);setFilterRole(null);setFilterGroup(null);}}
+                              <Button variant="ghost" size="sm" onClick={()=>{setSearch("");setFilterStatus(null);setFilterRole(null);setFilterGroup(null);}}
                                 className="text-xs text-[#2563eb] hover:underline font-medium">
                                 Clear all filters
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -746,14 +747,14 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                   </div>
                   <span className="text-[#374151] dark:text-[#cbd5e1] font-medium">Page {safePage} of {totalPages}</span>
                   <div className="flex items-center gap-1">
-                    <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}
+                    <Button variant="outline" size="icon-sm" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}
                       className="size-7 flex items-center justify-center rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       <ChevronLeft size={13}/>
-                    </button>
-                    <button onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={safePage===totalPages}
+                    </Button>
+                    <Button variant="outline" size="icon-sm" onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={safePage===totalPages}
                       className="size-7 flex items-center justify-center rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       <ChevronRight size={13}/>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

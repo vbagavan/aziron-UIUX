@@ -486,7 +486,7 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
   const activeLabel = SETTINGS_NAV.find(n=>n.id===activeSection)?.label ?? activeSection;
 
   return(
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="settings" onNavigate={onNavigate}/>
 
       <div className="flex flex-col flex-1 min-w-0">

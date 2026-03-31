@@ -1705,13 +1705,13 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
 
   return (
     <>
-      <div className="flex items-center gap-3 h-16 px-4 bg-white border-b border-[#e2e8f0] flex-shrink-0">
-        <button onClick={onBack} className="flex items-center justify-center size-8 rounded-[8px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0">
+      <div className="flex h-16 flex-shrink-0 items-center gap-3 border-b border-[#e2e8f0] bg-white px-4 dark:border-[#334155] dark:bg-[#111827]">
+        <button onClick={onBack} className="flex size-8 flex-shrink-0 items-center justify-center rounded-[8px] text-[#64748b] transition-colors hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#1e293b]">
           <ArrowLeft size={16} />
         </button>
-        <div className="h-5 w-px bg-[#e2e8f0]" />
-        <div className="flex items-center gap-1.5 text-sm text-[#94a3b8]">
-          <button onClick={onBack} className="hover:text-[#64748b] transition-colors">Flows</button>
+        <div className="h-5 w-px bg-[#e2e8f0] dark:bg-[#334155]" />
+        <div className="flex items-center gap-1.5 text-sm text-[#94a3b8] dark:text-[#64748b]">
+          <button onClick={onBack} className="transition-colors hover:text-[#64748b] dark:hover:text-[#94a3b8]">Flows</button>
           <ChevronRight size={13} />
           {editing ? (
             <input
@@ -1720,13 +1720,13 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commit}
               onKeyDown={onKeyDown}
-              className="text-sm font-medium text-[#0f172a] bg-white border border-[#2563eb] rounded-[5px] px-2 h-7 max-w-[220px] outline-none ring-2 ring-[#2563eb]/20"
+              className="h-7 max-w-[220px] rounded-[5px] border border-[#2563eb] bg-white px-2 text-sm font-medium text-[#0f172a] outline-none ring-2 ring-[#2563eb]/20 dark:bg-[#0f172a] dark:text-[#f8fafc]"
             />
           ) : (
             <span
               onClick={startEdit}
               title="Click to rename"
-              className="text-[#0f172a] font-medium truncate max-w-[200px] rounded-[5px] px-1.5 py-0.5 transition-colors cursor-text hover:bg-[#f1f5f9]"
+              className="max-w-[200px] cursor-text truncate rounded-[5px] px-1.5 py-0.5 font-medium text-[#0f172a] transition-colors hover:bg-[#f1f5f9] dark:text-[#f8fafc] dark:hover:bg-[#1e293b]"
             >
               {flow.name}
             </span>
@@ -1747,62 +1747,62 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
                 <button
                   onClick={() => setVersionPanelOpen(v => !v)}
                   title="Version history"
-                  className="flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] bg-white border border-[#e2e8f0] text-[#475569] text-xs font-medium hover:bg-[#f8fafc] transition-colors"
+                  className="flex h-8 items-center gap-1.5 rounded-[6px] border border-[#e2e8f0] bg-white px-2.5 text-xs font-medium text-[#475569] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#0f172a]"
                 >
                   <History size={13} />
                   {activeVersion ? (
-                    <span className="font-semibold text-[#0f172a]">{activeVersion.name}</span>
+                    <span className="font-semibold text-[#0f172a] dark:text-[#f8fafc]">{activeVersion.name}</span>
                   ) : versions.length > 0 ? (
-                    <span className="text-[#64748b]">Latest</span>
+                    <span className="text-[#64748b] dark:text-[#94a3b8]">Latest</span>
                   ) : (
-                    <span className="text-[#94a3b8]">No versions</span>
+                    <span className="text-[#94a3b8] dark:text-[#64748b]">No versions</span>
                   )}
-                  <ChevronDown size={11} className="text-[#94a3b8]" />
+                  <ChevronDown size={11} className="text-[#94a3b8] dark:text-[#64748b]" />
                 </button>
 
                 {versionPanelOpen && (
-                  <div data-version-panel className="absolute right-0 top-10 z-[999] bg-white border border-[#e2e8f0] rounded-[12px] w-[260px] overflow-hidden"
+                  <div data-version-panel className="absolute right-0 top-10 z-[999] w-[260px] overflow-hidden rounded-[12px] border border-[#e2e8f0] bg-white dark:border-[#334155] dark:bg-[#111827]"
                     style={{boxShadow:"0 8px 24px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)"}}>
-                    <div className="px-3 py-2.5 border-b border-[#f1f5f9] flex items-center justify-between">
-                      <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-widest">Version history</p>
+                    <div className="flex items-center justify-between border-b border-[#f1f5f9] px-3 py-2.5 dark:border-[#334155]">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-[#94a3b8] dark:text-[#64748b]">Version history</p>
                       {pageMode === "edit" && (
                         <button
                           onClick={() => { handleSaveVersion(); setVersionPanelOpen(false); }}
-                          className="flex items-center gap-1 h-6 px-2 rounded-[5px] bg-[#0f172a] text-white text-[10px] font-medium hover:bg-[#1e293b] transition-colors"
+                          className="flex h-6 items-center gap-1 rounded-[5px] bg-[#0f172a] px-2 text-[10px] font-medium text-white transition-colors hover:bg-[#1e293b] dark:bg-[#f8fafc] dark:text-[#0f172a] dark:hover:bg-[#e2e8f0]"
                         >
                           <Save size={10} /> Save v{versions.length + 1}
                         </button>
                       )}
                     </div>
                     {versions.length === 0 ? (
-                      <div className="px-3 py-4 text-center text-xs text-[#94a3b8]">No versions saved yet</div>
+                      <div className="px-3 py-4 text-center text-xs text-[#94a3b8] dark:text-[#64748b]">No versions saved yet</div>
                     ) : (
                       <div className="py-1 max-h-[220px] overflow-y-auto">
                         {/* Working copy row */}
                         <button
                           onClick={() => { setVersionPanelOpen(false); onRestoreVersion?.({ id: null, steps: [], flowName: flow.name }); }}
-                          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${!activeVersionId ? "bg-[#eff6ff]" : "hover:bg-[#f8fafc]"}`}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${!activeVersionId ? "bg-[#eff6ff] dark:bg-[#15233f]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"}`}
                         >
                           <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-xs font-semibold text-[#0f172a]">Latest (unsaved)</span>
-                            <span className="text-[10px] text-[#94a3b8]">Current working copy</span>
+                            <span className="text-xs font-semibold text-[#0f172a] dark:text-[#f8fafc]">Latest (unsaved)</span>
+                            <span className="text-[10px] text-[#94a3b8] dark:text-[#64748b]">Current working copy</span>
                           </div>
                           {!activeVersionId && <span className="text-[10px] font-semibold text-[#2563eb] flex-shrink-0 ml-2">● Active</span>}
                         </button>
-                        <div className="h-px bg-[#f1f5f9] mx-3" />
+                        <div className="mx-3 h-px bg-[#f1f5f9] dark:bg-[#334155]" />
                         {versions.map((v) => {
                           const isCurrent = v.id === activeVersionId;
                           return (
                             <button
                               key={v.id}
                               onClick={() => { setVersionPanelOpen(false); onRestoreVersion?.(v); }}
-                              className={`group w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${isCurrent ? "bg-[#eff6ff]" : "hover:bg-[#f8fafc]"}`}
+                              className={`group w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${isCurrent ? "bg-[#eff6ff] dark:bg-[#15233f]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"}`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="text-[11px] font-bold text-[#475569] bg-[#f1f5f9] px-1.5 py-0.5 rounded-[4px] flex-shrink-0">{v.name}</span>
+                                <span className="flex-shrink-0 rounded-[4px] bg-[#f1f5f9] px-1.5 py-0.5 text-[11px] font-bold text-[#475569] dark:bg-[#1e293b] dark:text-[#cbd5e1]">{v.name}</span>
                                 <div className="flex flex-col gap-0.5 min-w-0">
-                                  <span className="text-xs text-[#0f172a] truncate">{v.date}</span>
-                                  <span className="text-[10px] text-[#94a3b8]">{v.stepCount} step{v.stepCount !== 1 ? "s" : ""}</span>
+                                  <span className="truncate text-xs text-[#0f172a] dark:text-[#f8fafc]">{v.date}</span>
+                                  <span className="text-[10px] text-[#94a3b8] dark:text-[#64748b]">{v.stepCount} step{v.stepCount !== 1 ? "s" : ""}</span>
                                 </div>
                               </div>
                               {isCurrent
@@ -1822,7 +1822,7 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
               {pageMode === "view" && (
                 <button
                   onClick={onRunNow} disabled={isRunning}
-                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] bg-[#0f172a] text-white text-xs font-medium hover:bg-[#1e293b] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex h-8 items-center gap-1.5 rounded-[6px] bg-[#0f172a] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#1e293b] disabled:cursor-not-allowed disabled:opacity-70 dark:bg-[#f8fafc] dark:text-[#0f172a] dark:hover:bg-[#e2e8f0]"
                 >
                   <Play size={12} fill="white" /> Run Flow
                 </button>
@@ -1832,7 +1832,7 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
               {pageMode === "view" && (
                 <button
                   onClick={() => onSetPageMode("edit")}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-[6px] bg-white border border-[#e2e8f0] text-[#475569] text-xs font-medium hover:bg-[#f8fafc] transition-colors"
+                  className="flex h-8 items-center gap-1.5 rounded-[6px] border border-[#e2e8f0] bg-white px-3 text-xs font-medium text-[#475569] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#0f172a]"
                 >
                   <Pencil size={12} /> Edit Flow
                 </button>
@@ -1842,7 +1842,7 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
           <button
             ref={btnRef}
             onClick={handleMenuToggle}
-            className="flex items-center justify-center size-8 rounded-[6px] bg-white border border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc] transition-colors"
+            className="flex size-8 items-center justify-center rounded-[6px] border border-[#e2e8f0] bg-white text-[#64748b] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#94a3b8] dark:hover:bg-[#0f172a]"
             title="More options"
           >
             <MoreHorizontal size={15} />
@@ -1854,7 +1854,7 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
       {menuOpen && (
         <div
           data-menu="true"
-          className="fixed bg-white border border-[#e2e8f0] rounded-[10px] w-[200px] z-[9999] shadow-xl overflow-hidden"
+          className="fixed z-[9999] w-[200px] overflow-hidden rounded-[10px] border border-[#e2e8f0] bg-white shadow-xl dark:border-[#334155] dark:bg-[#111827]"
           style={{
             top: menuPos.top,
             left: menuPos.left,
@@ -1864,49 +1864,49 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
           {/* Group 1: Actions */}
           <button
             onClick={handleDuplicate}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <Copy size={14} className="text-[#64748b]" /> Duplicate
+            <Copy size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
           </button>
           <button
             onClick={handleExport}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <Download size={14} className="text-[#64748b]" /> Export as JSON
+            <Download size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Export as JSON
           </button>
 
           {/* Divider */}
-          <div className="h-px bg-[#f1f5f9]" />
+          <div className="h-px bg-[#f1f5f9] dark:bg-[#334155]" />
 
           {/* Group 3: Sharing & Info */}
           <button
             onClick={handleShare}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <Share2 size={14} className="text-[#64748b]" /> Share
+            <Share2 size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Share
           </button>
           <button
             onClick={handleCopyURL}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <Copy size={14} className="text-[#64748b]" /> Copy URL
+            <Copy size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Copy URL
           </button>
           <button
             onClick={handleViewChangelog}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <History size={14} className="text-[#64748b]" /> Changelog
+            <History size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Changelog
           </button>
 
           {/* Divider */}
-          <div className="h-px bg-[#f1f5f9]" />
+          <div className="h-px bg-[#f1f5f9] dark:bg-[#334155]" />
 
           {/* Group 4: Settings & Danger */}
           <button
             onClick={handleSettings}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
           >
-            <Settings2 size={14} className="text-[#64748b]" /> Settings
+            <Settings2 size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Settings
           </button>
           <button
             onClick={handleDeleteClick}
@@ -1934,42 +1934,42 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setSettingsOpen(false)} />
           <div
-            className="relative bg-white rounded-2xl w-[420px] overflow-hidden"
+            className="relative w-[420px] overflow-hidden rounded-2xl bg-white dark:bg-[#111827]"
             style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="h-1 w-full bg-gradient-to-r from-[#3b82f6] to-[#2563eb]" />
             <div className="px-6 pt-6 pb-6">
-              <h2 className="text-lg font-semibold text-[#0f172a] mb-5">Flow Settings</h2>
+              <h2 className="mb-5 text-lg font-semibold text-[#0f172a] dark:text-[#f8fafc]">Flow Settings</h2>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-[#0f172a] mb-2">Execution Timeout</label>
+                  <label className="mb-2 block text-sm font-medium text-[#0f172a] dark:text-[#f8fafc]">Execution Timeout</label>
                   <input
                     type="text"
                     defaultValue="30 seconds"
-                    className="w-full px-3 py-2 border border-[#e2e8f0] rounded-[6px] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+                    className="w-full rounded-[6px] border border-[#e2e8f0] px-3 py-2 text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb] dark:border-[#334155] dark:bg-[#0f172a] dark:text-[#f8fafc]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0f172a] mb-2">Max Retries</label>
+                  <label className="mb-2 block text-sm font-medium text-[#0f172a] dark:text-[#f8fafc]">Max Retries</label>
                   <input
                     type="text"
                     defaultValue="3"
-                    className="w-full px-3 py-2 border border-[#e2e8f0] rounded-[6px] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+                    className="w-full rounded-[6px] border border-[#e2e8f0] px-3 py-2 text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb] dark:border-[#334155] dark:bg-[#0f172a] dark:text-[#f8fafc]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0f172a] mb-2">Retry Delay</label>
+                  <label className="mb-2 block text-sm font-medium text-[#0f172a] dark:text-[#f8fafc]">Retry Delay</label>
                   <input
                     type="text"
                     defaultValue="1 second"
-                    className="w-full px-3 py-2 border border-[#e2e8f0] rounded-[6px] text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb]"
+                    className="w-full rounded-[6px] border border-[#e2e8f0] px-3 py-2 text-sm text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#2563eb] dark:border-[#334155] dark:bg-[#0f172a] dark:text-[#f8fafc]"
                   />
                 </div>
               </div>
               <div className="flex gap-2.5 mt-6">
                 <button
                   onClick={() => setSettingsOpen(false)}
-                  className="flex-1 h-10 rounded-[8px] border border-[#e2e8f0] bg-white text-sm font-medium text-[#475569] hover:bg-[#f8fafc] transition-colors"
+                  className="flex-1 h-10 rounded-[8px] border border-[#e2e8f0] bg-white text-sm font-medium text-[#475569] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#0f172a]"
                 >
                   Cancel
                 </button>
@@ -1993,16 +1993,16 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setChangelogOpen(false)} />
           <div
-            className="relative bg-white rounded-2xl w-[480px] max-h-[600px] overflow-hidden flex flex-col"
+            className="relative flex max-h-[600px] w-[480px] flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#111827]"
             style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="h-1 w-full bg-gradient-to-r from-[#8b5cf6] to-[#6366f1]" />
             <div className="px-6 pt-6 pb-6 flex flex-col flex-1 min-h-0">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[#0f172a]">Flow Changelog</h2>
+                <h2 className="text-lg font-semibold text-[#0f172a] dark:text-[#f8fafc]">Flow Changelog</h2>
                 <button
                   onClick={() => setChangelogOpen(false)}
-                  className="text-[#94a3b8] hover:text-[#64748b]"
+                  className="text-[#94a3b8] hover:text-[#64748b] dark:text-[#64748b] dark:hover:text-[#cbd5e1]"
                 >
                   <X size={18} />
                 </button>
@@ -2015,11 +2015,11 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
                   { time: "2 days ago at 10:20 AM", action: "Flow created", user: "You" },
                   { time: "2 days ago at 9:15 AM", action: "Initial setup completed", user: "You" },
                 ].map((entry, i) => (
-                  <div key={i} className="flex gap-3 pb-3 border-b border-[#f1f5f9]">
-                    <div className="text-xs text-[#94a3b8] flex-shrink-0 w-20">{entry.time}</div>
+                  <div key={i} className="flex gap-3 border-b border-[#f1f5f9] pb-3 dark:border-[#334155]">
+                    <div className="w-20 flex-shrink-0 text-xs text-[#94a3b8] dark:text-[#64748b]">{entry.time}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#0f172a]">{entry.action}</p>
-                      <p className="text-xs text-[#94a3b8]">by {entry.user}</p>
+                      <p className="text-sm text-[#0f172a] dark:text-[#f8fafc]">{entry.action}</p>
+                      <p className="text-xs text-[#94a3b8] dark:text-[#64748b]">by {entry.user}</p>
                     </div>
                   </div>
                 ))}
@@ -2185,7 +2185,7 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
   }
 
   return (
-    <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
       <Sidebar activePage="flows" onNavigate={onNavigate} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar

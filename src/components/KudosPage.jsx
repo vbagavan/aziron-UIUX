@@ -1614,7 +1614,7 @@ export default function KudosPage({ agent, onNavigate
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#f8fafc] overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       {/* Main content wrapper */}

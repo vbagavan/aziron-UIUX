@@ -562,7 +562,7 @@ export default function NotificationsPage({ onNavigate
   const tabCount = (key) => applyTab(items, key).filter((n) => n.unread).length;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
       <Sidebar activePage="notifications" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0">
