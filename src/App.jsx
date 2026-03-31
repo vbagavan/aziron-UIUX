@@ -12,6 +12,9 @@ import NotFoundPage from "./components/NotFoundPage";
 import UsersListPage from "./components/UsersListPage";
 import UserDetailPage from "./components/UserDetailPage";
 import UserGroupsPage from "./components/UserGroupsPage";
+import UsagePage from "./components/UsagePage";
+import VaultPage from "./components/VaultPage";
+import KnowledgeHubPage from "./components/KnowledgeHubPage";
 
 export default function App() {
   const [currentPage, setCurrentPage]   = useState("new-chat");
@@ -57,6 +60,9 @@ export default function App() {
       case "users-list":  return <UsersListPage onNavigate={navigate} onViewUser={u=>{ setViewedUser(u); setCurrentPage("user-detail"); }} />;
       case "user-groups": return <UserGroupsPage onNavigate={navigate} />;
       case "user-detail": return <UserDetailPage user={viewedUser} onNavigate={navigate} />;
+      case "usage":       return <UsagePage onNavigate={navigate} />;
+      case "vault":       return <VaultPage onNavigate={navigate} />;
+      case "knowledge":   return <KnowledgeHubPage onNavigate={navigate} />;
       default: return <NotFoundPage onNavigate={navigate} />;
     }
   })();
