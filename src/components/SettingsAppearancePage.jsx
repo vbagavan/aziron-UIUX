@@ -4,19 +4,23 @@ import {
   ChevronRight, Check, X, CheckCheck, Filter, SlidersHorizontal,
   ServerCrash, ShieldAlert, Bot, ShieldX, Zap, Gauge, FlaskConical,
   DatabaseZap, Rocket, GitMerge, GitPullRequest, Clock, BellOff,
+  CreditCard, BadgeCheck, HardDrive, Workflow, Users, DollarSign,
+  Mail, PhoneCall,
 } from "lucide-react";
+import { TENANTS, SAAS_TIERS, getLimits } from "@/data/adminData";
 import AppHeader from "@/components/AppHeader";
 import Sidebar from "@/components/Sidebar";
 
 // ─── Settings nav ──────────────────────────────────────────────────────────────
 
 const SETTINGS_NAV = [
-  { icon: UserCircle, label: "Account",      id: "account"      },
-  { icon: SwatchBook, label: "Appearance",   id: "appearance"   },
-  { icon: KeyRound,   label: "API Keys",     id: "api-keys"     },
-  { icon: Bell,       label: "Notifications",id: "notifications"},
-  { icon: LayoutGrid, label: "Integrations", id: "integrations" },
-  { icon: HelpCircle, label: "Support",      id: "support"      },
+  { icon: UserCircle,  label: "Account",      id: "account"      },
+  { icon: SwatchBook,  label: "Appearance",   id: "appearance"   },
+  { icon: KeyRound,    label: "API Keys",     id: "api-keys"     },
+  { icon: Bell,        label: "Notifications",id: "notifications"},
+  { icon: LayoutGrid,  label: "Integrations", id: "integrations" },
+  { icon: CreditCard,  label: "Subscription", id: "subscription" },
+  { icon: HelpCircle,  label: "Support",      id: "support"      },
 ];
 
 // ─── Appearance assets ────────────────────────────────────────────────────────
@@ -466,6 +470,115 @@ function NotificationsPanel(){
   );
 }
 
+// ─── Subscription panel ───────────────────────────────────────────────────────
+
+const SUB_ORG = TENANTS.find(t => t.id === 3); // Vanta Logistics — Growth SaaS
+const SUB_TIER_DEF = SAAS_TIERS[SUB_ORG.tier];
+const SUB_LIMITS = getLimits(SUB_ORG);
+
+function SubMeter({ icon: Icon, label, used, limit, unit = "", color = "#2563eb" }) {
+  const pct = (limit != null && limit > 0) ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  const warn = pct != null && pct >= 80;
+  const barColor = pct >= 90 ? "#ef4444" : pct >= 80 ? "#f59e0b" : color;
+  const fv = v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1.5 text-[#475569] dark:text-[#94a3b8] font-medium">
+          {Icon && <Icon size={12} />}{label}
+        </span>
+        <span className={`font-semibold tabular-nums ${warn ? "text-[#d97706]" : "text-[#0f172a] dark:text-[#f1f5f9]"}`}>
+          {used != null ? fv(used) : "—"}
+          {limit != null ? `${unit} / ${fv(limit)}${unit}` : "  Unlimited"}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-[#f1f5f9] dark:bg-[#334155] overflow-hidden">
+        {pct != null
+          ? <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barColor }} />
+          : <div className="h-full rounded-full bg-[#2563eb] w-full opacity-20" />
+        }
+      </div>
+      {pct != null && <p className="text-[10px] text-[#94a3b8] text-right">{pct}% used</p>}
+    </div>
+  );
+}
+
+function SubscriptionPanel(){
+  const usage = SUB_ORG.usage;
+  return(
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-7">Subscription</h2>
+        <p className="text-base text-[#4e4d4d] dark:text-[#94a3b8] leading-6">Your current plan, limits, and billing details.</p>
+      </div>
+
+      {/* Plan card */}
+      <div className="rounded-xl overflow-hidden border border-[#2563eb]/30">
+        <div className="bg-gradient-to-br from-[#1d4ed8] to-[#2563eb] px-5 py-4 text-white">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold uppercase tracking-widest opacity-70">SaaS Cloud</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20">MOST POPULAR</span>
+              </div>
+              <h3 className="text-2xl font-bold">Growth</h3>
+              <p className="text-sm opacity-70 mt-0.5">{SUB_TIER_DEF.seatRange} · {SUB_ORG.seats} seats provisioned</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold">${SUB_TIER_DEF.pricePerSeat}<span className="text-sm font-normal opacity-70">/seat/mo</span></p>
+              <p className="text-xs opacity-60 mt-0.5">Tokens: ${SUB_TIER_DEF.tokenRatePerM?.toFixed(2)}/1M</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-[#eff6ff] dark:bg-[#1e3a8a]/20 px-5 py-3 flex flex-wrap gap-x-4 gap-y-1">
+          {[
+            ["SSO & RBAC", true],
+            ["Audit Logs", SUB_TIER_DEF.auditLogs],
+            ["Priority Support", true],
+            ["HIPAA-Ready", SUB_TIER_DEF.hipaa],
+            ["99.9% Uptime SLA", true],
+          ].map(([label, enabled]) => (
+            <span key={label} className={`flex items-center gap-1 text-xs font-medium ${enabled ? "text-[#1e40af] dark:text-[#93c5fd]" : "text-[#cbd5e1] line-through"}`}>
+              {enabled ? <BadgeCheck size={12} className="text-[#16a34a]" /> : <X size={12} />}{label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Usage meters */}
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] mb-2">Current Usage — April 2025</h3>
+        <div className="flex flex-col gap-3">
+          <SubMeter icon={Users}     label="Seats"                used={usage.seatsUsed}       limit={SUB_ORG.seats}               color="#0ea5e9" />
+          <SubMeter icon={Zap}       label="Flow Executions / mo" used={usage.flowExecutions}   limit={SUB_LIMITS.flowExecPerMonth}  color="#16a34a" />
+          <SubMeter icon={HardDrive} label="Knowledge Hub"        used={usage.storageGB}        limit={SUB_LIMITS.knowledgeHubGB}   unit=" GB" color="#f59e0b" />
+          <SubMeter icon={Workflow}  label="Agents"               used={8}                      limit={SUB_LIMITS.agents}           color="#2563eb" />
+          <SubMeter icon={Workflow}  label="Workflows"            used={7}                      limit={SUB_LIMITS.workflows}        color="#7c3aed" />
+        </div>
+      </div>
+
+      {/* Billing contact */}
+      <div className="bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] mb-3">Billing Contact</h3>
+        <div className="flex flex-col gap-2 text-sm text-[#64748b] dark:text-[#94a3b8]">
+          <span className="flex items-center gap-2"><Users size={13} />{SUB_ORG.contactName}</span>
+          <span className="flex items-center gap-2"><Mail size={13} />{SUB_ORG.contactEmail}</span>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="flex flex-col gap-2 p-4 bg-[#0f172a] dark:bg-[#1e293b] rounded-xl text-white">
+        <p className="text-sm font-semibold">Need to upgrade or change your plan?</p>
+        <p className="text-xs text-[#94a3b8] leading-4">Billing is managed manually. Contact our sales team to upgrade tiers, adjust seat counts, or discuss On-Premises options.</p>
+        <a href="mailto:sales@aziro.com"
+          className="mt-1 inline-flex items-center gap-2 h-8 px-4 rounded-[8px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold w-fit transition-colors">
+          <Mail size={12} /> Contact Sales
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ─── Placeholder panel ────────────────────────────────────────────────────────
 
 function PlaceholderPanel({section}){
@@ -526,7 +639,8 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
             <div className="flex-1 min-w-0 bg-card border-2 border-border rounded-xl shadow-2xs p-6">
               {activeSection==="appearance"    && <AppearancePanel/>}
               {activeSection==="notifications" && <NotificationsPanel/>}
-              {!["appearance","notifications"].includes(activeSection) && <PlaceholderPanel section={activeSection}/>}
+              {activeSection==="subscription"  && <SubscriptionPanel/>}
+              {!["appearance","notifications","subscription"].includes(activeSection) && <PlaceholderPanel section={activeSection}/>}
             </div>
           </div>
         </div>

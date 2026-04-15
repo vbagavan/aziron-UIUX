@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
-  Sparkles, Bot, BrainCog, Vault, BarChart2, Users, Workflow,
+  Sparkles, Bot, BrainCog, Vault, BarChart2, BarChart3, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
-  UserCircle, ShieldCheck, Clock,
+  UserCircle, ShieldCheck, Clock, Building2, Tag,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
@@ -47,12 +48,13 @@ const navGroups = [
       {
         icon: Users, label: "User Management", page: "users",
         subItems: [
-          { icon: UserCircle, label: "Users", page: "users-list"  },
+          { icon: UserCircle, label: "Users", page: "tenant-users" },
           { icon: Users, label: "User Groups", page: "user-groups" },
           { icon: ShieldCheck,label: "Roles", page: "users-roles" },
         ],
       },
       { icon: BarChart2, label: "Usage", page: "usage" },
+      { icon: BarChart3, label: "Pulse", page: "pulse" },
       {
         icon: Clock,
         label: "History",
@@ -65,6 +67,13 @@ const navGroups = [
           trackActive: false,
         })),
       },
+    ],
+  },
+  {
+    id: "admin", label: "ADMIN",
+    items: [
+      { icon: Building2, label: "Tenants",        page: "tenants"       },
+      { icon: Tag,       label: "Pricing & Plans", page: "pricing-plans" },
     ],
   },
 ];
@@ -80,7 +89,8 @@ function isActive(itemPage, activePage, activeFor = []) {
   if (activeFor.includes(activePage)) return true;
 
   // Handle routing aliases and related pages
-  if (itemPage === "users" && (activePage === "users-list" || activePage === "user-groups" || activePage === "users-roles")) return true;
+  if (itemPage === "users" && (activePage === "users-list" || activePage === "user-groups" || activePage === "users-roles" || activePage === "tenant-users")) return true;
+  if (itemPage === "tenants" && activePage === "tenant-detail") return true;
 
   return false;
 }
@@ -117,7 +127,7 @@ function hasActiveChild(items, activePage) {
  */
 
 /* ── Logout modal ─────────────────────────────────────────────── */
-function LogoutModal({ onConfirm, onCancel }) {
+function LogoutModal({ onConfirm, onCancel, displayName = "Admin", displayEmail = "admin@aziro.com", initials = "A" }) {
   useEffect(() => {
     const h = (e) => { if (e.key === "Escape") onCancel(); };
     document.addEventListener("keydown", h);
@@ -126,41 +136,39 @@ function LogoutModal({ onConfirm, onCancel }) {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onCancel}
-        style={{ animation: "fadeIn 0.15s ease-out" }} />
-      <div className="relative bg-white dark:bg-[#1e293b] rounded-2xl w-[340px] overflow-hidden"
-        style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18)", animation: "slideUp 0.2s cubic-bezier(0.34,1.2,0.64,1)" }}>
-        <div className="h-1 w-full bg-gradient-to-r from-[#ef4444] to-[#f97316]" />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onCancel} />
+      <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-85 overflow-hidden shadow-2xl">
+        <div className="h-1 w-full bg-gradient-to-r from-red-500 to-orange-500" />
         <div className="px-6 pt-6 pb-5 flex flex-col gap-5">
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="size-14 rounded-full bg-[#fef2f2] dark:bg-[#450a0a] flex items-center justify-center">
-              <div className="size-9 rounded-full bg-[#fee2e2] dark:bg-[#7f1d1d] flex items-center justify-center">
-                <LogOut size={18} className="text-[#ef4444]" />
+            <div className="size-14 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
+              <div className="size-9 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                <LogOut size={18} className="text-red-500" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold text-[#0f172a] dark:text-[#f1f5f9]">Log out of Aziron?</h2>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Log out of Aziron?</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-5">
                 You'll be signed out of your current session.<br />Any unsaved work may be lost.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px]">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
             <Avatar className="size-8 flex-shrink-0">
-              <AvatarImage src={imgUserAvatar} /><AvatarFallback>A</AvatarFallback>
+              <AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-[#0f172a] dark:text-[#f1f5f9]">Admin</span>
-              <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">admin@aziro.com</span>
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{displayName}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{displayEmail}</span>
             </div>
           </div>
           <div className="flex gap-2.5">
             <button onClick={onCancel}
-              className="flex-1 h-10 rounded-[8px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#475569] dark:text-[#94a3b8] hover:bg-[#f8fafc] transition-colors">
+              className="flex-1 h-10 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               Cancel
             </button>
             <button onClick={onConfirm}
-              className="flex-1 h-10 rounded-[8px] bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors">
+              className="flex-1 h-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors">
               <LogOut size={14} /> Log out
             </button>
           </div>
@@ -177,12 +185,17 @@ function LogoutModal({ onConfirm, onCancel }) {
 /* ── User footer ──────────────────────────────────────────────── */
 function UserFooter({ onNavigate }) {
   const { state } = useSidebar();
+  const { auth, logout } = useAuth();
   const collapsed = state === "collapsed";
   const [open, setOpen] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [menuStyle, setMenuStyle] = useState({});
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+
+  const displayName  = auth.user?.name  ?? "Admin";
+  const displayEmail = auth.user?.email ?? "admin@aziro.com";
+  const initials     = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   useEffect(() => {
     if (!open) return;
@@ -215,15 +228,15 @@ function UserFooter({ onNavigate }) {
     <>
       {open && (
         <div ref={menuRef}
-          className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden z-[9999]"
-          style={{ ...menuStyle, boxShadow: "0 8px 24px rgba(0,0,0,0.13)" }}>
-          <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-[#f1f5f9] dark:border-[#334155]">
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden z-[9999] shadow-lg max-h-100 overflow-y-auto"
+          style={menuStyle}>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
             <Avatar className="size-7 flex-shrink-0">
-              <AvatarImage src={imgUserAvatar} /><AvatarFallback>A</AvatarFallback>
+              <AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-[#0f172a] dark:text-[#f1f5f9]">Admin</span>
-              <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">admin@aziro.com</span>
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{displayName}</span>
+              <span className="text-xs text-slate-600 dark:text-slate-400">{displayEmail}</span>
             </div>
           </div>
           {menuItems.map(item => {
@@ -232,8 +245,8 @@ function UserFooter({ onNavigate }) {
               <button key={item.label} onClick={item.onClick}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                   item.danger
-                    ? "text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a]"
-                    : "text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
+                    ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                    : "text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}>
                 <Icon size={14} /> {item.label}
               </button>
@@ -243,31 +256,35 @@ function UserFooter({ onNavigate }) {
       )}
 
       {showLogout && (
-        <LogoutModal onConfirm={() => setShowLogout(false)} onCancel={() => setShowLogout(false)} />
+        <LogoutModal
+          displayName={displayName} displayEmail={displayEmail} initials={initials}
+          onConfirm={() => { setShowLogout(false); logout(); }}
+          onCancel={() => setShowLogout(false)}
+        />
       )}
 
       {collapsed ? (
         <button ref={triggerRef} onClick={handleToggle}
-          className={`flex items-center justify-center w-full p-1 rounded-[8px] transition-colors ${
+          className={`flex items-center justify-center w-full p-1 rounded-2xl transition-colors ${
             open ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"
           }`}>
           <Avatar className="size-6"><AvatarImage src={imgUserAvatar} /><AvatarFallback>A</AvatarFallback></Avatar>
         </button>
       ) : (
         <button ref={triggerRef} onClick={handleToggle}
-          className={`flex items-center gap-2 w-full px-2 py-2 rounded-[8px] transition-colors justify-between ${
+          className={`flex items-center gap-2 w-full px-2 py-2 rounded-2xl transition-colors justify-between ${
             open
-              ? "bg-[#f1f5f9] dark:bg-[#334155]"
-              : "bg-white dark:bg-[#1e293b] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"
-          } border border-[#e2e8f0] dark:border-[#334155]`}>
+              ? "bg-slate-100 dark:bg-slate-800"
+              : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+          } border border-slate-200 dark:border-slate-700`}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Avatar className="size-6 flex-shrink-0"><AvatarImage src={imgUserAvatar} /><AvatarFallback>A</AvatarFallback></Avatar>
+            <Avatar className="size-6 flex-shrink-0"><AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
             <div className="flex flex-col items-start flex-1 min-w-0">
-              <span className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-none">Admin</span>
-              <span className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-4 truncate w-full">admin@aziro.com</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-none">{displayName}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400 leading-4 truncate w-full">{displayEmail}</span>
             </div>
           </div>
-          <ChevronsUpDown size={16} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} text-[#64748b] dark:text-[#94a3b8]`} />
+          <ChevronsUpDown size={16} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} text-slate-600 dark:text-slate-400`} />
         </button>
       )}
     </>
@@ -399,18 +416,18 @@ function NavItem({ item, activePage, onNavigate }) {
           >
             <CollapsibleTrigger asChild className="w-full">
               <SidebarMenuButton
-                tooltip={item.label}
+                tooltip={item.subItems?.length ? (sidebarCollapsed ? item.label : undefined) : item.label}
                 isActive={isParentActive}
                 className="relative"
               >
                 <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-[#2563eb] transition-all duration-300"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
                   style={{ height: isParentActive ? 18 : 0, opacity: isParentActive ? 1 : 0 }}
                 />
                 {item.icon && (
                   <item.icon
                     style={{ transform: isParentActive ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s" }}
-                    className={isParentActive ? "text-[#1e3a8a] dark:text-[#60a5fa]" : ""}
+                    className={isParentActive ? "text-blue-900 dark:text-blue-400" : ""}
                   />
                 )}
                 <span className={isParentActive ? "font-medium" : ""}>{item.label}</span>
@@ -433,10 +450,10 @@ function NavItem({ item, activePage, onNavigate }) {
                         <SidebarMenuSubButton
                           isActive={subIsActive}
                           onClick={() => onNavigate?.(sub.page)}
-                          className={sub.noIcon ? "gap-2 pl-2" : "gap-2"}
+                          className="gap-2"
                         >
                           {!sub.noIcon && sub.icon && (
-                            <sub.icon size={13} className={subIsActive ? "text-[#2563eb]" : "text-sidebar-foreground/60"} />
+                            <sub.icon size={13} className={subIsActive ? "text-blue-600" : "text-sidebar-foreground/60"} />
                           )}
                           <span className="truncate">{sub.label}</span>
                         </SidebarMenuSubButton>
@@ -455,11 +472,8 @@ function NavItem({ item, activePage, onNavigate }) {
             ref={popoverRef}
             onMouseEnter={handlePopoverHoverEnter}
             onMouseLeave={handlePopoverHoverLeave}
-            className="fixed bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] shadow-lg overflow-hidden pointer-events-auto max-h-[400px] overflow-y-auto"
-            style={{
-              ...popoverStyle,
-              zIndex: 99999,
-            }}
+            className="fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden pointer-events-auto max-h-100 overflow-y-auto z-[99999]"
+            style={popoverStyle}
           >
             {item.subItems.map(sub => {
               const subIsActive = sub.trackActive !== false && sub.page === activePage;
@@ -476,12 +490,12 @@ function NavItem({ item, activePage, onNavigate }) {
                     sub.noIcon ? "pl-2" : ""
                   } ${
                     subIsActive
-                      ? "bg-[#e0e7ff] dark:bg-[#1e3a8a] text-[#2563eb] font-medium"
-                      : "text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
+                      ? "bg-blue-100 dark:bg-blue-950 text-blue-600 font-medium"
+                      : "text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
                   {!sub.noIcon && sub.icon && (
-                    <sub.icon size={13} className={subIsActive ? "text-[#2563eb]" : ""} />
+                    <sub.icon size={13} className={subIsActive ? "text-blue-600" : ""} />
                   )}
                   <span className="truncate">{sub.label}</span>
                 </button>
@@ -504,7 +518,7 @@ function NavItem({ item, activePage, onNavigate }) {
           className="relative"
         >
           <span
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-[#2563eb] transition-all duration-300"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
             style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
           />
           <span className={`truncate ${active ? "font-medium" : ""}`}>{item.label}</span>
@@ -522,12 +536,12 @@ function NavItem({ item, activePage, onNavigate }) {
         className="relative"
       >
         <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-full bg-[#2563eb] transition-all duration-300"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
           style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
         />
         <item.icon
           style={{ transform: active ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s" }}
-          className={active ? "text-[#1e3a8a] dark:text-[#60a5fa]" : ""}
+          className={isParentActive ? "text-blue-900 dark:text-blue-400" : ""}
         />
         <span className={active ? "font-medium" : ""}>{item.label}</span>
       </SidebarMenuButton>
@@ -611,6 +625,11 @@ function LogoHeader({ onNavigate }) {
 
 /* ── Main export ──────────────────────────────────────────────── */
 export default function AppSidebar({ activePage = "agents", onNavigate }) {
+  const { auth } = useAuth();
+
+  // Tenant role: now has access to ADMIN section (Tenants, Pricing & Plans)
+  const visibleGroups = navGroups;
+
   return (
     <Sidebar collapsible="icon">
       {/* Logo */}
@@ -618,7 +637,7 @@ export default function AppSidebar({ activePage = "agents", onNavigate }) {
 
       {/* Nav */}
       <SidebarContent>
-        {navGroups.map(group => (
+        {visibleGroups.map(group => (
           <NavGroup key={group.id} group={group} activePage={activePage} onNavigate={onNavigate} />
         ))}
       </SidebarContent>
