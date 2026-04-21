@@ -4,9 +4,9 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState({
-    isAuthenticated: false,
-    role: null,   // "admin" | "tenant"
-    user: null,   // { name, email, avatar?, tenantId? }
+    isAuthenticated: true,
+    role: "admin",
+    user: { name: "Admin", email: "admin@aziro.com" },
   });
 
   const login  = (role, user) => setAuth({ isAuthenticated: true, role, user });
