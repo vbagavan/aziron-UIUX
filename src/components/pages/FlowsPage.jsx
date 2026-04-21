@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import {
   Plus, MoreVertical, Workflow, Play, Pencil, Copy, Trash2,
   LayoutGrid, List, Search, SlidersHorizontal, X, Zap,
-  ArrowRight, Clock, CheckCircle2, AlertCircle, PauseCircle,
-  GitBranch, Database, Bot, Mail, Webhook, FileText, Globe,
+  Clock, CheckCircle2, AlertCircle, PauseCircle,
+  FileText,
   ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -12,8 +12,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 // ─── Flow data ────────────────────────────────────────────────────────────────
-
-const STEP_ICONS = { Bot, Database, Mail, Webhook, FileText, Globe, Zap, GitBranch };
 
 const flows = [
   {
@@ -155,32 +153,6 @@ const STATUS_CONFIG = {
 
 const STATUS_FILTERS = ["All", "Active", "Paused", "Error", "Draft"];
 
-// ─── Mini pipeline ─────────────────────────────────────────────────────────────
-
-function MiniPipeline({ steps, compact = false }) {
-  return (
-    <div className="flex items-center gap-0.5 flex-wrap">
-      {steps.map((step, i) => {
-        const Icon = STEP_ICONS[step.icon] ?? Zap;
-        return (
-          <div key={i} className="flex items-center gap-0.5">
-            <div
-              className={`flex items-center gap-1 rounded-[5px] border ${compact ? "px-1.5 py-0.5" : "px-2 py-1"}`}
-              style={{ borderColor: `${step.color}30`, background: `${step.color}10` }}
-            >
-              <Icon size={compact ? 10 : 11} style={{ color: step.color }} />
-              {!compact && <span className="text-xs font-medium leading-none whitespace-nowrap" style={{ color: step.color }}>{step.label}</span>}
-            </div>
-            {i < steps.length - 1 && (
-              <ArrowRight size={compact ? 8 : 10} className="text-[#cbd5e1] dark:text-[#475569] flex-shrink-0" />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── Success bar ───────────────────────────────────────────────────────────────
 
 function SuccessBar({ pct }) {
@@ -264,9 +236,6 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-5 line-clamp-1">{flow.name}</p>
           <p className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 line-clamp-2">{flow.description}</p>
         </div>
-
-        {/* Pipeline steps */}
-        <MiniPipeline steps={flow.steps} />
 
         <div className="h-px bg-[#f1f5f9] dark:bg-[#334155]" />
 
@@ -363,11 +332,6 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
         <td className="px-3 py-3 min-w-[200px]">
           <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] truncate max-w-[260px]">{flow.name}</p>
           <p className="text-xs text-[#94a3b8] dark:text-[#64748b]">{flow.createdAt}</p>
-        </td>
-
-        {/* Steps */}
-        <td className="px-3 py-3 w-[240px]">
-          <MiniPipeline steps={flow.steps} compact />
         </td>
 
         {/* Status */}
@@ -703,7 +667,6 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
                         <tr>
                           <th className="px-4 py-3 w-[52px]" />
                           <ColHeader label="Flow"        sortKey="name"    sort={sort} onSort={handleSort} className="min-w-[200px]" />
-                          <ColHeader label="Steps"       sortKey={null}    sort={sort} onSort={handleSort} className="w-[240px]" />
                           <ColHeader label="Status"      sortKey="status"  sort={sort} onSort={handleSort} className="w-[110px]" />
                           <ColHeader label="Last Run"    sortKey="lastRun" sort={sort} onSort={handleSort} className="w-[110px]" />
                           <ColHeader label="Runs"        sortKey="runs"    sort={sort} onSort={handleSort} className="w-[90px]" />
