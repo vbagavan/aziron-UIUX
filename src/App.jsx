@@ -58,11 +58,13 @@ function AppInner() {
 
   const viewFlow = (flow) => { setViewedFlow(flow); setCurrentPage("flow-view"); };
 
-  const createFlow = () => {
+  /** @param {"scratch" | "template"} entry How the user chose to start the new flow (from Flows list). */
+  const createFlow = (entry = "template") => {
     setViewedFlow({
       id: Date.now(), name: "Untitled Flow", status: "draft", steps: [], runs: 0,
       success: null, lastRun: "—",
       createdAt: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      creationEntry: entry === "scratch" ? "scratch" : "template",
     });
     setCurrentPage("flow-view");
   };

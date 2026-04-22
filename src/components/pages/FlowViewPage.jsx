@@ -9,6 +9,11 @@ import {
   Send, Sparkles, RotateCcw, ChevronUp,
   ListChecks, Braces, ScrollText, Hammer, Gauge,
   Copy, Download, Share2, Settings, Clock as ClockIcon, Pencil,
+  PanelRight, PanelRightClose,
+  Filter, Plug, Bell, UserCheck, Shield, Wrench, Brain,
+  MessageCircle, Upload, HardDrive, Building2, SplitSquareHorizontal,
+  Code2, Network, Shuffle, Timer, Variable, BarChart3, ImageIcon,
+  Microscope, FolderInput, Archive, Boxes, BotMessageSquare,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import AppHeader from "@/components/layout/AppHeader";
@@ -22,7 +27,14 @@ const H_GAP  = 110;
 const PAD_X  = 80;
 const NODE_Y = 190;
 
-const ICON_MAP = { Bot, Database, Mail, Webhook, FileText, Globe, Zap, GitBranch, GitMerge };
+const ICON_MAP = {
+  Bot, Database, Mail, Webhook, FileText, Globe, Zap, GitBranch, GitMerge,
+  Terminal, Cpu, Filter, Code2, Network, Braces,
+  Bell, UserCheck, Shield, Wrench, Brain, MessageCircle,
+  Upload, HardDrive, Building2, SplitSquareHorizontal, Shuffle,
+  Timer, Variable, BarChart3, ImageIcon, Microscope,
+  FolderInput, Archive, Boxes, BotMessageSquare, Plug, Layers,
+};
 
 // ─── Per-node type fake config ─────────────────────────────────────────────────
 const NODE_CONFIGS = {
@@ -34,7 +46,44 @@ const NODE_CONFIGS = {
   FileText:  { type: "Document",  fields: [["Source","{{input.file}}"],["Parser","PDF / DOCX"],["Fields","All"],["Encoding","UTF-8"]] },
   Globe:     { type: "HTTP",      fields: [["URL","https://api.example.com/data"],["Method","GET"],["Auth","API Key"],["Timeout","5 000 ms"]] },
   GitBranch: { type: "Logic",     fields: [["Condition","{{score}} > 70"],["True path","Send email"],["False path","Archive"],["Strict","Yes"]] },
+  Braces:    { type: "Code Block", fields: [] },
+  Code2:     { type: "Script",     fields: [] },
+  Terminal:  { type: "CLI Task",   fields: [] },
+  Cpu:       { type: "Function",   fields: [] },
 };
+
+/** Node `icon` keys that use the script / code editor in Configuration. */
+const SCRIPT_NODE_ICONS = new Set(["Braces", "Code2", "Terminal", "Cpu"]);
+
+const DEFAULT_SCRIPT_INPUT = `{
+  "example": true,
+  "payload": {}
+}`;
+
+const DEFAULT_SCRIPT_BODY = `async function run(ctx) {
+  const { input } = ctx;
+  // Edit your logic; return an object for downstream steps
+  return { output: input };
+}`;
+
+const DEFAULT_SCRIPT_OUTPUT = `{
+  "output": {}
+}`;
+
+function isScriptNodeIcon(icon) {
+  return SCRIPT_NODE_ICONS.has(icon);
+}
+
+/** Mock “enhanced” script for inline AI (keeps user code, adds guards / structure hints). */
+function stubEnhanceScript(code) {
+  const trimmed = code.trim();
+  if (!trimmed) return DEFAULT_SCRIPT_BODY;
+  if (/async\s+function\s+run\s*\(/i.test(trimmed)) {
+    return `${trimmed}\n\n// —— Enhance with AI ——\n// Consider: early return if ctx?.input is missing, and narrow catch blocks to known error types.\n`;
+  }
+  const indented = trimmed.split("\n").map((l) => `    ${l}`).join("\n");
+  return `async function run(ctx) {\n  const input = ctx?.input ?? {};\n  try {\n${indented}\n    return { output: input };\n  } catch (err) {\n    return { output: null, error: String(err) };\n  }\n}`;
+}
 
 // ─── Mock I/O data per node type ───────────────────────────────────────────────
 const NODE_IO = {
@@ -106,7 +155,9 @@ function buildAIResponse(query, step, execKey) {
         cfg.type === "Data"      ? "It queries your connected database to look up or enrich records." :
         cfg.type === "Action"    ? "It dispatches an action (e.g. email) to an external recipient." :
         cfg.type === "Logic"     ? "It evaluates a condition and routes execution down the correct branch." :
-        "It transforms and processes data within the workflow."
+        cfg.type === "Code Block" || cfg.type === "Script" || cfg.type === "CLI Task" || cfg.type === "Function"
+          ? "It executes your script against the step input and returns output for downstream nodes."
+        : "It transforms and processes data within the workflow."
       }`,
       suggestions: ["Add error handling for failures", "Enable retry logic (3 attempts)", "Log output to audit trail"],
       actions: [{ label: "View Docs", type: "docs" }, { label: "Test Node", type: "test" }, { label: "Add Retry", type: "configure" }],
@@ -344,53 +395,136 @@ function ConnectionWithAdd({ x1, y1, x2, y2, color, afterIndex, onOpenPicker, is
 const PICKER_COLORS = {
   Bot:"#7c3aed", Webhook:"#6366f1", Zap:"#f59e0b",
   Globe:"#2563eb", Database:"#0891b2", Mail:"#06b6d4",
-  FileText:"#f59e0b", GitBranch:"#f59e0b", GitMerge:"#f59e0b",
+  FileText:"#f59e0b", GitBranch:"#0284c7", GitMerge:"#0284c7",
+  Terminal:"#d97706", Cpu:"#d97706", Filter:"#16a34a", Code2:"#16a34a",
+  Network:"#7c3aed", Braces:"#16a34a", Bell:"#be185d", UserCheck:"#ea580c",
+  Shield:"#0369a1", Wrench:"#64748b", Brain:"#9333ea", MessageCircle:"#059669",
+  Upload:"#e11d48", HardDrive:"#d97706", Building2:"#3b82f6",
+  SplitSquareHorizontal:"#0284c7", Shuffle:"#0284c7",
+  Timer:"#64748b", Variable:"#64748b", BarChart3:"#16a34a",
+  ImageIcon:"#9333ea", Microscope:"#9333ea",
+  FolderInput:"#e11d48", Archive:"#d97706", Boxes:"#2563eb",
+  BotMessageSquare:"#059669", Plug:"#7c3aed", Layers:"#2563eb",
 };
 const PICKER_CATEGORIES = [
-  { icon:Layers,    bg:"#f1f5f9", iconColor:"#475569", label:"Core Nodes",        desc:"Essential workflow components",        iconKey:"Zap"       },
-  { icon:Bot,       bg:"#f5f3ff", iconColor:"#7c3aed", label:"Using AI",          desc:"Leverage AI for various tasks",         iconKey:"Bot"       },
-  { icon:Webhook,   bg:"#ecfdf5", iconColor:"#059669", label:"Triggers",          desc:"Automate actions based on events",      iconKey:"Webhook"   },
-  { icon:Settings2, bg:"#f8fafc", iconColor:"#64748b", label:"Your Custom Nodes", desc:"Create your own workflow nodes",        iconKey:"Zap"       },
-  { icon:GitMerge,  bg:"#f8fafc", iconColor:"#64748b", label:"Subflows",          desc:"Automate with nested subflows",         iconKey:"GitMerge"  },
+  { icon:SplitSquareHorizontal, bg:"#eff6ff", iconColor:"#0284c7", label:"Control Flow",   desc:"Routing, branching, loops",    iconKey:"SplitSquareHorizontal" },
+  { icon:Terminal,              bg:"#fefce8", iconColor:"#d97706", label:"Execution",       desc:"Run code & AI agents",         iconKey:"Terminal"              },
+  { icon:Filter,                bg:"#f0fdf4", iconColor:"#16a34a", label:"Data",            desc:"Transform & process data",     iconKey:"Filter"                },
+  { icon:Plug,                  bg:"#f5f3ff", iconColor:"#7c3aed", label:"Integration",     desc:"External system calls",        iconKey:"Plug"                  },
+  { icon:Zap,                   bg:"#fef9c3", iconColor:"#ca8a04", label:"Trigger",         desc:"Start workflows",              iconKey:"Zap"                   },
+  { icon:Bell,                  bg:"#fdf2f8", iconColor:"#be185d", label:"Communication",   desc:"Notify & message users",       iconKey:"Bell"                  },
+  { icon:UserCheck,             bg:"#fff7ed", iconColor:"#ea580c", label:"Interactive",     desc:"Human-in-loop actions",        iconKey:"UserCheck"             },
+  { icon:Shield,                bg:"#f0f9ff", iconColor:"#0369a1", label:"Logic",           desc:"Validation & rules",           iconKey:"Shield"                },
+  { icon:Wrench,                bg:"#f8fafc", iconColor:"#64748b", label:"Utility",         desc:"Helpers & control",            iconKey:"Wrench"                },
+  { icon:Brain,                 bg:"#faf5ff", iconColor:"#9333ea", label:"Advanced Data",   desc:"AI + data intelligence",       iconKey:"Brain"                 },
+  { icon:MessageCircle,         bg:"#f0fdf4", iconColor:"#059669", label:"Conversational",  desc:"NLP-based routing",            iconKey:"MessageCircle"         },
+  { icon:FolderInput,           bg:"#fff1f2", iconColor:"#e11d48", label:"File Handling",   desc:"File processing",              iconKey:"FolderInput"           },
+  { icon:HardDrive,             bg:"#fef3c7", iconColor:"#d97706", label:"Storage",         desc:"Persist & retrieve data",      iconKey:"HardDrive"             },
+  { icon:Boxes,                 bg:"#eff6ff", iconColor:"#2563eb", label:"Concurrency",     desc:"Parallel execution",           iconKey:"Boxes"                 },
+  { icon:Building2,             bg:"#f0f4ff", iconColor:"#3b82f6", label:"Microsoft / Bot", desc:"Microsoft ecosystem",          iconKey:"Building2"             },
 ];
 const PICKER_FREQUENT = [
-  { icon:Cpu,       bg:"#fef2f2", iconColor:"#ef4444", label:"Ask AI",       desc:"Prompt an AI...",      iconKey:"Bot"       },
-  { icon:FileText,  bg:"#f8fafc", iconColor:"#64748b", label:"Input",        desc:"Entry point for...",   iconKey:"FileText"  },
-  { icon:Database,  bg:"#fef2f2", iconColor:"#ef4444", label:"Extract Data", desc:"Extract key piece...", iconKey:"Database"  },
-  { icon:Globe,     bg:"#f8fafc", iconColor:"#64748b", label:"Output",       desc:"Exit point for...",    iconKey:"Globe"     },
-  { icon:Bot,       bg:"#fef2f2", iconColor:"#be185d", label:"Agent",        desc:"Run an agent...",      iconKey:"Bot"       },
-  { icon:GitMerge,  bg:"#f8fafc", iconColor:"#64748b", label:"Router",       desc:"Control workflow...",  iconKey:"GitBranch" },
+  { icon:Globe,         bg:"#eff6ff", iconColor:"#2563eb", label:"API Call",       desc:"Call external endpoints",      iconKey:"Globe"         },
+  { icon:Braces,        bg:"#f0fdf4", iconColor:"#16a34a", label:"Code Block",     desc:"Run inline code",              iconKey:"Braces"        },
+  { icon:MessageCircle, bg:"#f0fdf4", iconColor:"#059669", label:"Chat Trigger",   desc:"Start from a chat message",    iconKey:"MessageCircle" },
+  { icon:Filter,        bg:"#f0fdf4", iconColor:"#16a34a", label:"Transform",      desc:"Shape & map data",             iconKey:"Filter"        },
+  { icon:UserCheck,     bg:"#fff7ed", iconColor:"#ea580c", label:"Human Approval", desc:"Pause for human review",       iconKey:"UserCheck"     },
+  { icon:GitBranch,     bg:"#eff6ff", iconColor:"#0284c7", label:"If / Else",      desc:"Branch on a condition",        iconKey:"GitBranch"     },
 ];
 
 // ─── Nodes grouped by category ─────────────────────────────────────────────────
 const PICKER_NODES_BY_CATEGORY = {
-  "Core Nodes": [
-    { icon:Webhook,   label:"Web Trigger",       desc:"HTTP webhook trigger",                          iconKey:"Webhook" },
-    { icon:Database,  label:"Database Query",    desc:"Query databases and tables",                     iconKey:"Database" },
-    { icon:Bot,       label:"API Request",       desc:"Make API calls to external services",           iconKey:"Bot" },
-    { icon:Mail,      label:"Send Email",        desc:"Send emails from workflow",                      iconKey:"Mail" },
-    { icon:FileText,  label:"Parse File",        desc:"Extract and parse file content",                 iconKey:"FileText" },
-    { icon:Globe,     label:"HTTP Request",      desc:"Call external HTTP endpoints",                   iconKey:"Globe" },
+  "Control Flow": [
+    { icon:Shuffle,               label:"Router",             desc:"Route to multiple branches",          iconKey:"Shuffle"               },
+    { icon:GitBranch,             label:"If / Else",          desc:"Branch on a boolean condition",       iconKey:"GitBranch"             },
+    { icon:RefreshCw,             label:"While Loop",         desc:"Repeat steps while condition holds",  iconKey:"Wrench"                },
+    { icon:GitMerge,              label:"Join",               desc:"Merge parallel branches",             iconKey:"GitMerge"              },
+    { icon:SplitSquareHorizontal, label:"Switch",             desc:"Multi-way branch on value",           iconKey:"SplitSquareHorizontal" },
+    { icon:X,                     label:"Break",              desc:"Exit a loop early",                   iconKey:"Shield"                },
+    { icon:ChevronRight,          label:"Continue",           desc:"Skip to next loop iteration",         iconKey:"Shield"                },
   ],
-  "Using AI": [
-    { icon:Bot,       label:"Ask Claude",        desc:"Query Claude AI with context",                   iconKey:"Bot" },
-    { icon:Sparkles,  label:"Smart Extract",     desc:"AI-powered data extraction",                     iconKey:"Bot" },
-    { icon:Cpu,       label:"Summarize",         desc:"Generate summaries with AI",                     iconKey:"Bot" },
-    { icon:Database,  label:"Data Classification", desc:"Classify data using AI",                        iconKey:"Database" },
+  "Execution": [
+    { icon:Braces,   label:"Code Block",        desc:"Write & run inline code",            iconKey:"Braces"   },
+    { icon:Bot,      label:"Agent Call",         desc:"Invoke an AI agent",                 iconKey:"Bot"      },
+    { icon:Code2,    label:"Script Runner",      desc:"Execute an external script",         iconKey:"Code2"    },
+    { icon:Cpu,      label:"Function Executor",  desc:"Call a serverless function",         iconKey:"Cpu"      },
+    { icon:Terminal, label:"CLI Task",           desc:"Run a shell command",                iconKey:"Terminal" },
   ],
-  "Triggers": [
-    { icon:Webhook,   label:"Webhook",           desc:"Triggered by HTTP requests",                     iconKey:"Webhook" },
-    { icon:Clock,     label:"Schedule",          desc:"Trigger on schedule (cron)",                     iconKey:"Webhook" },
-    { icon:Mail,      label:"Email Received",    desc:"Trigger when email arrives",                     iconKey:"Mail" },
-    { icon:Zap,       label:"Event",             desc:"Trigger from external events",                   iconKey:"Zap" },
+  "Data": [
+    { icon:Shuffle,  label:"Transform",   desc:"Reshape data with a mapping",        iconKey:"Shuffle"   },
+    { icon:Filter,   label:"Filter",      desc:"Keep only matching records",         iconKey:"Filter"    },
+    { icon:Layers,   label:"Map",         desc:"Apply function to each item",        iconKey:"Layers"    },
+    { icon:BarChart3,label:"Aggregate",   desc:"Sum, count, avg across records",     iconKey:"BarChart3" },
+    { icon:Wrench,   label:"Formatter",   desc:"Format dates, numbers, strings",     iconKey:"Wrench"    },
+    { icon:Braces,   label:"Parser",      desc:"Parse JSON, CSV, XML",               iconKey:"Braces"    },
   ],
-  "Your Custom Nodes": [
-    { icon:Settings2, label:"Create New Node",   desc:"Build a custom workflow node",                   iconKey:"Zap" },
-    { icon:GitMerge,  label:"Node Library",      desc:"Browse your saved nodes",                        iconKey:"GitMerge" },
+  "Integration": [
+    { icon:Globe,    label:"API Call",          desc:"HTTP request to any endpoint",      iconKey:"Globe"    },
+    { icon:RefreshCw,label:"Polling API",       desc:"Poll endpoint until result ready",  iconKey:"Globe"    },
+    { icon:Webhook,  label:"Webhook",           desc:"Receive inbound HTTP webhooks",     iconKey:"Webhook"  },
+    { icon:Database, label:"Database Query",    desc:"Query SQL / NoSQL database",        iconKey:"Database" },
+    { icon:Network,  label:"GraphQL Request",   desc:"Execute a GraphQL query",           iconKey:"Network"  },
   ],
-  "Subflows": [
-    { icon:GitMerge,  label:"Subflow",           desc:"Call a nested subflow",                          iconKey:"GitMerge" },
-    { icon:FileText,  label:"Import Flow",       desc:"Import another flow",                            iconKey:"FileText" },
+  "Trigger": [
+    { icon:MessageCircle, label:"Chat Trigger",    desc:"Start flow from a chat message",   iconKey:"MessageCircle" },
+    { icon:Webhook,       label:"Webhook Trigger", desc:"Inbound HTTP request trigger",      iconKey:"Webhook"       },
+    { icon:Clock,         label:"Cron",            desc:"Recurring schedule trigger",        iconKey:"Timer"         },
+    { icon:Timer,         label:"Schedule",        desc:"One-time or interval schedule",     iconKey:"Timer"         },
+  ],
+  "Communication": [
+    { icon:Bell,      label:"Notification",       desc:"Push in-app notification",          iconKey:"Bell"      },
+    { icon:Mail,      label:"Email",              desc:"Send a transactional email",        iconKey:"Mail"      },
+    { icon:Building2, label:"Teams Notification", desc:"Post to Microsoft Teams channel",   iconKey:"Building2" },
+    { icon:Mail,      label:"Microsoft Email",    desc:"Send via Microsoft 365 / Outlook",  iconKey:"Mail"      },
+  ],
+  "Interactive": [
+    { icon:UserCheck,    label:"Human Approval", desc:"Pause for human review & approval",  iconKey:"UserCheck" },
+    { icon:MousePointer, label:"User Input",     desc:"Collect structured input from user", iconKey:"UserCheck" },
+  ],
+  "Logic": [
+    { icon:Shield,      label:"Guardrails",  desc:"Safety & content policy checks",    iconKey:"Shield"   },
+    { icon:GitBranch,   label:"Condition",   desc:"Evaluate boolean expression",       iconKey:"GitBranch"},
+    { icon:CheckCircle2,label:"Validator",   desc:"Validate schema or field rules",    iconKey:"Shield"   },
+    { icon:Layers,      label:"Rule Engine", desc:"Apply declarative business rules",  iconKey:"Shield"   },
+  ],
+  "Utility": [
+    { icon:Timer,     label:"Delay",           desc:"Pause flow for a set duration",     iconKey:"Timer"    },
+    { icon:Variable,  label:"Set State",       desc:"Store a variable for later steps",  iconKey:"Variable" },
+    { icon:ScrollText,label:"Logger",          desc:"Emit structured log events",        iconKey:"Wrench"   },
+    { icon:Variable,  label:"Variable Setter", desc:"Assign values to named variables",  iconKey:"Variable" },
+    { icon:Clock,     label:"Timer",           desc:"Measure elapsed time between steps",iconKey:"Timer"    },
+    { icon:BarChart3, label:"Counter",         desc:"Increment / decrement a counter",   iconKey:"BarChart3"},
+  ],
+  "Advanced Data": [
+    { icon:Microscope, label:"Similarity Search", desc:"Vector / semantic search",           iconKey:"Microscope" },
+    { icon:Globe,      label:"Web Scraper",        desc:"Extract content from a webpage",     iconKey:"Globe"      },
+    { icon:Network,    label:"Website Crawler",    desc:"Crawl pages recursively",            iconKey:"Network"    },
+    { icon:Brain,      label:"AI Extract",         desc:"LLM-powered data extraction",        iconKey:"Brain"      },
+    { icon:ImageIcon,  label:"Image Generation",   desc:"Generate images with AI models",     iconKey:"ImageIcon"  },
+    { icon:Microscope, label:"AI Research",        desc:"Deep research via AI agents",        iconKey:"Brain"      },
+    { icon:BarChart3,  label:"Data Enricher",      desc:"Augment records with external data", iconKey:"BarChart3"  },
+  ],
+  "Conversational": [
+    { icon:MessageCircle,   label:"Chat Trigger",        desc:"Start flow from chat message",   iconKey:"MessageCircle"   },
+    { icon:BotMessageSquare,label:"Prompt Intent Router",desc:"Route messages by intent",       iconKey:"BotMessageSquare"},
+  ],
+  "File Handling": [
+    { icon:FolderInput, label:"File Ingestion",     desc:"Upload & ingest files",              iconKey:"FolderInput" },
+    { icon:FileText,    label:"Document Extractor", desc:"Extract content from documents",     iconKey:"FileText"    },
+  ],
+  "Storage": [
+    { icon:Archive,   label:"Vector Upsert",     desc:"Upsert embeddings to vector store",    iconKey:"Archive"   },
+    { icon:HardDrive, label:"Workspace Storage", desc:"Read / write workspace key-value",     iconKey:"HardDrive" },
+    { icon:Database,  label:"Cache Storage",     desc:"Short-lived key-value cache",          iconKey:"Database"  },
+  ],
+  "Concurrency": [
+    { icon:Boxes,    label:"Parallel Executor", desc:"Run branches in parallel",              iconKey:"Boxes"    },
+    { icon:GitMerge, label:"Result Aggregator", desc:"Collect & merge parallel results",      iconKey:"GitMerge" },
+  ],
+  "Microsoft / Bot": [
+    { icon:Building2,       label:"Teams Notification", desc:"Post to Microsoft Teams channel",  iconKey:"Building2"       },
+    { icon:Mail,            label:"Microsoft Email",    desc:"Send via Outlook / Microsoft 365", iconKey:"Mail"            },
+    { icon:BotMessageSquare,label:"Bot Trigger",        desc:"Receive messages from a bot",      iconKey:"BotMessageSquare"},
   ],
 };
 
@@ -411,8 +545,8 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
   }, [onClose, query, selectedCategory]);
 
   const q = query.toLowerCase();
-  const all = [...PICKER_CATEGORIES, ...PICKER_FREQUENT];
-  const filtered = q ? all.filter(t => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) : null;
+  const allNodes = Object.values(PICKER_NODES_BY_CATEGORY).flat();
+  const filtered = q ? allNodes.filter(t => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) : null;
   const pick = (tool) => { onAdd(afterIndex, { label:tool.label, icon:tool.iconKey, color:PICKER_COLORS[tool.iconKey]??"#64748b" }); onClose(); };
   const openCategory = (categoryLabel) => { setSelectedCategory(categoryLabel); setQuery(""); };
 
@@ -489,13 +623,233 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
   );
 }
 
+// ─── Script / code step editor (Configuration tab) ───────────────────────────
+function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpdateStep }) {
+  const [inputJson, setInputJson]     = useState(step.scriptInput ?? DEFAULT_SCRIPT_INPUT);
+  const [codeBody, setCodeBody]       = useState(step.scriptCode ?? DEFAULT_SCRIPT_BODY);
+  const [outputJson, setOutputJson]   = useState(step.scriptOutput ?? DEFAULT_SCRIPT_OUTPUT);
+  const [aiLoading, setAiLoading]     = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
+  const enhanceTimerRef = useRef(null);
+  const suggestionPanelRef = useRef(null);
+
+  useEffect(() => {
+    setInputJson(step.scriptInput ?? DEFAULT_SCRIPT_INPUT);
+    setCodeBody(step.scriptCode ?? DEFAULT_SCRIPT_BODY);
+    setOutputJson(step.scriptOutput ?? DEFAULT_SCRIPT_OUTPUT);
+  }, [selectedIdx, step.label, step.icon, step.scriptInput, step.scriptCode, step.scriptOutput]);
+
+  useEffect(() => {
+    setAiSuggestion(null);
+    setAiLoading(false);
+    return () => {
+      if (enhanceTimerRef.current) {
+        clearTimeout(enhanceTimerRef.current);
+        enhanceTimerRef.current = null;
+      }
+    };
+  }, [selectedIdx, step.label, step.icon]);
+
+  useEffect(() => {
+    if (aiSuggestion && !aiLoading && suggestionPanelRef.current) {
+      suggestionPanelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [aiSuggestion, aiLoading]);
+
+  const flush = () => {
+    onUpdateStep?.({
+      scriptInput: inputJson,
+      scriptCode: codeBody,
+      scriptOutput: outputJson,
+    });
+  };
+
+  const runEnhanceWithAI = () => {
+    if (enhanceTimerRef.current) {
+      clearTimeout(enhanceTimerRef.current);
+      enhanceTimerRef.current = null;
+    }
+    const snapshot = codeBody;
+    flush();
+    setAiLoading(true);
+    setAiSuggestion(null);
+    enhanceTimerRef.current = setTimeout(() => {
+      enhanceTimerRef.current = null;
+      setAiSuggestion(stubEnhanceScript(snapshot));
+      setAiLoading(false);
+    }, 900);
+  };
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-[#f1f5f9] px-4 py-4">
+        <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-[8px]" style={{ background: `${step.color}18`, border: `1px solid ${step.color}30` }}>
+          <Icon size={18} style={{ color: step.color }} />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="truncate text-sm font-semibold text-[#0f172a]">{step.label}</p>
+          <span className="text-xs text-[#64748b]">{cfg.type ?? "Code"} · Step {selectedIdx + 1}</span>
+        </div>
+        <span className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: execInfo.bg, color: execInfo.color }}>
+          {execInfo.label}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-4 px-4 py-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Input</p>
+            <span className="text-[10px] text-[#94a3b8]">JSON / context passed into this step</span>
+          </div>
+          <textarea
+            value={inputJson}
+            onChange={(e) => setInputJson(e.target.value)}
+            onBlur={flush}
+            spellCheck={false}
+            className="min-h-[72px] resize-y rounded-[8px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2 font-mono text-[11px] leading-relaxed text-[#0f172a] outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+            aria-label="Script input payload"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Code</p>
+            <button
+              type="button"
+              onClick={runEnhanceWithAI}
+              disabled={aiLoading}
+              className="inline-flex items-center gap-1 rounded-[6px] border border-[#e2e8f0] bg-gradient-to-r from-[#eef2ff] to-white px-2.5 py-1 text-[10px] font-semibold text-[#4f46e5] shadow-sm transition-colors hover:border-[#c7d2fe] hover:from-[#e0e7ff] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {aiLoading ? <RefreshCw size={11} className="animate-spin" /> : <Sparkles size={11} />}
+              {aiLoading ? "Enhancing…" : "Enhance with AI"}
+            </button>
+          </div>
+          <textarea
+            value={codeBody}
+            onChange={(e) => setCodeBody(e.target.value)}
+            onBlur={flush}
+            spellCheck={false}
+            className="min-h-[200px] resize-y rounded-[8px] border border-[#e2e8f0] bg-[#0f172a] px-3 py-2.5 font-mono text-[11px] leading-relaxed text-[#e2e8f0] outline-none focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/25"
+            aria-label="Script source code"
+          />
+          {(aiLoading || aiSuggestion) && (
+            <div
+              ref={suggestionPanelRef}
+              className="rounded-[8px] border border-[#c7d2fe] bg-[#f5f3ff] px-3 py-2.5"
+              role="region"
+              aria-label="AI enhancement suggestion"
+            >
+              {aiLoading && (
+                <div className="flex items-center gap-2 text-[11px] font-medium text-[#4f46e5]">
+                  <RefreshCw size={12} className="animate-spin flex-shrink-0" />
+                  Analyzing your snippet…
+                </div>
+              )}
+              {aiSuggestion && !aiLoading && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles size={12} className="flex-shrink-0 text-[#6366f1]" />
+                    <span className="text-[11px] font-semibold text-[#3730a3]">Suggested code</span>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={aiSuggestion}
+                    spellCheck={false}
+                    className="max-h-[180px] min-h-[100px] w-full resize-y rounded-[6px] border border-[#e0e7ff] bg-white px-2.5 py-2 font-mono text-[10px] leading-relaxed text-[#1e1b4b]"
+                    aria-label="AI suggested code"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCodeBody(aiSuggestion);
+                        setAiSuggestion(null);
+                        onUpdateStep?.({ scriptInput: inputJson, scriptCode: aiSuggestion, scriptOutput: outputJson });
+                      }}
+                      className="rounded-[6px] bg-[#4f46e5] px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-[#4338ca]"
+                    >
+                      Replace code
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const merged = `${codeBody.trimEnd()}\n\n${aiSuggestion}`;
+                        setCodeBody(merged);
+                        setAiSuggestion(null);
+                        onUpdateStep?.({ scriptInput: inputJson, scriptCode: merged, scriptOutput: outputJson });
+                      }}
+                      className="rounded-[6px] border border-[#c7d2fe] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#4f46e5] transition-colors hover:bg-[#eef2ff]"
+                    >
+                      Append below
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAiSuggestion(null)}
+                      className="rounded-[6px] px-2.5 py-1 text-[10px] font-medium text-[#64748b] transition-colors hover:bg-white/80"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="text-[10px] leading-snug text-[#94a3b8]">
+            <span className="font-semibold text-[#64748b]">Enhance with AI</span> suggests edits inline. Use the{" "}
+            <span className="font-semibold text-[#64748b]">Chat</span> tab for free-form questions.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Output</p>
+            <span className="text-[10px] text-[#94a3b8]">Shape returned to the next step (mock / contract)</span>
+          </div>
+          <textarea
+            value={outputJson}
+            onChange={(e) => setOutputJson(e.target.value)}
+            onBlur={flush}
+            spellCheck={false}
+            className="min-h-[72px] resize-y rounded-[8px] border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2 font-mono text-[11px] leading-relaxed text-[#0f172a] outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15"
+            aria-label="Script output schema"
+          />
+        </div>
+
+        <div className="rounded-[8px] border border-dashed border-[#e2e8f0] bg-[#fafafa] px-3 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">Preview</p>
+          <p className="mt-1 text-[11px] text-[#64748b]">
+            Last run {flow.lastRun} · inputs and outputs are simulated until this flow is connected to a runtime.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Configure mode ───────────────────────────────────────────────────────────
-function ConfigureMode({ step, selectedIdx, flow }) {
+function ConfigureMode({ step, selectedIdx, flow, onOpenChatTab, onUpdateStep }) {
   const cfg      = NODE_CONFIGS[step.icon] ?? {};
   const execKey  = getExecStatus(flow.status, selectedIdx, flow.steps.length);
   const execInfo = STEP_EXEC[execKey];
   const [advOpen, setAdvOpen] = useState(false);
   const Icon = ICON_MAP[step.icon] ?? Zap;
+
+  if (isScriptNodeIcon(step.icon)) {
+    return (
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <ScriptStepEditor
+          step={step}
+          selectedIdx={selectedIdx}
+          flow={flow}
+          cfg={cfg}
+          execInfo={execInfo}
+          Icon={Icon}
+          onUpdateStep={onUpdateStep}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
@@ -906,200 +1260,362 @@ function FlowOverview({ flow }) {
   );
 }
 
-// ─── Flow creation helper component ───────────────────────────────────────────
-function FlowCreationMode({ flow, runState }) {
-  const [query, setQuery] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [suggestions, setSuggestions] = useState([]);
+// ─── Shared template definitions ──────────────────────────────────────────────
+const CREATION_TEMPLATES = [
+  {
+    icon: Mail, color: "#06b6d4", label: "Email automation",
+    desc: "Trigger → Filter → Send",
+    steps: [
+      { label: "Email Trigger", icon: "Webhook",   color: "#6366f1", status: "pending" },
+      { label: "Filter Rules",  icon: "GitBranch", color: "#f59e0b", status: "pending" },
+      { label: "Send Email",    icon: "Mail",      color: "#06b6d4", status: "pending" },
+    ],
+  },
+  {
+    icon: Database, color: "#0891b2", label: "Data pipeline",
+    desc: "Fetch → Validate → Store",
+    steps: [
+      { label: "Fetch Data",    icon: "Globe",    color: "#2563eb", status: "pending" },
+      { label: "Validate",      icon: "Zap",      color: "#f59e0b", status: "pending" },
+      { label: "Store Results", icon: "Database", color: "#0891b2", status: "pending" },
+    ],
+  },
+  {
+    icon: Bot, color: "#7c3aed", label: "Lead scoring",
+    desc: "CRM Trigger → Score → Update",
+    steps: [
+      { label: "CRM Trigger",   icon: "Webhook",  color: "#6366f1", status: "pending" },
+      { label: "Score with AI", icon: "Bot",      color: "#7c3aed", status: "pending" },
+      { label: "Update CRM",    icon: "Database", color: "#0891b2", status: "pending" },
+    ],
+  },
+  {
+    icon: FileText, color: "#f59e0b", label: "Document processing",
+    desc: "Upload → Extract → Save",
+    steps: [
+      { label: "File Upload",   icon: "FileText", color: "#f59e0b", status: "pending" },
+      { label: "Smart Extract", icon: "Bot",      color: "#7c3aed", status: "pending" },
+      { label: "Save to DB",    icon: "Database", color: "#0891b2", status: "pending" },
+    ],
+  },
+];
 
-  const CREATION_PROMPTS = [
-    { icon: Mail, text: "Help me create an email automation workflow" },
-    { icon: Database, text: "Build a data validation and enrichment flow" },
-    { icon: Bot, text: "Create a lead scoring and qualification workflow" },
-    { icon: Zap, text: "Help me automate a document processing pipeline" },
-  ];
-
-  const handleSendCreation = () => {
-    if (!query.trim()) return;
-    const newMessages = [...messages, { role: "user", content: query }];
-    setMessages(newMessages);
-    const aiResp = buildAIResponse(query, null, "pending");
-    setMessages(prev => [...prev, { role: "assistant", content: aiResp.message }]);
-    setSuggestions(aiResp.suggestions || []);
-    setQuery("");
-  };
-
+// ─── Flow creation helper component (embedded inside ConversationPanel) ────────
+function FlowCreationMode({ onSendMessage, onAddTemplate }) {
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto">
-      <div className="px-4 py-3 border-b border-[#f1f5f9] flex-shrink-0">
-        <p className="text-sm font-semibold text-[#0f172a] mb-2">🚀 Build your workflow with AI</p>
-        <p className="text-xs text-[#64748b] leading-relaxed">Tell me what you want to automate, and I'll help you create the workflow. Or choose one of the templates below to get started.</p>
-      </div>
-
-      {/* Suggested prompts */}
-      {messages.length === 0 && (
-        <div className="px-4 py-3 flex flex-col gap-2 flex-shrink-0">
-          <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-widest">Try these templates:</p>
-          {CREATION_PROMPTS.map((prompt, i) => {
-            const PromptIcon = prompt.icon;
-            return (
-              <button key={i} onClick={() => { setQuery(prompt.text); }}
-                className="flex items-start gap-2.5 p-2.5 rounded-[8px] border border-[#e2e8f0] hover:border-[#2563eb] hover:bg-[#f0f7ff] transition-colors text-left">
-                <PromptIcon size={14} className="text-[#2563eb] flex-shrink-0 mt-0.5" />
-                <span className="text-xs text-[#0f172a] leading-snug">{prompt.text}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Messages */}
-      {messages.length > 0 && (
-        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] rounded-[8px] px-3 py-2 text-xs ${
-                msg.role === "user"
-                  ? "bg-[#2563eb] text-white rounded-br-none"
-                  : "bg-[#f1f5f9] text-[#0f172a] rounded-bl-none"
-              }`}>
-                {msg.content}
-              </div>
+    <div className="flex flex-col gap-1.5 px-1 pb-1">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-[#94a3b8] px-2 pt-2">Start with a template</p>
+      {CREATION_TEMPLATES.map((tpl, i) => {
+        const TplIcon = tpl.icon;
+        return (
+          <button
+            key={i}
+            onClick={() => {
+              onAddTemplate(tpl.steps);
+              onSendMessage(`Build a ${tpl.label.toLowerCase()} workflow`);
+            }}
+            className="flex items-center gap-3 p-2.5 rounded-[10px] border border-[#e2e8f0] hover:border-[#2563eb] hover:bg-[#f0f7ff] transition-all text-left group"
+          >
+            <div className="size-9 rounded-[8px] flex items-center justify-center flex-shrink-0"
+              style={{ background: `${tpl.color}18`, border: `1px solid ${tpl.color}28` }}>
+              <TplIcon size={16} style={{ color: tpl.color }} />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
-        <div className="px-4 py-2 flex flex-col gap-2 flex-shrink-0 border-t border-[#f1f5f9]">
-          <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-widest">Suggested steps:</p>
-          {suggestions.map((sug, i) => (
-            <div key={i} className="flex items-start gap-2 p-2 rounded-[6px] bg-[#f8fafc] border border-[#e2e8f0] text-sm">
-              <Sparkles size={12} className="text-[#2563eb] flex-shrink-0 mt-0.5" />
-              <span className="text-[#0f172a]">{sug}</span>
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              <span className="text-xs font-semibold text-[#0f172a] group-hover:text-[#2563eb] transition-colors">{tpl.label}</span>
+              <span className="text-[11px] text-[#94a3b8]">{tpl.desc}</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Input */}
-      <div className="px-4 py-3 border-t border-[#f1f5f9] flex-shrink-0">
-        <div className="flex items-end gap-2">
-          <input placeholder="Describe your workflow..." value={query} onChange={(e)=>setQuery(e.target.value)}
-            onKeyDown={(e)=>e.key==="Enter"&&handleSendCreation()}
-            className="flex-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-[6px] px-3 py-2 text-xs outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 transition-all resize-none max-h-16" />
-          <button onClick={handleSendCreation} className="flex items-center justify-center size-8 rounded-[6px] bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors flex-shrink-0">
-            <Send size={13} />
+            <ChevronRight size={13} className="text-[#cbd5e1] group-hover:text-[#2563eb] flex-shrink-0 transition-colors" />
           </button>
-        </div>
-      </div>
+        );
+      })}
+      <button
+        onClick={() => onSendMessage("Help me build a custom workflow from scratch")}
+        className="flex items-center justify-center gap-1.5 py-2 mt-0.5 rounded-[8px] border border-dashed border-[#e2e8f0] text-xs text-[#94a3b8] hover:border-[#2563eb] hover:text-[#2563eb] hover:bg-[#f0f7ff] transition-all"
+      >
+        <Plus size={12} /> Start from scratch
+      </button>
     </div>
   );
 }
 
-// ─── Right panel (contextual — shown only when a node is selected) ────────────
-function RightPanel({ flow, selectedIdx, runState, onClose }) {
+// ─── Right panel — always visible; shows flow config or node config+chat ───────
+function RightPanel({
+  flow,
+  selectedIdx,
+  runState,
+  onClose,
+  showEmptyFlowAssistant,
+  onCloseEmptyFlowAssistant,
+  assistantFocusKey,
+  convMessages,
+  onAddConvMessage,
+  onRunFlow,
+  onAddTemplate,
+  logs,
+  convCollapsed,
+  onToggleConvCollapse,
+  onUpdateStep,
+}) {
   const [panelMode, setPanelMode] = useState("configure");
+  const [emptyFlowTab, setEmptyFlowTab] = useState("assistant"); // "assistant" | "settings"
 
-  const step      = flow.steps[selectedIdx];
-  const isRunning = runState.activeIdx === selectedIdx;
-  const isDone    = runState.doneIdxs.has(selectedIdx);
-  const execKey   = getExecStatus(flow.status, selectedIdx, flow.steps.length);
+  const hasNode   = selectedIdx !== null && flow.steps[selectedIdx];
+  const step      = hasNode ? flow.steps[selectedIdx] : null;
+  const isRunning = hasNode && runState.activeIdx === selectedIdx;
+  const isDone    = hasNode && runState.doneIdxs.has(selectedIdx);
+  const execKey   = hasNode ? getExecStatus(flow.status, selectedIdx, flow.steps.length) : "pending";
   const dynInfo   = isRunning ? STEP_EXEC.running : isDone ? STEP_EXEC.success : STEP_EXEC[execKey] ?? STEP_EXEC.pending;
-  const io        = NODE_IO[step?.icon] ?? { input:{}, output:{} };
+  const isEmpty   = flow.steps.length === 0;
 
-  // Auto-switch to Execution tab when this node starts running
-  useEffect(() => { if (isRunning) setPanelMode("execution"); }, [isRunning]);
+  // Reset to configure tab when node changes
+  useEffect(() => { setPanelMode("configure"); }, [selectedIdx]);
 
-  const TABS = [
-    { id:"configure", icon:Hammer,     label:"Configuration" },
-    { id:"execution", icon:Gauge,      label:"Execution"     },
-    { id:"logs",      icon:ScrollText, label:"Logs"          },
-  ];
+  useEffect(() => {
+    if (assistantFocusKey > 0) setEmptyFlowTab("assistant");
+  }, [assistantFocusKey]);
 
   return (
-    <div className="w-[360px] flex-shrink-0 flex flex-col border-l border-[#e2e8f0] bg-white overflow-hidden">
-      {/* Node header */}
-      <div className="flex items-center gap-2.5 px-4 h-12 border-b border-[#e2e8f0] flex-shrink-0 bg-white">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#0f172a] truncate">{step?.label ?? "Node"}</p>
-          <p className="text-[11px] text-[#94a3b8] truncate">{step?.icon ?? ""}</p>
-        </div>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-          style={{ background: dynInfo.bg, color: dynInfo.color }}>
-          {isRunning ? "Running…" : isDone ? "Done" : dynInfo.label}
-        </span>
-        <button onClick={onClose}
-          className="size-6 flex items-center justify-center rounded-[5px] text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0">
-          <X size={13} />
-        </button>
-      </div>
+    <div className="flex h-full min-h-0 w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e2e8f0] bg-white">
 
-      {/* Tabs */}
-      <div className="flex border-b border-[#e2e8f0] flex-shrink-0">
-        {TABS.map(({ id, icon: TIcon, label }) => (
-          <button key={id} onClick={() => setPanelMode(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
-              panelMode === id
-                ? "text-[#0f172a] border-b-[#2563eb]"
-                : "text-[#94a3b8] border-b-transparent hover:text-[#64748b]"
-            }`}>
-            <TIcon size={12} /> {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-
-        {/* ── Configuration ── */}
-        {panelMode === "configure" && (
-          <ConfigureMode step={step} selectedIdx={selectedIdx} flow={flow} />
-        )}
-
-        {/* ── Execution ── */}
-        {panelMode === "execution" && (
-          <div className="flex flex-col gap-4 px-4 py-3">
-            {[["Input", io.input], ["Output", io.output]].map(([lbl, data]) => (
-              <div key={lbl}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">{lbl}</span>
-                  <div className="flex-1 h-px bg-[#f1f5f9]" />
-                </div>
-                <pre className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[8px] px-3 py-2.5 text-xs font-mono text-[#374151] overflow-x-auto whitespace-pre-wrap break-all leading-5">
-                  {JSON.stringify(data, null, 2)}
-                </pre>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── Logs ── */}
-        {panelMode === "logs" && (
-          <div className="px-3 py-2 font-mono flex flex-col gap-0.5">
+      {/* ── EMPTY FLOW + ASSISTANT: Ask AI + Flow settings (from canvas "Ask AI") ── */}
+      {!hasNode && isEmpty && showEmptyFlowAssistant && (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex h-12 flex-shrink-0 items-center gap-1 border-b border-[#e2e8f0] px-2">
             {[
-              { ts: "15:49:00.000", level: "INFO",    msg: `[${step?.label}] started` },
-              { ts: "15:49:00.180", level: "INFO",    msg: "Authenticating with upstream service" },
-              { ts: "15:49:00.312", level: "INFO",    msg: "Request dispatched" },
-              { ts: "15:49:00.501", level: execKey === "error" ? "ERROR" : "SUCCESS",
-                msg: execKey === "error" ? "Connection timeout after 5000ms" : `Completed in ${230 + (selectedIdx ?? 0) * 80}ms` },
-            ].map((entry, i) => (
-              <div key={i} className="flex items-start gap-2 py-1 hover:bg-[#f8fafc] rounded px-1">
-                <span className="text-[#94a3b8] flex-shrink-0 tabular-nums text-[11px]">{entry.ts}</span>
-                <span className={`flex-shrink-0 w-[52px] text-center px-1 py-0.5 rounded text-[10px] font-bold uppercase ${LOG_BADGES[entry.level]}`}>{entry.level}</span>
-                <span className={`text-[11px] ${LOG_COLORS[entry.level]}`}>{entry.msg}</span>
-              </div>
+              { id: "assistant", icon: Sparkles, label: "Ask AI" },
+              { id: "settings", icon: Settings2, label: "Flow settings" },
+            ].map(({ id, icon: TabI, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setEmptyFlowTab(id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[6px] py-2 text-xs font-medium transition-colors ${
+                  emptyFlowTab === id ? "bg-[#f1f5f9] text-[#0f172a]" : "text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f8fafc]"
+                }`}
+              >
+                <TabI size={12} /> {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={onCloseEmptyFlowAssistant}
+              title="Hide side panel"
+              aria-label="Hide side panel"
+              className="flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] text-[#94a3b8] transition-colors hover:bg-[#f1f5f9] hover:text-[#64748b]"
+            >
+              <PanelRightClose size={14} />
+            </button>
+          </div>
+          {emptyFlowTab === "assistant" && (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <ConversationPanel
+                flow={flow}
+                runState={runState}
+                messages={convMessages}
+                onAddMessage={onAddConvMessage}
+                onRunFlow={onRunFlow}
+                onAddTemplate={onAddTemplate}
+                logs={logs}
+                collapsed={convCollapsed}
+                onToggleCollapse={onToggleConvCollapse}
+                focusChatKey={assistantFocusKey}
+              />
+            </div>
+          )}
+          {emptyFlowTab === "settings" && (
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <FlowOverview flow={flow} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── NO NODE, HAS STEPS: flow-level overview & settings ── */}
+      {!hasNode && !isEmpty && (
+        <>
+          <div className="flex items-center gap-2.5 px-4 h-12 border-b border-[#e2e8f0] flex-shrink-0">
+            <div className="size-6 rounded-[6px] bg-[#f1f5f9] flex items-center justify-center flex-shrink-0">
+              <Settings2 size={13} className="text-[#64748b]" />
+            </div>
+            <span className="text-sm font-semibold text-[#0f172a]">Flow Settings</span>
+          </div>
+          <FlowOverview flow={flow} />
+        </>
+      )}
+
+      {/* ── NODE SELECTED: Configuration | Chat tabs ── */}
+      {hasNode && (
+        <>
+          {/* Node header */}
+          <div className="flex items-center gap-2.5 px-4 h-12 border-b border-[#e2e8f0] flex-shrink-0 bg-white">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#0f172a] truncate">{step.label}</p>
+              <p className="text-[11px] text-[#94a3b8] truncate">{step.icon}</p>
+            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+              style={{ background: dynInfo.bg, color: dynInfo.color }}>
+              {isRunning ? "Running…" : isDone ? "Done" : dynInfo.label}
+            </span>
+            <button onClick={onClose}
+              className="size-6 flex items-center justify-center rounded-[5px] text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f1f5f9] transition-colors flex-shrink-0">
+              <X size={13} />
+            </button>
+          </div>
+
+          {/* Tab bar: Configuration | Chat */}
+          <div className="flex border-b border-[#e2e8f0] flex-shrink-0">
+            {[
+              { id: "configure", icon: Hammer,   label: "Configuration" },
+              { id: "chat",      icon: Sparkles,  label: "Chat"          },
+            ].map(({ id, icon: TIcon, label }) => (
+              <button key={id} onClick={() => setPanelMode(id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
+                  panelMode === id
+                    ? "text-[#0f172a] border-b-[#6366f1]"
+                    : "text-[#94a3b8] border-b-transparent hover:text-[#64748b]"
+                }`}>
+                <TIcon size={12} /> {label}
+              </button>
             ))}
           </div>
-        )}
 
+          {/* Content */}
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {panelMode === "configure" && (
+              <div className="flex-1 overflow-y-auto">
+                <ConfigureMode
+                  step={step}
+                  selectedIdx={selectedIdx}
+                  flow={flow}
+                  onOpenChatTab={() => setPanelMode("chat")}
+                  onUpdateStep={(patch) => onUpdateStep?.(selectedIdx, patch)}
+                />
+              </div>
+            )}
+            {panelMode === "chat" && (
+              <AskAIMode step={step} selectedIdx={selectedIdx} flow={flow} runState={runState} />
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Execution log panel (bottom or right dock — log stream only) ─────────────
+function ExecutionLogPanel({ logs, runState, collapsed, onToggleCollapse, onMouseDownResize, dock = "bottom" }) {
+  const logsRef   = useRef(null);
+  const isRunning = runState.activeIdx !== -1;
+  const hasDone   = runState.doneIdxs.size > 0;
+  const isRight   = dock === "right";
+
+  useEffect(() => {
+    logsRef.current?.scrollTo({ top: logsRef.current.scrollHeight, behavior: "smooth" });
+  }, [logs]);
+
+  return (
+    <div
+      className={`flex h-full w-full min-h-0 overflow-hidden bg-white dark:bg-white ${
+        isRight ? "flex-row" : "flex-col"
+      }`}
+    >
+      {/* Resize handle — bottom: top edge; right: left edge */}
+      {!collapsed && onMouseDownResize && !isRight && (
+        <div
+          onMouseDown={onMouseDownResize}
+          className="group flex h-1.5 w-full flex-shrink-0 cursor-row-resize items-center justify-center"
+        >
+          <div className="h-1 w-10 rounded-full bg-[#e2e8f0] transition-colors group-hover:bg-[#6366f1] dark:bg-[#334155]" />
+        </div>
+      )}
+      {!collapsed && onMouseDownResize && isRight && (
+        <div
+          onMouseDown={onMouseDownResize}
+          className="group flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center border-r border-[#e2e8f0] dark:border-[#334155]"
+        >
+          <div className="h-10 w-1 rounded-full bg-[#e2e8f0] transition-colors group-hover:bg-[#6366f1] dark:bg-[#334155]" />
+        </div>
+      )}
+
+      <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${isRight && collapsed ? "min-w-0" : ""}`}>
+        {/* Header */}
+        <div
+          className={`flex flex-shrink-0 items-center gap-2 border-b border-[#e2e8f0] dark:border-[#334155] ${
+            isRight && collapsed
+              ? "h-full w-full flex-col justify-start gap-2 py-2 px-1"
+              : "h-10 px-3"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="flex size-6 flex-shrink-0 items-center justify-center rounded-[5px] text-[#64748b] transition-colors hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+          >
+            {collapsed ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+          <Terminal size={13} className="flex-shrink-0 text-[#64748b]" />
+          {!(isRight && collapsed) && (
+            <>
+              <span className="text-xs font-semibold text-[#0f172a]">Execution Log</span>
+              {isRunning && (
+                <span className="ml-1 flex flex-shrink-0 items-center gap-1 rounded-full bg-[#dbeafe] px-2 py-0.5 text-[10px] font-semibold text-[#1d4ed8]">
+                  <RefreshCw size={9} className="animate-spin" /> Running
+                </span>
+              )}
+              {!isRunning && hasDone && (
+                <span className="ml-1 flex-shrink-0 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold text-[#15803d]">
+                  Completed
+                </span>
+              )}
+              {logs.length > 0 && (
+                <span className="ml-auto flex-shrink-0 tabular-nums text-[10px] text-[#94a3b8]">
+                  {logs.length} lines
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Log stream — light theme */}
+        {!collapsed && (
+        <div
+          ref={logsRef}
+          className="min-h-0 flex-1 overflow-y-auto border-t border-[#e2e8f0] bg-[#f8fafc] dark:border-[#e2e8f0] dark:bg-[#f8fafc]"
+        >
+          {logs.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-8">
+              <div className="flex size-10 items-center justify-center rounded-full bg-[#e2e8f0]/80">
+                <Terminal size={20} className="text-[#64748b]" />
+              </div>
+              <p className="text-xs font-medium text-[#64748b]">No execution output yet.</p>
+              <p className="max-w-[240px] text-center text-[11px] leading-relaxed text-[#94a3b8]">
+                Run the flow to see logs here.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0 px-3 py-2 font-mono">
+              {logs.map((entry, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-2 rounded px-1 py-0.5 text-[11px] text-[#334155] transition-colors hover:bg-[#eef2f6]"
+                >
+                  <span className="flex-shrink-0 tabular-nums leading-5 text-[#94a3b8]">{entry.ts}</span>
+                  <span className={`flex-shrink-0 w-[50px] text-center px-1 py-px rounded text-[10px] font-bold uppercase leading-5 ${LOG_BADGES[entry.level]}`}>
+                    {entry.level}
+                  </span>
+                  <span className={`leading-5 break-all ${LOG_COLORS[entry.level]}`}>{entry.msg}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Execution timeline panel ─────────────────────────────────────────────────
+// ─── Execution timeline panel (kept for reference, no longer rendered) ─────────
 function ExecutionTimeline({ flow, runState, logs, onHighlightNode, collapsed, onToggle }) {
   const [logTab, setLogTab] = useState("timeline");
   const execStatus = runState.activeIdx !== -1 ? "running" : runState.doneIdxs.size > 0 ? "done" : "idle";
@@ -1196,7 +1712,7 @@ function ExecutionTimeline({ flow, runState, logs, onHighlightNode, collapsed, o
 }
 
 // ─── Canvas ────────────────────────────────────────────────────────────────────
-function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, runState }) {
+function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, runState, onSetCreationEntry, onOpenFlowAssistant }) {
   const [picker, setPicker]           = useState(null);
   const [emptyHov, setEmptyHov]       = useState(false);
   const canvasW = PAD_X * 2 + flow.steps.length * NODE_W + (flow.steps.length - 1) * H_GAP + 160;
@@ -1213,6 +1729,104 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, runState }) {
     <div className="relative flex-1 min-w-0 overflow-auto bg-[#f8fafc]"
       style={{ backgroundImage:"radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize:"24px 24px" }}
       onClick={() => { onSelectNode(null); setPicker(null); }}>
+
+      {/* Empty-canvas overlay — shown only when there are no steps yet */}
+      {flow.steps.length === 0 && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-5 pointer-events-auto" onClick={e => e.stopPropagation()}>
+            {flow.creationEntry === "scratch" ? (
+              <>
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <div className="size-12 rounded-[14px] bg-white border border-[#e2e8f0] shadow-sm flex items-center justify-center mb-1">
+                    <Plus size={22} className="text-[#2563eb]" />
+                  </div>
+                  <p className="text-base font-semibold text-[#0f172a]">Start from scratch</p>
+                  <p className="text-xs text-[#94a3b8] max-w-[280px] leading-relaxed">Build your flow step by step. Open the node picker to add any node type, or switch to starter templates if you prefer a head start.</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPicker({ afterIndex: -1, anchorX: (svgW + NODE_W) / 2 + 24, anchorY: NODE_Y + NODE_H / 2 }); }}
+                    className="flex h-10 items-center gap-2 rounded-[10px] bg-[#0f172a] px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#1e293b]"
+                  >
+                    <Plus size={16} strokeWidth={2.5} /> Add first step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenFlowAssistant?.(); }}
+                    className="flex h-10 items-center gap-2 rounded-[10px] border border-[#e2e8f0] bg-white px-5 text-sm font-medium text-[#0f172a] shadow-sm transition-colors hover:border-[#6366f1]/40 hover:bg-[#f8fafc]"
+                  >
+                    <Sparkles size={16} className="text-[#6366f1]" /> Ask AI
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSetCreationEntry?.("template"); }}
+                  className="text-xs font-medium text-[#2563eb] hover:text-[#1d4ed8] underline-offset-2 hover:underline"
+                >
+                  Browse starter templates
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <div className="size-12 rounded-[14px] bg-white border border-[#e2e8f0] shadow-sm flex items-center justify-center mb-1">
+                    <Zap size={22} className="text-[#6366f1]" />
+                  </div>
+                  <p className="text-base font-semibold text-[#0f172a]">Design your workflow</p>
+                  <p className="text-xs text-[#94a3b8] max-w-[260px] leading-relaxed">Pick a template to get started instantly, or add your first step manually.</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 w-[400px]">
+                  {CREATION_TEMPLATES.map((tpl, i) => {
+                    const TplIcon = tpl.icon;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => onAddTemplate(tpl.steps)}
+                        className="flex items-center gap-2.5 p-3 rounded-[12px] bg-white border border-[#e2e8f0] hover:border-[#2563eb] hover:shadow-md hover:-translate-y-px transition-all text-left group"
+                        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                      >
+                        <div className="size-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
+                          style={{ background: `${tpl.color}15`, border: `1px solid ${tpl.color}25` }}>
+                          <TplIcon size={15} style={{ color: tpl.color }} />
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-xs font-semibold text-[#0f172a] group-hover:text-[#2563eb] transition-colors truncate">{tpl.label}</span>
+                          <span className="text-[11px] text-[#94a3b8] truncate">{tpl.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setPicker({ afterIndex: -1, anchorX: (svgW + NODE_W) / 2 + 24, anchorY: NODE_Y + NODE_H / 2 }); }}
+                  className="flex items-center gap-1.5 text-xs text-[#94a3b8] hover:text-[#2563eb] transition-colors px-3 py-1.5 rounded-[6px] hover:bg-white border border-transparent hover:border-[#e2e8f0]"
+                >
+                  <Plus size={12} /> Add first step manually
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSetCreationEntry?.("scratch"); }}
+                  className="text-xs font-medium text-[#64748b] hover:text-[#0f172a] underline-offset-2 hover:underline"
+                >
+                  Prefer a blank canvas?
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onOpenFlowAssistant?.(); }}
+                  className="text-xs font-medium text-[#2563eb] hover:text-[#1d4ed8] underline-offset-2 hover:underline"
+                >
+                  Ask AI to plan this flow
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Zoom controls */}
       <div className="absolute bottom-4 left-4 z-10 flex flex-col gap-1 bg-white border border-[#e2e8f0] rounded-[8px] p-1 shadow-sm">
@@ -1259,38 +1873,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, runState }) {
           `}</style>
         </defs>
 
-        {/* ── Empty-canvas start node ─────────────────────────────────── */}
-        {flow.steps.length === 0 && (
-          <g
-            onClick={(e) => { e.stopPropagation(); setPicker({ afterIndex:-1, anchorX: eX + NODE_W + 24, anchorY: eCY }); }}
-            onMouseEnter={() => { setEmptyHov(true); }}
-            onMouseLeave={() => setEmptyHov(false)}
-            style={{ cursor: "pointer" }}
-          >
-            {/* Drop shadow */}
-            <rect x={eX+2} y={eY+3} width={NODE_W} height={NODE_H} rx={10} fill={emptyHov ? "rgba(37,99,235,0.08)" : "rgba(0,0,0,0.04)"} />
-            {/* Card */}
-            <rect x={eX} y={eY} width={NODE_W} height={NODE_H} rx={10}
-              fill={emptyHov ? "#eff6ff" : "white"}
-              stroke={emptyHov ? "#2563eb" : "#cbd5e1"}
-              strokeWidth={emptyHov ? 2 : 1.5}
-              strokeDasharray={emptyHov ? "0" : "7 5"}
-            />
-            {/* Plus circle */}
-            <circle cx={eCX} cy={eCY} r={20}
-              fill={emptyHov ? "#dbeafe" : "#f8fafc"}
-              stroke={emptyHov ? "#93c5fd" : "#e2e8f0"}
-              strokeWidth={1.5}
-            />
-            <line x1={eCX-8} y1={eCY} x2={eCX+8} y2={eCY} stroke={emptyHov ? "#2563eb" : "#94a3b8"} strokeWidth={2.2} strokeLinecap="round" />
-            <line x1={eCX} y1={eCY-8} x2={eCX} y2={eCY+8} stroke={emptyHov ? "#2563eb" : "#94a3b8"} strokeWidth={2.2} strokeLinecap="round" />
-            {/* Label */}
-            <text x={eCX} y={eY + NODE_H + 24} textAnchor="middle" fontSize={12}
-              fill={emptyHov ? "#2563eb" : "#94a3b8"} fontWeight={500} fontFamily="Inter, sans-serif">
-              Click to add your first step
-            </text>
-          </g>
-        )}
+        {/* Empty-canvas SVG placeholder hidden — HTML overlay handles it */}
 
         {flow.steps.map((step, i) => {
           if (i === flow.steps.length - 1) return null;
@@ -1412,15 +1995,37 @@ function RunDoneMsg({ msg }) {
   );
 }
 
-function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }) {
+function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow, onAddTemplate, logs = [], collapsed = false, onToggleCollapse, focusChatKey = 0 }) {
   const [input, setInput]         = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat"); // "chat" | "logs"
   const scrollRef                 = useRef(null);
+  const logsRef                   = useRef(null);
+  const chatInputRef              = useRef(null);
   const isRunning                 = runState.activeIdx !== -1;
+  const isNewFlow                 = flow.steps.length === 0;
+  const hasRun                    = logs.length > 0;
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, aiLoading]);
+
+  // Auto-switch to logs tab when a run starts; auto-scroll logs
+  useEffect(() => {
+    if (isRunning) setActiveTab("logs");
+  }, [isRunning]);
+
+  useEffect(() => {
+    logsRef.current?.scrollTo({ top: logsRef.current.scrollHeight, behavior: "smooth" });
+  }, [logs]);
+
+  useEffect(() => {
+    if (focusChatKey <= 0) return;
+    const id = requestAnimationFrame(() => {
+      chatInputRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [focusChatKey]);
 
   const sendMessage = (text) => {
     const q = text.trim();
@@ -1438,32 +2043,119 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
   const hasUserMsg = messages.some(m => m.type === "user");
 
   const QUICK = [
-    { label: "Explain this flow",     icon: Info       },
-    { label: "How can I optimize it?", icon: Gauge      },
-    { label: "What does step 1 do?",  icon: Zap        },
+    { label: "Explain this flow",      icon: Info  },
+    { label: "How can I optimize it?", icon: Gauge },
+    { label: "What does step 1 do?",   icon: Zap   },
   ];
 
   return (
-    <div className="w-[340px] flex-shrink-0 flex flex-col border-l border-[#e2e8f0] bg-white overflow-hidden">
+    <div className="flex flex-col w-full bg-white overflow-hidden" style={{ height: collapsed ? 48 : "100%" }}>
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 h-12 border-b border-[#e2e8f0] flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center">
-            <Sparkles size={10} color="white" />
-          </div>
-          <span className="text-sm font-semibold text-[#0f172a]">Conversation</span>
+      {/* Header — always visible, acts as collapse toggle bar */}
+      <div className="flex items-center gap-2 px-3 h-12 border-b border-[#e2e8f0] flex-shrink-0">
+        {/* Collapse / expand button */}
+        <button onClick={onToggleCollapse}
+          className="flex items-center justify-center size-6 rounded-[5px] text-[#94a3b8] hover:text-[#0f172a] hover:bg-[#f1f5f9] transition-colors flex-shrink-0">
+          {collapsed ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+
+        <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-[#6366f1]" : "bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]"}`}>
+          <Sparkles size={10} color="white" />
         </div>
+        <span className="text-sm font-semibold text-[#0f172a]">
+          {isNewFlow ? "Build with AI" : "Assistant"}
+        </span>
+
+        {/* Tabs — inline in header for existing flows */}
+        {!isNewFlow && (
+          <div className="flex items-center gap-0 ml-2">
+            {[
+              { id: "chat", icon: Sparkles, label: "Chat" },
+              { id: "logs", icon: Terminal, label: "Logs", badge: hasRun },
+            ].map(({ id, icon: TabIcon, label, badge }) => (
+              <button key={id} onClick={() => { setActiveTab(id); if (collapsed) onToggleCollapse?.(); }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-medium transition-all relative ${
+                  activeTab === id && !collapsed
+                    ? "bg-[#f1f5f9] text-[#0f172a]"
+                    : "text-[#94a3b8] hover:text-[#64748b] hover:bg-[#f8fafc]"
+                }`}>
+                <TabIcon size={11} />
+                {label}
+                {badge && !(activeTab === id && !collapsed) && (
+                  <span className="size-1.5 rounded-full bg-[#22c55e] absolute top-1 right-0.5" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex-1" />
+
+        {isNewFlow && (
+          <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#eff6ff] text-[#2563eb]">
+            New flow
+          </span>
+        )}
+        {isRunning && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#dbeafe] text-[#1d4ed8] flex items-center gap-1 flex-shrink-0">
+            <RefreshCw size={9} className="animate-spin" /> Running
+          </span>
+        )}
       </div>
 
+      {/* ── BODY (hidden when collapsed) ── */}
+      {/* ── LOGS TAB ── */}
+      {!collapsed && !isNewFlow && activeTab === "logs" && (
+        <div ref={logsRef} className="flex-1 overflow-y-auto min-h-0">
+          {logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 py-12">
+              <div className="size-10 rounded-full bg-[#f1f5f9] flex items-center justify-center">
+                <Terminal size={18} className="text-[#94a3b8]" />
+              </div>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <p className="text-xs font-medium text-[#64748b]">No logs yet</p>
+                <p className="text-[11px] text-[#94a3b8]">Run the flow to see the execution log.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-0 px-3 py-2 font-mono">
+              {logs.map((entry, i) => (
+                <div key={i}
+                  className={`flex items-start gap-2 py-1 px-1.5 rounded-[4px] hover:bg-[#f8fafc] transition-colors text-[11px] ${entry.nodeIdx !== null ? "cursor-pointer" : ""}`}
+                  onClick={() => entry.nodeIdx !== null && onRunFlow?.()}>
+                  <span className="text-[#94a3b8] flex-shrink-0 tabular-nums leading-4">{entry.ts}</span>
+                  <span className={`flex-shrink-0 w-[46px] text-center px-1 py-px rounded text-[10px] font-bold uppercase leading-4 ${LOG_BADGES[entry.level]}`}>
+                    {entry.level}
+                  </span>
+                  <span className={`leading-4 break-all ${LOG_COLORS[entry.level]}`}>{entry.msg}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── CHAT TAB (or full panel for new flows) ── */}
+      {!collapsed && (isNewFlow || activeTab === "chat") && (
+        <>
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2 min-h-0">
-        {messages.map((msg) => {
-          if (msg.type === "overview")     return <OverviewCard   key={msg.id} flow={flow} />;
-          if (msg.type === "run-start")    return <RunStartMsg    key={msg.id} name={msg.name} />;
-          if (msg.type === "step-active")  return <StepActiveMsg  key={msg.id} msg={msg} />;
-          if (msg.type === "step-done")    return <StepDoneMsg    key={msg.id} msg={msg} />;
-          if (msg.type === "run-done")     return <RunDoneMsg     key={msg.id} msg={msg} />;
+
+        {/* For new flows with no chat yet: show template picker */}
+        {isNewFlow && !hasUserMsg && (
+          <FlowCreationMode
+            onSendMessage={sendMessage}
+            onAddTemplate={onAddTemplate}
+          />
+        )}
+
+        {/* For existing flows: always show OverviewCard */}
+        {!isNewFlow && messages.map((msg) => {
+          if (msg.type === "overview")    return <OverviewCard  key={msg.id} flow={flow} />;
+          if (msg.type === "run-start")   return <RunStartMsg   key={msg.id} name={msg.name} />;
+          if (msg.type === "step-active") return <StepActiveMsg key={msg.id} msg={msg} />;
+          if (msg.type === "step-done")   return <StepDoneMsg   key={msg.id} msg={msg} />;
+          if (msg.type === "run-done")    return <RunDoneMsg    key={msg.id} msg={msg} />;
           if (msg.type === "user") return (
             <div key={msg.id} className="flex justify-end">
               <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-[#0f172a] text-white text-xs leading-5">{msg.text}</div>
@@ -1487,9 +2179,35 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
           return null;
         })}
 
+        {/* For new flows: show chat messages after the first user message */}
+        {isNewFlow && hasUserMsg && messages.map((msg) => {
+          if (msg.type === "overview") return null;
+          if (msg.type === "user") return (
+            <div key={msg.id} className="flex justify-end">
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-[#0f172a] text-white text-xs leading-5">{msg.text}</div>
+            </div>
+          );
+          if (msg.type === "ai") return (
+            <div key={msg.id} className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <div className="size-5 rounded-full bg-gradient-to-br from-[#2563eb] to-[#6366f1] flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={9} color="white" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#64748b]">AI</span>
+              </div>
+              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[10px] px-3 py-2.5 text-xs text-[#374151] leading-5">
+                {msg.message.split("\n").map((line, li) => (
+                  <p key={li} className={line === "" ? "h-2" : ""}>{line.replace(/\*\*(.*?)\*\*/g, "$1")}</p>
+                ))}
+              </div>
+            </div>
+          );
+          return null;
+        })}
+
         {aiLoading && (
           <div className="flex items-center gap-2">
-            <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+            <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-[#6366f1]" : "bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]"}`}>
               <Sparkles size={9} color="white" />
             </div>
             <div className="flex gap-1 px-3 py-2 rounded-[10px] bg-[#f8fafc] border border-[#e2e8f0]">
@@ -1498,7 +2216,8 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
           </div>
         )}
 
-        {!hasUserMsg && !aiLoading && (
+        {/* Quick actions — only for existing flows with no messages yet */}
+        {!isNewFlow && !hasUserMsg && !aiLoading && (
           <div className="flex flex-col gap-1.5 mt-1">
             {QUICK.map(({ label, icon: QIcon }) => (
               <button key={label} onClick={() => sendMessage(label)}
@@ -1514,9 +2233,9 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
       {/* Input */}
       <div className="px-3 pb-3 pt-2 border-t border-[#e2e8f0] flex-shrink-0">
         <div className="flex items-center gap-2 border border-[#e2e8f0] rounded-[10px] px-3 py-2 focus-within:border-[#6366f1]/50 focus-within:ring-2 focus-within:ring-[#6366f1]/10 transition-all bg-white">
-          <input value={input} onChange={e => setInput(e.target.value)}
+          <input ref={chatInputRef} value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-            placeholder="Ask about this flow…"
+            placeholder={isNewFlow ? "Describe your workflow…" : "Ask about this flow…"}
             className="flex-1 text-xs text-[#0f172a] placeholder:text-[#94a3b8] outline-none bg-transparent" />
           <button onClick={() => sendMessage(input)} disabled={!input.trim()}
             className="flex items-center justify-center size-6 rounded-[6px] bg-[#6366f1] text-white disabled:opacity-40 hover:bg-[#4f46e5] transition-colors">
@@ -1524,6 +2243,8 @@ function ConversationPanel({ flow, runState, messages, onAddMessage, onRunFlow }
           </button>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1536,11 +2257,37 @@ const STATUS_BADGE = {
   draft:  { bg:"#f1f5f9", text:"#475569", dot:"#94a3b8", label:"Draft"  },
 };
 
-function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], onSaveVersion, activeVersionId, onRestoreVersion, pageMode = "view", onSetPageMode }) {
+function TopBar({
+  flow,
+  onBack,
+  onRunNow,
+  isRunning,
+  onRename,
+  versions = [],
+  onSaveVersion,
+  activeVersionId,
+  onRestoreVersion,
+  pageMode = "view",
+  onSetPageMode,
+  showRightPanelToggle,
+  rightPanelOpen,
+  onToggleRightPanel,
+  onActivate,
+}) {
   const badge                   = STATUS_BADGE[flow.status] ?? STATUS_BADGE.draft;
-  const [editing, setEditing]   = useState(false);
+  const isNewUntitled           = flow.name === "Untitled Flow" && flow.steps.length === 0;
+  const [editing, setEditing]   = useState(isNewUntitled);
   const [draft,   setDraft]     = useState(flow.name);
   const inputRef                = useRef(null);
+
+  // For brand-new flows, auto-select the name field so the user can rename immediately
+  useEffect(() => {
+    if (isNewUntitled) {
+      setTimeout(() => { inputRef.current?.select(); }, 120);
+    }
+  // Only run on first mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Context menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1742,7 +2489,19 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
         <div className="flex items-center gap-2">
           {!isRunning && (
             <div className="flex items-center gap-1.5">
-              {/* Version history picker — visible in both view and edit mode */}
+              {/* ── No versions yet: show a Save button to create the first version ── */}
+              {versions.length === 0 && pageMode === "edit" && (
+                <button
+                  onClick={handleSaveVersion}
+                  title="Save first version"
+                  className="flex h-8 items-center gap-1.5 rounded-[6px] bg-[#0f172a] px-3 text-xs font-medium text-white transition-colors hover:bg-[#1e293b] dark:bg-[#f8fafc] dark:text-[#0f172a] dark:hover:bg-[#e2e8f0]"
+                >
+                  <Save size={12} /> Save
+                </button>
+              )}
+
+              {/* ── Version picker — shown only once at least one version exists ── */}
+              {versions.length > 0 && (
               <div className="relative" data-version-panel ref={versionPanelRef}>
                 <button
                   onClick={() => setVersionPanelOpen(v => !v)}
@@ -1752,10 +2511,8 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
                   <History size={13} />
                   {activeVersion ? (
                     <span className="font-semibold text-[#0f172a] dark:text-[#f8fafc]">{activeVersion.name}</span>
-                  ) : versions.length > 0 ? (
-                    <span className="text-[#64748b] dark:text-[#94a3b8]">Latest</span>
                   ) : (
-                    <span className="text-[#94a3b8] dark:text-[#64748b]">No versions</span>
+                    <span className="text-[#64748b] dark:text-[#94a3b8]">Latest</span>
                   )}
                   <ChevronDown size={11} className="text-[#94a3b8] dark:text-[#64748b]" />
                 </button>
@@ -1817,6 +2574,7 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
                   </div>
                 )}
               </div>
+              )} {/* end versions.length > 0 */}
 
               {/* Run Flow — view mode */}
               {pageMode === "view" && (
@@ -1837,7 +2595,34 @@ function TopBar({ flow, onBack, onRunNow, isRunning, onRename, versions = [], on
                   <Pencil size={12} /> Edit Flow
                 </button>
               )}
+
+              {/* Activate — view mode, draft flows only */}
+              {pageMode === "view" && flow.status === "draft" && (
+                <button
+                  onClick={onActivate}
+                  title="Activate this flow"
+                  className="flex h-8 items-center gap-1.5 rounded-[6px] bg-[#16a34a] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#15803d]"
+                >
+                  <Zap size={12} fill="white" /> Activate
+                </button>
+              )}
             </div>
+          )}
+          {showRightPanelToggle && (
+            <button
+              type="button"
+              onClick={onToggleRightPanel}
+              title={rightPanelOpen ? "Hide conversation & settings panel" : "Show conversation & settings panel"}
+              aria-label={rightPanelOpen ? "Hide conversation panel" : "Show conversation panel"}
+              aria-pressed={rightPanelOpen}
+              className={`relative flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] border text-[#64748b] transition-colors dark:text-[#94a3b8] ${
+                rightPanelOpen
+                  ? "border-[#e2e8f0] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] dark:border-[#334155] dark:bg-[#1e3a8a] dark:text-[#60a5fa] dark:hover:bg-[#1e40af]"
+                  : "border-[#e2e8f0] bg-white hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:hover:bg-[#0f172a]"
+              }`}
+            >
+              {rightPanelOpen ? <PanelRightClose size={16} strokeWidth={2} /> : <PanelRight size={16} strokeWidth={2} />}
+            </button>
           )}
           <button
             ref={btnRef}
@@ -2038,8 +2823,12 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
 }) {
   const [steps, setSteps]             = useState(flowProp?.steps ?? []);
   const [flowName, setFlowName]       = useState(flowProp?.name ?? "Untitled Flow");
+  const [flowStatus, setFlowStatus]   = useState(flowProp?.status ?? "draft");
+  const [creationEntry, setCreationEntry] = useState(() => flowProp?.creationEntry ?? "template");
+  const [creationAssistantOpen, setCreationAssistantOpen] = useState(false);
+  const [convPanelCollapsed, setConvPanelCollapsed] = useState(false);
+  const [assistantFocusKey, setAssistantFocusKey] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState(null);
-  const [tlCollapsed, setTLCollapsed] = useState(true);
   const [runState, setRunState]       = useState({ activeIdx:-1, doneIdxs:new Set() });
   const [logs, setLogs]               = useState([]);
   const runTimers                     = useRef([]);
@@ -2048,10 +2837,46 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
   const [activeVersionId, setActiveVersionId] = useState(null); // null = unsaved working copy
   // "edit" for new/blank flows, "view" for existing ones
   const [pageMode, setPageMode] = useState(!flowProp?.steps?.length ? "edit" : "view");
+  const [rightPanelOpen, setRightPanelOpen]   = useState(true);
+  const [logPanelCollapsed, setLogPanelCollapsed] = useState(true);
+  const [logPanelH, setLogPanelH]             = useState(240);
+  const resizeRef                             = useRef(null);
 
-  // Expand timeline when execution starts
+  useEffect(() => {
+    setCreationEntry(flowProp?.creationEntry ?? "template");
+    setCreationAssistantOpen(false);
+    setConvPanelCollapsed(false);
+    setAssistantFocusKey(0);
+    setRightPanelOpen(true);
+    setLogPanelCollapsed(true);
+    setLogPanelH(240);
+  }, [flowProp?.id]);
+
+  const openFlowAssistant = useCallback(() => {
+    setCreationAssistantOpen(true);
+    setRightPanelOpen(true);
+    setConvPanelCollapsed(false);
+    setAssistantFocusKey((k) => k + 1);
+  }, []);
+
   const isRunning = runState.activeIdx !== -1;
-  useEffect(() => { if (isRunning) setTLCollapsed(false); }, [isRunning]);
+
+  // Bottom panel drag-to-resize
+  const startResize = useCallback((e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = logPanelH;
+    const onMove = (ev) => {
+      const delta = startY - ev.clientY;
+      setLogPanelH(Math.max(120, Math.min(500, startH + delta)));
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup",   onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup",   onUp);
+  }, [logPanelH]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -2077,7 +2902,7 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedIdx, steps]);
 
-  const flow = flowProp ? { ...flowProp, steps, name: flowName } : null;
+  const flow = flowProp ? { ...flowProp, steps, name: flowName, status: flowStatus, creationEntry } : null;
 
   // Sync Zustand store
   const { initFlow } = useFlowStore();
@@ -2092,6 +2917,17 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
     });
     setSelectedIdx(afterIndex + 1);
   };
+
+  // Populate the canvas with a full template at once (used by FlowCreationMode & canvas empty state)
+  const handleAddTemplate = (templateSteps) => {
+    setActiveVersionId(null);
+    setSteps(templateSteps);
+    setSelectedIdx(null);
+  };
+
+  const updateStepAt = useCallback((idx, patch) => {
+    setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+  }, []);
 
   const buildLogsLocal = (nodes, name) => {
     const lines = [];
@@ -2116,7 +2952,7 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
 
     setRunState({ activeIdx:0, doneIdxs:new Set() });
     setLogs(buildLogsLocal(steps, flowName));
-    setTLCollapsed(false);
+    setLogPanelCollapsed(false);
 
     // Seed conversation with run-start message (keep overview + any chat)
     setConvMessages(prev => [
@@ -2194,31 +3030,52 @@ export default function FlowViewPage({ flow: flowProp, onNavigate
           onRename={setFlowName}
           versions={versions} onSaveVersion={saveVersion} activeVersionId={activeVersionId} onRestoreVersion={restoreVersion}
           pageMode={pageMode} onSetPageMode={setPageMode}
+          showRightPanelToggle={flow.steps.length > 0 || creationAssistantOpen}
+          rightPanelOpen={rightPanelOpen}
+          onToggleRightPanel={() => setRightPanelOpen((v) => !v)}
+          onActivate={() => setFlowStatus("active")}
         />
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <Canvas flow={flow} selectedIdx={selectedIdx} onSelectNode={setSelectedIdx} onAddNode={handleAddNode} runState={runState} />
-          {selectedIdx !== null ? (
-            <RightPanel
-              flow={flow}
-              selectedIdx={selectedIdx}
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          {/* Top row: Canvas + RightPanel (always visible) */}
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            <Canvas flow={flow} selectedIdx={selectedIdx} onSelectNode={setSelectedIdx} onAddNode={handleAddNode} onAddTemplate={handleAddTemplate} runState={runState} onSetCreationEntry={setCreationEntry} onOpenFlowAssistant={openFlowAssistant} />
+            {(flow.steps.length > 0 || creationAssistantOpen) && rightPanelOpen && (
+              <RightPanel
+                flow={flow}
+                selectedIdx={selectedIdx}
+                runState={runState}
+                onClose={() => setSelectedIdx(null)}
+                showEmptyFlowAssistant={creationAssistantOpen}
+                onCloseEmptyFlowAssistant={() => setCreationAssistantOpen(false)}
+                assistantFocusKey={assistantFocusKey}
+                convMessages={convMessages}
+                onAddConvMessage={(m) => setConvMessages((prev) => [...prev, m])}
+                onRunFlow={handleRunNow}
+                onAddTemplate={handleAddTemplate}
+                logs={logs}
+                convCollapsed={convPanelCollapsed}
+                onToggleConvCollapse={() => setConvPanelCollapsed((v) => !v)}
+                onUpdateStep={updateStepAt}
+              />
+            )}
+          </div>
+
+          {/* Bottom: execution log — visible by default, starts collapsed */}
+          <div
+            ref={resizeRef}
+            className="flex-shrink-0 overflow-hidden border-t border-[#e2e8f0] dark:border-[#334155]"
+            style={{ height: logPanelCollapsed ? 42 : logPanelH }}
+          >
+            <ExecutionLogPanel
+              dock="bottom"
+              logs={logs}
               runState={runState}
-              onClose={() => setSelectedIdx(null)}
+              collapsed={logPanelCollapsed}
+              onToggleCollapse={() => setLogPanelCollapsed((v) => !v)}
+              onMouseDownResize={startResize}
             />
-          ) : (
-            <ConversationPanel
-              flow={flow}
-              runState={runState}
-              messages={convMessages}
-              onAddMessage={(msg) => setConvMessages(prev => [...prev, msg])}
-              onRunFlow={handleRunNow}
-            />
-          )}
+          </div>
         </div>
-        <ExecutionTimeline
-          flow={flow} runState={runState} logs={logs}
-          onHighlightNode={setSelectedIdx}
-          collapsed={tlCollapsed} onToggle={()=>setTLCollapsed(v=>!v)}
-        />
       </div>
     </div>
   );

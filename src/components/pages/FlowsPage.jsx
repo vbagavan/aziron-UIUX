@@ -2,14 +2,20 @@ import { useState, useRef, useEffect } from "react";
 import {
   Plus, MoreVertical, Workflow, Play, Pencil, Copy, Trash2,
   LayoutGrid, List, Search, SlidersHorizontal, X, Zap,
-  Clock, CheckCircle2, AlertCircle, PauseCircle,
+  Clock,
   FileText,
-  ChevronUp, ChevronDown, ChevronsUpDown,
+  ChevronUp, ChevronDown, ChevronsUpDown, ListOrdered,
+  LayoutTemplate, PenLine,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 // ─── Flow data ────────────────────────────────────────────────────────────────
 
@@ -17,6 +23,7 @@ const flows = [
   {
     id: 0,
     name: "Lead Qualification Pipeline",
+    version: "v2.4",
     description: "Automatically scores and routes inbound leads using AI enrichment, CRM lookup, and email sequencing.",
     status: "active",
     steps: [
@@ -33,6 +40,7 @@ const flows = [
   {
     id: 1,
     name: "Resume Screening Flow",
+    version: "v1.1",
     description: "Parses uploaded resumes, ranks candidates against a job description, and sends shortlist to HR.",
     status: "active",
     steps: [
@@ -47,8 +55,43 @@ const flows = [
     createdAt: "28 Jan 2026",
   },
   {
+    id: 2,
+    name: "Customer Feedback Digest",
+    version: "v3.0",
+    description: "Collects feedback from multiple channels, summarises sentiment, and posts a weekly digest to Slack.",
+    status: "active",
+    steps: [
+      { label: "Collect", icon: "Globe", color: "#3b82f6" },
+      { label: "Analyse", icon: "Bot", color: "#8b5cf6" },
+      { label: "Summarise", icon: "FileText", color: "#f97316" },
+      { label: "Post", icon: "Webhook", color: "#06b6d4" },
+    ],
+    lastRun: "1h ago",
+    runs: 312,
+    success: 100,
+    createdAt: "05 Feb 2026",
+  },
+  {
+    id: 3,
+    name: "Contract Review Automation",
+    version: "v1.7",
+    description: "Extracts key clauses from uploaded contracts, flags risks, and generates a plain-language summary.",
+    status: "paused",
+    steps: [
+      { label: "Ingest", icon: "FileText", color: "#64748b" },
+      { label: "Extract", icon: "Bot", color: "#6366f1" },
+      { label: "Flag", icon: "Zap", color: "#ef4444" },
+      { label: "Report", icon: "FileText", color: "#64748b" },
+    ],
+    lastRun: "2 days ago",
+    runs: 203,
+    success: 91,
+    createdAt: "14 Feb 2026",
+  },
+  {
     id: 4,
     name: "Social Media Monitor",
+    version: "v2.1",
     description: "Tracks brand mentions across platforms in real-time, classifies sentiment, and alerts on spikes.",
     status: "error",
     steps: [
@@ -64,6 +107,7 @@ const flows = [
   {
     id: 5,
     name: "Onboarding Email Sequence",
+    version: "v1.3",
     description: "Triggers personalised onboarding emails based on user actions and enriches profiles with product usage data.",
     status: "active",
     steps: [
@@ -78,8 +122,25 @@ const flows = [
     createdAt: "01 Mar 2026",
   },
   {
+    id: 6,
+    name: "Invoice Processing Bot",
+    version: "v0.9",
+    description: "Reads incoming PDF invoices, validates line items against POs, and routes exceptions for approval.",
+    status: "draft",
+    steps: [
+      { label: "Receive", icon: "Mail", color: "#64748b" },
+      { label: "Parse", icon: "Bot", color: "#64748b" },
+      { label: "Validate", icon: "Zap", color: "#64748b" },
+    ],
+    lastRun: "—",
+    runs: 0,
+    success: null,
+    createdAt: "15 Mar 2026",
+  },
+  {
     id: 7,
     name: "Support Ticket Triage",
+    version: "v2.0",
     description: "Classifies incoming tickets by priority, assigns to the correct team, and drafts an initial response.",
     status: "active",
     steps: [
@@ -98,25 +159,75 @@ const flows = [
 // ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  active:  { label: "Active",  dot: "#22c55e", bg: "#dcfce7", text: "#15803d", border: "#bbf7d0", Icon: CheckCircle2 },
-  paused:  { label: "Paused",  dot: "#f59e0b", bg: "#fef9c3", text: "#a16207", border: "#fde68a", Icon: PauseCircle },
-  error:   { label: "Error",   dot: "#ef4444", bg: "#fef2f2", text: "#dc2626", border: "#fecaca", Icon: AlertCircle },
-  draft:   { label: "Draft",   dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", border: "#e2e8f0", Icon: FileText },
+  active: {
+    label: "Active",
+    dotClass: "bg-success",
+    rowBorder: "border-l-success",
+    iconTile: "border-success/25 bg-success/10 text-success",
+    topAccent: "from-success to-success/70",
+  },
+  paused: {
+    label: "Paused",
+    dotClass: "bg-warning",
+    rowBorder: "border-l-warning",
+    iconTile: "border-warning/25 bg-warning/10 text-warning",
+    topAccent: "from-warning to-warning/70",
+  },
+  error: {
+    label: "Error",
+    dotClass: "bg-destructive",
+    rowBorder: "border-l-destructive",
+    iconTile: "border-destructive/25 bg-destructive/10 text-destructive",
+    topAccent: "from-destructive to-destructive/70",
+  },
+  draft: {
+    label: "Draft",
+    dotClass: "bg-muted-foreground",
+    rowBorder: "border-l-muted-foreground",
+    iconTile: "border-border bg-muted text-muted-foreground",
+    topAccent: "from-muted-foreground to-muted-foreground/50",
+  },
 };
+
+/** Status pill: semantic tokens + shadcn Badge */
+function FlowStatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft;
+  if (status === "error") {
+    return (
+      <Badge variant="destructive" className="h-6 gap-1 rounded-full px-2 py-0 text-xs font-semibold">
+        <span className="size-1.5 shrink-0 rounded-full bg-destructive-foreground/80" />
+        {cfg.label}
+      </Badge>
+    );
+  }
+  const outline =
+    status === "active"
+      ? "border-success/35 bg-success/10 text-success dark:bg-success/15"
+      : status === "paused"
+        ? "border-warning/35 bg-warning/10 text-warning-foreground dark:bg-warning/15"
+        : "border-border bg-muted/80 text-muted-foreground";
+  return (
+    <Badge variant="outline" className={cn("h-6 gap-1 rounded-full px-2 py-0 text-xs font-semibold", outline)}>
+      <span className={cn("size-1.5 shrink-0 rounded-full", cfg.dotClass)} />
+      {cfg.label}
+    </Badge>
+  );
+}
 
 const STATUS_FILTERS = ["All", "Active", "Paused", "Error", "Draft"];
 
 // ─── Success bar ───────────────────────────────────────────────────────────────
 
 function SuccessBar({ pct }) {
-  if (pct === null) return <span className="text-xs text-[#94a3b8] dark:text-[#64748b]">—</span>;
-  const color = pct >= 90 ? "#22c55e" : pct >= 70 ? "#f97316" : "#ef4444";
+  if (pct === null) return <span className="text-xs text-muted-foreground">—</span>;
+  const barClass = pct >= 90 ? "bg-success" : pct >= 70 ? "bg-warning" : "bg-destructive";
+  const textClass = pct >= 90 ? "text-success" : pct >= 70 ? "text-warning" : "text-destructive";
   return (
-    <div className="flex items-center gap-2 w-full">
-      <div className="flex-1 h-1.5 bg-[#f1f5f9] dark:bg-[#1e293b] rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+    <div className="flex w-full items-center gap-2">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+        <div className={cn("h-full rounded-full transition-all", barClass)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs font-medium w-8 text-right flex-shrink-0" style={{ color }}>{pct}%</span>
+      <span className={cn("w-8 shrink-0 text-right text-xs font-medium tabular-nums", textClass)}>{pct}%</span>
     </div>
   );
 }
@@ -124,6 +235,7 @@ function SuccessBar({ pct }) {
 // ─── Flow card (grid view) ─────────────────────────────────────────────────────
 
 function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
+  const stepCount = flow.steps?.length ?? 0;
   const cfg = STATUS_CONFIG[flow.status] ?? STATUS_CONFIG.draft;
   const btnRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -150,84 +262,100 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           onCancel={() => setConfirmDelete(false)}
         />
       )}
-      <div className="group bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] p-4 flex flex-col gap-3 hover:shadow-lg transition-all duration-200 cursor-pointer relative overflow-hidden" onClick={() => onViewFlow && onViewFlow(flow)}>
-        {/* Status accent top bar */}
+      <div
+        className={cn(
+          "group relative flex cursor-pointer flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-md",
+        )}
+        onClick={() => onViewFlow && onViewFlow(flow)}
+      >
         <div
-          className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ background: `linear-gradient(90deg, ${cfg.dot}, ${cfg.dot}66)` }}
+          className={cn(
+            "absolute inset-x-0 top-0 h-[3px] rounded-t-lg bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100",
+            cfg.topAccent,
+          )}
+          aria-hidden
         />
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="size-9 rounded-[8px] flex items-center justify-center flex-shrink-0"
-            style={{ background: `${cfg.dot}18`, border: `1px solid ${cfg.dot}30` }}>
-            <Workflow size={17} style={{ color: cfg.dot }} />
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span
-              className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border"
-              style={{ color: cfg.text, background: cfg.bg, borderColor: cfg.border }}
-            >
-              <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-              {cfg.label}
-            </span>
-            <button
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-5 text-foreground">{flow.name}</p>
+            <Button
               ref={btnRef}
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleMenuToggle}
               aria-label="Flow options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] opacity-0 group-hover:opacity-100 transition-colors"
+              className="size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
             >
-              <MoreVertical size={14} />
-            </button>
+              <MoreVertical className="size-3.5" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="h-5 shrink-0 rounded-md px-1.5 py-0 text-[10px] font-medium">
+              {flow.version}
+            </Badge>
+            <FlowStatusBadge status={flow.status} />
           </div>
         </div>
 
-        {/* Name + description */}
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-5 line-clamp-1">{flow.name}</p>
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 line-clamp-2">{flow.description}</p>
-        </div>
+        <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">{flow.description}</p>
 
-        <div className="h-px bg-[#f1f5f9] dark:bg-[#334155]" />
+        <Separator />
 
-        {/* Footer stats */}
-        <div className="flex items-center justify-between text-xs text-[#64748b] dark:text-[#94a3b8]">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Clock size={11} />
+            <Clock className="size-3 shrink-0" aria-hidden />
             <span>{flow.lastRun}</span>
           </div>
           <div className="flex items-center gap-1">
-            <Zap size={11} />
+            <Zap className="size-3 shrink-0" aria-hidden />
             <span>{flow.runs.toLocaleString()} runs</span>
           </div>
-          {flow.success !== null && (
-            <span className="font-medium" style={{ color: flow.success >= 90 ? "#16a34a" : flow.success >= 70 ? "#d97706" : "#dc2626" }}>
-              {flow.success}%
+          <div className="flex items-center gap-1">
+            <ListOrdered className="size-3 shrink-0" aria-hidden />
+            <span className="tabular-nums">
+              {stepCount} {stepCount === 1 ? "step" : "steps"}
             </span>
-          )}
+          </div>
         </div>
 
-        {/* Context menu */}
         {isMenuOpen && (
           <div
-            className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
-            style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+            className="fixed z-[9999] w-40 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+            style={{ top: menuPos.top, left: menuPos.left }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-              <Play size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Run now
+            <button
+              type="button"
+              onClick={() => setOpenMenu(null)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Play className="size-3.5 text-muted-foreground" /> Run now
             </button>
-            <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-              <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit flow
+            <button
+              type="button"
+              onClick={() => { setOpenMenu(null); onViewFlow(flow); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Pencil className="size-3.5 text-muted-foreground" /> Edit flow
             </button>
-            <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-              <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
+            <button
+              type="button"
+              onClick={() => setOpenMenu(null)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              <Copy className="size-3.5 text-muted-foreground" /> Duplicate
             </button>
-            <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-            <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d]">
-              <Trash2 size={13} className="text-[#ef4444]" /> Delete
+            <Separator />
+            <button
+              type="button"
+              onClick={() => { setOpenMenu(null); setConfirmDelete(true); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="size-3.5" /> Delete
             </button>
           </div>
         )}
@@ -267,45 +395,47 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
         />
       )}
       <tr
-        className={`group border-b border-[#f1f5f9] dark:border-[#1e293b] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b]"}`}
-        style={hovered ? { backgroundColor: "#f0f7ff", boxShadow: `inset 3px 0 0 ${cfg.dot}` } : {}}
+        className={cn(
+          "group cursor-pointer border-b border-border border-l-2 border-l-transparent transition-colors duration-150",
+          zebra ? "bg-muted/35" : "bg-card",
+          hovered && "bg-accent/50",
+          hovered && cfg.rowBorder,
+        )}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={() => onViewFlow && onViewFlow(flow)}
       >
-        {/* Icon */}
-        <td className="px-4 py-3 w-[52px]">
-          <div className="size-8 rounded-[6px] flex items-center justify-center flex-shrink-0"
-            style={{ background: `${cfg.dot}15`, border: `1px solid ${cfg.dot}25` }}>
-            <Workflow size={14} style={{ color: cfg.dot }} />
+        <td className="w-[52px] px-4 py-3">
+          <div
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-md border",
+              cfg.iconTile,
+            )}
+          >
+            <Workflow className="size-3.5" />
           </div>
         </td>
 
-        {/* Name */}
-        <td className="px-3 py-3 min-w-[200px]">
-          <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] truncate max-w-[260px]">{flow.name}</p>
-          <p className="text-xs text-[#94a3b8] dark:text-[#64748b]">{flow.createdAt}</p>
+        <td className="min-w-[200px] px-3 py-3">
+          <div className="flex items-center gap-1.5">
+            <p className="max-w-[240px] truncate text-sm font-medium text-foreground">{flow.name}</p>
+            <Badge variant="secondary" className="h-5 shrink-0 rounded-md px-1.5 py-0 text-[10px] font-medium">
+              {flow.version}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">{flow.createdAt}</p>
         </td>
 
-        {/* Status */}
-        <td className="px-3 py-3 w-[110px]">
-          <span
-            className="inline-flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full border"
-            style={{ color: cfg.text, background: cfg.bg, borderColor: cfg.border }}
-          >
-            <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-            {cfg.label}
-          </span>
+        <td className="w-[110px] px-3 py-3">
+          <FlowStatusBadge status={flow.status} />
         </td>
 
-        {/* Last run */}
-        <td className="px-3 py-3 w-[110px]">
-          <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{flow.lastRun}</span>
+        <td className="w-[110px] px-3 py-3">
+          <span className="text-xs text-muted-foreground">{flow.lastRun}</span>
         </td>
 
-        {/* Runs */}
-        <td className="px-3 py-3 w-[90px]">
-          <span className="text-xs text-[#475569] dark:text-[#94a3b8] tabular-nums">{flow.runs.toLocaleString()}</span>
+        <td className="w-[90px] px-3 py-3">
+          <span className="text-xs tabular-nums text-foreground/80">{flow.runs.toLocaleString()}</span>
         </td>
 
         {/* Success rate */}
@@ -314,36 +444,39 @@ function FlowRow({ flow, openMenu, setOpenMenu, zebra, onViewFlow }) {
         </td>
 
         {/* Actions */}
-        <td className="px-3 py-3 w-[52px]" onClick={(e) => e.stopPropagation()}>
+        <td className="w-[52px] px-3 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-center">
-            <button
+            <Button
               ref={rowBtnRef}
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleMenuToggle}
               aria-label="Flow options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#e2e8f0] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-colors opacity-30 group-hover:opacity-100"
+              className="opacity-40 transition-opacity group-hover:opacity-100"
             >
-              <MoreVertical size={14} />
-            </button>
+              <MoreVertical className="size-3.5" />
+            </Button>
             {isMenuOpen && (
               <div
-                className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
-                style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+                className="fixed z-[9999] w-40 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+                style={{ top: menuPos.top, left: menuPos.left }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-                  <Play size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Run now
+                <button type="button" onClick={() => setOpenMenu(null)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground">
+                  <Play className="size-3.5 text-muted-foreground" /> Run now
                 </button>
-                <button onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-                  <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit flow
+                <button type="button" onClick={() => { setOpenMenu(null); onViewFlow(flow); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground">
+                  <Pencil className="size-3.5 text-muted-foreground" /> Edit flow
                 </button>
-                <button onClick={() => setOpenMenu(null)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b]">
-                  <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
+                <button type="button" onClick={() => setOpenMenu(null)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground">
+                  <Copy className="size-3.5 text-muted-foreground" /> Duplicate
                 </button>
-                <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-                <button onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#7f1d1d]">
-                  <Trash2 size={13} className="text-[#ef4444]" /> Delete
+                <Separator />
+                <button type="button" onClick={() => { setOpenMenu(null); setConfirmDelete(true); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10">
+                  <Trash2 className="size-3.5" /> Delete
                 </button>
               </div>
             )}
@@ -360,18 +493,23 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
   const active = sort.key === sortKey;
   return (
     <th
-      className={`px-3 py-3 text-left select-none ${sortKey ? "cursor-pointer" : ""} ${className}`}
+      className={cn("px-3 py-3 text-left select-none", sortKey && "cursor-pointer", className)}
       onClick={() => sortKey && onSort(sortKey)}
     >
-      <div className="flex items-center gap-1 group/col">
-        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8] dark:text-[#64748b]"}`}>
+      <div className="group/col flex items-center gap-1">
+        <span
+          className={cn(
+            "text-sm font-bold uppercase tracking-[0.06em]",
+            active ? "text-primary" : "text-muted-foreground",
+          )}
+        >
           {label}
         </span>
         {sortKey && (
-          <span className={`transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover/col:opacity-50"}`}>
-            {active && sort.dir === "asc" ? <ChevronUp size={12} className="text-[#2563eb]" />
-              : active && sort.dir === "desc" ? <ChevronDown size={12} className="text-[#2563eb]" />
-              : <ChevronsUpDown size={12} className="text-[#94a3b8] dark:text-[#64748b]" />}
+          <span className={cn("transition-opacity", active ? "opacity-100" : "opacity-0 group-hover/col:opacity-50")}>
+            {active && sort.dir === "asc" ? <ChevronUp className="size-3 text-primary" />
+              : active && sort.dir === "desc" ? <ChevronDown className="size-3 text-primary" />
+              : <ChevronsUpDown className="size-3 text-muted-foreground" />}
           </span>
         )}
       </div>
@@ -395,6 +533,82 @@ function AnimCount({ to, className = "" }) {
     return () => cancelAnimationFrame(raf);
   }, [to]);
   return <span className={className}>{val}</span>;
+}
+
+// ─── Create flow (list entry) — explicit pathway before opening the editor ─────
+
+function CreateFlowDropdown({ onCreateFlow, variant = "toolbar", buttonLabel = "Create Flow" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const choose = (mode) => {
+    setOpen(false);
+    onCreateFlow?.(mode);
+  };
+
+  return (
+    <div className={cn("relative", variant === "toolbar" ? "flex-shrink-0" : "w-full max-w-sm")} ref={ref}>
+      <Button
+        type="button"
+        size="lg"
+        className={cn("gap-1.5", variant === "prominent" && "w-full")}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        <Plus className="size-4" />
+        {buttonLabel}
+        <ChevronDown className="size-4 opacity-70" aria-hidden />
+      </Button>
+      {open && (
+        <div
+          role="menu"
+          className={cn(
+            "absolute z-50 mt-1.5 min-w-[260px] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg",
+            variant === "toolbar" ? "right-0" : "left-0 right-0",
+          )}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => choose("scratch")}
+          >
+            <span className="mt-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+              <PenLine className="size-4 text-muted-foreground" aria-hidden />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-medium text-foreground">Start from scratch</span>
+              <span className="text-xs leading-snug text-muted-foreground">Empty canvas — add nodes one at a time.</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => choose("template")}
+          >
+            <span className="mt-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+              <LayoutTemplate className="size-4 text-muted-foreground" aria-hidden />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-medium text-foreground">Choose from template</span>
+              <span className="text-xs leading-snug text-muted-foreground">Starter layouts you can customize.</span>
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
@@ -446,68 +660,73 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="flows" onNavigate={onNavigate} />
 
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader onNavigate={onNavigate} />
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="px-6 py-4 flex flex-col gap-4">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="flex flex-col gap-4 px-6 py-4">
 
-              {/* Page title + toolbar */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-8 tracking-[-0.6px]">Flows</h1>
-                  <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5">Design and automate multi-step AI workflows.</p>
+                  <h1 className="text-2xl font-semibold leading-8 tracking-tight text-foreground">Flows</h1>
+                  <p className="text-sm leading-5 text-muted-foreground">Design and automate multi-step AI workflows.</p>
                 </div>
 
-                <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
-                  {/* Search */}
-                  <div className="flex items-center gap-2 h-9 px-3 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] w-[220px]">
-                    <Search size={14} className="text-[#94a3b8] dark:text-[#64748b] flex-shrink-0" />
-                    <input
+                <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
+                  <div className="relative w-[220px]">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                    <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search flows…"
                       aria-label="Search flows"
-                      className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b] outline-none bg-transparent"
+                      className="h-9 pl-8 pr-8"
                     />
                     {searchQuery && (
-                      <button onClick={() => setSearchQuery("")} aria-label="Clear search" className="text-[#94a3b8] dark:text-[#64748b] hover:text-[#475569] dark:hover:text-[#94a3b8]">
-                        <X size={13} />
-                      </button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setSearchQuery("")}
+                        aria-label="Clear search"
+                        className="absolute right-0.5 top-1/2 size-7 -translate-y-1/2 text-muted-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </Button>
                     )}
                   </div>
 
-                  {/* Filter */}
                   <div className="relative" ref={filterRef}>
-                    <button
+                    <Button
+                      type="button"
+                      variant={statusFilter !== "All" ? "secondary" : "outline"}
+                      size="lg"
                       onClick={() => setFilterOpen((v) => !v)}
                       aria-label="Filter flows"
                       aria-haspopup="true"
                       aria-expanded={filterOpen}
-                      className={`flex items-center gap-1.5 h-9 px-3 rounded-[6px] border text-sm font-medium transition-colors ${
-                        statusFilter !== "All"
-                          ? "bg-[#eff6ff] dark:bg-[#1e3a8a] border-[#bfdbfe] dark:border-[#1d4ed8] text-[#2563eb] dark:text-[#60a5fa]"
-                          : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#cbd5e1] dark:hover:border-[#475569]"
-                      }`}
+                      className={cn(statusFilter !== "All" && "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15")}
                     >
-                      <SlidersHorizontal size={14} />
+                      <SlidersHorizontal className="size-3.5" />
                       Filters
                       {statusFilter !== "All" && (
-                        <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-xs font-bold">1</span>
+                        <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                          1
+                        </span>
                       )}
-                    </button>
+                    </Button>
 
                     {filterOpen && (
-                      <div className="absolute left-0 top-11 z-30 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-lg w-[200px] p-3 flex flex-col gap-2">
+                      <div className="absolute left-0 top-11 z-30 flex w-[200px] flex-col gap-2 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-lg">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#0f172a] dark:text-[#f1f5f9] uppercase tracking-[0.06em]">Status</span>
+                          <span className="text-xs font-bold uppercase tracking-wide text-foreground">Status</span>
                           {statusFilter !== "All" && (
-                            <button onClick={() => setStatusFilter("All")} className="text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] flex items-center gap-0.5">
-                              <X size={10} /> Clear
-                            </button>
+                            <Button type="button" variant="ghost" size="xs" onClick={() => setStatusFilter("All")} className="h-auto gap-0.5 px-1 py-0 text-xs text-muted-foreground">
+                              <X className="size-2.5" /> Clear
+                            </Button>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-1">
@@ -515,16 +734,20 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
                             const cfg = STATUS_CONFIG[s.toLowerCase()];
                             const isActive = statusFilter === s;
                             return (
-                              <button
+                              <Button
                                 key={s}
+                                type="button"
+                                variant={isActive ? "default" : "outline"}
+                                size="xs"
                                 onClick={() => { setStatusFilter(s); setFilterOpen(false); }}
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                  isActive ? "bg-[#2563eb] text-white border-[#2563eb]" : "bg-[#f8fafc] dark:bg-[#0f172a] text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1] dark:hover:border-[#475569]"
-                                }`}
+                                className={cn(
+                                  "gap-1.5 rounded-full",
+                                  !isActive && "border-border bg-muted/50 text-muted-foreground hover:bg-muted",
+                                )}
                               >
-                                {cfg && !isActive && <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />}
+                                {cfg && !isActive && <span className={cn("size-1.5 shrink-0 rounded-full", cfg.dotClass)} />}
                                 {s}
-                              </button>
+                              </Button>
                             );
                           })}
                         </div>
@@ -532,74 +755,80 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
                     )}
                   </div>
 
-                  {/* Active filter chip */}
                   <AnimatePresence>
                     {statusFilter !== "All" && (
-                      <motion.button
+                      <motion.div
                         key="status-chip"
                         initial={{ opacity: 0, scale: 0.8, x: -6 }}
                         animate={{ opacity: 1, scale: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0.8, x: -6 }}
                         transition={{ duration: 0.15 }}
-                        onClick={() => setStatusFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] dark:border-[#1d4ed8] bg-[#eff6ff] dark:bg-[#1e3a8a] text-[#2563eb] dark:text-[#60a5fa] hover:bg-[#dbeafe] dark:hover:bg-[#1e3a8a] transition-colors"
                       >
-                        {statusFilter} <X size={10} />
-                      </motion.button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setStatusFilter("All")}
+                          className="h-6 rounded-full border-primary/25 bg-primary/10 px-2 text-primary hover:bg-primary/15"
+                        >
+                          {statusFilter} <X className="size-2.5" />
+                        </Button>
+                      </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* View toggle */}
-                  <div className="flex items-center bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] h-9 p-1 gap-0.5">
-                    <button
+                  <div className="flex h-9 items-center gap-0.5 rounded-lg border border-border bg-card p-1">
+                    <Button
+                      type="button"
+                      variant={viewMode === "grid" ? "secondary" : "ghost"}
+                      size="icon-sm"
                       onClick={() => setViewMode("grid")}
                       aria-label="Switch to grid view"
                       aria-pressed={viewMode === "grid"}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-[#f1f5f9] dark:bg-[#334155] text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8]"}`}
+                      className="size-7 rounded-md"
                     >
-                      <LayoutGrid size={15} />
-                    </button>
-                    <button
+                      <LayoutGrid className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={viewMode === "list" ? "secondary" : "ghost"}
+                      size="icon-sm"
                       onClick={() => setViewMode("list")}
                       aria-label="Switch to list view"
                       aria-pressed={viewMode === "list"}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-[#f1f5f9] dark:bg-[#334155] text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#94a3b8] dark:text-[#64748b] hover:text-[#64748b] dark:hover:text-[#94a3b8]"}`}
+                      className="size-7 rounded-md"
                     >
-                      <List size={15} />
-                    </button>
+                      <List className="size-3.5" />
+                    </Button>
                   </div>
 
-                  <button onClick={onCreateFlow} className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0">
-                    <Plus size={16} />
-                    Create Flow
-                  </button>
+                  <CreateFlowDropdown onCreateFlow={onCreateFlow} variant="toolbar" />
                 </div>
               </div>
 
-              {/* Summary bar */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">
-                  <AnimCount to={total} className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]" /> flows
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <span className="text-muted-foreground">
+                  <AnimCount to={total} className="font-semibold text-foreground" /> flows
                 </span>
-                <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
-                <span className="flex items-center gap-1.5 text-sm">
-                  <span className="size-2 rounded-full bg-[#22c55e]" />
-                  <AnimCount to={active} className="font-semibold text-[#15803d] dark:text-[#4ade80]" />
-                  <span className="text-[#64748b] dark:text-[#94a3b8]">active</span>
+                <span className="text-border">·</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-success" />
+                  <AnimCount to={active} className="font-semibold text-success" />
+                  <span className="text-muted-foreground">active</span>
                 </span>
-                <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
-                <span className="flex items-center gap-1.5 text-sm">
-                  <span className="size-2 rounded-full bg-[#94a3b8] dark:bg-[#64748b]" />
-                  <AnimCount to={drafts} className="font-semibold text-[#475569] dark:text-[#94a3b8]" />
-                  <span className="text-[#64748b] dark:text-[#94a3b8]">drafts</span>
+                <span className="text-border">·</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-muted-foreground" />
+                  <AnimCount to={drafts} className="font-semibold text-muted-foreground" />
+                  <span className="text-muted-foreground">drafts</span>
                 </span>
                 {errors > 0 && (
                   <>
-                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
-                    <span className="flex items-center gap-1.5 text-sm">
-                      <span className="size-2 rounded-full bg-[#ef4444]" />
-                      <AnimCount to={errors} className="font-semibold text-[#dc2626]" />
-                      <span className="text-[#64748b] dark:text-[#94a3b8]">errors</span>
+                    <span className="text-border">·</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-destructive" />
+                      <AnimCount to={errors} className="font-semibold text-destructive" />
+                      <span className="text-muted-foreground">errors</span>
                     </span>
                   </>
                 )}
@@ -614,9 +843,9 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] overflow-hidden">
+                  <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <table className="w-full border-collapse">
-                      <thead className="sticky top-0 z-10 border-b border-[#e2e8f0] dark:border-[#334155]" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
+                      <thead className="sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-sm supports-[backdrop-filter]:bg-card/75">
                         <tr>
                           <th className="px-4 py-3 w-[52px]" />
                           <ColHeader label="Flow"        sortKey="name"    sort={sort} onSort={handleSort} className="min-w-[200px]" />
@@ -644,23 +873,18 @@ export default function FlowsPage({ onNavigate, onViewFlow, onCreateFlow
                 )
               ) : (
                 /* Empty state */
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="size-14 bg-[#f1f5f9] dark:bg-[#1e293b] rounded-[12px] flex items-center justify-center">
-                    <Workflow size={28} className="text-[#94a3b8] dark:text-[#64748b]" />
+                <div className="flex flex-col items-center justify-center gap-4 py-20">
+                  <div className="flex size-14 items-center justify-center rounded-xl bg-muted">
+                    <Workflow className="size-7 text-muted-foreground" />
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">No flows found</p>
-                    <p className="text-sm text-[#64748b] dark:text-[#94a3b8]">Try adjusting your search or filters.</p>
+                    <p className="text-sm font-semibold text-foreground">No flows found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
                   </div>
-                  <button
-                    onClick={() => { setSearchQuery(""); setStatusFilter("All"); }}
-                    className="text-sm font-medium text-[#2563eb] dark:text-[#60a5fa] hover:underline"
-                  >
+                  <Button type="button" variant="link" className="h-auto p-0 text-sm" onClick={() => { setSearchQuery(""); setStatusFilter("All"); }}>
                     Clear filters
-                  </button>
-                  <button onClick={onCreateFlow} className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors">
-                    <Plus size={16} /> Create your first flow
-                  </button>
+                  </Button>
+                  <CreateFlowDropdown onCreateFlow={onCreateFlow} variant="prominent" buttonLabel="Create your first flow" />
                 </div>
               )}
 
