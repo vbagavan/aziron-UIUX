@@ -1,11 +1,11 @@
-import { useState, Component } from "react";
+import { useState, useCallback, Component } from "react";
 
 class ErrorBoundary extends Component {
   state = { error: null };
   static getDerivedStateFromError(e) { return { error: e }; }
   render() {
     if (this.state.error) return (
-      <div style={{ padding:40, fontFamily:"monospace", background:"#fee2e2", color:"#dc2626", whiteSpace:"pre-wrap" }}>
+      <div className="whitespace-pre-wrap p-10 font-mono text-sm text-destructive bg-destructive/10">
         <strong>LoginPage Error:</strong>{"\n"}{this.state.error?.message}{"\n\n"}{this.state.error?.stack}
       </div>
     );
@@ -21,7 +21,7 @@ import AgentPage from "@/components/pages/AgentPage";
 import AgentDetailPage from "@/components/pages/AgentDetailPage";
 import KudosPage from "@/components/pages/KudosPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
-import FlowsPage from "@/components/pages/FlowsPage";
+import FlowsPage, { INITIAL_FLOWS } from "@/components/pages/FlowsPage";
 import FlowViewPage from "@/components/pages/FlowViewPage";
 import NotFoundPage from "@/components/pages/NotFoundPage";
 import UsersListPage from "@/components/pages/UsersListPage";
@@ -44,6 +44,14 @@ function AppInner() {
   const [viewedAgent, setViewedAgent]   = useState(null);
   const [initialMessage, setInitialMessage] = useState("");
   const [viewedFlow, setViewedFlow]     = useState(null);
+  const [flowCatalog, setFlowCatalog]   = useState(INITIAL_FLOWS);
+  /** "execute" = opened from list (run-only until user clicks Edit); "edit" = new flow / design mode */
+  const [flowOpenIntent, setFlowOpenIntent] = useState("execute");
+
+  const patchFlow = useCallback((flowId, patch) => {
+    setViewedFlow((f) => (f != null && f.id === flowId ? { ...f, ...patch } : f));
+    setFlowCatalog((list) => list.map((fl) => (fl.id === flowId ? { ...fl, ...patch } : fl)));
+  }, []);
   const [viewedUser, setViewedUser]     = useState(null);
   const [viewedTenant, setViewedTenant] = useState(null);
 
@@ -56,16 +64,31 @@ function AppInner() {
 
   const viewAgent = (agent) => { setViewedAgent(agent); setCurrentPage("agent-detail"); };
 
-  const viewFlow = (flow) => { setViewedFlow(flow); setCurrentPage("flow-view"); };
+  const viewFlow = (flow) => {
+    setViewedFlow(flow);
+    setFlowOpenIntent("execute");
+    setCurrentPage("flow-view");
+  };
 
   /** @param {"scratch" | "template"} entry How the user chose to start the new flow (from Flows list). */
   const createFlow = (entry = "template") => {
-    setViewedFlow({
-      id: Date.now(), name: "Untitled Flow", status: "draft", steps: [], runs: 0,
-      success: null, lastRun: "—",
+    const newFlow = {
+      id: Date.now(),
+      name: "Untitled Flow",
+      description: "",
+      version: "v0.1",
+      status: "draft",
+      steps: [],
+      runs: 0,
+      success: null,
+      lastRun: "—",
       createdAt: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
       creationEntry: entry === "scratch" ? "scratch" : "template",
-    });
+      visibility: "private",
+    };
+    setFlowCatalog((c) => [...c, newFlow]);
+    setViewedFlow(newFlow);
+    setFlowOpenIntent("edit");
     setCurrentPage("flow-view");
   };
 
@@ -80,8 +103,8 @@ function AppInner() {
       case "kudos":       return <KudosPage agent={selectedAgent} onNavigate={navigate} />;
       case "settings":     return <SettingsAppearancePage onNavigate={navigate} />;
       case "notifications":return <SettingsAppearancePage onNavigate={navigate} initialSection="notifications" />;
-      case "flows":       return <FlowsPage onNavigate={navigate} onViewFlow={viewFlow} onCreateFlow={createFlow} />;
-      case "flow-view":   return <FlowViewPage flow={viewedFlow} onNavigate={navigate} />;
+      case "flows":       return <FlowsPage flows={flowCatalog} onNavigate={navigate} onViewFlow={viewFlow} onCreateFlow={createFlow} />;
+      case "flow-view":   return <FlowViewPage flow={viewedFlow} onNavigate={navigate} flowOpenIntent={flowOpenIntent} onFlowPatch={patchFlow} />;
       case "users-list":  return <UsersListPage onNavigate={navigate} onViewUser={u=>{ setViewedUser(u); setCurrentPage("user-detail"); }} />;
       case "user-groups": return <UserGroupsPage onNavigate={navigate} />;
       case "user-detail": return <UserDetailPage user={viewedUser} onNavigate={navigate} />;

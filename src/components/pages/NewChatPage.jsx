@@ -730,7 +730,7 @@ export default function NewChatPage({ onNavigate }) {
 
   return (
     <>
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="new-chat" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -802,7 +802,7 @@ export default function NewChatPage({ onNavigate }) {
 
               {isTyping && (
                 <AIMessage>
-                  <div className="inline-flex items-center rounded-full bg-[#f8fafc] px-2 py-1 dark:bg-white/[0.04]">
+                  <div className="inline-flex items-center rounded-full bg-background px-2 py-1 dark:bg-white/[0.04]">
                     <TypingIndicator />
                   </div>
                 </AIMessage>
@@ -815,7 +815,7 @@ export default function NewChatPage({ onNavigate }) {
 
         {/* ── Input ── */}
         {hasMessages && (
-          <div className="sticky bottom-0 flex-shrink-0 border-t border-[#e8edf4] bg-[#f8fafc]/92 px-4 pb-4 pt-3 backdrop-blur dark:border-white/[0.05] dark:bg-[#0f172a]/88">
+          <div className="sticky bottom-0 flex-shrink-0 border-t border-border bg-background/92 px-4 pb-4 pt-3 backdrop-blur dark:border-white/[0.05] dark:bg-background/88">
             <div className="mx-auto max-w-[760px]">
               {!voiceActive && (
                 <div className="mb-3 flex justify-center">

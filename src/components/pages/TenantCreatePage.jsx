@@ -212,14 +212,19 @@ function Step2({ form, setForm, errors }) {
 }
 
 // ─── STEP 3: Review & Confirm ─────────────────────────────────────────────────
-function Step3({ form }) {
+function Step3({ form, onEditDetails }) {
   const rows = [
     { label: "Organisation", value: form.name || "—" },
     { label: "Domain",       value: form.domain || "—" },
     { label: "Industry",     value: form.industry || "Not specified" },
     { label: "Contact",      value: `${form.contactName} · ${form.contactEmail}` },
-    { label: "Deployment",   value: form.deployment === "saas" ? "SaaS Cloud" : "On-Premises" },
-    ...(!form.deployment === "on-prem" && form.solutionsArchitect ? [{ label: "Solutions Architect", value: form.solutionsArchitect }] : []),
+    {
+      label: "Deployment",
+      value: form.deployment === "saas" ? "SaaS Cloud" : form.deployment === "on-prem" ? "On-Premises" : "—",
+    },
+    ...(form.deployment === "on-prem" && form.solutionsArchitect
+      ? [{ label: "Solutions Architect", value: form.solutionsArchitect }]
+      : []),
     ...(form.deployment === "on-prem" && form.licenseStart ? [{ label: "License Start", value: form.licenseStart }] : []),
     { label: "Status",       value: form.isTrial ? "Trial" : "Active" },
     { label: "Packages",     value: "None — assign after creation" },
@@ -227,11 +232,22 @@ function Step3({ form }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Review & Confirm</h2>
-        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">
-          Check the organisation details. You'll assign packages in the next step.
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Review & Confirm</h2>
+          <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a3b8]">
+            Check the organisation details. You'll assign packages in the next step.
+          </p>
+        </div>
+        {onEditDetails && (
+          <button
+            type="button"
+            onClick={onEditDetails}
+            className="shrink-0 text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] dark:text-[#60a5fa] dark:hover:text-[#93c5fd] underline-offset-2 hover:underline"
+          >
+            Edit details
+          </button>
+        )}
       </div>
 
       {/* Summary card */}
@@ -441,7 +457,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
             <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl p-6 shadow-sm">
               {step === 1 && <Step1 form={form} setForm={setForm} />}
               {step === 2 && <Step2 form={form} setForm={setForm} errors={errors} />}
-              {step === 3 && <Step3 form={form} />}
+              {step === 3 && <Step3 form={form} onEditDetails={() => setStep(2)} />}
 
               {step === 1 && errors.deployment && (
                 <p className="flex items-center gap-1.5 mt-4 text-sm text-[#ef4444]">
@@ -457,17 +473,6 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
               </Button>
 
               <div className="flex items-center gap-2">
-                {/* Step dots */}
-                <div className="flex items-center gap-1 mr-2">
-                  {STEPS.map(s => (
-                    <div key={s.id} className={`transition-all rounded-full ${
-                      s.id === step ? "w-4 h-2 bg-[#2563eb]" :
-                      s.id < step   ? "w-2 h-2 bg-[#16a34a]" :
-                                      "w-2 h-2 bg-[#e2e8f0] dark:bg-[#334155]"
-                    }`} />
-                  ))}
-                </div>
-
                 {isLastStep ? (
                   <Button onClick={handleCreate} disabled={creating} className="bg-green-600 hover:bg-green-700 disabled:opacity-60">
                     {creating ? (
