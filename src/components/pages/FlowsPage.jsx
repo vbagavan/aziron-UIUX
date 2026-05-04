@@ -1,183 +1,55 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Plus, MoreVertical, Workflow, Play, Pencil, Copy, Trash2,
+  Plus, MoreVertical, Workflow, Play, Pencil, Trash2,
   Search, X, Zap,
   Clock,
   ChevronDown, ListOrdered,
-  LayoutTemplate, PenLine,
+  LayoutTemplate, PenLine, GitFork, Upload, Loader2,
+  FileJson2, AlertCircle, CheckCircle2, Info,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ForkFlowDialog } from "@/components/ui/ForkFlowDialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useFlowCatalog } from "@/context/FlowCatalogContext";
+import { parseAndValidateFlowImport } from "@/lib/flowImport";
+import { PAGE_PATH, pathToActivePage } from "@/navigation/pagePaths";
+import { Toast, useToast } from "@/components/ui/Toast";
 
-// ─── Flow data (exported for App-level catalog + flow editor) ─────────────────
-
-export const INITIAL_FLOWS = [
-  {
-    id: 0,
-    name: "Lead Qualification Pipeline",
-    version: "v2.4",
-    description: "Automatically scores and routes inbound leads using AI enrichment, CRM lookup, and email sequencing.",
-    status: "active",
-    steps: [
-      { label: "Webhook", icon: "Webhook", color: "#6366f1" },
-      { label: "Enrich", icon: "Database", color: "#3b82f6" },
-      { label: "Score", icon: "Bot", color: "#8b5cf6" },
-      { label: "Email", icon: "Mail", color: "#06b6d4" },
-    ],
-    lastRun: "3 min ago",
-    runs: 1420,
-    success: 97,
-    createdAt: "12 Jan 2026",
-    visibility: "public",
-  },
-  {
-    id: 1,
-    name: "Resume Screening Flow",
-    version: "v1.1",
-    description: "Parses uploaded resumes, ranks candidates against a job description, and sends shortlist to HR.",
-    status: "active",
-    steps: [
-      { label: "Upload", icon: "FileText", color: "#f59e0b" },
-      { label: "Parse", icon: "Bot", color: "#6366f1" },
-      { label: "Rank", icon: "Zap", color: "#8b5cf6" },
-      { label: "Notify", icon: "Mail", color: "#22c55e" },
-    ],
-    lastRun: "22 min ago",
-    runs: 845,
-    success: 99,
-    createdAt: "28 Jan 2026",
-    visibility: "private",
-  },
-  {
-    id: 2,
-    name: "Customer Feedback Digest",
-    version: "v3.0",
-    description: "Collects feedback from multiple channels, summarises sentiment, and posts a weekly digest to Slack.",
-    status: "active",
-    steps: [
-      { label: "Collect", icon: "Globe", color: "#3b82f6" },
-      { label: "Analyse", icon: "Bot", color: "#8b5cf6" },
-      { label: "Summarise", icon: "FileText", color: "#f97316" },
-      { label: "Post", icon: "Webhook", color: "#06b6d4" },
-    ],
-    lastRun: "1h ago",
-    runs: 312,
-    success: 100,
-    createdAt: "05 Feb 2026",
-    visibility: "public",
-  },
-  {
-    id: 3,
-    name: "Contract Review Automation",
-    version: "v1.7",
-    description: "Extracts key clauses from uploaded contracts, flags risks, and generates a plain-language summary.",
-    status: "paused",
-    steps: [
-      { label: "Ingest", icon: "FileText", color: "#64748b" },
-      { label: "Extract", icon: "Bot", color: "#6366f1" },
-      { label: "Flag", icon: "Zap", color: "#ef4444" },
-      { label: "Report", icon: "FileText", color: "#64748b" },
-    ],
-    lastRun: "2 days ago",
-    runs: 203,
-    success: 91,
-    createdAt: "14 Feb 2026",
-    visibility: "private",
-  },
-  {
-    id: 4,
-    name: "Social Media Monitor",
-    version: "v2.1",
-    description: "Tracks brand mentions across platforms in real-time, classifies sentiment, and alerts on spikes.",
-    status: "error",
-    steps: [
-      { label: "Listen", icon: "Globe", color: "#3b82f6" },
-      { label: "Classify", icon: "Bot", color: "#8b5cf6" },
-      { label: "Alert", icon: "Mail", color: "#ef4444" },
-    ],
-    lastRun: "45 min ago",
-    runs: 6810,
-    success: 73,
-    createdAt: "20 Feb 2026",
-    visibility: "public",
-  },
-  {
-    id: 5,
-    name: "Onboarding Email Sequence",
-    version: "v1.3",
-    description: "Triggers personalised onboarding emails based on user actions and enriches profiles with product usage data.",
-    status: "active",
-    steps: [
-      { label: "Trigger", icon: "Webhook", color: "#6366f1" },
-      { label: "Enrich", icon: "Database", color: "#3b82f6" },
-      { label: "Branch", icon: "GitBranch", color: "#f59e0b" },
-      { label: "Send", icon: "Mail", color: "#22c55e" },
-    ],
-    lastRun: "8 min ago",
-    runs: 2230,
-    success: 98,
-    createdAt: "01 Mar 2026",
-    visibility: "private",
-  },
-  {
-    id: 6,
-    name: "Invoice Processing Bot",
-    version: "v0.9",
-    description: "Reads incoming PDF invoices, validates line items against POs, and routes exceptions for approval.",
-    status: "draft",
-    steps: [
-      { label: "Receive", icon: "Mail", color: "#64748b" },
-      { label: "Parse", icon: "Bot", color: "#64748b" },
-      { label: "Validate", icon: "Zap", color: "#64748b" },
-    ],
-    lastRun: "—",
-    runs: 0,
-    success: null,
-    createdAt: "15 Mar 2026",
-    visibility: "private",
-  },
-  {
-    id: 7,
-    name: "Support Ticket Triage",
-    version: "v2.0",
-    description: "Classifies incoming tickets by priority, assigns to the correct team, and drafts an initial response.",
-    status: "active",
-    steps: [
-      { label: "Receive", icon: "Webhook", color: "#6366f1" },
-      { label: "Classify", icon: "Bot", color: "#8b5cf6" },
-      { label: "Assign", icon: "GitBranch", color: "#f59e0b" },
-      { label: "Draft", icon: "FileText", color: "#06b6d4" },
-    ],
-    lastRun: "Just now",
-    runs: 4500,
-    success: 96,
-    createdAt: "18 Mar 2026",
-    visibility: "public",
-  },
-];
+/** Re-export for legacy imports */
+export { INITIAL_FLOWS } from "@/data/initialFlows";
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
-  active: {
-    label: "Active",
+  idle: {
+    label: "Idle",
+    dotClass: "bg-muted-foreground",
+    rowBorder: "border-l-muted-foreground",
+    iconTile: "border-border bg-muted text-muted-foreground",
+    topAccent: "from-muted-foreground to-muted-foreground/50",
+  },
+  inprogress: {
+    label: "In Progress",
+    dotClass: "bg-primary",
+    rowBorder: "border-l-primary",
+    iconTile: "border-primary/25 bg-primary/10 text-primary",
+    topAccent: "from-primary to-primary/70",
+  },
+  completed: {
+    label: "Completed",
     dotClass: "bg-success",
     rowBorder: "border-l-success",
     iconTile: "border-success/25 bg-success/10 text-success",
     topAccent: "from-success to-success/70",
-  },
-  paused: {
-    label: "Paused",
-    dotClass: "bg-warning",
-    rowBorder: "border-l-warning",
-    iconTile: "border-warning/25 bg-warning/10 text-warning",
-    topAccent: "from-warning to-warning/70",
   },
   error: {
     label: "Error",
@@ -209,7 +81,6 @@ function FlowVisibilityBadge({ visibility }) {
   );
 }
 
-/** Error flows show Error plus Public/Private; others show Public/Private only */
 function FlowAccessBadge({ flow }) {
   if (flow.status === "error") {
     return (
@@ -227,9 +98,8 @@ function FlowAccessBadge({ flow }) {
 
 // ─── Flow card (grid view) ─────────────────────────────────────────────────────
 
-function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
+function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFlow, onForkFlow, onDeleteFlow }) {
   const stepCount = flow.steps?.length ?? 0;
-  const cfg = STATUS_CONFIG[flow.status] ?? STATUS_CONFIG.draft;
   const btnRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -251,20 +121,34 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           title={`Delete "${flow.name}"?`}
           message="This flow and all its run history will be permanently deleted."
           confirmLabel="Delete"
-          onConfirm={() => setConfirmDelete(false)}
+          onConfirm={() => {
+            onDeleteFlow?.(flow.id);
+            setConfirmDelete(false);
+            setOpenMenu(null);
+          }}
           onCancel={() => setConfirmDelete(false)}
         />
       )}
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Open flow ${flow.name}`}
         className={cn(
           "group relative flex cursor-pointer flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-md",
+          "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
-        onClick={() => onViewFlow && onViewFlow(flow)}
+        onClick={() => onViewFlow?.(flow)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onViewFlow?.(flow);
+          }
+        }}
       >
         <div
           className={cn(
             "absolute inset-x-0 top-0 h-[3px] rounded-t-lg bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100",
-            cfg.topAccent,
+            flow.status === "error" ? "from-destructive to-destructive/70" : "from-border to-border/50",
           )}
           aria-hidden
         />
@@ -281,7 +165,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
               aria-label="Flow options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              className="size-7 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
             >
               <MoreVertical className="size-3.5" />
             </Button>
@@ -327,24 +211,33 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow }) {
           >
             <button
               type="button"
-              onClick={() => setOpenMenu(null)}
+              onClick={() => {
+                setOpenMenu(null);
+                onRunFlow?.(flow);
+              }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
               <Play className="size-3.5 text-muted-foreground" /> Run now
             </button>
             <button
               type="button"
-              onClick={() => { setOpenMenu(null); onViewFlow(flow); }}
+              onClick={() => {
+                setOpenMenu(null);
+                onEditFlow?.(flow);
+              }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
               <Pencil className="size-3.5 text-muted-foreground" /> Edit flow
             </button>
             <button
               type="button"
-              onClick={() => setOpenMenu(null)}
+              onClick={() => {
+                setOpenMenu(null);
+                onForkFlow?.(flow);
+              }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
             >
-              <Copy className="size-3.5 text-muted-foreground" /> Duplicate
+              <GitFork className="size-3.5 text-muted-foreground" /> Fork
             </button>
             <Separator />
             <button
@@ -381,7 +274,7 @@ function AnimCount({ to, className = "" }) {
 
 // ─── Create flow (list entry) — explicit pathway before opening the editor ─────
 
-function CreateFlowDropdown({ onCreateFlow, variant = "toolbar", buttonLabel = "Create Flow" }) {
+function CreateFlowDropdown({ onCreateFlow, onImportFlow, variant = "toolbar", buttonLabel = "Create Flow" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -449,30 +342,224 @@ function CreateFlowDropdown({ onCreateFlow, variant = "toolbar", buttonLabel = "
               <span className="text-xs leading-snug text-muted-foreground">Starter layouts you can customize.</span>
             </span>
           </button>
+          <Separator className="my-1" />
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            onClick={() => { setOpen(false); onImportFlow?.(); }}
+          >
+            <span className="mt-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-md bg-muted">
+              <Upload className="size-4 text-muted-foreground" aria-hidden />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-medium text-foreground">Import from file</span>
+              <span className="text-xs leading-snug text-muted-foreground">Upload a JSON flow config.</span>
+            </span>
+          </button>
         </div>
       )}
     </div>
   );
 }
 
+// ─── List loading skeleton (reference-style grid) ───────────────────────────────
+
+function FlowsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex min-h-[11rem] flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 shadow-sm"
+        >
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 max-w-[14rem] w-[85%]" />
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-5 w-12 rounded-md" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-[92%]" />
+          <Separator />
+          <div className="flex justify-between gap-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-14" />
+            <Skeleton className="h-3 w-12" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Import preview dialog ─────────────────────────────────────────────────────
+
+function ImportPreviewDialog({ open, onOpenChange, preview, onConfirm, importing, error, onDismissError }) {
+  const showError = !preview && !!error;
+  const { flows, warnings, fileName } = preview ?? {};
+  const multi = (flows?.length ?? 0) > 1;
+
+  // ── Error dialog ──────────────────────────────────────────────────────────
+  if (showError) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => { if (!v) onDismissError?.(); }}>
+        <DialogContent showCloseButton={false} className="max-w-md gap-0 p-0 overflow-hidden">
+          <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10">
+              <AlertCircle className="size-4 text-destructive" aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">Import failed</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">The file could not be imported.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onDismissError}
+              aria-label="Dismiss"
+              className="ml-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+          <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+            <Button type="button" size="sm" onClick={onDismissError}>Got it</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // ── Preview dialog ────────────────────────────────────────────────────────
+  if (!preview) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!importing) { onOpenChange(v); } }}>
+      <DialogContent showCloseButton={false} className="max-w-lg gap-0 p-0 overflow-hidden">
+        <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
+            <FileJson2 className="size-4 text-muted-foreground" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {multi ? `Import ${flows.length} flows` : `Import "${flows[0]?.name}"`}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">{fileName}</p>
+          </div>
+          {!importing && (
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              aria-label="Cancel import"
+              className="ml-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="max-h-64 overflow-y-auto px-5 py-3">
+          <div className="flex flex-col gap-2">
+            {flows.map((f, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5"
+              >
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <Workflow className="size-3.5 text-muted-foreground" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{f.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {f.steps.length} step{f.steps.length !== 1 ? "s" : ""} · {f.visibility}
+                    {f.versionHistory?.length > 0 && ` · ${f.versionHistory.length} version${f.versionHistory.length !== 1 ? "s" : ""}`}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">{f.version}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {warnings.length > 0 && (
+          <div className="mx-5 mb-1 flex flex-col gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <Info className="size-3.5 shrink-0" aria-hidden /> Notes
+            </p>
+            <ul className="ml-5 list-disc space-y-0.5">
+              {warnings.map((w, i) => (
+                <li key={i} className="text-xs text-amber-700 dark:text-amber-300">{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+          <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={importing}>
+            Cancel
+          </Button>
+          <Button type="button" size="sm" onClick={onConfirm} disabled={importing} className="gap-1.5">
+            {importing ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            ) : (
+              <CheckCircle2 className="size-3.5" aria-hidden />
+            )}
+            {importing ? "Importing…" : multi ? `Import ${flows.length} flows` : "Import flow"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
-export default function FlowsPage({
-  onNavigate,
-  onViewFlow,
-  onCreateFlow,
-  flows = INITIAL_FLOWS,
-}) {
+export default function FlowsPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { flows, removeFlow, createDraftFlow, forkFlow, importFlow } = useFlowCatalog();
+  const { toasts, showToast, dismissToast } = useToast();
+  const fileImportRef = useRef(null);
+  const pageRef = useRef(null);
+
+  const onNavigate = useCallback(
+    (page) => {
+      navigate(PAGE_PATH[page] ?? "/new-chat");
+    },
+    [navigate],
+  );
+
+  const activePage = pathToActivePage(location.pathname);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   /** `null` = all; `public`/`private` = `visibility`; `error` = operational error status */
   const [statFilter, setStatFilter] = useState(null);
+  const [listLoading, setListLoading] = useState(true);
 
-  // Stats (public/private are independent of error — same flow can count in error + public)
-  const total    = flows.length;
-  const publicN  = flows.filter((f) => f.visibility === "public").length;
+  // ── Import state
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState(null);
+  const [importPreview, setImportPreview] = useState(null); // { flows, warnings, fileName }
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // ── Drag-and-drop
+  const [dragOver, setDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => setListLoading(false), 420);
+    return () => clearTimeout(t);
+  }, []);
+
+  const total = flows.length;
+  const publicN = flows.filter((f) => f.visibility === "public").length;
   const privateN = flows.filter((f) => f.visibility === "private").length;
-  const errorN   = flows.filter((f) => f.status === "error").length;
+  const errorN = flows.filter((f) => f.status === "error").length;
 
   const statChipClass = (key) =>
     cn(
@@ -503,28 +590,172 @@ export default function FlowsPage({
     })
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
+  const openFlowView = (flow) => {
+    navigate(`/flows/${flow.id}`, { state: { flowOpenIntent: "execute" } });
+  };
+
+  const openFlowEdit = (flow) => {
+    navigate(`/flows/${flow.id}`, { state: { flowOpenIntent: "edit" } });
+  };
+
+  const openFlowRunNow = (flow) => {
+    navigate(`/flows/${flow.id}`, { state: { flowOpenIntent: "execute", autoRun: true } });
+  };
+
+  const [forkSource, setForkSource] = useState(null);
+
+  const handleOpenFork = (flow) => {
+    setForkSource(flow);
+  };
+
+  const handleConfirmFork = ({ name, description, visibility }) => {
+    if (!forkSource) return;
+    const forked = forkFlow(forkSource.id, { name, description, visibility });
+    setForkSource(null);
+    if (forked) navigate(`/flows/${forked.id}`, { state: { flowOpenIntent: "edit" } });
+  };
+
+  const handleCreateFlow = (entry) => {
+    const f = createDraftFlow(entry);
+    navigate(`/flows/${f.id}`, { state: { flowOpenIntent: "edit" } });
+  };
+
+  const handleDeleteFlow = (flowId) => {
+    removeFlow(flowId);
+  };
+
+  /** Read a File → parse → open preview dialog (or show inline error). */
+  const processFile = async (file) => {
+    setImportError(null);
+    if (!file) return;
+    if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+      setImportError('Only .json files are supported.');
+      return;
+    }
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setImportError('File too large — use a JSON file under 2 MB.');
+      return;
+    }
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const { flows: parsedFlows, warnings } = parseAndValidateFlowImport(text);
+      setImportPreview({ flows: parsedFlows, warnings, fileName: file.name });
+      setPreviewOpen(true);
+    } catch (err) {
+      setImportError(typeof err?.message === 'string' ? err.message : 'Import failed — check the file format.');
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleImportJson = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    await processFile(file);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreview) return;
+    setImportBusy(true);
+    try {
+      const created = importFlow(importPreview.flows);
+      setPreviewOpen(false);
+      setImportPreview(null);
+      if (created.length === 1) {
+        showToast('Imported “' + created[0].name + '” — opening editor.');
+        navigate('/flows/' + created[0].id, { state: { flowOpenIntent: 'edit' } });
+      } else {
+        showToast('Imported ' + created.length + ' flows successfully.');
+      }
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  // ── Drag-and-drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    if (e.dataTransfer.types.includes('Files')) setDragOver(true);
+  };
+  const handleDragLeave = () => {
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) { dragCounterRef.current = 0; setDragOver(false); }
+  };
+  const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
+  };
+
+  const catalogEmpty = !listLoading && flows.length === 0;
+  const filteredEmpty = !listLoading && flows.length > 0 && filtered.length === 0;
+
+
   return (
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
+      <ForkFlowDialog
+        open={!!forkSource}
+        onOpenChange={(v) => { if (!v) setForkSource(null); }}
+        sourceFlow={forkSource}
+        onConfirm={handleConfirmFork}
+      />
+      <ImportPreviewDialog
+        open={previewOpen || !!importError}
+        onOpenChange={(v) => {
+          if (!importBusy) { setPreviewOpen(v); if (!v) setImportPreview(null); }
+        }}
+        preview={importPreview}
+        onConfirm={handleConfirmImport}
+        importing={importBusy}
+        error={importError}
+        onDismissError={() => setImportError(null)}
+      />
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
-        <Sidebar activePage="flows" onNavigate={onNavigate} />
+      <div
+        ref={pageRef}
+        className={cn("flex min-h-0 w-full flex-1 overflow-hidden bg-background transition-colors", dragOver && "ring-2 ring-inset ring-primary/60")}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {dragOver && (
+          <div className="pointer-events-none fixed inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
+            <div className="flex size-20 items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-primary/10">
+              <Upload className="size-9 text-primary" aria-hidden />
+            </div>
+            <p className="text-base font-semibold text-foreground">Drop your JSON file here</p>
+            <p className="text-sm text-muted-foreground">Release to import a flow</p>
+          </div>
+        )}
+
+        <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader onNavigate={onNavigate} />
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="flex flex-col gap-4 px-6 py-4">
-
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-col gap-0.5">
                   <h1 className="text-2xl font-semibold leading-8 tracking-tight text-foreground">Flows</h1>
-                  <p className="text-sm leading-5 text-muted-foreground">Design and automate multi-step AI workflows.</p>
+                  <p className="text-sm leading-5 text-muted-foreground">
+                    Design and automate multi-step AI workflows.
+                  </p>
                 </div>
 
                 <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
                   <div className="relative w-[220px]">
-                    <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                    <Search
+                      className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden
+                    />
                     <Input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -546,107 +777,150 @@ export default function FlowsPage({
                     )}
                   </div>
 
-                  <CreateFlowDropdown onCreateFlow={onCreateFlow} variant="toolbar" />
+                  <input
+                    ref={fileImportRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="sr-only"
+                    aria-hidden
+                    tabIndex={-1}
+                    onChange={handleImportJson}
+                  />
+
+                  {!catalogEmpty && (
+                    <CreateFlowDropdown
+                      onCreateFlow={handleCreateFlow}
+                      onImportFlow={() => { setImportError(null); fileImportRef.current?.click(); }}
+                      variant="toolbar"
+                    />
+                  )}
                 </div>
               </div>
 
-              <div
-                className="flex flex-wrap items-center gap-3 text-sm"
-                role="toolbar"
-                aria-label="Filter flows by visibility and error state"
-              >
-                <button
-                  type="button"
-                  className={statChipClass(null)}
-                  onClick={() => setStatFilter(null)}
-                  aria-pressed={statFilter === null}
-                  title="Show all flows"
+              {!catalogEmpty && (
+                <div
+                  className="flex flex-wrap items-center gap-3 text-sm"
+                  role="toolbar"
+                  aria-label="Filter flows by visibility and error state"
                 >
-                  <span className="text-muted-foreground">
-                    <AnimCount to={total} className="font-semibold text-foreground" /> flows
+                  <button
+                    type="button"
+                    className={statChipClass(null)}
+                    onClick={() => setStatFilter(null)}
+                    aria-pressed={statFilter === null}
+                    title="Show all flows"
+                  >
+                    <span className="text-muted-foreground">
+                      <AnimCount to={total} className="font-semibold text-foreground" /> flows
+                    </span>
+                  </button>
+                  <span className="text-border select-none" aria-hidden>
+                    ·
                   </span>
-                </button>
-                <span className="text-border select-none" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className={cn(statChipClass("public"), "items-center")}
-                  onClick={() => toggleStatFilter("public")}
-                  aria-pressed={statFilter === "public"}
-                  title="Show public flows"
-                >
-                  <span className="size-2 shrink-0 rounded-full bg-primary" />
-                  <AnimCount to={publicN} className="font-semibold text-primary" />
-                  <span className="text-muted-foreground">public</span>
-                </button>
-                <span className="text-border select-none" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className={cn(statChipClass("private"), "items-center")}
-                  onClick={() => toggleStatFilter("private")}
-                  aria-pressed={statFilter === "private"}
-                  title="Show private flows"
-                >
-                  <span className="size-2 shrink-0 rounded-full bg-muted-foreground" />
-                  <AnimCount to={privateN} className="font-semibold text-muted-foreground" />
-                  <span className="text-muted-foreground">private</span>
-                </button>
-                <span className="text-border select-none" aria-hidden>
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className={cn(statChipClass("error"), "items-center")}
-                  onClick={() => toggleStatFilter("error")}
-                  aria-pressed={statFilter === "error"}
-                  title="Show flows with errors"
-                >
-                  <span className="size-2 shrink-0 rounded-full bg-destructive" />
-                  <AnimCount to={errorN} className="font-semibold text-destructive" />
-                  <span className="text-muted-foreground">error</span>
-                </button>
-              </div>
-
-              {/* Content */}
-              {filtered.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filtered.map((flow) => (
-                    <FlowCard key={flow.id} flow={flow} openMenu={openMenu} setOpenMenu={setOpenMenu} onViewFlow={onViewFlow} />
-                  ))}
+                  <button
+                    type="button"
+                    className={cn(statChipClass("public"), "items-center")}
+                    onClick={() => toggleStatFilter("public")}
+                    aria-pressed={statFilter === "public"}
+                    title="Show public flows"
+                  >
+                    <span className="size-2 shrink-0 rounded-full bg-primary" />
+                    <AnimCount to={publicN} className="font-semibold text-primary" />
+                    <span className="text-muted-foreground">public</span>
+                  </button>
+                  <span className="text-border select-none" aria-hidden>
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    className={cn(statChipClass("private"), "items-center")}
+                    onClick={() => toggleStatFilter("private")}
+                    aria-pressed={statFilter === "private"}
+                    title="Show private flows"
+                  >
+                    <span className="size-2 shrink-0 rounded-full bg-muted-foreground" />
+                    <AnimCount to={privateN} className="font-semibold text-muted-foreground" />
+                    <span className="text-muted-foreground">private</span>
+                  </button>
+                  <span className="text-border select-none" aria-hidden>
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    className={cn(statChipClass("error"), "items-center")}
+                    onClick={() => toggleStatFilter("error")}
+                    aria-pressed={statFilter === "error"}
+                    title="Show flows with errors"
+                  >
+                    <span className="size-2 shrink-0 rounded-full bg-destructive" />
+                    <AnimCount to={errorN} className="font-semibold text-destructive" />
+                    <span className="text-muted-foreground">error</span>
+                  </button>
                 </div>
-              ) : (
-                /* Empty state */
-                <div className="flex flex-col items-center justify-center gap-4 py-20">
-                  <div className="flex size-14 items-center justify-center rounded-xl bg-muted">
-                    <Workflow className="size-7 text-muted-foreground" />
+              )}
+
+              {listLoading && <FlowsSkeleton />}
+
+              {catalogEmpty && (
+                <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-24 text-center">
+                  <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
+                    <Workflow className="size-8 text-muted-foreground" aria-hidden />
                   </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <p className="text-sm font-semibold text-foreground">No flows found</p>
-                    <p className="text-sm text-muted-foreground">Try a different search term.</p>
+                  <div className="flex max-w-md flex-col gap-1">
+                    <p className="text-base font-semibold text-foreground">No flows yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Create a workflow to automate steps, connect tools, and run on demand or on a schedule.
+                    </p>
                   </div>
+                  <CreateFlowDropdown
+                    onCreateFlow={handleCreateFlow}
+                    onImportFlow={() => { setImportError(null); fileImportRef.current?.click(); }}
+                    variant="prominent"
+                    buttonLabel="Create your first flow"
+                  />
+                </div>
+              )}
+
+              {!listLoading && !catalogEmpty && filteredEmpty && (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <p className="text-sm font-medium text-foreground">No flows match your filters</p>
+                  <p className="text-xs text-muted-foreground">Try a different search term or clear the segment filter.</p>
                   <Button
                     type="button"
                     variant="link"
                     className="h-auto p-0 text-sm"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setStatFilter(null);
-                    }}
+                    onClick={() => { setSearchQuery(""); setStatFilter(null); }}
                   >
                     Clear search and filter
                   </Button>
-                  <CreateFlowDropdown onCreateFlow={onCreateFlow} variant="prominent" buttonLabel="Create your first flow" />
                 </div>
               )}
 
+              {!listLoading && !catalogEmpty && filtered.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filtered.map((flow) => (
+                    <FlowCard
+                      key={flow.id}
+                      flow={flow}
+                      openMenu={openMenu}
+                      setOpenMenu={setOpenMenu}
+                      onViewFlow={openFlowView}
+                      onEditFlow={openFlowEdit}
+                      onRunFlow={openFlowRunNow}
+                      onForkFlow={handleOpenFork}
+                      onDeleteFlow={handleDeleteFlow}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
+      {toasts.map((t) => (
+        <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
+      ))}
     </>
   );
 }

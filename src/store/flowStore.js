@@ -26,7 +26,7 @@ export const useFlowStore = create((set, get) => ({
   // ── Data ──────────────────────────────────────────────────────────────────
   nodes: [],
   edges: [],
-  metadata: { name: "", status: "draft", runs: 0, success: null, lastRun: "—", createdAt: "—" },
+  metadata: { name: "", status: "idle", runs: 0, success: null, lastRun: "—", createdAt: "—" },
 
   // ── Selection ─────────────────────────────────────────────────────────────
   selectedNodeIdx: null,

@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { loadVersionHistory, persistVersionHistory } from "@/lib/flowVersionStorage";
+import { cn } from "@/lib/utils";
 import {
   ArrowLeft, Play, Save, MoreHorizontal, ChevronDown, ChevronRight, ChevronLeft,
   ZoomIn, ZoomOut, Crosshair, CheckCircle2, AlertCircle, Clock, Circle,
@@ -8,18 +10,29 @@ import {
   MousePointer, GitMerge, Trash2,
   Send, Sparkles, RotateCcw, ChevronUp,
   ListChecks, Braces, ScrollText, Hammer, Gauge,
-  Copy, Download, Share2, Settings, Clock as ClockIcon, Pencil, Eye,
-  PanelRight, PanelRightClose,
+  Copy, Download, Share2, Settings, Clock as ClockIcon, Pencil, Eye, Users, Loader2,
+  PanelRight, PanelRightClose, Maximize2, Minimize2,
   Filter, Plug, Bell, UserCheck, Shield, Wrench, Brain,
   MessageCircle, Upload, HardDrive, Building2, SplitSquareHorizontal,
   Code2, Network, Shuffle, Timer, Variable, BarChart3, ImageIcon,
-  Microscope, FolderInput, Archive, Boxes, BotMessageSquare,
+  Microscope, FolderInput, Archive, Boxes, BotMessageSquare, GripVertical,
+  GitFork,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import AppHeader from "@/components/layout/AppHeader";
 import { useFlowStore } from "@/store/flowStore";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ForkFlowDialog } from "@/components/ui/ForkFlowDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const NODE_W = 200;
@@ -27,6 +40,76 @@ const NODE_H = 76;
 const H_GAP  = 110;
 const PAD_X  = 80;
 const NODE_Y = 190;
+
+/** Deep snapshot of editable flow payload for versioning / dirty detection. */
+function cloneFlowSnapshot(steps, name, description) {
+  return {
+    steps: JSON.parse(JSON.stringify(steps ?? [])),
+    name: name ?? "Untitled Flow",
+    description: typeof description === "string" ? description : "",
+  };
+}
+
+function snapshotsEqual(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.name === b.name &&
+    a.description === b.description &&
+    JSON.stringify(a.steps) === JSON.stringify(b.steps)
+  );
+}
+
+/** Bump labels like v1.7 → v1.8 (minor segment). Supports vX.Y.Z as patch bump. */
+function bumpVersionLabel(current) {
+  const s = String(current ?? "v0.1").trim();
+  const triple = /^v(\d+)\.(\d+)\.(\d+)$/i.exec(s);
+  if (triple) {
+    return `v${triple[1]}.${triple[2]}.${Number(triple[3]) + 1}`;
+  }
+  const dual = /^v(\d+)\.(\d+)$/i.exec(s);
+  if (dual) {
+    return `v${dual[1]}.${Number(dual[2]) + 1}`;
+  }
+  return `${s}.next`;
+}
+
+/** Cross-browser Fullscreen API (Safari webkit*, Firefox moz*, legacy Edge ms*). */
+function getBrowserFullscreenElement() {
+  const d = document;
+  return (
+    d.fullscreenElement ??
+    d.webkitFullscreenElement ??
+    d.mozFullScreenElement ??
+    d.msFullscreenElement ??
+    null
+  );
+}
+
+function isElementFullscreenNode(container, fs) {
+  if (!container || !fs) return false;
+  if (container === fs) return true;
+  try {
+    return container.contains(fs) || fs.contains(container);
+  } catch {
+    return false;
+  }
+}
+
+async function requestFullscreenOnElement(el) {
+  if (!el) return;
+  if (typeof el.requestFullscreen === "function") return el.requestFullscreen();
+  if (typeof el.webkitRequestFullscreen === "function") return el.webkitRequestFullscreen();
+  if (typeof el.mozRequestFullScreen === "function") return el.mozRequestFullScreen();
+  if (typeof el.msRequestFullscreen === "function") return el.msRequestFullscreen();
+}
+
+async function exitBrowserFullscreen() {
+  const d = document;
+  if (typeof d.exitFullscreen === "function") return d.exitFullscreen();
+  if (typeof d.webkitExitFullscreen === "function") return d.webkitExitFullscreen();
+  if (typeof d.mozCancelFullScreen === "function") return d.mozCancelFullScreen();
+  if (typeof d.msExitFullscreen === "function") return d.msExitFullscreen();
+}
 
 const ICON_MAP = {
   Bot, Database, Mail, Webhook, FileText, Globe, Zap, GitBranch, GitMerge,
@@ -124,14 +207,14 @@ const NODE_IO = {
 
 // ─── Execution status helpers ──────────────────────────────────────────────────
 const EXEC_STATUS = {
-  active:  (i, n) => "success",
-  error:   (i, n) => i < n - 1 ? "success" : "error",
-  paused:  (i, n) => i < Math.ceil(n / 2) ? "success" : "pending",
-  draft:   ()     => "pending",
+  inprogress: (i, n) => "success",
+  completed:  (i, n) => "success",
+  idle:       (i, n) => i < Math.ceil(n / 2) ? "success" : "pending",
+  error:      (i, n) => i < n - 1 ? "success" : "error",
 };
 
 function getExecStatus(flowStatus, stepIdx, total) {
-  return (EXEC_STATUS[flowStatus] ?? EXEC_STATUS.draft)(stepIdx, total);
+  return (EXEC_STATUS[flowStatus] ?? EXEC_STATUS.idle)(stepIdx, total);
 }
 
 const STEP_EXEC = {
@@ -276,7 +359,7 @@ function NodeExecStatusGlyph({ cx, cy, execKey, color }) {
   );
 }
 
-function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPicker, onToolbarAction, isRunning = false, isDone = false, readOnly = false }) {
+function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPicker, onToolbarAction, isRunning = false, isDone = false, nodeElapsedLabel = null, readOnly = false }) {
   const Icon = ICON_MAP[step.icon] ?? Zap;
   const dynamicExecKey = isRunning ? "running" : isDone ? "success" : execStatus;
   const exec     = STEP_EXEC[dynamicExecKey] ?? STEP_EXEC.pending;
@@ -302,10 +385,6 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
 
       {/* Selection ring — handled by card border below */}
 
-      {isDone && !isRunning && (
-        <rect x={x-3} y={y-3} width={NODE_W+6} height={NODE_H+6} rx={13} fill="none" stroke="#22c55e" strokeWidth={2} opacity={0.85} />
-      )}
-
       {/* Card */}
       <rect x={x+2} y={y+3} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.06)" />
       <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={10} fill="white"
@@ -329,9 +408,6 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
         />
       )}
 
-      {/* Status badge */}
-      <circle cx={x+NODE_W-14} cy={y+14} r={7} fill={exec.bg} stroke={exec.ring} strokeWidth={1} />
-      <NodeExecStatusGlyph cx={x + NODE_W - 14} cy={y + 14} execKey={dynamicExecKey} color={exec.color} />
 
       {/* Icon */}
       <circle cx={x+34} cy={y+NODE_H/2} r={17} fill={`${step.color}18`} stroke={`${step.color}35`} strokeWidth={1} />
@@ -348,10 +424,19 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
         {NODE_CONFIGS[step.icon]?.type ?? "Step"}
       </text>
 
-      {/* Running only — pending/success/error read from top-right badge */}
+      {/* Execution duration — done nodes */}
+      {isDone && !isRunning && (
+        <foreignObject x={x+62} y={y+NODE_H-20} width={90} height={16}>
+          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",fontSize:9,fontWeight:600,color:"#16a34a" }}>
+            {`${230 + index * 80}ms`}
+          </div>
+        </foreignObject>
+      )}
+      {/* Running indicator with per-node elapsed time */}
       {isRunning && (
-        <foreignObject x={x+62} y={y+NODE_H-20} width={100} height={16}>
+        <foreignObject x={x+62} y={y+NODE_H-20} width={130} height={16}>
           <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:500,color:"#3b82f6" }}>
+            {nodeElapsedLabel && <span style={{ opacity:0.75, marginRight:2 }}>{nodeElapsedLabel}</span>}
             Running
             {[0,1,2].map(i => <span key={i} style={{ display:"inline-block",width:3,height:3,borderRadius:"50%",background:"#3b82f6",animation:`nodeBounce 0.8s ease-in-out ${i*0.18}s infinite` }} />)}
           </div>
@@ -1286,43 +1371,350 @@ function ExecutionMode({ step, selectedIdx, flow, runState }) {
   );
 }
 
+// ─── Flow overview helpers ──────────────────────────────────────────────────────
+
+function seededRand(seed, i) {
+  const x = Math.sin(seed * 9301 + i * 49297 + 233) * 10000;
+  return x - Math.floor(x);
+}
+
+function generateSparkline(seed, length, base, spread) {
+  const data = [];
+  let val = base;
+  for (let i = 0; i < length; i++) {
+    const r = seededRand(seed, i);
+    val = Math.max(base - spread, Math.min(base + spread, val + (r - 0.5) * spread * 0.7));
+    data.push(Math.round(val));
+  }
+  return data;
+}
+
+function Sparkline({ data, color = "#6366f1", height = 28, width = 64 }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - 2 - ((v - min) / range) * (height - 4);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0 overflow-visible">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 // ─── Flow overview (no node selected) ─────────────────────────────────────────
-function FlowOverview({ flow, executeOnly = false }) {
+function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
+  const [metaOpen, setMetaOpen] = useState(false);
+
+  const STATUS_CFG = {
+    idle:       { label: "Idle",        dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "#94a3b8" },
+    inprogress: { label: "In Progress", dot: "bg-primary",          text: "text-primary",          accent: "#6366f1" },
+    completed:  { label: "Completed",   dot: "bg-success",          text: "text-success",          accent: "#22c55e" },
+    error:      { label: "Error",       dot: "bg-destructive",      text: "text-destructive",      accent: "#ef4444" },
+    draft:      { label: "Draft",       dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "#94a3b8" },
+  };
+  const cfg = STATUS_CFG[flow.status] ?? STATUS_CFG.idle;
+
+  // Virgin flows have never been run — show an onboarding empty state instead of fake metrics
+  const isVirgin = (flow.runs ?? 0) === 0 || flow.status === "draft";
+  const hasSteps = (flow.steps?.length ?? 0) > 0;
+
+  if (isVirgin) {
+    return (
+      <div className="flex flex-col flex-1 overflow-y-auto">
+        <div className="flex flex-col divide-y divide-border">
+
+          {/* Status band */}
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className={cn("size-2 shrink-0 rounded-full", cfg.dot)} />
+              <span className={cn("text-xs font-semibold", cfg.text)}>{cfg.label}</span>
+              <span className="text-[10px] text-muted-foreground">· not running</span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span>{flow.version}</span>
+              <span>·</span>
+              <span className="capitalize">{flow.visibility}</span>
+            </div>
+          </div>
+
+          {/* Empty metrics state */}
+          <div className="flex flex-col items-center gap-3 px-5 py-7 text-center">
+            <div className="flex size-11 items-center justify-center rounded-full bg-muted/60">
+              <BarChart3 size={20} className="text-muted-foreground/50" aria-hidden />
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-semibold text-foreground">No run data yet</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Trigger a run to start collecting metrics — success rate, latency, and per-step health will appear here.
+              </p>
+            </div>
+            {hasSteps && onRunFlow && (
+              <button
+                type="button"
+                onClick={onRunFlow}
+                className="mt-1 flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90"
+              >
+                <Play size={11} fill="white" aria-hidden /> Run flow
+              </button>
+            )}
+            {!hasSteps && (
+              <p className="text-[10px] text-muted-foreground/60 italic">Add steps to the canvas first.</p>
+            )}
+          </div>
+
+          {/* Steps preview — real data, no fake health bars */}
+          {hasSteps && (
+            <div className="flex flex-col gap-2 px-4 py-3">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Steps ({flow.steps.length})</span>
+              <div className="flex flex-col gap-1">
+                {flow.steps.map((step, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground/60">{i + 1}</span>
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ background: step.color ?? "#94a3b8" }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[10px] text-foreground">{step.label}</span>
+                    {(() => { const I = ICON_MAP[step.icon]; return I ? <I size={10} className="shrink-0 text-muted-foreground/40" aria-hidden /> : null; })()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Details */}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-muted/50"
+            onClick={() => setMetaOpen((v) => !v)}
+          >
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Details</span>
+            {metaOpen ? <ChevronUp size={12} className="text-muted-foreground" /> : <ChevronDown size={12} className="text-muted-foreground" />}
+          </button>
+          {metaOpen && (
+            <dl className="flex flex-col gap-0 px-4 pb-4 text-xs">
+              {[
+                ["Name",        flow.name],
+                ["Description", flow.description || "—"],
+                ["Last Run",    flow.lastRun],
+                ["Created",     flow.createdAt],
+                ["Steps",       flow.steps?.length ?? 0],
+              ].map(([k, v]) => (
+                <div key={k} className="flex flex-col gap-0.5 border-b border-border py-1.5 last:border-0">
+                  <dt className="text-[10px] text-muted-foreground">{k}</dt>
+                  <dd className="m-0 text-xs font-medium text-foreground">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+        </div>
+      </div>
+    );
+  }
+
+  const seed          = flow.id ?? 0;
+  const successRate   = flow.success ?? 0;
+  const avgPerDay     = Math.max(1, Math.round((flow.runs ?? 0) / 30));
+  // Deterministic fake p50/p95 from seed
+  const p50ms = 800  + (seed % 7) * 200;
+  const p95ms = 1800 + (seed % 5) * 400;
+  const fmtMs = (ms) => ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+
+  const successSpark  = generateSparkline(seed,       14, successRate, 4);
+  const runsSpark     = generateSparkline(seed + 100, 14, avgPerDay,  Math.max(3, Math.round(avgPerDay * 0.4)));
+
+  const successColor  = successRate >= 95 ? "#22c55e" : successRate >= 80 ? "#f59e0b" : "#ef4444";
+  const successLabel  = successRate >= 95 ? "↑ Healthy"
+                      : successRate >= 80 ? "↓ Below target"
+                      : "↓ Needs attention";
+
+  // Per-step health (deterministic from seed + index)
+  const stepHealth = (flow.steps ?? []).map((step, i) => {
+    const r = seededRand(seed * 31 + 7, i);
+    const h = flow.status === "error" && i === (flow.steps?.length ?? 1) - 1
+      ? Math.round(40 + r * 20)
+      : Math.min(100, Math.round(successRate + (r - 0.5) * 10));
+    return { ...step, health: h };
+  });
+
+  const stepBarColor = (h) =>
+    h >= 95 ? "bg-success" : h >= 80 ? "bg-success/60" : h >= 60 ? "bg-warning" : "bg-destructive";
+
+  const errorBreakdown = flow.status === "error"
+    ? [{ label: "Timeout", pct: 58 }, { label: "Validation", pct: 29 }, { label: "Auth", pct: 13 }]
+    : [];
+
+  // Insight strip — one contextual callout based on status
+  const insight = (() => {
+    if (flow.status === "error")
+      return { type: "error",   icon: AlertCircle, text: "58% of recent failures are timeouts — check API rate limits in the last step." };
+    if (flow.status === "idle")
+      return { type: "warning", icon: Clock,       text: "Flow is idle. Trigger a run or schedule it to start processing." };
+    if (flow.status === "completed")
+      return { type: "info",    icon: Activity,    text: "Last run completed successfully. Review the output or trigger a new run." };
+    if (successRate < 90)
+      return { type: "warning", icon: Activity,    text: `Success rate below 90% — Step ${Math.min((flow.steps?.length ?? 1), 2)} has the highest failure rate.` };
+    return   { type: "info",    icon: Info,        text: "Running smoothly. p95 latency is within the expected range." };
+  })();
+
+  const insightCls = {
+    error:   "border-destructive/25 bg-destructive/10 text-destructive",
+    warning: "border-warning/25 bg-warning/10 text-warning",
+    info:    "border-primary/25 bg-primary/10 text-primary",
+  }[insight.type];
+
+  const InsightIcon = insight.icon;
+
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
-      <div className="flex flex-col gap-4 px-4 py-3">
-          <dl className="flex flex-col gap-0 text-xs">
+      <div className="flex flex-col divide-y divide-border">
+
+        {/* ── Status band ── */}
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className={cn("size-2 shrink-0 rounded-full", cfg.dot)} />
+            <span className={cn("text-xs font-semibold", cfg.text)}>{cfg.label}</span>
+            {flow.status === "idle"       && <span className="text-[10px] text-muted-foreground">· not running</span>}
+            {flow.status === "inprogress" && <span className="text-[10px] text-muted-foreground">· running now</span>}
+            {flow.status === "completed"  && <span className="text-[10px] text-muted-foreground">· last run done</span>}
+            {flow.status === "error"      && <span className="text-[10px] text-muted-foreground">· since 2h ago</span>}
+          </div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span>{flow.version}</span>
+            <span>·</span>
+            <span className="capitalize">{flow.visibility}</span>
+          </div>
+        </div>
+
+        {/* ── Health + Throughput KPIs ── */}
+        <div className="grid grid-cols-2 divide-x divide-border">
+          <div className="flex flex-col gap-1.5 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Success Rate</span>
+              <span className="text-[10px] text-muted-foreground">7d</span>
+            </div>
+            <div className="flex items-end justify-between gap-1">
+              <span className="text-xl font-bold tabular-nums leading-none" style={{ color: successColor }}>
+                {flow.success != null ? `${flow.success}%` : "—"}
+              </span>
+              <Sparkline data={successSpark} color={successColor} />
+            </div>
+            <span className="text-[10px] text-muted-foreground">{successLabel}</span>
+          </div>
+
+          <div className="flex flex-col gap-1.5 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Runs</span>
+              <span className="text-[10px] text-muted-foreground">all</span>
+            </div>
+            <div className="flex items-end justify-between gap-1">
+              <span className="text-xl font-bold tabular-nums leading-none text-foreground">
+                {(flow.runs ?? 0).toLocaleString()}
+              </span>
+              <Sparkline data={runsSpark} color="#6366f1" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">~{avgPerDay}/day avg</span>
+          </div>
+        </div>
+
+        {/* ── Performance ── */}
+        <div className="flex flex-col gap-1.5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Timer size={12} className="text-muted-foreground" />
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Latency</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-baseline gap-1">
+              <span className="text-sm font-bold text-foreground">{fmtMs(p50ms)}</span>
+              <span className="text-[10px] text-muted-foreground">p50</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-sm font-semibold text-muted-foreground">{fmtMs(p95ms)}</span>
+              <span className="text-[10px] text-muted-foreground">p95</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Error breakdown (error flows only) ── */}
+        {errorBreakdown.length > 0 && (
+          <div className="flex flex-col gap-2 px-4 py-3">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Error Breakdown</span>
+            <div className="flex flex-col gap-1.5">
+              {errorBreakdown.map((e) => (
+                <div key={e.label} className="flex items-center gap-2">
+                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground">{e.label}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-destructive" style={{ width: `${e.pct}%` }} />
+                  </div>
+                  <span className="w-7 text-right text-[10px] font-semibold tabular-nums text-destructive">{e.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Step health heatmap ── */}
+        {stepHealth.length > 0 && (
+          <div className="flex flex-col gap-2 px-4 py-3">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Step Health</span>
+            <div className="flex flex-col gap-1.5">
+              {stepHealth.map((step, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-[10px] text-foreground">{step.label}</span>
+                  <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
+                    <div className={cn("h-full rounded-full", stepBarColor(step.health))} style={{ width: `${step.health}%` }} />
+                  </div>
+                  <span className="w-7 text-right text-[10px] font-semibold tabular-nums text-muted-foreground">{step.health}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Insight callout ── */}
+        <div className={cn("mx-3 my-3 flex items-start gap-2 rounded-[8px] border px-3 py-2.5 text-xs", insightCls)}>
+          <InsightIcon size={12} className="mt-0.5 shrink-0" aria-hidden />
+          <span>{insight.text}</span>
+        </div>
+
+        {/* ── Details (collapsible metadata) ── */}
+        <button
+          type="button"
+          className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-muted/50"
+          onClick={() => setMetaOpen((v) => !v)}
+        >
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Details</span>
+          {metaOpen
+            ? <ChevronUp size={12} className="text-muted-foreground" />
+            : <ChevronDown size={12} className="text-muted-foreground" />}
+        </button>
+        {metaOpen && (
+          <dl className="flex flex-col gap-0 px-4 pb-4 text-xs">
             {[
-              ["Name",       flow.name],
+              ["Name",        flow.name],
               ["Description", flow.description || "—"],
-              ["Status",     flow.status?.charAt(0).toUpperCase()+flow.status?.slice(1)],
-              ["Steps",      flow.steps.length],
-              ["Total Runs", flow.runs?.toLocaleString()],
-              ["Success",    flow.success!=null?`${flow.success}%`:"—"],
-              ["Last Run",   flow.lastRun],
-              ["Created",    flow.createdAt],
+              ["Last Run",    flow.lastRun],
+              ["Created",     flow.createdAt],
+              ["Steps",       flow.steps?.length ?? 0],
             ].map(([k, v]) => (
-              <div key={k} className="flex flex-col gap-1 border-b border-border py-1.5">
-                <dt className="text-muted-foreground text-xs">{k}</dt>
-                <dd className="m-0 font-medium text-foreground">{v}</dd>
+              <div key={k} className="flex flex-col gap-0.5 border-b border-border py-1.5 last:border-0">
+                <dt className="text-[10px] text-muted-foreground">{k}</dt>
+                <dd className="m-0 text-xs font-medium text-foreground">{v}</dd>
               </div>
             ))}
           </dl>
-          <div className="flex items-start gap-2 rounded-[8px] border border-primary/25 bg-primary/10 px-3 py-2.5 text-xs text-primary">
-            <Info size={12} className="mt-0.5 flex-shrink-0" />
-            <span>
-              {executeOnly ? (
-                <>
-                  <strong>Tip:</strong> Click a node to inspect configuration and logs. Click <strong>Edit</strong> in the top bar to add or remove nodes.
-                </>
-              ) : (
-                <>
-                  <strong>Tip:</strong> Click any node in the canvas to inspect its configuration and execution result. Use the toolbar to add or remove nodes.
-                </>
-              )}
-            </span>
-          </div>
-        </div>
+        )}
+
+      </div>
     </div>
   );
 }
@@ -1405,6 +1797,137 @@ function FlowCreationMode({ onSendMessage, onAddTemplate }) {
   );
 }
 
+// ─── Flow-level AI chat (no node selected) ────────────────────────────────────
+function FlowAIChat({ flow }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const scrollRef = useRef(null);
+
+  const QUICK = [
+    { label: "Explain this flow",          icon: Info        },
+    { label: "What could cause failures?", icon: AlertCircle },
+    { label: "Suggest optimizations",      icon: Gauge       },
+  ];
+
+  const send = (text) => {
+    const q = text.trim();
+    if (!q) return;
+    setMessages((m) => [...m, { role: "user", text: q }]);
+    setInput("");
+    setLoading(true);
+    setTimeout(() => {
+      const lower = q.toLowerCase();
+      const reply = lower.includes("explain")
+        ? `"${flow.name}" is a ${flow.steps.length}-step flow that orchestrates: ${flow.steps.map((s) => s.label).join(" → ")}. ${flow.description || ""}`
+        : lower.includes("fail")
+        ? `Common failure points: input validation errors at step 1, timeouts on external calls, or downstream service unavailability. Check Execution History for specific traces.`
+        : `Optimization ideas: parallelize independent steps, add retry logic for flaky external calls, and cache repeated lookups to reduce average latency.`;
+      setMessages((m) => [...m, { role: "ai", message: reply }]);
+      setLoading(false);
+    }, 900);
+  };
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, loading]);
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      {/* Context chip */}
+      <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 flex-shrink-0">
+        <div className="size-6 rounded-[5px] flex items-center justify-center flex-shrink-0 bg-primary/10">
+          <Zap size={12} className="text-primary" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          Context: <span className="font-medium text-foreground">{flow.name}</span>
+        </span>
+        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+          {flow.steps.length} step{flow.steps.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
+        {messages.length === 0 && (
+          <div className="flex flex-col gap-2 pt-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="size-7 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center">
+                <Sparkles size={13} color="white" />
+              </div>
+              <span className="text-xs font-semibold text-foreground">AI Assistant</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-5">
+              Ask me anything about <span className="font-medium text-foreground">{flow.name}</span>.
+            </p>
+            <div className="flex flex-col gap-1.5 mt-1">
+              {QUICK.map(({ label, icon: QIcon }) => (
+                <button key={label} type="button" onClick={() => send(label)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-background border border-border hover:bg-muted hover:border-muted-foreground/25 transition-all text-left group">
+                  <QIcon size={12} className="text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+            {msg.role === "user" ? (
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-slate-950 text-white text-xs leading-5">{msg.text}</div>
+            ) : (
+              <div className="w-full flex flex-col gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                    <Sparkles size={10} color="white" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground">AI Assistant</span>
+                </div>
+                <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-foreground leading-5">
+                  {msg.message}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-center gap-1.5">
+            <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+              <Sparkles size={10} color="white" />
+            </div>
+            <div className="flex gap-1 px-3 py-2 bg-background border border-border rounded-[10px]">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="size-1.5 rounded-full bg-muted-foreground animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms` }} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="px-3 pb-3 pt-2 border-t border-border flex-shrink-0">
+        <div className="flex items-end gap-2 rounded-[10px] border border-border bg-background px-3 py-2 focus-within:border-primary/50 transition-colors">
+          <textarea
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+            placeholder="Ask about this flow…"
+            className="flex-1 resize-none bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none leading-5 max-h-24"
+          />
+          <button type="button" disabled={!input.trim() || loading} onClick={() => send(input)}
+            className="size-6 rounded-[6px] flex items-center justify-center bg-primary text-primary-foreground disabled:opacity-40 transition-opacity flex-shrink-0">
+            <Send size={11} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Right panel — always visible; shows flow config or node config+chat ───────
 function RightPanel({
   flow,
@@ -1428,8 +1951,15 @@ function RightPanel({
   onSelectLogNode,
   runElapsedLabel = null,
   executeOnly = false,
+  panelDock = "right",
+  onChangePanelDock,
+  panelSizes,
+  onResizeStart,
+  isPanelResizing = false,
+  onFloatDragStart,
 }) {
   const [panelMode, setPanelMode] = useState("configure");
+  const [flowTab, setFlowTab]     = useState("overview"); // "overview" | "chat"
   const [emptyFlowTab, setEmptyFlowTab] = useState("assistant"); // "assistant" | "settings"
 
   const hasNode   = selectedIdx !== null && flow.steps[selectedIdx];
@@ -1447,8 +1977,116 @@ function RightPanel({
     if (assistantFocusKey > 0) setEmptyFlowTab("assistant");
   }, [assistantFocusKey]);
 
+  const isVert = panelDock === "top" || panelDock === "bottom";
+  const isFloat = panelDock === "float";
+  const DEFAULTS = { left: 360, right: 360, top: 280, bottom: 280, float: 360 };
+  const resolvedSize = panelSizes?.[panelDock] ?? DEFAULTS[panelDock] ?? 360;
+
+  const dockBorder =
+    panelDock === "left"  ? "border-r" :
+    panelDock === "top"   ? "border-b" :
+    panelDock === "bottom"? "border-t" :
+    isFloat               ? "border"   : "border-l";
+
+  const sizeStyle = isFloat
+    ? {}
+    : isVert
+      ? { height: resolvedSize }
+      : { width: resolvedSize };
+
+  const DOCK_OPTIONS = [
+    {
+      id: "left",
+      label: "Dock left",
+      icon: (
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+          <rect x="0.5" y="0.5" width="13" height="10" rx="1.5" stroke="currentColor" strokeOpacity="0.4"/>
+          <rect x="1" y="1" width="4" height="9" rx="1" fill="currentColor"/>
+        </svg>
+      ),
+    },
+    {
+      id: "right",
+      label: "Dock right",
+      icon: (
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+          <rect x="0.5" y="0.5" width="13" height="10" rx="1.5" stroke="currentColor" strokeOpacity="0.4"/>
+          <rect x="9" y="1" width="4" height="9" rx="1" fill="currentColor"/>
+        </svg>
+      ),
+    },
+    {
+      id: "top",
+      label: "Dock top",
+      icon: (
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+          <rect x="0.5" y="0.5" width="13" height="10" rx="1.5" stroke="currentColor" strokeOpacity="0.4"/>
+          <rect x="1" y="1" width="12" height="4" rx="1" fill="currentColor"/>
+        </svg>
+      ),
+    },
+    {
+      id: "bottom",
+      label: "Dock bottom",
+      icon: (
+        <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+          <rect x="0.5" y="0.5" width="13" height="10" rx="1.5" stroke="currentColor" strokeOpacity="0.4"/>
+          <rect x="1" y="6" width="12" height="4" rx="1" fill="currentColor"/>
+        </svg>
+      ),
+    },
+    {
+      id: "float",
+      label: "Detach panel",
+      icon: (
+        <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+          <rect x="2.5" y="2.5" width="9" height="9" rx="1.5" stroke="currentColor" strokeOpacity="0.4"/>
+          <rect x="0.5" y="0.5" width="9" height="9" rx="1.5" stroke="currentColor" fill="var(--background,white)"/>
+          <rect x="1" y="1" width="8" height="8" rx="1" fill="currentColor" fillOpacity="0.15"/>
+          <path d="M8 1h3.5M11.5 1v3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
-    <div className="flex h-full min-h-0 w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-border bg-card">
+    <div
+      className={cn(
+        "relative flex min-h-0 flex-col overflow-hidden bg-card",
+        dockBorder, "border-border",
+        !isFloat && (isVert ? "w-full flex-shrink-0" : "h-full flex-shrink-0"),
+        !isPanelResizing && !isFloat && "transition-[width,height] duration-150 ease-out",
+      )}
+      style={sizeStyle}
+    >
+      {/* Resize handle — on the inner edge of docked panels */}
+      {onResizeStart && !isFloat && (
+        <div
+          onMouseDown={(e) => onResizeStart(e, panelDock)}
+          className={cn(
+            "absolute z-10 group",
+            panelDock === "right"  && "left-0 top-0 h-full w-1 cursor-col-resize",
+            panelDock === "left"   && "right-0 top-0 h-full w-1 cursor-col-resize",
+            panelDock === "bottom" && "top-0 left-0 w-full h-1 cursor-row-resize",
+            panelDock === "top"    && "bottom-0 left-0 w-full h-1 cursor-row-resize",
+          )}
+        >
+          <div className={cn(
+            "bg-transparent group-hover:bg-primary/30 transition-colors rounded-full",
+            (panelDock === "right" || panelDock === "left") && "w-full h-full",
+            (panelDock === "top"   || panelDock === "bottom") && "w-full h-full",
+          )} />
+        </div>
+      )}
+      {/* Float drag header */}
+      {isFloat && onFloatDragStart && (
+        <div
+          onMouseDown={onFloatDragStart}
+          className="flex h-7 flex-shrink-0 cursor-grab active:cursor-grabbing items-center justify-center border-b border-border bg-muted/50 select-none"
+        >
+          <GripVertical size={14} className="text-muted-foreground rotate-90" />
+        </div>
+      )}
 
       {/* ── EMPTY FLOW: Overview only ── */}
       {!hasNode && isEmpty && (
@@ -1459,13 +2097,33 @@ function RightPanel({
             </div>
             <span className="text-sm font-semibold text-foreground">Overview</span>
           </div>
-          <FlowOverview flow={flow} executeOnly={executeOnly} />
+          <FlowOverview flow={flow} executeOnly={executeOnly} onRunFlow={onRunFlow} />
         </>
       )}
 
-      {/* ── NO NODE, HAS STEPS: flow-level overview ── */}
+      {/* ── NO NODE, HAS STEPS: Overview | Chat tabs ── */}
       {!hasNode && !isEmpty && (
-        <FlowOverview flow={flow} executeOnly={executeOnly} />
+        <>
+          <div className="flex border-b border-border flex-shrink-0">
+            {[
+              { id: "overview", icon: Activity, label: "Overview" },
+              { id: "chat",     icon: Sparkles,  label: "Chat"     },
+            ].map(({ id, icon: TIcon, label }) => (
+              <button key={id} onClick={() => setFlowTab(id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
+                  flowTab === id
+                    ? "text-foreground border-b-primary"
+                    : "text-muted-foreground border-b-transparent hover:text-muted-foreground"
+                }`}>
+                <TIcon size={12} /> {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {flowTab === "overview" && <FlowOverview flow={flow} executeOnly={executeOnly} onRunFlow={onRunFlow} />}
+            {flowTab === "chat"     && <FlowAIChat flow={flow} />}
+          </div>
+        </>
       )}
 
       {/* ── NODE SELECTED: Configuration | Chat tabs ── */}
@@ -1523,6 +2181,32 @@ function RightPanel({
             )}
           </div>
         </>
+      )}
+
+      {/* ── Dock position switcher ── */}
+      {onChangePanelDock && (
+        <div className="flex items-center justify-between px-3 py-1.5 border-t border-border flex-shrink-0">
+          <span className="text-[10px] text-muted-foreground select-none">Panel position</span>
+          <div className="flex items-center gap-0.5">
+            {DOCK_OPTIONS.map(({ id, label, icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-label={label}
+                title={label}
+                onClick={() => onChangePanelDock(id)}
+                className={cn(
+                  "flex size-6 items-center justify-center rounded-[5px] transition-colors",
+                  panelDock === id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1627,26 +2311,11 @@ function ExecutionLogPanel({
           >
             {collapsed ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
-          <Terminal size={13} className="flex-shrink-0 text-muted-foreground" />
 
           {!(isRight && collapsed) && (
             <>
               {/* Tab switcher */}
               <div className="flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("logs")}
-                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-[11px] font-semibold transition-colors ${
-                    activeTab === "logs"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Logs
-                  {(isRunning || hasDone) && activeTab !== "logs" && (
-                    <span className="size-1.5 rounded-full bg-primary" />
-                  )}
-                </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("history")}
@@ -1656,11 +2325,27 @@ function ExecutionLogPanel({
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
+                  <History size={11} className="shrink-0" />
                   Execution History
                   {execHistory.length > 0 && (
                     <span className="rounded-full bg-muted px-1.5 py-px text-[9px] font-bold tabular-nums text-muted-foreground">
                       {execHistory.length}
                     </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("logs")}
+                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-[11px] font-semibold transition-colors ${
+                    activeTab === "logs"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Terminal size={11} className="shrink-0" />
+                  Logs
+                  {(isRunning || hasDone) && activeTab !== "logs" && (
+                    <span className="size-1.5 rounded-full bg-primary" />
                   )}
                 </button>
               </div>
@@ -1723,31 +2408,97 @@ function ExecutionLogPanel({
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/60 px-2 py-1 font-mono">
-                    {displayLogs.map((entry) => {
-                      const rowExecId = entry.executionId ?? executionId;
+                  <div className="font-mono">
+                    {/* ── Single combined run-summary row ── */}
+                    {(executionId || (!isRunning && hasDone)) && (() => {
+                      const nSuccess = displayLogs.filter(e => e.level === "SUCCESS").length;
+                      const nError   = displayLogs.filter(e => e.level === "ERROR").length;
+                      const hasResult = !isRunning && hasDone;
                       return (
-                        <div
-                          key={entry.id ?? `${entry.ts}-${entry.msg}`}
-                          className="flex items-start gap-2 py-1.5 pl-1 pr-2 text-[10px] leading-snug text-foreground transition-colors hover:bg-muted/40"
-                          title={rowExecId ? `${entry.level} · ${rowExecId}` : entry.level}
-                        >
-                          <span
-                            className="mt-1.5 size-1.5 flex-shrink-0 rounded-full"
-                            style={{ background: LOG_LEVEL_DOT[entry.level] ?? LOG_LEVEL_DOT.INFO }}
-                            aria-hidden
-                          />
-                          <span
-                            className="w-[72px] flex-shrink-0 truncate font-mono tabular-nums text-muted-foreground"
-                            title={rowExecId ?? undefined}
-                          >
-                            {rowExecId ? shortExecutionId(rowExecId) : "—"}
-                          </span>
-                          <span className="w-[76px] flex-shrink-0 tabular-nums text-muted-foreground">{entry.ts}</span>
-                          <span className={`min-w-0 flex-1 break-words ${LOG_COLORS[entry.level] ?? "text-foreground"}`}>{entry.msg}</span>
+                        <div className={cn(
+                          "sticky top-0 z-10 flex items-center justify-between border-b px-3 py-1.5",
+                          hasResult && nError > 0
+                            ? "border-red-200/70 bg-red-50/40 dark:border-red-900/40 dark:bg-red-950/20"
+                            : hasResult
+                              ? "border-green-200/70 bg-green-50/40 dark:border-green-900/40 dark:bg-green-950/20"
+                              : "border-border bg-muted/30",
+                        )}>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {hasResult ? (
+                              nError > 0
+                                ? <AlertCircle size={10} className="text-red-500 flex-shrink-0" />
+                                : <CheckCircle2 size={10} className="text-green-600 flex-shrink-0" />
+                            ) : (
+                              <Terminal size={9} className="text-muted-foreground flex-shrink-0" />
+                            )}
+                            {executionId && (
+                              <>
+                                <span className="text-[10px] font-semibold text-foreground tabular-nums flex-shrink-0">
+                                  {shortExecutionId(executionId)}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground/40 flex-shrink-0">·</span>
+                              </>
+                            )}
+                            {hasResult && (
+                              <span className={cn("text-[10px] font-semibold flex-shrink-0",
+                                nError > 0 ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400")}>
+                                {nError > 0 ? "Finished with errors" : "Run complete"}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">·</span>
+                            <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                              {hasResult
+                                ? `${nSuccess}/${displayLogs.length} passed`
+                                : `${displayLogs.length} event${displayLogs.length !== 1 ? "s" : ""}`}
+                            </span>
+                          </div>
+                          {(lastRunTotalLabel || runElapsedLabel) && (
+                            <span className="ml-3 flex-shrink-0 text-[10px] tabular-nums font-semibold text-foreground">
+                              {lastRunTotalLabel ?? runElapsedLabel}
+                            </span>
+                          )}
                         </div>
                       );
-                    })}
+                    })()}
+
+                    {/* ── Column headers ── */}
+                    <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 select-none">
+                      <span className="w-2 flex-shrink-0" />
+                      <span className="w-[76px] flex-shrink-0">Time</span>
+                      <span className="flex-1">Step</span>
+                      <span className="w-[56px] flex-shrink-0 text-right">Duration</span>
+                    </div>
+
+                    {/* ── Log rows — step + duration parsed into columns ── */}
+                    <div className="divide-y divide-border/40">
+                      {displayLogs.map((entry) => {
+                        const m        = /^\[([^\]]+)\]\s+\w+\s+in\s+(\S+)$/.exec(entry.msg);
+                        const stepName = m ? m[1] : null;
+                        const duration = m ? m[2] : null;
+                        const isErr    = entry.level === "ERROR" || entry.level === "WARN";
+                        return (
+                          <div
+                            key={entry.id ?? `${entry.ts}-${entry.msg}`}
+                            className="flex items-center gap-2 py-1.5 pl-3 pr-3 text-[10px] leading-snug transition-colors hover:bg-muted/40"
+                            title={entry.level}
+                          >
+                            <span
+                              className="size-1.5 flex-shrink-0 rounded-full"
+                              style={{ background: LOG_LEVEL_DOT[entry.level] ?? LOG_LEVEL_DOT.INFO }}
+                              aria-hidden
+                            />
+                            <span className="w-[76px] flex-shrink-0 tabular-nums text-muted-foreground">{entry.ts}</span>
+                            <span className={cn("flex-1 min-w-0 truncate",
+                              isErr ? "text-red-600 dark:text-red-400 font-medium" : "text-foreground")}>
+                              {stepName ?? entry.msg}
+                            </span>
+                            <span className="w-[56px] flex-shrink-0 text-right tabular-nums text-muted-foreground">
+                              {duration ?? ""}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1916,7 +2667,7 @@ function ExecutionTimeline({ flow, runState, logs, onHighlightNode, collapsed, o
 }
 
 // ─── Canvas ────────────────────────────────────────────────────────────────────
-function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, runState, onSetCreationEntry, onOpenFlowAssistant, onNodeToolbarAction, readOnly = false }) {
+function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, runState, onSetCreationEntry, onOpenFlowAssistant, onNodeToolbarAction, runElapsedLabel = null, readOnly = false }) {
   const [picker, setPicker]           = useState(null);
   const [emptyHov, setEmptyHov]       = useState(false);
   const [zoom, setZoom]               = useState(1);
@@ -1932,13 +2683,73 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
   const ZOOM_MAX = 1.4;
   const ZOOM_STEP = 0.1;
 
+  // Auto-fit: if the canvas is wider than the container on mount, scale down to fit.
+  useEffect(() => {
+    const el = canvasScrollRef.current;
+    if (!el || flow.steps.length === 0) return;
+    const containerW = el.clientWidth;
+    if (containerW > 0 && svgW > containerW) {
+      const fitZoom = Math.max(ZOOM_MIN, Math.min(1, Math.floor((containerW / svgW) * 10) / 10));
+      setZoom(fitZoom);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.id]);
+
   // Empty-node geometry (centered on canvas)
   const eX  = (svgW - NODE_W) / 2;
   const eY  = NODE_Y;
   const eCX = eX + NODE_W / 2;
   const eCY = eY + NODE_H / 2;
 
+  const isActivelyRunning = runState.activeIdx !== -1;
+  const hasDoneNodes      = runState.doneIdxs.size > 0;
+  const totalMockMs       = flow.steps.reduce((s, _, i) => s + 230 + i * 80, 0);
+  const completedDuration = totalMockMs >= 1000 ? `${(totalMockMs / 1000).toFixed(1)}s` : `${totalMockMs}ms`;
+
   return (
+    <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+      {/* ── Canvas subheading — live execution status bar ── */}
+      {(isActivelyRunning || hasDoneNodes) && (
+        <div className={cn(
+          "flex h-8 flex-shrink-0 items-center justify-between border-b border-border px-4 select-none",
+          isActivelyRunning ? "bg-blue-500/[0.04]" : "bg-green-500/[0.04]",
+        )}>
+          <div className="flex items-center gap-2">
+            {/* Dot — ripple when running, solid when done */}
+            <span className="relative flex-shrink-0 flex size-2.5 items-center justify-center">
+              {isActivelyRunning && (
+                <span className="absolute inline-flex size-full rounded-full bg-blue-400 opacity-60 animate-ping" />
+              )}
+              <span className={cn(
+                "relative inline-flex size-1.5 rounded-full",
+                isActivelyRunning ? "bg-blue-500" : "bg-green-500",
+              )} />
+            </span>
+            {/* Step timer — shown on left when running */}
+            {isActivelyRunning && runElapsedLabel && (
+              <span className="text-[11px] tabular-nums font-semibold text-blue-600 dark:text-blue-400">
+                {runElapsedLabel}
+              </span>
+            )}
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {isActivelyRunning ? "Running:" : "Completed:"}
+            </span>
+            <span className="text-[11px] font-semibold text-foreground">{flow.name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {hasDoneNodes && (
+              <span className="text-[10px] text-muted-foreground">
+                {runState.doneIdxs.size}/{flow.steps.length} steps
+              </span>
+            )}
+            <span className="text-[11px] tabular-nums font-semibold text-foreground">
+              {isActivelyRunning ? (runElapsedLabel ?? "0.0s") : completedDuration}
+            </span>
+          </div>
+        </div>
+      )}
+
     <div
       ref={canvasScrollRef}
       className="relative flex-1 min-w-0 overflow-auto bg-background"
@@ -2123,6 +2934,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
             onToolbarAction={onNodeToolbarAction}
             isRunning={runState.activeIdx === i}
             isDone={runState.doneIdxs.has(i)}
+            nodeElapsedLabel={runState.activeIdx === i ? runElapsedLabel : null}
             readOnly={readOnly}
           />
         ))}
@@ -2137,13 +2949,14 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
         />
       )}
     </div>
+    </div>
   );
 }
 
 // ─── Conversation panel ────────────────────────────────────────────────────────
 
 function OverviewCard({ flow }) {
-  const badge = STATUS_BADGE[flow.status] ?? STATUS_BADGE.draft;
+  const badge = STATUS_BADGE[flow.status] ?? STATUS_BADGE.idle;
   const desc = typeof flow.description === "string" ? flow.description.trim() : "";
   return (
     <div className="bg-background border border-border rounded-[10px] p-3 flex flex-col gap-2.5">
@@ -2559,10 +3372,11 @@ function ConversationPanel({
 
 // ─── Top bar ───────────────────────────────────────────────────────────────────
 const STATUS_BADGE = {
-  active: { bg:"#dcfce7", text:"#15803d", dot:"#22c55e", label:"Active" },
-  paused: { bg:"#fef9c3", text:"#a16207", dot:"#f59e0b", label:"Paused" },
-  error:  { bg:"#fef2f2", text:"#dc2626", dot:"#ef4444", label:"Error"  },
-  draft:  { bg:"#f1f5f9", text:"#475569", dot:"#94a3b8", label:"Draft"  },
+  idle:       { bg:"#f1f5f9", text:"#475569", dot:"#94a3b8", label:"Idle"        },
+  draft:      { bg:"#fffbeb", text:"#b45309", dot:"#f59e0b", label:"Draft"       },
+  inprogress: { bg:"#ede9fe", text:"#4f46e5", dot:"#6366f1", label:"In Progress" },
+  completed:  { bg:"#dcfce7", text:"#15803d", dot:"#22c55e", label:"Completed"   },
+  error:      { bg:"#fef2f2", text:"#dc2626", dot:"#ef4444", label:"Error"       },
 };
 
 function TopBar({
@@ -2576,10 +3390,13 @@ function TopBar({
   onRename,
   /** Persist description from Flow Settings dialog */
   onSaveFlowSettings,
-  versions = [],
-  onSaveVersion,
-  activeVersionId,
+  /** Saved revisions (newest first); snapshots include steps + metadata. */
+  versionHistory = [],
+  /** Persist canvas + metadata as a new catalog version; return true if a version was written. */
+  onCommitNewVersion,
   onRestoreVersion,
+  /** True when working copy differs from last saved / restored baseline. */
+  hasUnsavedChanges = false,
   pageMode = "view",
   onSetPageMode,
   showRightPanelToggle,
@@ -2587,8 +3404,62 @@ function TopBar({
   onToggleRightPanel,
   onActivate,
   showToast,
+  /** Set flow visibility to public (Flows list + catalog). */
+  onPublishFlow,
+  /** Set flow visibility to private. */
+  onUnpublishFlow,
+  /** Element to enter browser fullscreen (flow workspace). */
+  fullscreenTargetRef,
+  /** Fork this flow — receives { name, description, visibility } and creates + navigates to copy. */
+  onForkFlow,
 }) {
-  const badge                   = STATUS_BADGE[flow.status] ?? STATUS_BADGE.draft;
+  const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
+  const [forkOpen, setForkOpen] = useState(false);
+
+  /** Apply or remove CSS fullscreen styles on the target element. */
+  const applyCssFullscreen = (el, enter) => {
+    if (!el) return;
+    if (enter) {
+      el.style.position = "fixed";
+      el.style.inset = "0";
+      el.style.zIndex = "9999";
+      el.style.width = "100vw";
+      el.style.height = "100vh";
+      el.style.overflow = "hidden";
+      el.style.backgroundColor = "var(--background, white)";
+    } else {
+      el.style.removeProperty("position");
+      el.style.removeProperty("inset");
+      el.style.removeProperty("z-index");
+      el.style.removeProperty("width");
+      el.style.removeProperty("height");
+      el.style.removeProperty("overflow");
+      el.style.removeProperty("background-color");
+    }
+  };
+
+  /** Esc exits CSS fullscreen. */
+  useEffect(() => {
+    if (!workspaceFullscreen) return;
+    const onKeyDown = (e) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      applyCssFullscreen(fullscreenTargetRef?.current, false);
+      setWorkspaceFullscreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [workspaceFullscreen, fullscreenTargetRef]);
+
+  const badge                   =
+    hasUnsavedChanges ? STATUS_BADGE.draft : STATUS_BADGE[flow.status] ?? STATUS_BADGE.idle;
+  const isPublished             = flow.visibility === "public";
+  const versionLabel            =
+    typeof flow.version === "string" && flow.version.trim()
+      ? flow.version.trim().startsWith("v")
+        ? flow.version.trim()
+        : `v${flow.version.trim()}`
+      : "v0.1";
   const isNewUntitled           = flow.name === "Untitled Flow" && flow.steps.length === 0;
   const [editing, setEditing]   = useState(isNewUntitled);
   const [draft,   setDraft]     = useState(flow.name);
@@ -2611,6 +3482,9 @@ function TopBar({
   // Dialog states
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [unpublishOpen, setUnpublishOpen] = useState(false);
+  const [publishBusy, setPublishBusy] = useState(false);
   const [settingsDescDraft, setSettingsDescDraft] = useState(() => flow.description ?? "");
 
   useEffect(() => {
@@ -2623,8 +3497,8 @@ function TopBar({
 
   // Version state
   const [versionPanelOpen, setVersionPanelOpen] = useState(false);
-  const [savedFeedback, setSavedFeedback]       = useState(null); // version id just saved
-  const versionPanelRef = useRef(null);
+  const statusChipRef = useRef(null);
+  const [versionPanelPos, setVersionPanelPos] = useState({ top: 0, left: 0 });
   useEffect(() => {
     if (!versionPanelOpen) return;
     const onOut = (e) => { if (!e.target.closest("[data-version-panel]")) setVersionPanelOpen(false); };
@@ -2637,14 +3511,13 @@ function TopBar({
     };
   }, [versionPanelOpen]);
 
-  const handleSaveVersion = () => {
-    onSaveVersion?.();
-    const nextId = `v${versions.length + 1}`;
-    setSavedFeedback(nextId);
-    setTimeout(() => setSavedFeedback(null), 2000);
+  const toggleVersionPanel = () => {
+    if (!versionPanelOpen && statusChipRef.current) {
+      const r = statusChipRef.current.getBoundingClientRect();
+      setVersionPanelPos({ top: r.bottom + 8, left: Math.min(r.left, window.innerWidth - 340) });
+    }
+    setVersionPanelOpen((v) => !v);
   };
-
-  const activeVersion = versions.find(v => v.id === activeVersionId);
 
   const startEdit = () => {
     setDraft(flow.name);
@@ -2689,35 +3562,38 @@ function TopBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  const saveAllowed = hasUnsavedChanges;
+
   const handleSave = useCallback(() => {
+    if (!saveAllowed) return;
+    const ok = onCommitNewVersion?.() ?? false;
+    if (!ok) return;
     setSaving(true);
     setSaveStatus("saving");
     window.setTimeout(() => {
-      console.log("Flow saved:", flow.name);
       setSaveStatus("saved");
-      showToast?.("Flow saved");
       window.setTimeout(() => {
         setSaveStatus("idle");
         setSaving(false);
-      }, 2000);
-    }, 500);
-  }, [flow.name, showToast]);
+      }, 1600);
+    }, 280);
+  }, [onCommitNewVersion, saveAllowed]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
+        if (!saveAllowed) return;
         handleSave();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSave]);
+  }, [handleSave, saveAllowed]);
 
-  const handleDuplicate = () => {
-    console.log("Duplicating flow:", flow.name);
-    showToast?.(`Created copy: "Copy of ${flow.name}" (demo)`);
+  const handleFork = () => {
     closeMenu();
+    setForkOpen(true);
   };
 
   const handleExport = () => {
@@ -2757,14 +3633,20 @@ function TopBar({
 
   return (
     <>
-      <div className="flex h-16 flex-shrink-0 items-center gap-3 border-b border-border bg-card px-4 dark:border-border dark:bg-[#111827]">
-        <button onClick={onBack} className="flex size-8 flex-shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-slate-800">
+      <div className="flex h-14 flex-shrink-0 items-center gap-2 border-b border-border bg-card px-4 dark:border-border dark:bg-[#111827]">
+
+        {/* ── Left: Back + breadcrumb ── */}
+        <button
+          onClick={onBack}
+          aria-label="Back to flows"
+          className="flex size-8 flex-shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted dark:hover:bg-slate-800"
+        >
           <ArrowLeft size={16} />
         </button>
         <div className="h-5 w-px bg-border dark:bg-[#334155]" />
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground dark:text-muted-foreground">
-          <button onClick={onBack} className="transition-colors hover:text-muted-foreground dark:hover:text-muted-foreground">Flows</button>
-          <ChevronRight size={13} />
+        <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+          <button onClick={onBack} className="flex-shrink-0 transition-colors hover:text-foreground">Flows</button>
+          <ChevronRight size={13} className="flex-shrink-0" />
           {editing ? (
             <input
               ref={inputRef}
@@ -2777,8 +3659,8 @@ function TopBar({
           ) : (
             <span
               onClick={pageMode === "edit" ? startEdit : undefined}
-              title={pageMode === "edit" ? "Click to rename" : "Click Edit in the toolbar to rename this flow"}
-              className={`max-w-[200px] truncate rounded-[5px] px-1.5 py-0.5 font-medium text-foreground dark:text-[#f8fafc] ${
+              title={pageMode === "edit" ? "Click to rename" : flow.name}
+              className={`max-w-[180px] truncate rounded-[5px] px-1 py-0.5 font-medium text-foreground dark:text-[#f8fafc] ${
                 pageMode === "edit" ? "cursor-text transition-colors hover:bg-muted dark:hover:bg-slate-800" : "cursor-default"
               }`}
             >
@@ -2786,14 +3668,87 @@ function TopBar({
             </span>
           )}
         </div>
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{background:badge.bg,color:badge.text}}>
-          <span className="size-1.5 rounded-full flex-shrink-0" style={{background:badge.dot}} />
-          {badge.label}
-        </span>
 
+        {/* ── Center: Status chip + version history ── */}
+        <div className="flex-1" />
+        <button
+          type="button"
+          ref={statusChipRef}
+          data-version-panel
+          aria-expanded={versionPanelOpen}
+          aria-haspopup="listbox"
+          onClick={toggleVersionPanel}
+          className="inline-flex flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-[12px] font-medium transition-colors hover:bg-muted/60"
+          style={{ color: badge.text }}
+        >
+          <span className="size-1.5 flex-shrink-0 rounded-full" style={{ background: badge.dot }} />
+          <span>{badge.label}</span>
+          <span className="text-muted-foreground">· {versionLabel}</span>
+          <ChevronDown size={10} className={`ml-0.5 text-muted-foreground transition-transform ${versionPanelOpen ? "rotate-180" : ""}`} />
+        </button>
+        <div className="flex-1" />
+
+        {versionPanelOpen && (
+          <div
+            data-version-panel
+            className="fixed z-[9999] w-[min(92vw,340px)] overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:border-border dark:bg-[#111827]"
+            style={{
+              top: versionPanelPos.top,
+              left: versionPanelPos.left,
+              boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06)",
+            }}
+          >
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 dark:border-[#334155]">
+              <History size={14} className="text-muted-foreground" aria-hidden />
+              <span className="text-xs font-semibold text-foreground dark:text-[#f8fafc]">Version history</span>
+            </div>
+            <div className="max-h-[min(50vh,280px)] overflow-y-auto p-2">
+              {versionHistory.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-muted-foreground">
+                  No saved revisions yet. Edit the flow and press Save (⌘S) to store a new version.
+                </p>
+              ) : (
+                <ul className="space-y-1" role="listbox">
+                  {versionHistory.map((v) => (
+                    <li key={v.id}>
+                      <div className="flex flex-col gap-1.5 rounded-lg border border-transparent px-2 py-2 hover:bg-muted/50 dark:hover:bg-slate-950/80">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground dark:text-[#f8fafc]">{v.label}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {v.savedAt
+                                ? new Date(v.savedAt).toLocaleString(undefined, {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                  })
+                                : v.date ?? "—"}
+                              {typeof v.stepCount === "number" ? ` · ${v.stepCount} steps` : ""}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="flex-shrink-0 rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc]"
+                            onClick={() => {
+                              onRestoreVersion?.(v);
+                              setVersionPanelOpen(false);
+                            }}
+                          >
+                            Restore
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Running elapsed ── */}
         {isRunning && (
           <span
-            className="flex h-8 items-center gap-1.5 rounded-[6px] border border-primary/25 bg-primary/5 px-2.5 text-xs font-semibold tabular-nums text-primary"
+            className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-primary/25 bg-primary/5 px-2.5 text-xs font-semibold tabular-nums text-primary"
             title="Elapsed time this run"
             aria-live="polite"
           >
@@ -2802,176 +3757,150 @@ function TopBar({
           </span>
         )}
 
-        {executionId && (
-          <span
-            className="hidden min-w-0 max-w-[200px] items-center gap-1.5 rounded-[6px] border border-border bg-muted/40 px-2 py-1 sm:inline-flex"
-            title={executionId}
+        {/* ── Icon toolbar ── */}
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            disabled={!saveAllowed || saveStatus === "saving"}
+            onClick={handleSave}
+            title={
+              !saveAllowed && saveStatus === "idle"
+                ? "Save disabled — make changes first"
+                : saveStatus === "saving"
+                  ? "Saving…"
+                  : saveStatus === "saved"
+                    ? "Saved!"
+                    : "Save as new version (⌘S)"
+            }
+            className={`flex size-8 items-center justify-center rounded-[6px] transition-colors ${
+              !saveAllowed || saveStatus === "saving"
+                ? "cursor-not-allowed text-muted-foreground/35 opacity-50"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
-            <span className="flex-shrink-0 text-[10px] font-medium text-muted-foreground">Execution ID</span>
-            <span className="truncate font-mono text-[10px] text-foreground">{shortExecutionId(executionId)}</span>
-          </span>
-        )}
-
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-2">
-          {!isRunning && (
-            <div className="flex items-center gap-1.5">
-              {/* ── No versions yet: show a Save button to create the first version ── */}
-              {versions.length === 0 && pageMode === "edit" && (
-                <button
-                  onClick={handleSaveVersion}
-                  title="Save first version"
-                  className="flex h-8 items-center gap-1.5 rounded-[6px] bg-slate-950 px-3 text-xs font-medium text-white transition-colors hover:bg-slate-800 dark:bg-background dark:text-foreground dark:hover:bg-border"
-                >
-                  <Save size={12} /> Save
-                </button>
-              )}
-
-              {/* ── Version picker — edit mode only (saving / restoring changes the flow) ── */}
-              {versions.length > 0 && pageMode === "edit" && (
-              <div className="relative" data-version-panel ref={versionPanelRef}>
-                <button
-                  onClick={() => setVersionPanelOpen(v => !v)}
-                  title="Version history"
-                  className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-[#1e293b] dark:text-muted-foreground dark:hover:bg-slate-950"
-                >
-                  <History size={13} />
-                  {activeVersion ? (
-                    <span className="font-semibold text-foreground dark:text-[#f8fafc]">{activeVersion.name}</span>
-                  ) : (
-                    <span className="text-muted-foreground dark:text-muted-foreground">Latest</span>
-                  )}
-                  <ChevronDown size={11} className="text-muted-foreground dark:text-muted-foreground" />
-                </button>
-
-                {versionPanelOpen && (
-                  <div data-version-panel className="absolute right-0 top-10 z-[999] w-[260px] overflow-hidden rounded-[12px] border border-border bg-card dark:border-border dark:bg-[#111827]"
-                    style={{boxShadow:"0 8px 24px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06)"}}>
-                    <div className="flex items-center justify-between border-b border-border px-3 py-2.5 dark:border-border">
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground dark:text-muted-foreground">Version history</p>
-                      {pageMode === "edit" && (
-                        <button
-                          onClick={() => { handleSaveVersion(); setVersionPanelOpen(false); }}
-                          className="flex h-6 items-center gap-1 rounded-[5px] bg-slate-950 px-2 text-[10px] font-medium text-white transition-colors hover:bg-slate-800 dark:bg-background dark:text-foreground dark:hover:bg-border"
-                        >
-                          <Save size={10} /> Save v{versions.length + 1}
-                        </button>
-                      )}
-                    </div>
-                    {versions.length === 0 ? (
-                      <div className="px-3 py-4 text-center text-xs text-muted-foreground dark:text-muted-foreground">No versions saved yet</div>
-                    ) : (
-                      <div className="py-1 max-h-[220px] overflow-y-auto">
-                        {/* Working copy row */}
-                        <button
-                          onClick={() => { setVersionPanelOpen(false); onRestoreVersion?.({ id: null, steps: [], flowName: flow.name, flowDescription: flow.description ?? "" }); }}
-                          className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${!activeVersionId ? "bg-primary/10 dark:bg-[#15233f]" : "hover:bg-background dark:hover:bg-slate-950"}`}
-                        >
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-xs font-semibold text-foreground dark:text-[#f8fafc]">Latest (unsaved)</span>
-                            <span className="text-[10px] text-muted-foreground dark:text-muted-foreground">Current working copy</span>
-                          </div>
-                          {!activeVersionId && <span className="text-[10px] font-semibold text-primary flex-shrink-0 ml-2">● Active</span>}
-                        </button>
-                        <div className="mx-3 h-px bg-muted dark:bg-[#334155]" />
-                        {versions.map((v) => {
-                          const isCurrent = v.id === activeVersionId;
-                          return (
-                            <button
-                              key={v.id}
-                              onClick={() => { setVersionPanelOpen(false); onRestoreVersion?.(v); }}
-                              className={`group w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${isCurrent ? "bg-primary/10 dark:bg-[#15233f]" : "hover:bg-background dark:hover:bg-slate-950"}`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="flex-shrink-0 rounded-[4px] bg-muted px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground dark:bg-[#1e293b] dark:text-muted-foreground">{v.name}</span>
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <span className="truncate text-xs text-foreground dark:text-[#f8fafc]">{v.date}</span>
-                                  <span className="text-[10px] text-muted-foreground dark:text-muted-foreground">{v.stepCount} step{v.stepCount !== 1 ? "s" : ""}</span>
-                                </div>
-                              </div>
-                              {isCurrent
-                                ? <span className="text-[10px] font-semibold text-primary flex-shrink-0 ml-2">● Active</span>
-                                : <span className="text-[10px] font-medium text-primary flex-shrink-0 ml-2">Restore</span>
-                              }
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              )} {/* end versions.length > 0 */}
-
-              {/* Run Flow — always when idle (edit + view) */}
-              <button
-                onClick={onRunNow}
-                disabled={isRunning || !flow.steps?.length}
-                title={!flow.steps?.length ? "Add steps before running" : undefined}
-                className="flex h-8 items-center gap-1.5 rounded-[6px] bg-slate-950 px-3.5 text-xs font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-background dark:text-foreground dark:hover:bg-border"
-              >
-                <Play size={12} fill="white" /> Run Flow
-              </button>
-
-              {/* View / Edit — optional focus toggle (both modes allow full editing) */}
-              {pageMode === "view" ? (
-                <button
-                  type="button"
-                  onClick={() => onSetPageMode("edit")}
-                  className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-[#1e293b] dark:text-muted-foreground dark:hover:bg-slate-950"
-                  title="Enable editing — add nodes, change steps, save versions"
-                >
-                  <Pencil size={12} /> Edit
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onSetPageMode("view")}
-                  className="flex h-8 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-[#1e293b] dark:text-muted-foreground dark:hover:bg-slate-950"
-                  title="Leave edit mode — run-only view (canvas changes are kept)"
-                >
-                  <Eye size={12} /> Exit edit
-                </button>
-              )}
-
-              {/* Activate — draft flows, edit mode only (publishes / changes lifecycle) */}
-              {pageMode === "edit" && flow.status === "draft" && (
-                <button
-                  onClick={onActivate}
-                  title="Activate this flow"
-                  className="flex h-8 items-center gap-1.5 rounded-[6px] bg-[#16a34a] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[#15803d]"
-                >
-                  <Zap size={12} fill="white" /> Activate
-                </button>
-              )}
-            </div>
-          )}
+            <Save size={15} className={saveStatus === "saved" ? "text-green-600" : ""} />
+          </button>
           {showRightPanelToggle && (
             <button
               type="button"
               onClick={onToggleRightPanel}
-              title={rightPanelOpen ? "Hide conversation & settings panel" : "Show conversation & settings panel"}
-              aria-label={rightPanelOpen ? "Hide conversation panel" : "Show conversation panel"}
+              aria-label={rightPanelOpen ? "Hide panel" : "Show panel"}
               aria-pressed={rightPanelOpen}
-              className={`relative flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] border text-muted-foreground transition-colors dark:text-muted-foreground ${
+              title={rightPanelOpen ? "Hide side panel" : "Show side panel"}
+              className={`flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] transition-colors ${
                 rightPanelOpen
-                  ? "border-border bg-primary/10 text-primary hover:bg-[#dbeafe] dark:border-border dark:bg-[#1e3a8a] dark:text-[#60a5fa] dark:hover:bg-[#1e40af]"
-                  : "border-border bg-card hover:bg-background dark:border-border dark:bg-[#1e293b] dark:hover:bg-slate-950"
+                  ? "bg-primary/10 text-primary hover:bg-primary/20"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {rightPanelOpen ? <PanelRightClose size={16} strokeWidth={2} /> : <PanelRight size={16} strokeWidth={2} />}
+              {rightPanelOpen ? <PanelRightClose size={15} strokeWidth={2} /> : <PanelRight size={15} strokeWidth={2} />}
             </button>
           )}
           <button
-            ref={btnRef}
-            onClick={handleMenuToggle}
-            className="flex size-8 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-[#1e293b] dark:text-muted-foreground dark:hover:bg-slate-950"
-            title="More options"
+            type="button"
+            aria-pressed={workspaceFullscreen}
+            aria-label={
+              workspaceFullscreen ? "Exit fullscreen (same as Esc)" : "Enter fullscreen workspace"
+            }
+            title={
+              workspaceFullscreen
+                ? "Exit fullscreen — press Esc or click (restore normal layout)"
+                : "Enter fullscreen — Esc exits when expanded"
+            }
+            onClick={() => {
+              const el = fullscreenTargetRef?.current;
+              if (!el) return;
+              if (workspaceFullscreen) {
+                applyCssFullscreen(el, false);
+                setWorkspaceFullscreen(false);
+              } else {
+                applyCssFullscreen(el, true);
+                setWorkspaceFullscreen(true);
+              }
+            }}
+            className={cn(
+              "flex size-8 items-center justify-center rounded-[6px] transition-colors",
+              workspaceFullscreen
+                ? "bg-primary/15 text-primary hover:bg-primary/25"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
           >
-            <MoreHorizontal size={15} />
+            {workspaceFullscreen ? (
+              <Minimize2 size={15} strokeWidth={2} aria-hidden />
+            ) : (
+              <Maximize2 size={15} strokeWidth={2} aria-hidden />
+            )}
           </button>
         </div>
+
+        <div className="h-5 w-px bg-border dark:bg-[#334155]" />
+
+        {/* ── More options ── */}
+        <button
+          ref={btnRef}
+          type="button"
+          title="More options"
+          aria-label="More options"
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+          onClick={handleMenuToggle}
+          className="flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <MoreHorizontal size={16} />
+        </button>
+
+        {/* ── Primary actions ── */}
+        {!isRunning && (
+          <>
+            {pageMode === "view" && (
+              <button
+                type="button"
+                onClick={() => onSetPageMode?.("edit")}
+                title="Edit flow — change steps and configuration"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc] dark:hover:bg-slate-950"
+              >
+                <Pencil size={13} strokeWidth={2} /> Edit
+              </button>
+            )}
+            {isPublished ? (
+              <button
+                type="button"
+                title="Click to unpublish"
+                onClick={() => setUnpublishOpen(true)}
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/80"
+              >
+                <Globe size={13} className="text-emerald-700 dark:text-emerald-400" />
+                Published
+              </button>
+            ) : (
+              <button
+                type="button"
+                title="Publish flow"
+                onClick={() => setPublishOpen(true)}
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc] dark:hover:bg-slate-950"
+              >
+                <Globe size={13} /> Publish
+              </button>
+            )}
+            <button
+              onClick={onRunNow}
+              disabled={!flow.steps?.length}
+              title={!flow.steps?.length ? "Add steps before running" : "Run flow"}
+              className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-3.5 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <Play size={12} fill="white" /> Run
+            </button>
+          </>
+        )}
+
+        {/* ── Bell ── */}
+        <button
+          title="Notifications"
+          className="relative flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Bell size={16} />
+        </button>
+
       </div>
 
       {/* Context Menu Dropdown */}
@@ -2987,10 +3916,10 @@ function TopBar({
         >
           {/* Group 1: Actions */}
           <button
-            onClick={handleDuplicate}
+            onClick={handleFork}
             className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-[#f8fafc] dark:hover:bg-slate-950"
           >
-            <Copy size={14} className="text-muted-foreground dark:text-muted-foreground" /> Duplicate
+            <GitFork size={14} className="text-muted-foreground dark:text-muted-foreground" /> Fork
           </button>
           <button
             onClick={handleExport}
@@ -3117,18 +4046,159 @@ function TopBar({
         </div>
       )}
 
+      <ForkFlowDialog
+        open={forkOpen}
+        onOpenChange={setForkOpen}
+        sourceFlow={flow}
+        onConfirm={(opts) => onForkFlow?.(opts)}
+      />
+
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent
+          showCloseButton
+          className="flex max-h-[min(90vh,620px)] w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/25">
+                <Globe className="h-6 w-6 text-primary" aria-hidden />
+              </div>
+              <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug text-foreground">
+                Publish this flow?
+              </DialogTitle>
+              <DialogDescription className="text-balance px-1 pt-2 text-center text-sm leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">{flow.name || "This flow"}</span>
+                {" "}
+                will become visible to all logged-in users in the Flows list.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mx-6 mb-4 mt-4 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+              <div className="flex gap-3">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-medium text-foreground">Visible to all users</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    Anyone logged in can find and run this flow from the Flows page.
+                  </p>
+                </div>
+              </div>
+              <Separator className="my-3" />
+              <div className="flex gap-3">
+                <Save className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-medium text-foreground">Publishing version {versionLabel}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    The current saved version will be the one users see and run.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Plain footer: DialogFooter uses -mx/-mb which breaks when DialogContent has p-0 */}
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setPublishOpen(false)}
+              disabled={publishBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="min-h-10 flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={publishBusy}
+              onClick={() => {
+                setPublishBusy(true);
+                try {
+                  onPublishFlow?.();
+                  showToast?.("Flow published — now visible in the Flows list.");
+                  setPublishOpen(false);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Globe className="h-3.5 w-3.5" />
+              )}
+              Publish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={unpublishOpen} onOpenChange={setUnpublishOpen}>
+        <DialogContent
+          showCloseButton
+          className="flex max-h-[min(90vh,420px)] w-[calc(100vw-2rem)] max-w-sm flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4 pr-14">
+            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
+              <Globe className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden />
+            </div>
+            <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug">
+              Unpublish flow?
+            </DialogTitle>
+            <DialogDescription className="text-balance pt-2 text-center text-sm leading-relaxed text-muted-foreground">
+              This flow will be hidden from other users and no longer listed as public.
+            </DialogDescription>
+          </div>
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setUnpublishOpen(false)}
+              disabled={publishBusy}
+            >
+              Keep published
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-10 flex-1"
+              disabled={publishBusy}
+              onClick={() => {
+                setPublishBusy(true);
+                try {
+                  onUnpublishFlow?.();
+                  showToast?.("Flow unpublished — hidden from the public list.");
+                  setUnpublishOpen(false);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Unpublish"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
-export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenIntent = "execute", onFlowPatch }) {
+export default function FlowViewPage({
+  flow: flowProp,
+  onNavigate,
+  flowOpenIntent = "execute",
+  autoRunFromRoute = false,
+  onFlowPatch,
+  onForkFlow,
+}) {
   const [steps, setSteps]             = useState(flowProp?.steps ?? []);
   const [flowName, setFlowName]       = useState(flowProp?.name ?? "Untitled Flow");
   const [flowDescription, setFlowDescription] = useState(() =>
     typeof flowProp?.description === "string" ? flowProp.description : "",
   );
-  const [flowStatus, setFlowStatus]   = useState(flowProp?.status ?? "draft");
+  const [flowStatus, setFlowStatus]   = useState(flowProp?.status ?? "idle");
   const [creationEntry, setCreationEntry] = useState(() => flowProp?.creationEntry ?? "template");
   const [creationAssistantOpen, setCreationAssistantOpen] = useState(false);
   const [convPanelCollapsed, setConvPanelCollapsed] = useState(false);
@@ -3141,24 +4211,35 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
   const [logs, setLogs]               = useState([]);
   const runTimers                     = useRef([]);
   const [convMessages, setConvMessages] = useState([{ type: "overview", id: "overview" }]);
-  const [versions, setVersions]         = useState([]);
-  const [activeVersionId, setActiveVersionId] = useState(null); // null = unsaved working copy
+  const [versionHistory, setVersionHistory] = useState(() => flowProp?.versionHistory ?? []);
+  const [baselineSnap, setBaselineSnap] = useState(() =>
+    flowProp
+      ? cloneFlowSnapshot(flowProp.steps ?? [], flowProp.name ?? "Untitled Flow", flowProp.description ?? "")
+      : cloneFlowSnapshot([], "Untitled Flow", ""),
+  );
   /** "view" = run / inspect only (from flow list); "edit" = full authoring (new flow or after Edit) */
   const [pageMode, setPageMode] = useState(() => (flowOpenIntent === "edit" ? "edit" : "view"));
   const [rightPanelOpen, setRightPanelOpen]   = useState(true);
+  const [panelDock, setPanelDock]             = useState(() => { try { return localStorage.getItem("flow_panelDock") ?? "right"; } catch { return "right"; } });
+  const [panelSizes, setPanelSizes]           = useState(() => { try { return JSON.parse(localStorage.getItem("flow_panelSizes") ?? "{}"); } catch { return {}; } });
+  const [floatPos, setFloatPos]               = useState(() => { try { return JSON.parse(localStorage.getItem("flow_floatPos") ?? "null") ?? { x: 80, y: 80 }; } catch { return { x: 80, y: 80 }; } });
+  const [isPanelResizing, setIsPanelResizing] = useState(false);
   const [logPanelCollapsed, setLogPanelCollapsed] = useState(true);
   const [logPanelH, setLogPanelH]             = useState(240);
   const [logRefreshing, setLogRefreshing]     = useState(false);
   const [pendingDeleteIdx, setPendingDeleteIdx] = useState(null);
   const resizeRef                             = useRef(null);
   const handleRunNowRef                       = useRef(() => {});
+  const autoRunConsumedRef                    = useRef(false);
+  const fullscreenStageRef                    = useRef(null);
   const { toasts, showToast, dismissToast }   = useToast();
+  const [pendingRestore, setPendingRestore] = useState(null);
 
   useEffect(() => {
     if (!flowProp) return;
     setSteps(flowProp.steps ?? []);
     setFlowName(flowProp.name ?? "Untitled Flow");
-    setFlowStatus(flowProp.status ?? "draft");
+    setFlowStatus(flowProp.status ?? "idle");
     setFlowDescription(typeof flowProp.description === "string" ? flowProp.description : "");
     setCreationEntry(flowProp.creationEntry ?? "template");
     setCreationAssistantOpen(false);
@@ -3169,6 +4250,23 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
     setLogPanelH(240);
     setLastRunTotalMs(null);
     setPageMode(flowOpenIntent === "edit" ? "edit" : "view");
+    setBaselineSnap(
+      cloneFlowSnapshot(
+        flowProp.steps ?? [],
+        flowProp.name ?? "Untitled Flow",
+        typeof flowProp.description === "string" ? flowProp.description : "",
+      ),
+    );
+    const ls = loadVersionHistory(flowProp.id);
+    const cat = flowProp.versionHistory ?? [];
+    const merged =
+      (ls?.length ?? 0) >= (cat?.length ?? 0)
+        ? ls ?? cat
+        : cat.length
+          ? cat
+          : ls ?? [];
+    setVersionHistory(Array.isArray(merged) ? merged : []);
+    autoRunConsumedRef.current = false;
   }, [flowProp?.id, flowOpenIntent]);
 
   const openFlowAssistant = useCallback(() => {
@@ -3212,9 +4310,89 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
     document.addEventListener("mouseup",   onUp);
   }, [logPanelH]);
 
+  // ── Persist panel layout preferences ──────────────────────────────────────
+  useEffect(() => { try { localStorage.setItem("flow_panelDock",   panelDock); } catch {} }, [panelDock]);
+  useEffect(() => { try { localStorage.setItem("flow_panelSizes",  JSON.stringify(panelSizes)); } catch {} }, [panelSizes]);
+  useEffect(() => { try { localStorage.setItem("flow_floatPos",    JSON.stringify(floatPos)); } catch {} }, [floatPos]);
+
+  const handleChangePanelDock = useCallback((dock) => {
+    setPanelDock(dock);
+    setIsPanelResizing(false);
+  }, []);
+
+  const handlePanelResizeStart = useCallback((e, dock) => {
+    e.preventDefault();
+    setIsPanelResizing(true);
+    const isVert = dock === "top" || dock === "bottom";
+    const DEFAULTS = { left: 360, right: 360, top: 280, bottom: 280 };
+    const startCoord = isVert ? e.clientY : e.clientX;
+    const startSize  = panelSizes[dock] ?? DEFAULTS[dock];
+    const onMove = (ev) => {
+      const delta = (isVert ? ev.clientY : ev.clientX) - startCoord;
+      const newSize = (dock === "right" || dock === "bottom") ? startSize - delta : startSize + delta;
+      if (newSize < 80) {
+        setRightPanelOpen(false);
+      } else {
+        const min = isVert ? 150 : 200;
+        const max = isVert ? 520 : 640;
+        setRightPanelOpen(true);
+        setPanelSizes((prev) => ({ ...prev, [dock]: Math.max(min, Math.min(max, newSize)) }));
+      }
+    };
+    const onUp = () => {
+      setIsPanelResizing(false);
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup",   onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup",   onUp);
+  }, [panelSizes]);
+
+  const handleFloatDragStart = useCallback((e) => {
+    e.preventDefault();
+    const ox = e.clientX - floatPos.x;
+    const oy = e.clientY - floatPos.y;
+    const onMove = (ev) => setFloatPos({ x: ev.clientX - ox, y: ev.clientY - oy });
+    const onUp   = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup",   onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup",   onUp);
+  }, [floatPos]);
+
   const flow = flowProp
     ? { ...flowProp, steps, name: flowName, status: flowStatus, creationEntry, description: flowDescription }
     : null;
+
+  const currentSnap = useMemo(
+    () => cloneFlowSnapshot(steps, flowName, flowDescription),
+    [steps, flowName, flowDescription],
+  );
+
+  const hasUnsavedChanges = useMemo(
+    () => !snapshotsEqual(currentSnap, baselineSnap),
+    [currentSnap, baselineSnap],
+  );
+
+  /** BrowserRouter does not support useBlocker — confirm before legacy sidebar navigation. */
+  const guardedNavigate = useCallback(
+    (page, opts) => {
+      if (hasUnsavedChanges && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+      onNavigate(page, opts);
+    },
+    [hasUnsavedChanges, onNavigate],
+  );
+
+  useEffect(() => {
+    const onBeforeUnload = (e) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleRename = useCallback(
     (name) => {
@@ -3234,13 +4412,20 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
     [flowProp?.id, onFlowPatch],
   );
 
+  const handlePublishFlow = useCallback(() => {
+    if (flowProp?.id != null) onFlowPatch?.(flowProp.id, { visibility: "public" });
+  }, [flowProp?.id, onFlowPatch]);
+
+  const handleUnpublishFlow = useCallback(() => {
+    if (flowProp?.id != null) onFlowPatch?.(flowProp.id, { visibility: "private" });
+  }, [flowProp?.id, onFlowPatch]);
+
   // Sync Zustand store
   const { initFlow } = useFlowStore();
   useEffect(() => { if (flowProp) initFlow(flowProp); }, [flowProp]);
 
   const handleAddNode = (afterIndex, newStep) => {
     if (pageMode !== "edit") return;
-    setActiveVersionId(null); // mark as unsaved after edit
     setSteps(prev => {
       const next = [...prev];
       next.splice(afterIndex + 1, 0, { ...newStep, status:"pending" });
@@ -3252,7 +4437,6 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
   // Populate the canvas with a full template at once (used by FlowCreationMode & canvas empty state)
   const handleAddTemplate = (templateSteps) => {
     if (pageMode !== "edit") return;
-    setActiveVersionId(null);
     setSteps(templateSteps);
     setSelectedIdx(null);
   };
@@ -3364,6 +4548,14 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
 
   handleRunNowRef.current = handleRunNow;
 
+  useEffect(() => {
+    if (!autoRunFromRoute || autoRunConsumedRef.current) return;
+    if (steps.length === 0 || runState.activeIdx !== -1) return;
+    autoRunConsumedRef.current = true;
+    const id = requestAnimationFrame(() => handleRunNowRef.current?.());
+    return () => cancelAnimationFrame(id);
+  }, [autoRunFromRoute, steps.length, runState.activeIdx]);
+
   const handleNodeToolbar = useCallback((kind, index) => {
     const step = steps[index];
     if (!step) return;
@@ -3401,33 +4593,84 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
     return () => window.removeEventListener("keydown", onKey);
   }, [steps.length, runState.activeIdx, selectedIdx, pageMode]);
 
-  const saveVersion = () => {
-    const num = versions.length + 1;
-    const id  = `v${num}`;
-    const snap = {
-      id,
-      name: id,
-      num,
-      date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-      stepCount: steps.length,
-      steps: [...steps],
-      flowName,
-      flowDescription,
-    };
-    setVersions(prev => [snap, ...prev]);
-    setActiveVersionId(id);
-  };
-
-  const restoreVersion = (v) => {
-    if (v.id === null) {
-      setActiveVersionId(null);
-      return;
+  const commitNewVersion = useCallback(() => {
+    if (!flowProp?.id || !onFlowPatch) return false;
+    const snap = cloneFlowSnapshot(steps, flowName, flowDescription);
+    if (snapshotsEqual(snap, baselineSnap)) {
+      showToast("No changes to save");
+      return false;
     }
-    setSteps([...v.steps]);
-    setFlowName(v.flowName ?? flowName);
-    setFlowDescription(typeof v.flowDescription === "string" ? v.flowDescription : "");
-    setActiveVersionId(v.id);
-  };
+    const nextLabel = bumpVersionLabel(flowProp.version);
+    const entry = {
+      id: `ver-${Date.now()}`,
+      label: nextLabel,
+      savedAt: new Date().toISOString(),
+      stepCount: snap.steps.length,
+      steps: snap.steps,
+      flowName: snap.name,
+      flowDescription: snap.description,
+      date: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    };
+    const nextHistory = [entry, ...versionHistory];
+    setVersionHistory(nextHistory);
+    setBaselineSnap(snap);
+    onFlowPatch(flowProp.id, {
+      version: nextLabel,
+      steps: snap.steps,
+      name: snap.name,
+      description: snap.description,
+      versionHistory: nextHistory,
+    });
+    persistVersionHistory(flowProp.id, nextHistory);
+    showToast(`Saved ${nextLabel}`);
+    return true;
+  }, [
+    baselineSnap,
+    flowDescription,
+    flowName,
+    flowProp?.id,
+    flowProp?.version,
+    onFlowPatch,
+    showToast,
+    steps,
+    versionHistory,
+  ]);
+
+  const applyRestoreVersion = useCallback(
+    (entry) => {
+      const stepsRestored = JSON.parse(JSON.stringify(entry.steps ?? []));
+      const nameRestored = entry.flowName ?? entry.name ?? flowName;
+      const descRestored =
+        typeof entry.flowDescription === "string"
+          ? entry.flowDescription
+          : typeof entry.description === "string"
+            ? entry.description
+            : flowDescription;
+      setSteps(stepsRestored);
+      setFlowName(nameRestored);
+      setFlowDescription(descRestored);
+      const snap = cloneFlowSnapshot(stepsRestored, nameRestored, descRestored);
+      setBaselineSnap(snap);
+      if (flowProp?.id != null && onFlowPatch) {
+        onFlowPatch(flowProp.id, {
+          version: entry.label,
+          steps: snap.steps,
+          name: snap.name,
+          description: snap.description,
+        });
+      }
+      showToast(`Restored ${entry.label} — you can keep editing from here.`);
+    },
+    [flowDescription, flowName, flowProp?.id, onFlowPatch, showToast],
+  );
+
+  const requestRestoreVersion = useCallback(
+    (entry) => {
+      if (hasUnsavedChanges) setPendingRestore(entry);
+      else applyRestoreVersion(entry);
+    },
+    [applyRestoreVersion, hasUnsavedChanges],
+  );
 
   if (!flow) {
     return (
@@ -3441,67 +4684,121 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
   return (
     <>
     <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
-      <Sidebar activePage="flows" onNavigate={onNavigate} />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <Sidebar activePage="flows" onNavigate={guardedNavigate} />
+      <div ref={fullscreenStageRef} className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
-          flow={flow} onBack={()=>onNavigate("flows")}
+          flow={flow} onBack={() => guardedNavigate("flows")}
           onRunNow={handleRunNow} isRunning={runState.activeIdx !== -1}
           runElapsedLabel={runElapsedLabel}
           executionId={logs.find((e) => e.executionId)?.executionId ?? null}
           onRename={handleRename}
           onSaveFlowSettings={handleSaveFlowSettings}
-          versions={versions} onSaveVersion={saveVersion} activeVersionId={activeVersionId} onRestoreVersion={restoreVersion}
+          versionHistory={versionHistory}
+          onCommitNewVersion={commitNewVersion}
+          onRestoreVersion={requestRestoreVersion}
+          hasUnsavedChanges={hasUnsavedChanges}
           pageMode={pageMode} onSetPageMode={setPageMode}
           showRightPanelToggle={flow.steps.length > 0 || creationAssistantOpen}
           rightPanelOpen={rightPanelOpen}
           onToggleRightPanel={() => setRightPanelOpen((v) => !v)}
-          onActivate={() => setFlowStatus("active")}
+          onActivate={() => setFlowStatus("inprogress")}
           showToast={showToast}
+          onPublishFlow={handlePublishFlow}
+          onUnpublishFlow={handleUnpublishFlow}
+          fullscreenTargetRef={fullscreenStageRef}
+          onForkFlow={onForkFlow}
         />
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          {/* Top row: Canvas + RightPanel (always visible) */}
-          <div className="flex flex-1 min-h-0 overflow-hidden">
-            <Canvas
-              flow={flow}
-              selectedIdx={selectedIdx}
-              onSelectNode={setSelectedIdx}
-              onAddNode={handleAddNode}
-              onAddTemplate={handleAddTemplate}
-              runState={runState}
-              onSetCreationEntry={setCreationEntry}
-              onOpenFlowAssistant={openFlowAssistant}
-              onNodeToolbarAction={handleNodeToolbar}
-              readOnly={pageMode === "view"}
-            />
-            {(flow.steps.length > 0 || creationAssistantOpen) && rightPanelOpen && (
-              <RightPanel
+        <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
+          {/* Panel area — position-aware */}
+          {(() => {
+            const showPanel = (flow.steps.length > 0 || creationAssistantOpen) && rightPanelOpen;
+            const sharedPanelProps = {
+              flow,
+              selectedIdx,
+              runState,
+              onClose: () => setSelectedIdx(null),
+              showEmptyFlowAssistant: creationAssistantOpen,
+              onCloseEmptyFlowAssistant: () => setCreationAssistantOpen(false),
+              assistantFocusKey,
+              convMessages,
+              onAddConvMessage: (m) => setConvMessages((prev) => [...prev, m]),
+              onRunFlow: handleRunNow,
+              onAddTemplate: handleAddTemplate,
+              logs,
+              convCollapsed: convPanelCollapsed,
+              onToggleConvCollapse: () => setConvPanelCollapsed((v) => !v),
+              onUpdateStep: updateStepAt,
+              onRefreshLogs: handleRefreshLogs,
+              logRefreshing,
+              allowLogRefresh: steps.length > 0,
+              runElapsedLabel,
+              onSelectLogNode: (nodeIdx) => { setSelectedIdx(nodeIdx); setRightPanelOpen(true); },
+              executeOnly: pageMode === "view",
+              panelDock,
+              onChangePanelDock: handleChangePanelDock,
+              panelSizes,
+              onResizeStart: handlePanelResizeStart,
+              isPanelResizing,
+              onFloatDragStart: handleFloatDragStart,
+            };
+            const canvas = (
+              <Canvas
                 flow={flow}
                 selectedIdx={selectedIdx}
-                runState={runState}
-                onClose={() => setSelectedIdx(null)}
-                showEmptyFlowAssistant={creationAssistantOpen}
-                onCloseEmptyFlowAssistant={() => setCreationAssistantOpen(false)}
-                assistantFocusKey={assistantFocusKey}
-                convMessages={convMessages}
-                onAddConvMessage={(m) => setConvMessages((prev) => [...prev, m])}
-                onRunFlow={handleRunNow}
+                onSelectNode={setSelectedIdx}
+                onAddNode={handleAddNode}
                 onAddTemplate={handleAddTemplate}
-                logs={logs}
-                convCollapsed={convPanelCollapsed}
-                onToggleConvCollapse={() => setConvPanelCollapsed((v) => !v)}
-                onUpdateStep={updateStepAt}
-                onRefreshLogs={handleRefreshLogs}
-                logRefreshing={logRefreshing}
-                allowLogRefresh={steps.length > 0}
+                runState={runState}
+                onSetCreationEntry={setCreationEntry}
+                onOpenFlowAssistant={openFlowAssistant}
+                onNodeToolbarAction={handleNodeToolbar}
                 runElapsedLabel={runElapsedLabel}
-                onSelectLogNode={(nodeIdx) => {
-                  setSelectedIdx(nodeIdx);
-                  setRightPanelOpen(true);
-                }}
-                executeOnly={pageMode === "view"}
+                readOnly={pageMode === "view"}
               />
-            )}
-          </div>
+            );
+
+            if (panelDock === "float") return (
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {canvas}
+                {showPanel && (
+                  <div
+                    className="absolute z-50 shadow-2xl rounded-xl overflow-hidden border border-border"
+                    style={{ left: floatPos.x, top: floatPos.y, width: panelSizes.float ?? 360 }}
+                  >
+                    <RightPanel {...sharedPanelProps} />
+                  </div>
+                )}
+              </div>
+            );
+
+            const panel = showPanel ? <RightPanel {...sharedPanelProps} /> : null;
+
+            if (panelDock === "top") return (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                {panel}
+                <div className="flex flex-1 min-h-0 overflow-hidden">{canvas}</div>
+              </div>
+            );
+            if (panelDock === "bottom") return (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex flex-1 min-h-0 overflow-hidden">{canvas}</div>
+                {panel}
+              </div>
+            );
+            if (panelDock === "left") return (
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {panel}
+                {canvas}
+              </div>
+            );
+            // default: right
+            return (
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {canvas}
+                {panel}
+              </div>
+            );
+          })()}
 
           {/* Bottom: execution log — visible by default, starts collapsed */}
           <div
@@ -3528,6 +4825,19 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
       </div>
     </div>
 
+    {pendingRestore && (
+      <ConfirmDialog
+        title="Discard unsaved changes?"
+        message={`Restore ${pendingRestore.label} and lose your current edits?`}
+        confirmLabel="Restore version"
+        onConfirm={() => {
+          applyRestoreVersion(pendingRestore);
+          setPendingRestore(null);
+        }}
+        onCancel={() => setPendingRestore(null)}
+      />
+    )}
+
     {pendingDeleteIdx !== null && steps[pendingDeleteIdx] && (
       <ConfirmDialog
         title={`Remove "${steps[pendingDeleteIdx].label}"?`}
@@ -3541,7 +4851,6 @@ export default function FlowViewPage({ flow: flowProp, onNavigate, flowOpenInten
             if (s === idx) return null;
             return s > idx ? s - 1 : s;
           });
-          setActiveVersionId(null);
           setPendingDeleteIdx(null);
           showToast("Step removed");
         }}
