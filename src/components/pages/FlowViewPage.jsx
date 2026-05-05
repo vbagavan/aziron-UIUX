@@ -203,7 +203,159 @@ const NODE_IO = {
     input:  { condition: "score > 70", value: 82 },
     output: { branch: "true", nextStep: "Send Email" },
   },
+  GitMerge: {
+    input:  { branches: ["branch_a", "branch_b"], merge_strategy: "first_success" },
+    output: { merged: true, selected_branch: "branch_a", downstream_data: { score: 82, tier: "HIGH" } },
+  },
+  Search: {
+    input:  { query: "jane@acme.com", provider: "ClearBit", fields: ["company", "role", "industry", "employees"] },
+    output: { found: true, company: "Acme Corp", industry: "SaaS", employees: 250, role: "Head of Product", confidence: 0.97 },
+  },
+  Filter: {
+    input:  { records: [{ id: 1, industry: "SaaS", score: 82 }, { id: 2, industry: "Finance", score: 45 }], condition: "industry === 'SaaS'" },
+    output: { total: 2, matched: 1, filtered: [{ id: 1, industry: "SaaS", score: 82 }] },
+  },
+  Clock: {
+    input:  { duration: 3, unit: "days", resume_at: "2026-05-08T09:00:00Z" },
+    output: { waited: true, resumed_at: "2026-05-08T09:00:02Z", elapsed_ms: 259200000 },
+  },
+  Bell: {
+    input:  { channel: "slack", recipient: "#ops-alerts", message: "Lead qualified: jane@acme.com (score 82)" },
+    output: { delivered: true, channel_id: "C04XZL92", ts: "1716883202.000100" },
+  },
+  Brain: {
+    input:  { model: "claude-opus-4-6", task: "classify", payload: { text: "Enterprise SaaS buyer with budget." } },
+    output: { label: "high_intent", confidence: 0.93, tokens_used: 312 },
+  },
+  MessageCircle: {
+    input:  { thread_id: "thread_9a2f", message: "Hi Jane, wanted to follow up on your trial.", sender: "bot@aziron.io" },
+    output: { sent: true, message_id: "msg_c931a", opened: false, delivered_at: "2026-05-05T09:14:22Z" },
+  },
+  Network: {
+    input:  { endpoint: "https://hooks.zapier.com/hooks/catch/abc123", method: "POST", payload: { email: "jane@acme.com", score: 82 } },
+    output: { status: 200, response_time_ms: 210, body: { status: "success", id: "zap_run_881" } },
+  },
+  Upload: {
+    input:  { file: "leads_export.csv", destination: "s3://aziron-data/leads/", content_type: "text/csv" },
+    output: { uploaded: true, url: "s3://aziron-data/leads/leads_export.csv", size_bytes: 48320 },
+  },
+  HardDrive: {
+    input:  { operation: "write", key: "lead:jane@acme.com", value: { score: 82, tier: "HIGH" }, ttl_seconds: 3600 },
+    output: { success: true, stored_at: "2026-05-05T09:14:25Z", key: "lead:jane@acme.com" },
+  },
+  Cpu: {
+    input:  { task: "compute_score", inputs: { engagement: 0.82, recency: 0.91, fit: 0.75 }, weights: [0.4, 0.35, 0.25] },
+    output: { score: 84.85, breakdown: { engagement: 32.8, recency: 31.85, fit: 18.75 }, tier: "HIGH" },
+  },
+  UserCheck: {
+    input:  { email: "jane@acme.com", rules: ["domain_not_free", "score_above_60", "company_size_gt_50"] },
+    output: { valid: true, passed: 3, failed: 0, details: { domain_not_free: true, score_above_60: true, company_size_gt_50: true } },
+  },
+  Shield: {
+    input:  { payload: { email: "jane@acme.com", action: "form_submit" }, checks: ["rate_limit", "spam_score", "blocklist"] },
+    output: { allowed: true, risk_score: 0.07, checks_passed: ["rate_limit", "spam_score", "blocklist"] },
+  },
+  Layers: {
+    input:  { steps: ["enrich", "score", "segment"], parallel: true, timeout_ms: 5000 },
+    output: { completed: 3, failed: 0, results: { enrich: "done", score: "done", segment: "done" }, total_ms: 820 },
+  },
+  BarChart3: {
+    input:  { metric: "lead_score", dimensions: ["industry", "company_size"], period: "last_30d" },
+    output: { rows: 4, data: [{ industry: "SaaS", avg_score: 81 }, { industry: "Finance", avg_score: 63 }] },
+  },
+  Archive: {
+    input:  { record_type: "lead", id: "lead_3821", reason: "flow_completed", retain_days: 90 },
+    output: { archived: true, archive_id: "arc_ff12", expires_at: "2026-08-03T00:00:00Z" },
+  },
 };
+
+/** Fallback I/O for icons not in NODE_IO. */
+function generateDefaultIO(step, selectedIdx) {
+  const durationMs = 230 + selectedIdx * 80;
+  return {
+    input: {
+      step_id: `step_${selectedIdx + 1}`,
+      label: step.label,
+      triggered_at: "2026-05-05T09:14:20Z",
+      context: { run_id: "run_demo", flow_version: "v1.0" },
+    },
+    output: {
+      step_id: `step_${selectedIdx + 1}`,
+      status: "success",
+      duration_ms: durationMs,
+      result: { processed: true },
+    },
+  };
+}
+
+/** Collapsible JSON panel used for Node Input / Node Output. */
+function IOSection({ label, data, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const json = JSON.stringify(data, null, 2);
+
+  const copyToClipboard = () => {
+    try { navigator.clipboard.writeText(json); } catch (_) {}
+  };
+  const download = () => {
+    const blob = new Blob([json], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `${label.toLowerCase().replace(/\s+/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="border-b border-border">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between px-4 py-2.5 transition-colors hover:bg-muted/30"
+      >
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-muted px-1.5 py-px text-[9px] font-medium text-muted-foreground">json</span>
+          <ChevronDown
+            size={13}
+            className="text-muted-foreground transition-transform"
+            style={{ transform: open ? "none" : "rotate(-90deg)" }}
+          />
+        </div>
+      </button>
+      {open && (
+        <div className="px-3 pb-3">
+          <div className="overflow-hidden rounded-[8px] border border-border">
+            <div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-1.5">
+              <span className="text-[9px] font-mono text-muted-foreground">application/json</span>
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  title="Copy JSON"
+                  className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Copy size={11} />
+                </button>
+                <button
+                  type="button"
+                  onClick={download}
+                  title="Download JSON"
+                  className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Download size={11} />
+                </button>
+              </div>
+            </div>
+            <pre className="max-h-52 overflow-auto bg-background p-3 text-[10.5px] font-mono leading-relaxed text-foreground">
+              {json}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Execution status helpers ──────────────────────────────────────────────────
 const EXEC_STATUS = {
@@ -1005,12 +1157,11 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
 }
 
 // ─── Configure mode ───────────────────────────────────────────────────────────
-function ConfigureMode({ step, selectedIdx, flow, onOpenChatTab, onUpdateStep, readOnly = false }) {
+function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, readOnly = false }) {
   const cfg      = NODE_CONFIGS[step.icon] ?? {};
   const execKey  = getExecStatus(flow.status, selectedIdx, flow.steps.length);
   const execInfo = STEP_EXEC[execKey];
-  const [advOpen, setAdvOpen] = useState(false);
-  const Icon = ICON_MAP[step.icon] ?? Zap;
+  const Icon     = ICON_MAP[step.icon] ?? Zap;
 
   if (isScriptNodeIcon(step.icon)) {
     return (
@@ -1029,16 +1180,12 @@ function ConfigureMode({ step, selectedIdx, flow, onOpenChatTab, onUpdateStep, r
     );
   }
 
+  const io = NODE_IO[step.icon] ?? generateDefaultIO(step, selectedIdx);
+  const durationMs = 230 + selectedIdx * 80;
+  const hasDuration = execKey !== "pending";
+
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
-      {readOnly && (
-        <div className="mx-4 mt-3 flex items-start gap-2 rounded-[8px] border border-border bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground">
-          <Info size={14} className="mt-0.5 flex-shrink-0 text-muted-foreground" />
-          <span>
-            <span className="font-semibold text-foreground">View only.</span> Click <span className="font-semibold text-foreground">Edit</span> in the top bar to change this step.
-          </span>
-        </div>
-      )}
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
         <div className="size-10 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{background:`${step.color}18`,border:`1px solid ${step.color}30`}}>
@@ -1051,70 +1198,27 @@ function ConfigureMode({ step, selectedIdx, flow, onOpenChatTab, onUpdateStep, r
         <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
       </div>
 
-      {/* Primary fields — key/value list */}
-      <div className="px-4 py-3 border-b border-border">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Configuration</p>
-        <div className="rounded-[8px] border border-border overflow-hidden">
-          {(cfg.fields ?? []).slice(0, 2).map(([k, v], i, arr) => (
-            <div key={k} className={`flex items-center gap-3 px-3 py-2.5 bg-card ${i < arr.length - 1 ? "border-b border-border" : ""}`}>
-              <span className="text-xs font-medium text-muted-foreground w-20 flex-shrink-0">{k}</span>
-              <span className="flex-1 h-px bg-muted" />
-              <span className="text-xs font-mono text-foreground text-right truncate max-w-[140px]">{v}</span>
-            </div>
-          ))}
+      {/* Duration + type quick-info bar */}
+      <div className="flex items-center gap-4 border-b border-border px-4 py-2 text-[11px]">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Clock size={11} className="flex-shrink-0" aria-hidden />
+          <span>Duration</span>
+          <span className={cn("font-semibold tabular-nums", hasDuration ? "text-foreground" : "text-muted-foreground/50")}>
+            {hasDuration ? `${durationMs}ms` : "—"}
+          </span>
+        </div>
+        <span className="text-border" aria-hidden>·</span>
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Layers size={11} className="flex-shrink-0" aria-hidden />
+          <span>{cfg.type ?? "Node"}</span>
         </div>
       </div>
 
-      {/* Advanced collapsible */}
-      <div className="border-b border-border">
-        <button type="button" disabled={readOnly} onClick={() => !readOnly && setAdvOpen(v => !v)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-background transition-colors disabled:cursor-not-allowed disabled:opacity-60">
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Advanced</span>
-          <ChevronDown size={13} className={`text-muted-foreground transition-transform ${advOpen?"":"−rotate-90"}`} style={{transform:advOpen?"none":"rotate(-90deg)"}} />
-        </button>
-        {advOpen && (
-          <div className="px-4 pb-3 flex flex-col gap-2.5">
-            {(cfg.fields ?? []).slice(2).map(([k, v]) => (
-              <div key={k} className="flex flex-col gap-1">
-                <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{k}</label>
-                <input readOnly={readOnly} defaultValue={v} className="bg-background border border-border rounded-[6px] px-3 py-1.5 text-xs text-foreground font-mono outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all read-only:bg-muted/30" />
-              </div>
-            ))}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Retry on Error</label>
-              <select disabled={readOnly} className="bg-background border border-border rounded-[6px] px-3 py-1.5 text-xs text-foreground outline-none disabled:cursor-not-allowed disabled:opacity-60">
-                <option>None</option><option>1 time</option><option>3 times</option><option>5 times</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Timeout (ms)</label>
-              <input readOnly={readOnly} defaultValue="5000" type="number" className="bg-background border border-border rounded-[6px] px-3 py-1.5 text-xs text-foreground font-mono outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all read-only:bg-muted/30" />
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Node Input */}
+      <IOSection label="Node Input" data={io.input} defaultOpen={true} />
 
-      {/* Preview summary */}
-      <div className="px-4 py-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Preview</p>
-        <div className="bg-background border border-border rounded-[8px] p-3 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="size-5 rounded-[4px] flex items-center justify-center" style={{background:`${step.color}18`}}>
-              <Icon size={11} style={{color:step.color}} />
-            </div>
-            <span className="text-xs font-semibold text-foreground">{step.label}</span>
-            <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
-          </div>
-          {(cfg.fields ?? []).slice(0, 3).map(([k, v]) => (
-            <div key={k} className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground w-16 flex-shrink-0 truncate">{k}</span>
-              <span className="text-muted-foreground font-mono truncate flex-1">{v}</span>
-            </div>
-          ))}
-          <div className="mt-1 pt-1.5 border-t border-border text-xs text-muted-foreground">
-            Last ran {flow.lastRun} · {230 + selectedIdx * 80}ms
-          </div>
-        </div>
-      </div>
+      {/* Node Output */}
+      <IOSection label="Node Output" data={io.output} defaultOpen={true} />
     </div>
   );
 }
