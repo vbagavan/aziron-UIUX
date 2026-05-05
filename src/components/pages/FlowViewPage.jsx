@@ -2078,7 +2078,9 @@ function RightPanel({
   useEffect(() => { setPanelMode("configure"); }, [selectedIdx]);
 
   useEffect(() => {
-    if (assistantFocusKey > 0) setEmptyFlowTab("assistant");
+    if (assistantFocusKey <= 0) return;
+    setEmptyFlowTab("assistant");   // empty-flow panel → assistant tab
+    setFlowTab("chat");             // non-empty panel  → chat tab
   }, [assistantFocusKey]);
 
   const isVert = panelDock === "top" || panelDock === "bottom";
@@ -2192,16 +2194,28 @@ function RightPanel({
         </div>
       )}
 
-      {/* ── EMPTY FLOW: Overview only ── */}
+      {/* ── EMPTY FLOW: Overview | Chat tabs ── */}
       {!hasNode && isEmpty && (
         <>
-          <div className="flex items-center gap-2.5 px-4 h-12 border-b border-border flex-shrink-0">
-            <div className="size-6 rounded-[6px] bg-muted flex items-center justify-center flex-shrink-0">
-              <Eye size={13} className="text-muted-foreground" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">Overview</span>
+          <div className="flex border-b border-border flex-shrink-0">
+            {[
+              { id: "overview", icon: Activity, label: "Overview" },
+              { id: "chat",     icon: Sparkles,  label: "Chat"     },
+            ].map(({ id, icon: TIcon, label }) => (
+              <button key={id} onClick={() => setFlowTab(id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-all border-b-2 ${
+                  flowTab === id
+                    ? "text-foreground border-b-primary"
+                    : "text-muted-foreground border-b-transparent hover:text-muted-foreground"
+                }`}>
+                <TIcon size={12} /> {label}
+              </button>
+            ))}
           </div>
-          <FlowOverview flow={flow} executeOnly={executeOnly} onRunFlow={onRunFlow} />
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {flowTab === "overview" && <FlowOverview flow={flow} executeOnly={executeOnly} onRunFlow={onRunFlow} />}
+            {flowTab === "chat"     && <FlowAIChat flow={flow} />}
+          </div>
         </>
       )}
 
@@ -3496,6 +3510,8 @@ function TopBar({
   onSaveFlowSettings,
   /** Saved revisions (newest first); snapshots include steps + metadata. */
   versionHistory = [],
+  /** Overwrite current version in-place (no new history entry). */
+  onSaveOverwrite,
   /** Persist canvas + metadata as a new catalog version; return true if a version was written. */
   onCommitNewVersion,
   onRestoreVersion,
@@ -3519,6 +3535,8 @@ function TopBar({
 }) {
   const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
   const [forkOpen, setForkOpen] = useState(false);
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const saveMenuRef = useRef(null);
 
   /** Apply or remove CSS fullscreen styles on the target element. */
   const applyCssFullscreen = (el, enter) => {
@@ -3666,11 +3684,20 @@ function TopBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  // Close save dropdown on outside click
+  useEffect(() => {
+    if (!saveMenuOpen) return;
+    const onOut = (e) => { if (saveMenuRef.current && !saveMenuRef.current.contains(e.target)) setSaveMenuOpen(false); };
+    document.addEventListener("mousedown", onOut);
+    return () => document.removeEventListener("mousedown", onOut);
+  }, [saveMenuOpen]);
+
   const saveAllowed = hasUnsavedChanges;
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback((asNewVersion = false) => {
     if (!saveAllowed) return;
-    const ok = onCommitNewVersion?.() ?? false;
+    const fn = asNewVersion ? onCommitNewVersion : (onSaveOverwrite ?? onCommitNewVersion);
+    const ok = fn?.() ?? false;
     if (!ok) return;
     setSaving(true);
     setSaveStatus("saving");
@@ -3681,14 +3708,14 @@ function TopBar({
         setSaving(false);
       }, 1600);
     }, 280);
-  }, [onCommitNewVersion, saveAllowed]);
+  }, [onCommitNewVersion, onSaveOverwrite, saveAllowed]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         if (!saveAllowed) return;
-        handleSave();
+        handleSave(e.shiftKey); // ⌘S = overwrite, ⌘⇧S = new version
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -3863,27 +3890,74 @@ function TopBar({
 
         {/* ── Icon toolbar ── */}
         <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            disabled={!saveAllowed || saveStatus === "saving"}
-            onClick={handleSave}
-            title={
-              !saveAllowed && saveStatus === "idle"
-                ? "Save disabled — make changes first"
-                : saveStatus === "saving"
-                  ? "Saving…"
-                  : saveStatus === "saved"
-                    ? "Saved!"
-                    : "Save as new version (⌘S)"
-            }
-            className={`flex size-8 items-center justify-center rounded-[6px] transition-colors ${
-              !saveAllowed || saveStatus === "saving"
-                ? "cursor-not-allowed text-muted-foreground/35 opacity-50"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <Save size={15} className={saveStatus === "saved" ? "text-green-600" : ""} />
-          </button>
+          {/* Save split button */}
+          <div ref={saveMenuRef} className="relative flex items-center">
+            {/* Primary: Save (overwrite) */}
+            <button
+              type="button"
+              disabled={!saveAllowed || saveStatus === "saving"}
+              onClick={() => handleSave(false)}
+              title={
+                !saveAllowed && saveStatus === "idle"
+                  ? "No changes to save"
+                  : saveStatus === "saving"
+                    ? "Saving…"
+                    : saveStatus === "saved"
+                      ? "Saved!"
+                      : "Save (⌘S)"
+              }
+              className={`flex size-8 items-center justify-center rounded-l-[6px] transition-colors ${
+                !saveAllowed || saveStatus === "saving"
+                  ? "cursor-not-allowed text-muted-foreground/35 opacity-50"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <Save size={15} className={saveStatus === "saved" ? "text-success" : ""} aria-hidden />
+            </button>
+            {/* Chevron — opens save-mode menu */}
+            <button
+              type="button"
+              disabled={!saveAllowed || saveStatus === "saving"}
+              onClick={() => saveAllowed && setSaveMenuOpen((v) => !v)}
+              title="Save options"
+              className={`flex h-8 w-4 items-center justify-center rounded-r-[6px] transition-colors ${
+                !saveAllowed || saveStatus === "saving"
+                  ? "cursor-not-allowed text-muted-foreground/20 opacity-50"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <ChevronDown size={11} aria-hidden />
+            </button>
+            {/* Dropdown */}
+            {saveMenuOpen && (
+              <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-52 overflow-hidden rounded-[10px] border border-border bg-popover py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => { setSaveMenuOpen(false); handleSave(false); }}
+                  className="flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-muted transition-colors"
+                >
+                  <Save size={13} className="mt-0.5 shrink-0 text-muted-foreground" />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-foreground">Save</span>
+                    <span className="text-[10px] text-muted-foreground leading-snug">Overwrite current version</span>
+                  </span>
+                  <kbd className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground">⌘S</kbd>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSaveMenuOpen(false); handleSave(true); }}
+                  className="flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-muted transition-colors"
+                >
+                  <GitBranch size={13} className="mt-0.5 shrink-0 text-muted-foreground" />
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-foreground">Save as new version</span>
+                    <span className="text-[10px] text-muted-foreground leading-snug">Creates a history checkpoint</span>
+                  </span>
+                  <kbd className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground">⌘⇧S</kbd>
+                </button>
+              </div>
+            )}
+          </div>
           {showRightPanelToggle && (
             <button
               type="button"
@@ -4697,6 +4771,40 @@ export default function FlowViewPage({
     return () => window.removeEventListener("keydown", onKey);
   }, [steps.length, runState.activeIdx, selectedIdx, pageMode]);
 
+  /** Overwrite current version in-place — no new history entry, version label unchanged. */
+  const commitSaveOverwrite = useCallback(() => {
+    if (!flowProp?.id || !onFlowPatch) return false;
+    const snap = cloneFlowSnapshot(steps, flowName, flowDescription);
+    if (snapshotsEqual(snap, baselineSnap)) {
+      showToast("No changes to save");
+      return false;
+    }
+    // Update the latest history entry in-place if one exists
+    const updatedHistory = versionHistory.length > 0
+      ? [
+          {
+            ...versionHistory[0],
+            steps: snap.steps,
+            flowName: snap.name,
+            flowDescription: snap.description,
+            savedAt: new Date().toISOString(),
+          },
+          ...versionHistory.slice(1),
+        ]
+      : versionHistory;
+    setVersionHistory(updatedHistory);
+    setBaselineSnap(snap);
+    onFlowPatch(flowProp.id, {
+      steps: snap.steps,
+      name: snap.name,
+      description: snap.description,
+      versionHistory: updatedHistory,
+    });
+    if (updatedHistory.length > 0) persistVersionHistory(flowProp.id, updatedHistory);
+    showToast(`Saved — ${flowProp.version ?? "current version"}`);
+    return true;
+  }, [baselineSnap, flowDescription, flowName, flowProp?.id, flowProp?.version, onFlowPatch, showToast, steps, versionHistory]);
+
   const commitNewVersion = useCallback(() => {
     if (!flowProp?.id || !onFlowPatch) return false;
     const snap = cloneFlowSnapshot(steps, flowName, flowDescription);
@@ -4726,7 +4834,7 @@ export default function FlowViewPage({
       versionHistory: nextHistory,
     });
     persistVersionHistory(flowProp.id, nextHistory);
-    showToast(`Saved ${nextLabel}`);
+    showToast(`Saved as ${nextLabel}`);
     return true;
   }, [
     baselineSnap,
@@ -4798,6 +4906,7 @@ export default function FlowViewPage({
           onRename={handleRename}
           onSaveFlowSettings={handleSaveFlowSettings}
           versionHistory={versionHistory}
+          onSaveOverwrite={commitSaveOverwrite}
           onCommitNewVersion={commitNewVersion}
           onRestoreVersion={requestRestoreVersion}
           hasUnsavedChanges={hasUnsavedChanges}
