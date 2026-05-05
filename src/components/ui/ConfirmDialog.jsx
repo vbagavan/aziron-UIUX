@@ -1,52 +1,60 @@
-import { useEffect } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 
-export function ConfirmDialog({ title, message, confirmLabel = "Delete", confirmClass, onConfirm, onCancel }) {
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onCancel(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onCancel]);
-
+export function ConfirmDialog({
+  title,
+  message,
+  confirmLabel = "Delete",
+  confirmClass,
+  onConfirm,
+  onCancel,
+}) {
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onCancel} />
-      <div
-        className="relative w-[340px] overflow-hidden rounded-2xl bg-white dark:bg-[#111827]"
-        style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="w-[340px] max-w-[340px] overflow-hidden rounded-2xl p-0 gap-0"
         aria-labelledby="confirm-title"
       >
-        <div className="h-1 w-full bg-gradient-to-r from-[#ef4444] to-[#f97316]" />
+        {/* Danger accent stripe */}
+        <div className="h-1 w-full bg-gradient-to-r from-destructive to-orange-500" />
+
         <div className="px-6 pt-6 pb-5 flex flex-col gap-5">
+          {/* Icon */}
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-[#fef2f2] dark:bg-[#3b0a0a]">
-              <div className="flex size-9 items-center justify-center rounded-full bg-[#fee2e2] dark:bg-[#5b1111]">
-                <AlertTriangle size={18} className="text-[#ef4444]" />
+            <div className="flex size-14 items-center justify-center rounded-full bg-destructive/10 dark:bg-destructive/20">
+              <div className="flex size-9 items-center justify-center rounded-full bg-destructive/20 dark:bg-destructive/30">
+                <AlertTriangle size={18} className="text-destructive" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <h2 id="confirm-title" className="text-base font-semibold leading-snug text-[#0f172a] dark:text-[#f8fafc]">{title}</h2>
-              <p className="text-sm leading-5 text-[#64748b] dark:text-[#94a3b8]">{message}</p>
+              <h2 id="confirm-title" className="text-base font-semibold leading-snug text-foreground">
+                {title}
+              </h2>
+              <p className="text-sm leading-5 text-muted-foreground">{message}</p>
             </div>
           </div>
+
+          {/* Actions */}
           <div className="flex gap-2.5">
             <button
               onClick={onCancel}
-              className="flex-1 h-10 rounded-[8px] border border-[#e2e8f0] bg-white text-sm font-medium text-[#475569] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#0f172a]"
+              className="flex-1 h-10 rounded-lg border border-border bg-background text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className={confirmClass || "flex-1 h-10 rounded-[8px] bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium transition-colors"}
+              className={
+                confirmClass ||
+                "flex-1 h-10 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm font-medium transition-colors"
+              }
             >
               {confirmLabel}
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

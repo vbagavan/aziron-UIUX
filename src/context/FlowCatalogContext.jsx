@@ -76,7 +76,7 @@ export function FlowCatalogProvider({ children }) {
           version: normalized.version ?? "v0.1",
           status: "draft",
           steps: JSON.parse(JSON.stringify(normalized.steps ?? [])),
-          visibility: normalized.visibility === "public" ? "public" : "private",
+          visibility: "private", // always start private — user can publish after reviewing
           versionHistory: Array.isArray(normalized.versionHistory)
             ? JSON.parse(JSON.stringify(normalized.versionHistory))
             : [],

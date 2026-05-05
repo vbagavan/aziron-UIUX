@@ -16,6 +16,9 @@ import {
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog, DialogContent,
+} from "@/components/ui/dialog";
 
 const imgAzironLogo = "/logo.svg";
 const imgAzironLogoExpanded = "/logo-expanded.svg";
@@ -128,57 +131,50 @@ function hasActiveChild(items, activePage) {
 
 /* ── Logout modal ─────────────────────────────────────────────── */
 function LogoutModal({ onConfirm, onCancel, displayName = "Admin", displayEmail = "admin@aziro.com", initials = "A" }) {
-  useEffect(() => {
-    const h = (e) => { if (e.key === "Escape") onCancel(); };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [onCancel]);
-
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onCancel} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-85 overflow-hidden shadow-2xl">
-        <div className="h-1 w-full bg-gradient-to-r from-red-500 to-orange-500" />
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent showCloseButton={false} className="w-[340px] max-w-[340px] overflow-hidden rounded-2xl p-0 gap-0">
+        <div className="h-1 w-full bg-gradient-to-r from-destructive to-orange-500" />
         <div className="px-6 pt-6 pb-5 flex flex-col gap-5">
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="size-14 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center">
-              <div className="size-9 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                <LogOut size={18} className="text-red-500" />
+            <div className="size-14 rounded-full bg-destructive/10 dark:bg-destructive/20 flex items-center justify-center">
+              <div className="size-9 rounded-full bg-destructive/20 dark:bg-destructive/30 flex items-center justify-center">
+                <LogOut size={18} className="text-destructive" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Log out of Aziron?</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-5">
+              <h2 className="text-base font-semibold text-foreground">Log out of Aziron?</h2>
+              <p className="text-sm text-muted-foreground leading-5">
                 You'll be signed out of your current session.<br />Any unsaved work may be lost.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 bg-muted border border-border rounded-2xl">
             <Avatar className="size-8 flex-shrink-0">
               <AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{displayName}</span>
-              <span className="text-sm text-slate-600 dark:text-slate-400">{displayEmail}</span>
+              <span className="text-xs font-semibold text-foreground">{displayName}</span>
+              <span className="text-sm text-muted-foreground">{displayEmail}</span>
             </div>
           </div>
           <div className="flex gap-2.5">
-            <button onClick={onCancel}
-              className="flex-1 h-10 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button
+              onClick={onCancel}
+              className="flex-1 h-10 rounded-2xl border border-border bg-background text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
               Cancel
             </button>
-            <button onClick={onConfirm}
-              className="flex-1 h-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors">
+            <button
+              onClick={onConfirm}
+              className="flex-1 h-10 rounded-2xl bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
+            >
               <LogOut size={14} /> Log out
             </button>
           </div>
         </div>
-      </div>
-      <style>{`
-        @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-        @keyframes slideUp { from{opacity:0;transform:translateY(16px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-      `}</style>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
