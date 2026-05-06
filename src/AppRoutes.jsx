@@ -23,6 +23,7 @@ import UserGroupsPage from "@/components/pages/UserGroupsPage";
 import UsagePage from "@/components/pages/UsagePage";
 import VaultPage from "@/components/pages/VaultPage";
 import KnowledgeHubPage from "@/components/pages/KnowledgeHubPage";
+import MarketplacePage from "@/components/pages/MarketplacePage";
 import TenantListPage from "@/components/pages/TenantListPage";
 import TenantDetailPage from "@/components/pages/TenantDetailPage";
 import TenantCreatePage from "@/components/pages/TenantCreatePage";
@@ -195,6 +196,7 @@ export default function AppRoutes() {
       <Route path="/usage" element={<UsagePage onNavigate={onNavigate} />} />
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
+      <Route path="/marketplace" element={<MarketplacePage onNavigate={onNavigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 
       <Route

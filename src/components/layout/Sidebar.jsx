@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Sparkles, Bot, BrainCog, Vault, BarChart2, LayoutDashboard, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
-  UserCircle, ShieldCheck, Clock, Building2, Tag,
+  UserCircle, ShieldCheck, Clock, Building2, Tag, Store,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -47,6 +47,7 @@ const navGroups = [
     id: "platform", label: "PLATFORM",
     items: [
       { icon: BrainCog,  label: "Knowledge Hub",  page: "knowledge" },
+      { icon: Store,     label: "Marketplace",    page: "marketplace" },
       { icon: Vault,     label: "Vault",           page: "vault"     },
       {
         icon: Users, label: "User Management", page: "users",
@@ -410,11 +411,11 @@ function NavItem({ item, activePage, onNavigate }) {
             onOpenChange={handleToggle}
             className="group/sub w-full"
           >
-            <CollapsibleTrigger asChild className="w-full">
               <SidebarMenuButton
                 tooltip={item.subItems?.length ? (sidebarCollapsed ? item.label : undefined) : item.label}
                 isActive={isParentActive}
                 className="relative"
+                onClick={() => { if (!sidebarCollapsed) handleToggle(!subOpen); }}
               >
                 <span
                   className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
@@ -430,11 +431,13 @@ function NavItem({ item, activePage, onNavigate }) {
                 {!sidebarCollapsed && (
                   <ChevronDown
                     size={13}
-                    className="ml-auto transition-transform duration-200 group-data-[state=open]/sub:rotate-180"
+                    className={cn(
+                      "ml-auto transition-transform duration-200",
+                      subOpen && "rotate-180",
+                    )}
                   />
                 )}
               </SidebarMenuButton>
-            </CollapsibleTrigger>
 
             {!sidebarCollapsed && (
               <CollapsibleContent>

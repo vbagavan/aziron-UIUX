@@ -16,6 +16,7 @@ export const PAGE_PATH = {
   usage: "/usage",
   vault: "/vault",
   knowledge: "/knowledge",
+  marketplace: "/marketplace",
   pulse: "/pulse",
   tenants: "/tenants",
   "tenant-detail": "/tenants/detail",
@@ -43,6 +44,7 @@ export function pathToActivePage(pathname) {
   if (pathname.startsWith("/usage")) return "usage";
   if (pathname.startsWith("/vault")) return "vault";
   if (pathname.startsWith("/knowledge")) return "knowledge";
+  if (pathname.startsWith("/marketplace")) return "marketplace";
   if (pathname.startsWith("/pulse")) return "pulse";
   if (pathname.startsWith("/tenants/new")) return "tenant-create";
   if (pathname.startsWith("/tenants/detail")) return "tenant-detail";

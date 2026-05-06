@@ -1157,7 +1157,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
 }
 
 // ─── Configure mode ───────────────────────────────────────────────────────────
-function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, readOnly = false }) {
+function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, onClose, readOnly = false }) {
   const cfg      = NODE_CONFIGS[step.icon] ?? {};
   const execKey  = getExecStatus(flow.status, selectedIdx, flow.steps.length);
   const execInfo = STEP_EXEC[execKey];
@@ -1187,7 +1187,7 @@ function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, readOnly = false
   return (
     <div className="flex flex-col flex-1 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
         <div className="size-10 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{background:`${step.color}18`,border:`1px solid ${step.color}30`}}>
           <Icon size={18} style={{color:step.color}} />
         </div>
@@ -1195,7 +1195,12 @@ function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, readOnly = false
           <p className="text-sm font-semibold text-foreground truncate">{step.label}</p>
           <span className="text-xs text-muted-foreground">{cfg.type ?? "Node"} · Step {selectedIdx + 1}</span>
         </div>
-        <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
+        {onClose && (
+          <button onClick={onClose} className="size-6 flex items-center justify-center rounded-[5px] text-muted-foreground hover:bg-muted transition-colors flex-shrink-0">
+            <X size={13} />
+          </button>
+        )}
       </div>
 
       {/* Duration + type quick-info bar */}
@@ -2247,22 +2252,6 @@ function RightPanel({
       {/* ── NODE SELECTED: Configuration | Chat tabs ── */}
       {hasNode && (
         <>
-          {/* Node header */}
-          <div className="flex items-center gap-2.5 px-4 h-12 border-b border-border flex-shrink-0 bg-card">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{step.label}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{step.icon}</p>
-            </div>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: dynInfo.bg, color: dynInfo.color }}>
-              {isRunning ? "Running…" : isDone ? "Done" : dynInfo.label}
-            </span>
-            <button onClick={onClose}
-              className="size-6 flex items-center justify-center rounded-[5px] text-muted-foreground hover:text-muted-foreground hover:bg-muted transition-colors flex-shrink-0">
-              <X size={13} />
-            </button>
-          </div>
-
           {/* Tab bar: Configuration | Chat */}
           <div className="flex border-b border-border flex-shrink-0">
             {[
@@ -2288,6 +2277,7 @@ function RightPanel({
                   step={step}
                   selectedIdx={selectedIdx}
                   flow={flow}
+                  onClose={onClose}
                   onOpenChatTab={() => setPanelMode("chat")}
                   onUpdateStep={(patch) => onUpdateStep?.(selectedIdx, patch)}
                   readOnly={executeOnly}
