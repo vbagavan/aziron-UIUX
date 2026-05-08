@@ -12,6 +12,8 @@ import { PAGE_PATH } from "@/navigation/pagePaths";
 import NewChatPage from "@/components/pages/NewChatPage";
 import AgentsListPage from "@/components/pages/AgentsListPage";
 import AgentDetailPage from "@/components/pages/AgentDetailPage";
+import CreateAgentPage from "@/components/pages/CreateAgentPage";
+import { INITIAL_AGENTS } from "@/data/agentsCatalog";
 import AgentPage from "@/components/pages/AgentPage";
 import KudosPage from "@/components/pages/KudosPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
@@ -114,6 +116,7 @@ export default function AppRoutes() {
   const onNavigate = useLegacyNavigate();
 
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [agents, setAgents] = useState(INITIAL_AGENTS);
   const [viewedAgent, setViewedAgent] = useState(null);
   const [initialMessage, setInitialMessage] = useState("");
   const [viewedUser, setViewedUser] = useState(null);
@@ -128,6 +131,18 @@ export default function AppRoutes() {
     (agent) => {
       setViewedAgent(agent);
       navigate("/agents/detail");
+    },
+    [navigate],
+  );
+
+  const patchAgent = useCallback((id, partial) => {
+    setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, ...partial } : a)));
+    setViewedAgent((prev) => (prev?.id === id ? { ...prev, ...partial } : prev));
+  }, []);
+
+  const navigateToEditAgent = useCallback(
+    (agent) => {
+      navigate(`/agents/${agent.id}/edit`);
     },
     [navigate],
   );
@@ -152,12 +167,29 @@ export default function AppRoutes() {
       <Route
         path="/agents"
         element={
-          <AgentsListPage onNavigate={onNavigate} onOpenAgent={openAgent} onViewAgent={viewAgent} />
+          <AgentsListPage
+            onNavigate={onNavigate}
+            onOpenAgent={openAgent}
+            onViewAgent={viewAgent}
+            onEditAgent={navigateToEditAgent}
+            agents={agents}
+            onAgentsChange={setAgents}
+          />
         }
       />
+      <Route path="/agents/create" element={<CreateAgentPage onNavigate={onNavigate} agents={agents} onPatchAgent={patchAgent} />} />
+      <Route path="/agents/:agentId/edit" element={<CreateAgentPage onNavigate={onNavigate} agents={agents} onPatchAgent={patchAgent} />} />
       <Route
         path="/agents/detail"
-        element={<AgentDetailPage agent={viewedAgent} onNavigate={onNavigate} />}
+        element={
+          <AgentDetailPage
+            agent={viewedAgent}
+            onNavigate={onNavigate}
+            onEditAgent={
+              viewedAgent ? () => navigate(`/agents/${viewedAgent.id}/edit`) : undefined
+            }
+          />
+        }
       />
       <Route
         path="/chat"

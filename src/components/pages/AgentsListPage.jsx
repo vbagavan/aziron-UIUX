@@ -1,11 +1,27 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, MoreVertical, Bot, Pencil, Copy, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Cpu, SlidersHorizontal, X } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { useNavigate } from "react-router-dom";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
 import Sidebar from "@/components/layout/Sidebar";
 import ExpandableSearch from "@/components/common/ExpandableSearch";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast, useToast } from "@/components/ui/Toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { INITIAL_AGENTS } from "@/data/agentsCatalog";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -20,15 +36,14 @@ function nameToGradient(name) {
   return GRADIENTS[h % GRADIENTS.length];
 }
 
-// Animated count — springs from 0 to target on mount
+/** Matches FlowsPage — animated total for stat chips */
 function AnimCount({ to, className = "" }) {
   const [val, setVal] = useState(0);
   useEffect(() => {
     let start = null;
-    const duration = 700;
     const raf = requestAnimationFrame(function step(ts) {
       if (!start) start = ts;
-      const t = Math.min((ts - start) / duration, 1);
+      const t = Math.min((ts - start) / 700, 1);
       const ease = 1 - Math.pow(1 - t, 3);
       setVal(Math.round(ease * to));
       if (t < 1) requestAnimationFrame(step);
@@ -38,31 +53,6 @@ function AnimCount({ to, className = "" }) {
   return <span className={className}>{val}</span>;
 }
 
-const imgAvatarRobot = "/astronaut.svg";
-
-const agents = [
-  { id: 0,  name: "Customer Appreciation",   description: "AI-powered recognition workflow that creates personalized appreciation cards and messages for clients.",                        date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "2 min ago",   success: 98,  accessEnabled: true  },
-  { id: 1,  name: "CV Agent",                description: "Streamlines resume creation with smart suggestions and formatting to help you stand out in any application.",                date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "1h ago",      success: 94,  accessEnabled: true  },
-  { id: 2,  name: "Portfolio Builder",       description: "Creates and curates a personalized portfolio showcasing your best work and achievements effectively.",                        date: "15 Apr 2025", provider: "Anthropic", model: "Claude 3.5",     status: "idle",     lastRun: "3h ago",      success: 87,  accessEnabled: false },
-  { id: 3,  name: "Job Matcher",             description: "Intelligently matches you with job listings based on your skills, experience, and career preferences.",                      date: "10 May 2025", provider: "OpenAI",    model: "GPT-4o",         status: "idle",     lastRun: "Yesterday",   success: 91,  accessEnabled: false },
-  { id: 4,  name: "Interview Coach",         description: "Prepares you for interviews with practice questions, feedback, and real-time personalized coaching.",                        date: "01 Jun 2025", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "30 min ago",  success: 96,  accessEnabled: true  },
-  { id: 5,  name: "Skill Tracker",           description: "Monitors your skill development progress and recommends tailored learning paths for continuous growth.",                     date: "20 Jun 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "error",    lastRun: "2h ago",      success: 62,  accessEnabled: false },
-  { id: 6,  name: "Networking Assistant",    description: "Helps you build and maintain professional connections on LinkedIn and other major platforms.",                               date: "30 Jul 2025", provider: "Anthropic", model: "Claude 3 Haiku", status: "idle",     lastRun: "2 days ago",  success: 89,  accessEnabled: false },
-  { id: 7,  name: "Salary Insights",         description: "Provides data-driven salary benchmarks and effective negotiation strategies for your specific role.",                        date: "12 Aug 2025", provider: "OpenAI",    model: "GPT-4o",         status: "active",   lastRun: "15 min ago",  success: 100, accessEnabled: true  },
-  { id: 8,  name: "Freelance Finder",        description: "Discovers freelance opportunities that precisely match your expertise and hourly rate expectations.",                        date: "25 Sep 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "idle",     lastRun: "5h ago",      success: 83,  accessEnabled: false },
-  { id: 9,  name: "Profile Enhancer",        description: "Optimizes your professional profiles on major job platforms to maximize your visibility to recruiters.",                     date: "05 Oct 2025", provider: "Anthropic", model: "Claude 3.5",     status: "disabled", lastRun: "1 week ago",  success: 78,  accessEnabled: false },
-  { id: 10, name: "Job Application Tracker", description: "Keeps track of all your job applications, deadlines, follow-up actions, and application statuses.",                         date: "15 Nov 2025", provider: "OpenAI",    model: "GPT-4o mini",    status: "active",   lastRun: "5 min ago",   success: 99,  accessEnabled: false },
-  { id: 11, name: "Resume Analyzer",         description: "Analyzes your resume and provides specific, actionable feedback to significantly improve your success rates.",               date: "03 Dec 2025", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "45 min ago",  success: 93,  accessEnabled: true  },
-  { id: 12, name: "Cover Letter Generator",  description: "Generates compelling and personalized cover letters precisely tailored to each individual job posting.",                     date: "20 Jan 2026", provider: "OpenAI",    model: "GPT-4.5",        status: "idle",     lastRun: "Yesterday",   success: 90,  accessEnabled: false },
-  { id: 13, name: "Skill Assessment",        description: "Evaluates your technical and soft skills through engaging interactive assessments and practical quizzes.",                   date: "28 Feb 2026", provider: "OpenAI",    model: "GPT-4o",         status: "error",    lastRun: "3h ago",      success: 55,  accessEnabled: false },
-  { id: 14, name: "Personal Branding",       description: "Helps you craft a strong and consistent personal brand narrative across all professional channels.",                         date: "15 Mar 2026", provider: "Anthropic", model: "Claude 3 Haiku", status: "idle",     lastRun: "4 days ago",  success: 85,  accessEnabled: false },
-  { id: 15, name: "Career Path Explorer",    description: "Maps out potential career trajectories based on your unique goals and current market demand trends.",                        date: "12 Apr 2026", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "1h ago",      success: 97,  accessEnabled: true  },
-  { id: 16, name: "Mentorship Match",        description: "Connects you with experienced mentors in your industry for personalized guidance and ongoing support.",                      date: "29 Apr 2026", provider: "Anthropic", model: "Claude 3.5",     status: "disabled", lastRun: "2 weeks ago", success: 72,  accessEnabled: false },
-  { id: 17, name: "Industry News Alerts",    description: "Curates and delivers relevant industry news and emerging trends to keep you consistently informed.",                         date: "10 May 2026", provider: "OpenAI",    model: "GPT-4o mini",    status: "active",   lastRun: "10 min ago",  success: 100, accessEnabled: false },
-  { id: 18, name: "Work-Life Balance Tracker", description: "Monitors your work patterns and suggests practical strategies for achieving a healthier balance.",                        date: "25 Jun 2026", provider: "Anthropic", model: "Claude 3 Haiku", status: "idle",     lastRun: "1 week ago",  success: 81,  accessEnabled: false },
-  { id: 19, name: "Continuous Learning Hub", description: "Recommends and tracks online courses and certifications to support your ongoing professional development.",                  date: "15 Jul 2026", provider: "OpenAI",    model: "GPT-4o",         status: "idle",     lastRun: "3 days ago",  success: 88,  accessEnabled: false },
-];
-
 const STATUS_CONFIG = {
   active:   { label: "Active",   dot: "#22c55e", bg: "#dcfce7", text: "#15803d", border: "#bbf7d0" },
   idle:     { label: "Idle",     dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" },
@@ -70,8 +60,82 @@ const STATUS_CONFIG = {
   disabled: { label: "Disabled", dot: "#cbd5e1", bg: "#f8fafc", text: "#94a3b8", border: "#e2e8f0" },
 };
 
-const STATUS_FILTERS = ["All", "Active", "Idle", "Error", "Disabled"];
-const PROVIDER_FILTERS = ["All", "OpenAI", "Anthropic"];
+function formatCatalogDate(d = new Date()) {
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Fork flow — name/description then append a private copy to the catalog. */
+function ForkAgentDialog({ agent, open, onOpenChange, onFork }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  useEffect(() => {
+    if (open && agent) {
+      setName(`${agent.name} (Fork)`);
+      setDescription((agent.description || "").trim());
+    }
+  }, [open, agent?.id]);
+
+  const handleSubmit = () => {
+    if (!agent || !name.trim()) return;
+    onFork(agent, name.trim(), description);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open && !!agent} onOpenChange={onOpenChange}>
+      {agent ? (
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle>Fork agent</DialogTitle>
+          <DialogDescription>
+            Create a private copy of{" "}
+            <span className="font-medium text-foreground">"{agent.name}"</span>. You can rename it and adjust the description.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 px-6 py-2">
+          <div className="space-y-1.5">
+            <label htmlFor="fork-agent-name" className="text-sm font-medium text-foreground">
+              Name
+            </label>
+            <Input
+              id="fork-agent-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My fork name"
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="fork-agent-desc" className="text-sm font-medium text-foreground">
+              Description <span className="font-normal text-muted-foreground">(optional)</span>
+            </label>
+            <Textarea
+              id="fork-agent-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What will this fork do differently?"
+              rows={3}
+              className="resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="border-t bg-muted/30 px-6 py-4 sm:justify-end dark:bg-muted/20">
+          <Button type="button" variant="outline" className="min-h-10 sm:min-w-[100px]" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" className="min-h-10 gap-2 sm:min-w-[120px]" onClick={handleSubmit} disabled={!name.trim()}>
+            <GitFork size={15} className="opacity-90" aria-hidden />
+            Fork agent
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+      ) : null}
+    </Dialog>
+  );
+}
 
 // ─── Provider logo / avatar ───────────────────────────────────────────────────
 
@@ -79,6 +143,7 @@ const PROVIDER_FILTERS = ["All", "OpenAI", "Anthropic"];
 
 function AgentAvatar({ size = "lg", name = "" }) {
   const dim   = size === "sm" ? "size-8" : "size-12";
+  const botPx = size === "sm" ? 16 : 22;
   const [g1, g2] = nameToGradient(name || "Agent");
   return (
     <div
@@ -90,7 +155,12 @@ function AgentAvatar({ size = "lg", name = "" }) {
         className="absolute inset-0 opacity-40"
         style={{ background: `radial-gradient(ellipse at 30% 20%, ${g1}22 0%, transparent 70%)` }}
       />
-      <img src={imgAvatarRobot} alt="" className="w-[55%] h-[55%] object-contain relative z-10" style={{ opacity: 0.7, filter: `drop-shadow(0 0 4px ${g1}60)` }} />
+      <Bot
+        size={botPx}
+        className="relative z-10 text-[#475569] dark:text-[#94a3b8]"
+        style={{ filter: `drop-shadow(0 0 4px ${g1}40)` }}
+        aria-hidden
+      />
     </div>
   );
 }
@@ -111,12 +181,13 @@ function SuccessBar({ pct }) {
 
 // ─── Agent card (grid view) ───────────────────────────────────────────────────
 
-function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
+function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, isSelected }) {
   const isMenuOpen = openMenu === agent.id;
   const statusCfg  = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
   const btnRef     = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
+  const hasDescription = Boolean(agent.description?.trim());
 
   const handleMenuToggle = (e) => {
     e.stopPropagation();
@@ -129,17 +200,12 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
 
   return (
     <>
-    {confirmDelete && (
-      <ConfirmDialog
-        title={`Delete "${agent.name}"?`}
-        message="This agent will be permanently deleted and cannot be recovered."
-        confirmLabel="Delete"
-        onConfirm={() => setConfirmDelete(false)}
-        onCancel={() => setConfirmDelete(false)}
-      />
-    )}
     <div
-      className="group bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden"
+      className={`group h-full min-h-[164px] bg-white dark:bg-[#1e293b] border rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden ${
+        isSelected
+          ? "border-[#2563eb] ring-2 ring-[#2563eb]/20 shadow-md"
+          : "border-[#e2e8f0] dark:border-[#334155]"
+      }`}
       style={{ "--accent": statusCfg.dot }}
       onClick={() => onOpen(agent)}
     >
@@ -178,19 +244,32 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
               <MoreVertical size={16} />
             </button>
           </div>
+          <div className="flex items-center gap-1">
+            {agent.visibility === "public" ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
+                <Globe size={9} /> Public
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]">
+                <Lock size={9} /> Private
+              </span>
+            )}
+          </div>
           <p
-            className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 tracking-[0.12px] overflow-hidden"
+            className={`text-xs leading-4 tracking-[0.12px] overflow-hidden ${hasDescription ? "text-[#64748b] dark:text-[#94a3b8]" : "text-[#94a3b8] dark:text-[#64748b] italic"}`}
             style={{ height: 35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
           >
-            {agent.description}
+            {hasDescription ? agent.description : "No description added yet."}
           </p>
         </div>
       </div>
 
-      <div className="h-px bg-[#e2e8f0] dark:bg-[#334155] w-full flex-shrink-0" />
+      <div className="mt-auto h-px bg-[#e2e8f0] dark:bg-[#334155] w-full flex-shrink-0" />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.date}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.date}</span>
+        </div>
         <div className="flex items-center gap-1">
           <ProviderLogo provider={agent.provider} className="size-3" fallbackClassName="size-3" />
           <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.model}</span>
@@ -210,14 +289,42 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
           <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
             <Bot size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenMenu(null);
+              onEdit?.(agent);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+          >
             <Pencil size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-            <Copy size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenMenu(null);
+              onFork?.(agent);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+          >
+            <GitFork size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenMenu(null);
+              onRequestVisibilityChange(agent);
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+          >
+            {agent.visibility === "public"
+              ? <Lock size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+              : <Globe size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+            }
+            {visibilityActionLabel}
           </button>
           <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
             <Trash2 size={14} className="text-[#ef4444]" /> Delete
           </button>
         </div>
@@ -229,13 +336,13 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView }) {
 
 // ─── Agent table row (list view) ──────────────────────────────────────────────
 
-function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
+function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, zebra }) {
   const isMenuOpen  = openMenu === agent.id;
   const statusCfg   = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
   const [hovered, setHovered] = useState(false);
   const rowBtnRef   = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
 
   const handleMenuToggle = (e) => {
     e.stopPropagation();
@@ -248,15 +355,6 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
 
   return (
     <>
-    {confirmDelete && (
-      <ConfirmDialog
-        title={`Delete "${agent.name}"?`}
-        message="This agent will be permanently deleted and cannot be recovered."
-        confirmLabel="Delete"
-        onConfirm={() => setConfirmDelete(false)}
-        onCancel={() => setConfirmDelete(false)}
-      />
-    )}
     <tr
       className={`group border-b border-[#f1f5f9] dark:border-[#1e293b] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b]"}`}
       style={hovered ? {
@@ -349,14 +447,42 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, zebra }) {
               <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
                 <Bot size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
               </button>
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenMenu(null);
+                  onEdit?.(agent);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              >
                 <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
               </button>
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-                <Copy size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Duplicate
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenMenu(null);
+                  onFork?.(agent);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              >
+                <GitFork size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenMenu(null);
+                  onRequestVisibilityChange(agent);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              >
+                {agent.visibility === "public"
+                  ? <Lock size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
+                  : <Globe size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
+                }
+                {visibilityActionLabel}
               </button>
               <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); setConfirmDelete(true); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
+              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
                 <Trash2 size={13} className="text-[#ef4444]" /> Delete
               </button>
             </div>
@@ -396,118 +522,202 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
   );
 }
 
-// ─── Filter dropdown ──────────────────────────────────────────────────────────
+// ─── Agent Conversation Panel ─────────────────────────────────────────────────
 
-function FilterDropdown({ statusFilter, setStatusFilter, providerFilter, setProviderFilter, onClear }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) {
+  const statusCfg = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef(null);
+  const inputRef  = useRef(null);
 
-  const activeCount = (statusFilter !== "All" ? 1 : 0) + (providerFilter !== "All" ? 1 : 0);
+  // Seed a greeting whenever the agent changes
+  useEffect(() => {
+    setMessages([
+      {
+        role: "ai",
+        text: `Hi! I'm **${agent.name}**.\n${agent.description}\n\nHow can I help you today?`,
+      },
+    ]);
+    setInput("");
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [agent.id]);
 
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    if (scrollRef.current)
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, loading]);
+
+  const send = () => {
+    const q = input.trim();
+    if (!q) return;
+    setMessages((m) => [...m, { role: "user", text: q }]);
+    setInput("");
+    setLoading(true);
+    setTimeout(() => {
+      setMessages((m) => [
+        ...m,
+        {
+          role: "ai",
+          text: `Thanks for your message! As **${agent.name}** I'm processing your request. This is a demo — in production I'd connect to the live agent backend.`,
+        },
+      ]);
+      setLoading(false);
+    }, 900);
+  };
 
   return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1.5 h-9 px-3 rounded-[6px] border text-sm font-medium transition-colors ${
-          activeCount > 0
-            ? "bg-[#eff6ff] dark:bg-[#1e3a8a] border-[#bfdbfe] text-[#2563eb]"
-            : "bg-white dark:bg-[#1e293b] border-[#e2e8f0] dark:border-[#334155] text-[#64748b] dark:text-[#94a3b8] hover:border-[#cbd5e1] hover:text-[#475569] dark:hover:text-[#94a3b8]"
-        }`}
-      >
-        <SlidersHorizontal size={14} />
-        Filters
-        {activeCount > 0 && (
-          <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white text-xs font-bold">
-            {activeCount}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-11 z-30 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-lg dark:shadow-none w-[260px] p-3 flex flex-col gap-3">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#0f172a] dark:text-[#f1f5f9] uppercase tracking-[0.06em]">Filters</span>
-            {activeCount > 0 && (
-              <button onClick={onClear} className="flex items-center gap-1 text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors">
-                <X size={11} /> Clear all
-              </button>
-            )}
-          </div>
-
-          {/* Status */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] uppercase tracking-[0.06em]">Status</span>
-            <div className="flex flex-wrap gap-1">
-              {STATUS_FILTERS.map((s) => {
-                const isActive = statusFilter === s;
-                const cfg = STATUS_CONFIG[s.toLowerCase()];
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setStatusFilter(s)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      isActive
-                        ? "bg-[#2563eb] text-white border-[#2563eb]"
-                        : "bg-[#f8fafc] dark:bg-[#0f172a] text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1]"
-                    }`}
-                  >
-                    {cfg && !isActive && (
-                      <span className="size-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.dot }} />
-                    )}
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Provider */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[#94a3b8] dark:text-[#64748b] uppercase tracking-[0.06em]">Provider</span>
-            <div className="flex flex-wrap gap-1">
-              {PROVIDER_FILTERS.map((p) => {
-                const isActive = providerFilter === p;
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setProviderFilter(p)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      isActive
-                        ? "bg-[#2563eb] text-white border-[#2563eb]"
-                        : "bg-[#f8fafc] text-[#64748b] border-[#e2e8f0] hover:border-[#cbd5e1]"
-                    }`}
-                  >
-                    {p !== "All" && !isActive && <ProviderLogo provider={p} className="size-3 text-[#64748b] dark:text-[#94a3b8]" fallbackClassName="size-3" />}
-                    {p}
-                  </button>
-                );
-              })}
-            </div>
+    <motion.div
+      initial={{ width: 0, opacity: 0 }}
+      animate={{ width: isExpanded ? "100%" : 400, opacity: 1 }}
+      exit={{ width: 0, opacity: 0 }}
+      transition={{ duration: 0.22, ease: "easeInOut" }}
+      className={`${isExpanded ? "flex-1 min-w-0" : "flex-shrink-0"} border-l border-[#e2e8f0] bg-[#f8fafc] flex flex-col overflow-hidden`}
+      style={{ minWidth: 0 }}
+    >
+      {/* Header — matches AgentPage */}
+      <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-4">
+        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[4px] size-9 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <Bot size={18} className="text-[#64748b]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[#0f172a] truncate">{agent.name}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="size-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusCfg.dot }} />
+            <span className="text-xs capitalize" style={{ color: statusCfg.text }}>{statusCfg.label}</span>
           </div>
         </div>
-      )}
-    </div>
+        <button
+          aria-label={isExpanded ? "Restore panel size" : "Maximize"}
+          onClick={onToggleExpand}
+          className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+        >
+          {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+        </button>
+        <button aria-label="Close" onClick={onClose} className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+          <X size={15} />
+        </button>
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 px-4 py-4">
+        <div className="flex-1" />
+
+        {messages.map((msg, i) => {
+          if (msg.role === "user") return (
+            <div key={i} className="flex justify-end w-full flex-shrink-0">
+              <div className="max-w-[80%] rounded-[12px] rounded-tr-[4px] border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3">
+                <p className="text-sm leading-5 text-[#0f172a] whitespace-pre-line">{msg.text}</p>
+              </div>
+            </div>
+          );
+          return (
+            <div key={i} className="flex flex-col items-start w-full flex-shrink-0">
+              <div className="w-full rounded-[12px] rounded-tl-[4px] bg-white border border-[#e2e8f0] px-4 py-3">
+                <p className="text-sm leading-6 text-[#4e4d4d] whitespace-pre-line">
+                  {msg.text.replace(/\*\*(.*?)\*\*/g, "$1")}
+                </p>
+              </div>
+              {/* Action buttons on AI messages */}
+              <div className="flex items-center mt-1">
+                {[
+                  { icon: <Copy size={14} />, label: "Copy" },
+                  { icon: <ThumbsUp size={14} />, label: "Good response" },
+                  { icon: <ThumbsDown size={14} />, label: "Bad response" },
+                  { icon: <RotateCcw size={14} />, label: "Regenerate" },
+                ].map((btn) => (
+                  <button key={btn.label} aria-label={btn.label} title={btn.label}
+                    className="flex size-7 items-center justify-center rounded-full text-[#94a3b8] hover:bg-[#f1f5f9] hover:text-[#64748b] transition-colors">
+                    {btn.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {loading && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex gap-1 px-4 py-3 rounded-[12px] rounded-tl-[4px] bg-white border border-[#e2e8f0]">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="size-1.5 rounded-full bg-[#94a3b8] animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms` }} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Prompt box — matches AgentPage style */}
+      <div className="px-4 pb-4 pt-2 flex-shrink-0">
+        <div className="rounded-[12px] bg-white shadow-[0_4px_24px_0_rgba(37,99,235,0.10)] border border-[#e2e8f0] overflow-hidden">
+          {/* Text input row */}
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e2e8f0]">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder={`Ask ${agent.name} anything…`}
+              className="flex-1 bg-transparent text-sm leading-5 text-[#0f172a] placeholder:text-[#94a3b8] outline-none"
+            />
+            <button
+              onClick={send}
+              disabled={!input.trim() || loading}
+              aria-label="Send message"
+              className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 transition-colors ${
+                input.trim() && !loading
+                  ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                  : "bg-white border-[#cbd5e1] text-[#cbd5e1] cursor-not-allowed"
+              }`}
+            >
+              <Send size={14} />
+            </button>
+          </div>
+          {/* Control bar */}
+          <div className="flex items-center gap-1 px-3 py-2">
+            <button className="flex items-center gap-1.5 h-7 rounded-[6px] px-2 text-xs text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+              <Paperclip size={12} /> Attach
+            </button>
+            <div className="h-4 w-px bg-[#e2e8f0] mx-1" />
+            <span className="text-xs text-[#94a3b8]">Claude-sonnet</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
-
+export default function AgentsListPage({
+  onNavigate,
+  onOpenAgent,
+  onViewAgent,
+  onEditAgent,
+  agents: agentsProp,
+  onAgentsChange,
 }) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery]   = useState("");
   const [openMenu, setOpenMenu]         = useState(null);
   const [viewMode, setViewMode]         = useState("grid");
   const [sort, setSort]                 = useState({ key: "name", dir: "asc" });
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [providerFilter, setProviderFilter] = useState("All");
+  /** `null` = all agents; otherwise single segment filter (Flows-style mutual exclusion). */
+  const [segmentFilter, setSegmentFilter] = useState(null);
+  const [internalAgents, setInternalAgents] = useState(INITIAL_AGENTS);
+  const agents = agentsProp ?? internalAgents;
+  const setAgents = onAgentsChange ?? setInternalAgents;
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [isConversationExpanded, setIsConversationExpanded] = useState(false);
+  const [agentPendingDelete, setAgentPendingDelete] = useState(null);
+  const [agentPendingFork, setAgentPendingFork] = useState(null);
+  const [agentPendingPublish, setAgentPendingPublish] = useState(null);
+  const [agentPendingUnpublish, setAgentPendingUnpublish] = useState(null);
+  const [publishBusy, setPublishBusy] = useState(false);
+  const { toasts, showToast, dismissToast } = useToast();
 
   const handleSort = (key) => {
     setSort((prev) =>
@@ -515,16 +725,91 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
     );
   };
 
-  // Derived stats
-  const total    = agents.length;
-  const active   = agents.filter((a) => a.status === "active").length;
-  const errCount = agents.filter((a) => a.status === "error").length;
-  const idle     = agents.filter((a) => a.status === "idle").length;
+  const handleSetVisibility = (agentId, visibility) => {
+    setAgents((prevAgents) =>
+      prevAgents.map((agent) => (agent.id === agentId ? { ...agent, visibility } : agent))
+    );
+    setSelectedAgent((prevSelected) =>
+      prevSelected?.id === agentId ? { ...prevSelected, visibility } : prevSelected
+    );
+  };
+
+  const handleDeleteAgent = (agentId) => {
+    const agentName = agents.find((agent) => agent.id === agentId)?.name ?? "Agent";
+    setAgents((prevAgents) => prevAgents.filter((agent) => agent.id !== agentId));
+    setSelectedAgent((prevSelected) => (prevSelected?.id === agentId ? null : prevSelected));
+    showToast(`Agent "${agentName}" deleted.`);
+  };
+
+  const handleForkAgent = (source, name, description) => {
+    const nextId = agents.length ? Math.max(...agents.map((a) => a.id)) + 1 : 0;
+    const desc = description.trim() || source.description || "";
+    const forked = {
+      ...source,
+      id: nextId,
+      name,
+      description: desc,
+      visibility: "private",
+      date: formatCatalogDate(),
+      status: "idle",
+      lastRun: "Never",
+      success: 100,
+    };
+    setAgents((prev) => [...prev, forked]);
+    showToast(`Fork created — "${name}" is in your catalog (private).`);
+  };
+
+  const handleRequestVisibilityChange = (agent) => {
+    if (agent.visibility === "public") {
+      setAgentPendingUnpublish(agent);
+      return;
+    }
+    setAgentPendingPublish(agent);
+  };
+
+  /**
+   * Opening an agent: Customer Appreciation → navigate to /kudos via onOpenAgent;
+   * all other agents → open inline chat panel.
+   */
+  const handleOpen = (agent) => {
+    if (onOpenAgent && agent.name === "Customer Appreciation") {
+      onOpenAgent(agent);
+      return;
+    }
+    setSelectedAgent(agent);
+  };
+
+  const matchesSearch = (a) => a.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+  const matchesSegmentFilter = (a) => {
+    if (!segmentFilter) return true;
+    if (segmentFilter === "active") return a.status === "active";
+    if (segmentFilter === "disabled") return a.status === "disabled";
+    if (segmentFilter === "public") return a.visibility === "public";
+    if (segmentFilter === "private") return a.visibility === "private";
+    return true;
+  };
+
+  const total = agents.length;
+  const activeN = agents.filter((a) => a.status === "active").length;
+  const disabledN = agents.filter((a) => a.status === "disabled").length;
+  const publicN = agents.filter((a) => a.visibility === "public").length;
+  const privateN = agents.filter((a) => a.visibility === "private").length;
+
+  const statChipClass = (key) =>
+    cn(
+      "inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left transition-colors",
+      "hover:bg-muted/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      segmentFilter === key && "bg-muted font-medium text-foreground shadow-sm",
+    );
+
+  const toggleSegmentFilter = (key) => {
+    setSegmentFilter((prev) => (prev === key ? null : key));
+  };
 
   const filtered = agents
-    .filter((a) => a.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .filter((a) => statusFilter === "All"   || a.status   === statusFilter.toLowerCase())
-    .filter((a) => providerFilter === "All" || a.provider === providerFilter)
+    .filter(matchesSearch)
+    .filter(matchesSegmentFilter)
     .sort((a, b) => {
       const val = (x) => {
         if (sort.key === "name")     return x.name.toLowerCase();
@@ -539,6 +824,8 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
       return sort.dir === "asc" ? cmp : -cmp;
     });
 
+  const filteredEmpty = agents.length > 0 && filtered.length === 0;
+
   return (
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
@@ -546,7 +833,8 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
       <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex flex-1 min-w-0 min-h-0">
+          <div className={`${selectedAgent && isConversationExpanded ? "hidden" : "flex flex-col flex-1 min-w-0"}`}>
           <AppHeader onNavigate={onNavigate} />
 
           <div className="flex-1 min-h-0 overflow-y-auto">
@@ -573,46 +861,6 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
                     <ExpandableSearch.Input placeholder="Search agents…" className="w-[240px]" />
                   </ExpandableSearch.Provider>
 
-                  <FilterDropdown
-                    statusFilter={statusFilter}
-                    setStatusFilter={setStatusFilter}
-                    providerFilter={providerFilter}
-                    setProviderFilter={setProviderFilter}
-                    onClear={() => { setStatusFilter("All"); setProviderFilter("All"); }}
-                  />
-
-                  {/* Active filter chips */}
-                  <AnimatePresence>
-                    {statusFilter !== "All" && (
-                      <motion.button
-                        key="status-chip"
-                        initial={{ opacity: 0, scale: 0.8, x: -6 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: -6 }}
-                        transition={{ duration: 0.15 }}
-                        onClick={() => setStatusFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
-                      >
-                        {statusFilter}
-                        <X size={10} />
-                      </motion.button>
-                    )}
-                    {providerFilter !== "All" && (
-                      <motion.button
-                        key="provider-chip"
-                        initial={{ opacity: 0, scale: 0.8, x: -6 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, x: -6 }}
-                        transition={{ duration: 0.15 }}
-                        onClick={() => setProviderFilter("All")}
-                        className="flex items-center gap-1 px-2 h-6 rounded-full text-sm font-semibold border border-[#bfdbfe] bg-[#eff6ff] text-[#2563eb] hover:bg-[#dbeafe] transition-colors"
-                      >
-                        {providerFilter}
-                        <X size={10} />
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-
                   <div className="flex items-center bg-white border border-[#e2e8f0] rounded-[6px] h-9 p-1 gap-0.5">
                     <button
                       onClick={() => setViewMode("grid")}
@@ -634,54 +882,128 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
                     </button>
                   </div>
 
-                  <button className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0">
+                  <button
+                    onClick={() => navigate("/agents/create")}
+                    className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
+                  >
                     <Plus size={16} />
                     Create Agent
                   </button>
                 </div>
               </div>
 
-              {/* Summary bar */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-[#64748b]">
-                  <AnimCount to={total} className="font-semibold text-[#0f172a]" /> agents
+              {/* Segment filters — matches FlowsPage stat chip pattern */}
+              <div
+                className="flex flex-wrap items-center gap-3 text-sm"
+                role="toolbar"
+                aria-label="Filter agents by status and visibility"
+              >
+                <button
+                  type="button"
+                  className={statChipClass(null)}
+                  onClick={() => setSegmentFilter(null)}
+                  aria-pressed={segmentFilter === null}
+                  title="Show all agents"
+                >
+                  <span className="text-muted-foreground">
+                    <AnimCount to={total} className="font-semibold text-foreground" /> agents
+                  </span>
+                </button>
+                <span className="text-border select-none" aria-hidden>
+                  ·
                 </span>
-                <span className="text-[#e2e8f0]">·</span>
-                <span className="flex items-center gap-1.5 text-sm">
-                  <span className="size-2 rounded-full bg-[#22c55e]" />
-                  <AnimCount to={active} className="font-semibold text-[#15803d]" />
-                  <span className="text-[#64748b]">active</span>
+                <button
+                  type="button"
+                  className={cn(statChipClass("active"), "items-center")}
+                  onClick={() => toggleSegmentFilter("active")}
+                  aria-pressed={segmentFilter === "active"}
+                  title="Show active agents"
+                >
+                  <span className="size-2 shrink-0 rounded-full bg-primary" />
+                  <AnimCount to={activeN} className="font-semibold text-primary" />
+                  <span className="text-muted-foreground">active</span>
+                </button>
+                <span className="text-border select-none" aria-hidden>
+                  ·
                 </span>
-                <span className="text-[#e2e8f0]">·</span>
-                <span className="flex items-center gap-1.5 text-sm">
-                  <span className="size-2 rounded-full bg-[#94a3b8]" />
-                  <AnimCount to={idle} className="font-semibold text-[#475569]" />
-                  <span className="text-[#64748b]">idle</span>
+                <button
+                  type="button"
+                  className={cn(statChipClass("disabled"), "items-center")}
+                  onClick={() => toggleSegmentFilter("disabled")}
+                  aria-pressed={segmentFilter === "disabled"}
+                  title="Show disabled agents"
+                >
+                  <span className="size-2 shrink-0 rounded-full bg-muted-foreground" />
+                  <AnimCount to={disabledN} className="font-semibold text-muted-foreground" />
+                  <span className="text-muted-foreground">disabled</span>
+                </button>
+                <span className="text-border select-none" aria-hidden>
+                  ·
                 </span>
-                {errCount > 0 && (
-                  <>
-                    <span className="text-[#e2e8f0]">·</span>
-                    <span className="flex items-center gap-1.5 text-sm">
-                      <span className="size-2 rounded-full bg-[#ef4444]" />
-                      <AnimCount to={errCount} className="font-semibold text-[#dc2626]" />
-                      <span className="text-[#64748b]">errors</span>
-                    </span>
-                  </>
-                )}
+                <button
+                  type="button"
+                  className={cn(statChipClass("public"), "items-center")}
+                  onClick={() => toggleSegmentFilter("public")}
+                  aria-pressed={segmentFilter === "public"}
+                  title="Show public agents"
+                >
+                  <span className="size-2 shrink-0 rounded-full bg-primary" />
+                  <AnimCount to={publicN} className="font-semibold text-primary" />
+                  <span className="text-muted-foreground">public</span>
+                </button>
+                <span className="text-border select-none" aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className={cn(statChipClass("private"), "items-center")}
+                  onClick={() => toggleSegmentFilter("private")}
+                  aria-pressed={segmentFilter === "private"}
+                  title="Show private agents"
+                >
+                  <span className="size-2 shrink-0 rounded-full bg-muted-foreground" />
+                  <AnimCount to={privateN} className="font-semibold text-muted-foreground" />
+                  <span className="text-muted-foreground">private</span>
+                </button>
               </div>
 
+              {filteredEmpty && (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <p className="text-sm font-medium text-foreground">No agents match your filters</p>
+                  <p className="text-xs text-muted-foreground">
+                    Try a different search term or clear the segment filter.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto p-0 text-sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSegmentFilter(null);
+                    }}
+                  >
+                    Clear search and filter
+                  </Button>
+                </div>
+              )}
+
               {/* Agent grid / list */}
-              {filtered.length > 0 ? (
+              {!filteredEmpty && filtered.length > 0 ? (
                 viewMode === "grid" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr gap-4">
                     {filtered.map((agent) => (
                       <AgentCard
                         key={agent.id}
                         agent={agent}
                         openMenu={openMenu}
                         setOpenMenu={setOpenMenu}
-                        onOpen={onOpenAgent}
+                        onOpen={handleOpen}
                         onView={onViewAgent}
+                        onEdit={onEditAgent}
+                        onFork={(a) => setAgentPendingFork(a)}
+                        onRequestDelete={setAgentPendingDelete}
+                        onRequestVisibilityChange={handleRequestVisibilityChange}
+                        isSelected={selectedAgent?.id === agent.id}
                       />
                     ))}
                   </div>
@@ -707,8 +1029,12 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
                             agent={agent}
                             openMenu={openMenu}
                             setOpenMenu={setOpenMenu}
-                            onOpen={onOpenAgent}
+                            onOpen={handleOpen}
                             onView={onViewAgent}
+                            onEdit={onEditAgent}
+                            onFork={(a) => setAgentPendingFork(a)}
+                            onRequestDelete={setAgentPendingDelete}
+                            onRequestVisibilityChange={handleRequestVisibilityChange}
                             zebra={i % 2 !== 0}
                           />
                         ))}
@@ -716,31 +1042,201 @@ export default function AgentsListPage({ onNavigate, onOpenAgent, onViewAgent
                     </table>
                   </div>
                 )
-              ) : (
-                /* Empty state */
+              ) : !filteredEmpty ? (
+                /* Empty state — no agents in catalog */
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="size-14 bg-[#f1f5f9] rounded-[12px] flex items-center justify-center">
                     <Cpu size={28} className="text-[#94a3b8]" />
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <p className="text-sm font-semibold text-[#0f172a]">No agents found</p>
-                    <p className="text-sm text-[#64748b]">Try adjusting your search or filters.</p>
+                    <p className="text-sm text-[#64748b]">Try adjusting your search or segment filter.</p>
                   </div>
                   <button
-                    onClick={() => { setSearchQuery(""); setStatusFilter("All"); setProviderFilter("All"); }}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSegmentFilter(null);
+                    }}
                     className="text-sm font-medium text-[#2563eb] hover:underline"
                   >
                     Clear filters
                   </button>
-                  <button className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
+                  >
                     <Plus size={16} /> Create your first agent
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
-        </div>
+          </div>{/* end inner flex-col */}
+
+          {/* Right conversation panel */}
+          <AnimatePresence>
+            {selectedAgent && (
+              <AgentConversationPanel
+                key={selectedAgent.id}
+                agent={selectedAgent}
+                isExpanded={isConversationExpanded}
+                onToggleExpand={() => setIsConversationExpanded((prev) => !prev)}
+                onClose={() => { setSelectedAgent(null); setIsConversationExpanded(false); }}
+              />
+            )}
+          </AnimatePresence>
+        </div>{/* end flex row */}
       </div>
+      {agentPendingDelete && (
+        <ConfirmDialog
+          title={`Delete "${agentPendingDelete.name}"?`}
+          message="This agent and all its execution history will be permanently deleted."
+          confirmLabel="Delete"
+          onConfirm={() => {
+            handleDeleteAgent(agentPendingDelete.id);
+            setAgentPendingDelete(null);
+          }}
+          onCancel={() => setAgentPendingDelete(null)}
+        />
+      )}
+      <ForkAgentDialog
+        agent={agentPendingFork}
+        open={!!agentPendingFork}
+        onOpenChange={(open) => {
+          if (!open) setAgentPendingFork(null);
+        }}
+        onFork={handleForkAgent}
+      />
+      <Dialog open={!!agentPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setAgentPendingPublish(null); }}>
+        <DialogContent
+          showCloseButton
+          className="flex w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div>
+            <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/25">
+                <Globe className="h-6 w-6 text-primary" aria-hidden />
+              </div>
+              <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug text-foreground">
+                Publish this agent?
+              </DialogTitle>
+              <DialogDescription className="text-balance px-1 pt-2 text-center text-sm leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">{agentPendingPublish?.name || "This agent"}</span>{" "}
+                will become visible to all logged-in users in the Agents list.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mx-6 mb-4 mt-4 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+              <div className="flex gap-3">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-medium text-foreground">Visible to all users</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    Anyone logged in can find and run this agent from the Agents page.
+                  </p>
+                </div>
+              </div>
+              <Separator className="my-3" />
+              <div className="flex gap-3">
+                <Bot className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-medium text-foreground">Latest agent configuration will be shared</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    Users will access this agent with its current saved setup.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setAgentPendingPublish(null)}
+              disabled={publishBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="min-h-10 flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={publishBusy}
+              onClick={() => {
+                if (!agentPendingPublish) return;
+                setPublishBusy(true);
+                try {
+                  handleSetVisibility(agentPendingPublish.id, "public");
+                  showToast("Agent published — now visible in the Agents list.");
+                  setAgentPendingPublish(null);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Globe className="h-3.5 w-3.5" />
+              )}
+              Publish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!agentPendingUnpublish} onOpenChange={(open) => { if (!publishBusy && !open) setAgentPendingUnpublish(null); }}>
+        <DialogContent
+          showCloseButton
+          className="flex max-h-[min(90vh,420px)] w-[calc(100vw-2rem)] max-w-sm flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4 pr-14">
+            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
+              <Globe className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden />
+            </div>
+            <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug">
+              Unpublish "{agentPendingUnpublish?.name || "this agent"}"?
+            </DialogTitle>
+            <DialogDescription className="text-balance pt-2 text-center text-sm leading-relaxed text-muted-foreground">
+              {agentPendingUnpublish?.name || "This agent"} will be hidden from other users and no longer listed as public.
+            </DialogDescription>
+          </div>
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setAgentPendingUnpublish(null)}
+              disabled={publishBusy}
+            >
+              Keep published
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-10 flex-1"
+              disabled={publishBusy}
+              onClick={() => {
+                if (!agentPendingUnpublish) return;
+                setPublishBusy(true);
+                try {
+                  handleSetVisibility(agentPendingUnpublish.id, "private");
+                  showToast("Agent unpublished — hidden from the public list.");
+                  setAgentPendingUnpublish(null);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Unpublish"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {toasts.map((t) => (
+        <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
+      ))}
     </>
   );
 }
