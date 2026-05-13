@@ -2,11 +2,11 @@ import { useState } from "react";
 import {
   ChevronRight, Check, X, Pencil, Save, RotateCcw, Tag,
   BadgeCheck, Users, Zap, Workflow, HardDrive, HeartHandshake,
-  ShieldCheck, Server, Info,
+  ShieldCheck, Info,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
-import { SAAS_TIERS, ONPREM_TIERS } from "@/data/adminData";
+import { SAAS_TIERS } from "@/data/adminData";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmtLimit(v, unit = "") {
@@ -163,125 +163,17 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
   );
 }
 
-// ─── On-Prem tier card ───────────────────────────────────────────────────────
-function OnPremTierCard({ tier, def, editMode, onChange, onReset }) {
-  const style = TIER_STYLES[tier];
-  const isScale = tier === "scale";
-
-  const ROWS = [
-    { key: "agents",           label: "Agents",               unit: ""    },
-    { key: "concurrentFlows",  label: "Concurrent Flows",     unit: ""    },
-    { key: "flowExecPerMonth", label: "Flow Exec / mo",       unit: ""    },
-  ];
-
-  return (
-    <div className={`relative flex flex-col rounded-2xl overflow-hidden border-2 ${
-      isScale ? "border-[#7c3aed] shadow-lg shadow-purple-500/20" : "border-[#e2e8f0] dark:border-[#334155]"
-    }`}>
-      {isScale && (
-        <div className="absolute top-3 right-3 z-10">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#7c3aed] shadow-sm">
-            MOST POPULAR
-          </span>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className={`bg-gradient-to-br ${style.gradient} px-5 pt-5 pb-5 text-white`}>
-        <p className="text-xs font-semibold uppercase tracking-widest opacity-70 mb-1">On-Premises</p>
-        <h3 className="text-2xl font-bold mb-3">{def.label}</h3>
-        <div className="flex items-end gap-1">
-          {editMode ? (
-            <div className="flex items-center gap-1">
-              <span className="text-3xl font-bold">$</span>
-              <input
-                type="number" min="1000"
-                value={def.monthlyFee}
-                onChange={e => onChange("monthlyFee", Number(e.target.value))}
-                className="w-24 text-3xl font-bold bg-white/15 rounded-[6px] text-center border border-white/30 focus:outline-none focus:ring-1 focus:ring-white/50"
-              />
-            </div>
-          ) : (
-            <span className="text-4xl font-bold">${(def.monthlyFee ?? 0).toLocaleString()}</span>
-          )}
-          <span className="text-sm opacity-70 mb-1">/ mo</span>
-        </div>
-        <p className="text-xs mt-1 opacity-60">Unlimited users · self-hosted</p>
-      </div>
-
-      {/* Features */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-[#1e293b] px-5 py-4 gap-3">
-        {ROWS.map(({ key, label, unit }) => (
-          <div key={key} className="flex items-center justify-between text-sm">
-            <span className="text-[#64748b] dark:text-[#94a3b8]">{label}</span>
-            <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">
-              {editMode ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number" min="0"
-                    value={def.limits[key] ?? ""}
-                    onChange={e => onChange(`limits.${key}`, e.target.value === "" ? null : Number(e.target.value))}
-                    placeholder="∞"
-                    className="w-20 h-6 px-2 text-xs text-right rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a] text-[#0f172a] dark:text-[#f1f5f9] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/40 tabular-nums"
-                  />
-                  <span className="text-xs text-[#94a3b8]">{unit}</span>
-                </div>
-              ) : (
-                `${fmtLimit(def.limits[key])}${unit}`
-              )}
-            </span>
-          </div>
-        ))}
-
-        <div className="border-t border-[#f1f5f9] dark:border-[#334155] pt-3 mt-1 flex flex-col gap-2">
-          {[
-            ["Knowledge Hub: Unlimited", true],
-            ["MCP Tool Catalog", true],
-            ["FusionX Agent", true],
-            ["SSO / RBAC / Audit", true],
-            ["HIPAA-Ready", true],
-            ["LTS Release Builds", true],
-            [`Named Solution Architect`, def.namedSA],
-            [`Support: ${def.support}`, true],
-          ].map(([label, enabled], i) => (
-            <span key={i} className={`flex items-center gap-2 text-xs ${
-              enabled
-                ? "text-[#475569] dark:text-[#94a3b8]"
-                : "text-[#cbd5e1] dark:text-[#475569] line-through"
-            }`}>
-              {enabled
-                ? <Check size={12} className="text-[#16a34a] flex-shrink-0" />
-                : <X size={12} className="flex-shrink-0" />}
-              {label}
-            </span>
-          ))}
-        </div>
-
-        {editMode && (
-          <button onClick={() => onReset(tier)}
-            className="mt-2 flex items-center gap-1 text-xs text-[#94a3b8] hover:text-[#ef4444] transition-colors">
-            <RotateCcw size={11} /> Reset to original
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function PricingPlansPage({ onNavigate }) {
-  const [mode, setMode] = useState("saas"); // "saas" | "on-prem"
   const [editMode, setEditMode] = useState(false);
 
   // Deep-clone tier defs into local state so edits don't mutate the originals
   const [saasDraft, setSaasDraft]   = useState(JSON.parse(JSON.stringify(SAAS_TIERS)));
-  const [onpremDraft, setOnpremDraft] = useState(JSON.parse(JSON.stringify(ONPREM_TIERS)));
 
   // Tracks which tiers have been modified
   const [dirty, setDirty] = useState(false);
 
   const saasOriginal   = JSON.parse(JSON.stringify(SAAS_TIERS));
-  const onpremOriginal = JSON.parse(JSON.stringify(ONPREM_TIERS));
 
   const handleSaasChange = (tier, path, value) => {
     setSaasDraft(prev => {
@@ -295,25 +187,11 @@ export default function PricingPlansPage({ onNavigate }) {
     setDirty(true);
   };
 
-  const handleOnpremChange = (tier, path, value) => {
-    setOnpremDraft(prev => {
-      const next = JSON.parse(JSON.stringify(prev));
-      const parts = path.split(".");
-      let obj = next[tier];
-      for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
-      obj[parts[parts.length - 1]] = value;
-      return next;
-    });
-    setDirty(true);
-  };
-
   const handleResetSaas   = (tier) => { setSaasDraft(prev => ({ ...prev, [tier]: JSON.parse(JSON.stringify(saasOriginal[tier])) })); };
-  const handleResetOnprem = (tier) => { setOnpremDraft(prev => ({ ...prev, [tier]: JSON.parse(JSON.stringify(onpremOriginal[tier])) })); };
 
   const saveChanges = () => { setEditMode(false); setDirty(false); };
   const cancelEdit  = () => {
     setSaasDraft(JSON.parse(JSON.stringify(SAAS_TIERS)));
-    setOnpremDraft(JSON.parse(JSON.stringify(ONPREM_TIERS)));
     setEditMode(false);
     setDirty(false);
   };
@@ -369,66 +247,16 @@ export default function PricingPlansPage({ onNavigate }) {
             </p>
           </div>
 
-          {/* SaaS / On-Prem toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-[10px] bg-[#f1f5f9] dark:bg-[#334155] w-fit">
-            {[["saas", "SaaS Cloud"], ["on-prem", "On-Premises"]].map(([val, label]) => (
-              <button key={val} onClick={() => setMode(val)}
-                className={`px-4 py-1.5 rounded-[8px] text-sm font-medium transition-all ${
-                  mode === val
-                    ? "bg-white dark:bg-[#1e293b] text-[#0f172a] dark:text-[#f1f5f9] shadow-sm"
-                    : "text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
-                }`}>{label}</button>
+          {/* Tier cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            {Object.entries(saasDraft).map(([tier, def]) => (
+              <SaasTierCard
+                key={tier} tier={tier} def={def} editMode={editMode}
+                onChange={(path, val) => handleSaasChange(tier, path, val)}
+                onReset={handleResetSaas}
+              />
             ))}
           </div>
-
-          {/* Tier cards grid */}
-          {mode === "saas" ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-              {Object.entries(saasDraft).map(([tier, def]) => (
-                <SaasTierCard
-                  key={tier} tier={tier} def={def} editMode={editMode}
-                  onChange={(path, val) => handleSaasChange(tier, path, val)}
-                  onReset={handleResetSaas}
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                {Object.entries(onpremDraft).map(([tier, def]) => (
-                  <OnPremTierCard
-                    key={tier} tier={tier} def={def} editMode={editMode}
-                    onChange={(path, val) => handleOnpremChange(tier, path, val)}
-                    onReset={handleResetOnprem}
-                  />
-                ))}
-              </div>
-
-              {/* Infra requirements */}
-              <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] mb-3 flex items-center gap-2">
-                  <Server size={14} className="text-[#64748b]" /> Infrastructure Requirements
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {[
-                    { label: "CPU Minimum",       value: "8 vCPU"     },
-                    { label: "RAM Minimum",       value: "32 GB"      },
-                    { label: "SSD Storage",       value: "500 GB"     },
-                    { label: "Container Runtime", value: "Docker / K8s" },
-                    { label: "Deployment",        value: "7–14 days"  },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-[#f8fafc] dark:bg-[#0f172a] rounded-lg p-3 text-center">
-                      <p className="text-base font-bold text-[#0f172a] dark:text-[#f1f5f9]">{value}</p>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">{label}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-[#94a3b8] mt-3">
-                  Air-gapped and private-network-only configurations are supported. An infrastructure readiness review is conducted prior to go-live.
-                </p>
-              </div>
-            </>
-          )}
 
           {/* Custom development note */}
           <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-5">
@@ -437,7 +265,7 @@ export default function PricingPlansPage({ onNavigate }) {
               {[
                 { type: "Standard MCP Tool",       desc: "Single-system integration",        price: "From $5,000/tool" },
                 { type: "Complex MCP Integration", desc: "Multi-system, custom auth/logic",  price: "Scoped per SOW"   },
-                { type: "On-Prem MCP Deployment",  desc: "Deploy on customer infrastructure", price: "Included / SOW"  },
+                { type: "Private VPC MCP Deployment",  desc: "Deploy connectors in your cloud account", price: "Included / SOW"  },
                 { type: "Ongoing Maintenance",     desc: "Post-delivery support, versioning", price: "Optional retainer" },
               ].map(({ type, desc, price }) => (
                 <div key={type} className="bg-[#f8fafc] dark:bg-[#0f172a] rounded-lg p-3 flex flex-col gap-1">

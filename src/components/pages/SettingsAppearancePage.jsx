@@ -569,7 +569,7 @@ function SubscriptionPanel(){
       {/* CTA */}
       <div className="flex flex-col gap-2 p-4 bg-[#0f172a] dark:bg-[#1e293b] rounded-xl text-white">
         <p className="text-sm font-semibold">Need to upgrade or change your plan?</p>
-        <p className="text-xs text-[#94a3b8] leading-4">Billing is managed manually. Contact our sales team to upgrade tiers, adjust seat counts, or discuss On-Premises options.</p>
+        <p className="text-xs text-[#94a3b8] leading-4">Billing is managed manually. Contact our sales team to upgrade tiers, adjust seat counts, or discuss enterprise agreements.</p>
         <a href="mailto:sales@aziro.com"
           className="mt-1 inline-flex items-center gap-2 h-8 px-4 rounded-[8px] bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold w-fit transition-colors">
           <Mail size={12} /> Contact Sales

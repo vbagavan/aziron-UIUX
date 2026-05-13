@@ -34,38 +34,9 @@ export const PACKAGES = {
     color: "#7c3aed", gradient: "from-[#6d28d9] to-[#7c3aed]",
   },
 
-  // ── On-Prem base tiers ───────────────────────────────────────────────────────
-  "onprem-lite": {
-    id: "onprem-lite", name: "On-Prem Lite", type: "base_tier", deployment: "on-prem",
-    priceModel: "fixed_monthly", basePrice: 10000,
-    limits: { agents: 10, workflows: null, concurrentFlows: 5, flowExecPerMonth: 50000, knowledgeHubGB: null },
-    features: { hipaa: true, sso: true, auditLogs: false, ltsBuilds: true, namedSA: false, advancedAnalytics: false },
-    support: "Email",
-    description: "Self-hosted for teams needing full data sovereignty.",
-    color: "#475569", gradient: "from-[#475569] to-[#334155]",
-  },
-  "onprem-growth": {
-    id: "onprem-growth", name: "On-Prem Growth", type: "base_tier", deployment: "on-prem",
-    priceModel: "fixed_monthly", basePrice: 20000, recommended: true,
-    limits: { agents: 25, workflows: null, concurrentFlows: 15, flowExecPerMonth: 250000, knowledgeHubGB: null },
-    features: { hipaa: true, sso: true, auditLogs: true, ltsBuilds: true, namedSA: true, advancedAnalytics: false },
-    support: "Priority",
-    description: "For growing on-premises deployments with named SA support.",
-    color: "#2563eb", gradient: "from-[#1d4ed8] to-[#2563eb]",
-  },
-  "onprem-scale": {
-    id: "onprem-scale", name: "On-Prem Scale", type: "base_tier", deployment: "on-prem",
-    priceModel: "fixed_monthly", basePrice: 35000,
-    limits: { agents: null, workflows: null, concurrentFlows: null, flowExecPerMonth: null, knowledgeHubGB: null },
-    features: { hipaa: true, sso: true, auditLogs: true, ltsBuilds: true, namedSA: true, advancedAnalytics: false },
-    support: "24×7 Dedicated",
-    description: "Unlimited scale with full enterprise support.",
-    color: "#7c3aed", gradient: "from-[#6d28d9] to-[#7c3aed]",
-  },
-
   // ── Add-on packages ──────────────────────────────────────────────────────────
   "addon-hipaa": {
-    id: "addon-hipaa", name: "HIPAA Compliance", type: "addon", deployment: "both",
+    id: "addon-hipaa", name: "HIPAA Compliance", type: "addon", deployment: "saas",
     priceModel: "fixed_monthly", basePrice: 500,
     features: { hipaa: true },
     limitBoosts: {},
@@ -74,7 +45,7 @@ export const PACKAGES = {
     color: "#059669", iconKey: "shield",
   },
   "addon-sso-audit": {
-    id: "addon-sso-audit", name: "SSO & Audit Logs", type: "addon", deployment: "both",
+    id: "addon-sso-audit", name: "SSO & Audit Logs", type: "addon", deployment: "saas",
     priceModel: "fixed_monthly", basePrice: 150,
     features: { sso: true, auditLogs: true },
     limitBoosts: {},
@@ -83,7 +54,7 @@ export const PACKAGES = {
     color: "#7c3aed", iconKey: "key",
   },
   "addon-analytics": {
-    id: "addon-analytics", name: "Advanced Analytics", type: "addon", deployment: "both",
+    id: "addon-analytics", name: "Advanced Analytics", type: "addon", deployment: "saas",
     priceModel: "fixed_monthly", basePrice: 200,
     features: { advancedAnalytics: true },
     limitBoosts: {},
@@ -101,7 +72,7 @@ export const PACKAGES = {
     color: "#f59e0b", iconKey: "hard-drive",
   },
   "addon-agents-10": {
-    id: "addon-agents-10", name: "Agent Expansion", type: "addon", deployment: "both",
+    id: "addon-agents-10", name: "Agent Expansion", type: "addon", deployment: "saas",
     priceModel: "per_unit", basePrice: 100, unitLabel: "+10 agents",
     features: {},
     limitBoosts: { agents: 10 },
@@ -127,8 +98,8 @@ export const TENANT_PACKAGES = [
   { id: "tp-1-2", tenantId: 1, packageId: "addon-analytics",               quantity: 1, status: "active",    billingStart: "2024-05-01" },
   { id: "tp-1-3", tenantId: 1, packageId: "addon-storage-100gb",           quantity: 3, status: "active",    billingStart: "2024-05-01" },
 
-  // Nexus Health Systems (id: 2) — On-Prem Scale + HIPAA + Analytics
-  { id: "tp-2-1", tenantId: 2, packageId: "onprem-scale",       quantity: 1, status: "active",    billingStart: "2024-02-01", overrides: {} },
+  // Nexus Health Systems (id: 2) — SaaS Scale + HIPAA + Analytics
+  { id: "tp-2-1", tenantId: 2, packageId: "saas-scale",         seats: 350, quantity: 1, status: "active",    billingStart: "2024-02-01", overrides: {} },
   { id: "tp-2-2", tenantId: 2, packageId: "addon-hipaa",                   quantity: 1, status: "active",    billingStart: "2024-02-01" },
   { id: "tp-2-3", tenantId: 2, packageId: "addon-analytics",               quantity: 1, status: "active",    billingStart: "2024-03-01" },
 
@@ -139,8 +110,8 @@ export const TENANT_PACKAGES = [
   // Orion EdTech (id: 4) — SaaS Lite
   { id: "tp-4-1", tenantId: 4, packageId: "saas-lite",          seats: 88,  quantity: 1, status: "active",    billingStart: "2024-09-10", overrides: {} },
 
-  // Apex Manufacturing (id: 5) — On-Prem Growth + HIPAA
-  { id: "tp-5-1", tenantId: 5, packageId: "onprem-growth",      quantity: 1, status: "active",    billingStart: "2024-06-15", overrides: {} },
+  // Apex Manufacturing (id: 5) — SaaS Growth + HIPAA
+  { id: "tp-5-1", tenantId: 5, packageId: "saas-growth",        seats: 200, quantity: 1, status: "active",    billingStart: "2024-06-15", overrides: {} },
   { id: "tp-5-2", tenantId: 5, packageId: "addon-hipaa",                   quantity: 1, status: "active",    billingStart: "2024-06-15" },
 
   // Brightline Retail (id: 6) — SaaS Growth + Analytics
@@ -156,8 +127,8 @@ export const TENANT_PACKAGES = [
   { id: "tp-8-3", tenantId: 8, packageId: "addon-sso-audit",               quantity: 1, status: "active",    billingStart: "2023-12-01" },
   { id: "tp-8-4", tenantId: 8, packageId: "addon-storage-100gb",           quantity: 3, status: "active",    billingStart: "2024-01-01" },
 
-  // Zenith Pharma (id: 9) — On-Prem Lite + HIPAA
-  { id: "tp-9-1", tenantId: 9, packageId: "onprem-lite",        quantity: 1, status: "active",    billingStart: "2024-11-01", overrides: {} },
+  // Zenith Pharma (id: 9) — SaaS Lite + HIPAA
+  { id: "tp-9-1", tenantId: 9, packageId: "saas-lite",          seats: 150, quantity: 1, status: "active",    billingStart: "2024-11-01", overrides: {} },
   { id: "tp-9-2", tenantId: 9, packageId: "addon-hipaa",                   quantity: 1, status: "active",    billingStart: "2024-11-01" },
 
   // Pulsar Media (id: 10) — SaaS Growth (cancelled/suspended)

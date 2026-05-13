@@ -250,7 +250,7 @@ export default function AppRoutes() {
         element={
           <MarketplacePage
             onNavigate={onNavigate}
-            workspaceAgents={agents}
+            organisationAgents={agents}
             onUnpublishAgent={(agentId) => {
               patchAgent(agentId, { visibility: "private" });
               navigate("/agents");
@@ -270,6 +270,10 @@ export default function AppRoutes() {
                 onViewTenant={(t) => {
                   setViewedTenant(t);
                   navigate("/tenants/detail");
+                }}
+                onEditTenant={(t) => {
+                  setViewedTenant(t);
+                  navigate("/tenants/detail?section=settings");
                 }}
                 onCreateTenant={() => navigate("/tenants/new")}
               />

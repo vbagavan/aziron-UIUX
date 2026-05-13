@@ -1,15 +1,23 @@
 import { ChevronRight } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { usePermissions } from "@/hooks/usePermissions";
-import WorkspaceDashboardPage from "@/components/pages/WorkspaceDashboardPage";
+import OrganisationDashboardPage from "@/components/pages/OrganisationDashboardPage";
+
+const ORGANISATION_SECTION_IDS = new Set([
+  "overview", "usage", "members", "domains", "audit", "settings",
+]);
 
 /**
- * Tenant / organisation workspace — full-page operational dashboard.
- * RBAC: org admins get a view-only banner inside the workspace when `tenants.edit` is false.
+ * Tenant / organisation dashboard — full-page operational view.
+ * RBAC: org admins get a view-only banner inside the organisation when `tenants.edit` is false.
  */
 export default function TenantDetailPage({ tenant, onNavigate }) {
   const { can, role } = usePermissions();
+  const [searchParams] = useSearchParams();
+  const section = searchParams.get("section");
+  const initialNavId = section && ORGANISATION_SECTION_IDS.has(section) ? section : undefined;
 
   const listCrumbLabel = role === "tenantadmin" ? "Organisation" : "Tenants";
   const canEditTenant = can("tenants.edit");
@@ -50,12 +58,12 @@ export default function TenantDetailPage({ tenant, onNavigate }) {
           </div>
         </AppHeader>
 
-        <WorkspaceDashboardPage
+        <OrganisationDashboardPage
           tenant={tenant}
           onNavigate={onNavigate}
           canEditTenant={canEditTenant}
-          can={can}
           role={role}
+          initialNavId={initialNavId}
         />
       </div>
     </div>
