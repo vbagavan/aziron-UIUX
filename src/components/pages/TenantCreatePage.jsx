@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  ChevronRight, ChevronLeft, Cloud, Server, Check, AlertCircle,
-  Globe, Mail, Calendar, UserCircle, ArrowRight, Package,
+  ChevronRight, ChevronLeft, Check, AlertCircle,
+  Globe, Mail, UserCircle, ArrowRight, Package, Link2,
+  Sparkles, Building2, Rocket, Crown,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -21,13 +22,49 @@ const INDUSTRIES = [
   "Retail", "Insurance", "Pharma", "Media", "Consulting", "Technology", "Other",
 ];
 
-const SA_OPTIONS = ["Alex Kim", "Maria Santos", "Ben Carter", "Unassigned"];
-
 const STEPS = [
-  { id: 1, label: "Deployment" },
-  { id: 2, label: "Details"    },
-  { id: 3, label: "Review"     },
+  { id: 1, label: "Details" },
+  { id: 2, label: "Review"  },
 ];
+
+const PLAN_OPTIONS = [
+  {
+    value: "trial",
+    icon: Sparkles,
+    title: "Trial",
+    color: "#f59e0b",
+    desc: "30-day free trial. No billing until converted. Limited to 50 users.",
+    features: ["30-day period", "No credit card", "Up to 50 users", "All core features"],
+  },
+  {
+    value: "standard",
+    icon: Building2,
+    title: "Standard",
+    color: "#0ea5e9",
+    desc: "Ideal for small teams getting started with AI automation.",
+    features: ["Up to 100 users", "5 agents / 2 workflows", "Email support", "99.9% uptime SLA"],
+  },
+  {
+    value: "professional",
+    icon: Rocket,
+    title: "Professional",
+    color: "#8b5cf6",
+    desc: "For growing teams that need more capacity and priority support.",
+    features: ["Up to 500 users", "10 agents / 10 workflows", "Priority support", "Audit logs"],
+  },
+  {
+    value: "enterprise",
+    icon: Crown,
+    title: "Enterprise",
+    color: "#2563eb",
+    desc: "Unlimited scale with dedicated infrastructure and HIPAA compliance.",
+    features: ["Unlimited users", "Unlimited agents", "Dedicated infra", "HIPAA + SSO"],
+  },
+];
+
+function toSlug(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 // ─── Step progress indicator ──────────────────────────────────────────────────
 function StepIndicator({ current }) {
@@ -55,13 +92,14 @@ function StepIndicator({ current }) {
 }
 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
-function Field({ label, required, error, children }) {
+function Field({ label, required, error, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db]">
         {label}{required && <span className="text-[#ef4444] ml-0.5">*</span>}
       </label>
       {children}
+      {hint && !error && <p className="text-xs text-[#94a3b8]">{hint}</p>}
       {error && (
         <p className="flex items-center gap-1 text-xs text-[#ef4444]">
           <AlertCircle size={11} />{error}
@@ -71,81 +109,94 @@ function Field({ label, required, error, children }) {
   );
 }
 
-// ─── STEP 1: Deployment type ──────────────────────────────────────────────────
-function Step1({ form, setForm }) {
-  const opts = [
-    {
-      value: "saas", icon: Cloud, title: "SaaS Cloud", color: "#0ea5e9",
-      desc: "Hosted on Aziron infrastructure. Per-seat monthly billing. Auto-tier upgrade at next billing cycle.",
-      features: ["99.9% uptime SLA", "Automatic updates", "Per-seat pricing", "Multi-tenant isolation"],
-    },
-    {
-      value: "on-prem", icon: Server, title: "On-Premises", color: "#059669",
-      desc: "Deployed entirely within the customer's network boundary. Full data sovereignty. Unlimited users.",
-      features: ["Full data sovereignty", "Air-gap supported", "Fixed monthly license", "Unlimited users"],
-    },
-  ];
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">How will this tenant deploy?</h2>
-        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">
-          This determines the pricing model, available packages, and onboarding requirements.
-        </p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {opts.map(opt => {
-          const Icon = opt.icon;
-          const selected = form.deployment === opt.value;
-          return (
-            <button key={opt.value}
-              onClick={() => setForm(f => ({ ...f, deployment: opt.value }))}
-              className={`relative text-left p-5 rounded-2xl border-2 transition-all ${
-                selected
-                  ? "border-[#2563eb] bg-[#eff6ff] dark:bg-[#1e3a8a]/20 shadow-md shadow-blue-500/10"
-                  : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:border-[#93c5fd]"
-              }`}>
-              {selected && (
-                <div className="absolute top-4 right-4 size-6 rounded-full bg-[#2563eb] flex items-center justify-center">
-                  <Check size={13} className="text-white" />
-                </div>
-              )}
-              <div className="size-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: `${opt.color}18` }}>
-                <Icon size={22} style={{ color: opt.color }} />
-              </div>
-              <h3 className="text-base font-bold text-[#0f172a] dark:text-[#f1f5f9] mb-1">{opt.title}</h3>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] leading-5 mb-4">{opt.desc}</p>
-              <div className="flex flex-col gap-1.5">
-                {opt.features.map(f => (
-                  <span key={f} className="flex items-center gap-2 text-xs text-[#475569] dark:text-[#94a3b8]">
-                    <Check size={11} className="text-[#16a34a] flex-shrink-0" />{f}
-                  </span>
-                ))}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── STEP 2: Organisation details ─────────────────────────────────────────────
+// ─── STEP 1: Organisation details ────────────────────────────────────────────
 function Step2({ form, setForm, errors }) {
   const set = key => val => setForm(f => ({ ...f, [key]: val }));
+
+  // Auto-generate slug from name (only when slug hasn't been manually edited)
+  const [slugTouched, setSlugTouched] = useState(false);
+  useEffect(() => {
+    if (!slugTouched && form.name) {
+      setForm(f => ({ ...f, slug: toSlug(form.name) }));
+    }
+  }, [form.name, slugTouched]);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Organisation Details</h2>
-        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">Basic information about the customer organisation.</p>
+        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">Basic info and the plan for this tenant.</p>
+      </div>
+
+      {/* Plan picker */}
+      <div>
+        <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">Plan</p>
+        <div className="grid grid-cols-2 gap-3">
+          {PLAN_OPTIONS.map(opt => {
+            const Icon = opt.icon;
+            const selected = form.plan === opt.value;
+            return (
+              <button key={opt.value}
+                type="button"
+                onClick={() => {
+                  setForm(f => ({ ...f, plan: opt.value, isTrial: opt.value === "trial" }));
+                }}
+                className={`relative text-left p-4 rounded-xl border-2 transition-all ${
+                  selected
+                    ? "border-[#2563eb] bg-[#eff6ff] dark:bg-[#1e3a8a]/20 shadow-sm shadow-blue-500/10"
+                    : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:border-[#93c5fd]"
+                }`}>
+                {selected && (
+                  <div className="absolute top-3 right-3 size-5 rounded-full bg-[#2563eb] flex items-center justify-center">
+                    <Check size={11} className="text-white" />
+                  </div>
+                )}
+                <div className="size-8 rounded-lg flex items-center justify-center mb-2.5"
+                  style={{ background: `${opt.color}18` }}>
+                  <Icon size={16} style={{ color: opt.color }} />
+                </div>
+                <p className="text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9] mb-1">{opt.title}</p>
+                <p className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 mb-2">{opt.desc}</p>
+                <div className="flex flex-col gap-1">
+                  {opt.features.map(f => (
+                    <span key={f} className="flex items-center gap-1.5 text-[11px] text-[#475569] dark:text-[#94a3b8]">
+                      <Check size={10} className="text-[#16a34a] flex-shrink-0" />{f}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {errors.plan && (
+          <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1.5">
+            <AlertCircle size={11} />{errors.plan}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Organisation Name" required error={errors.name}>
           <Input value={form.name} onChange={e => set("name")(e.target.value)} placeholder="e.g. Acme Corp" />
         </Field>
+
+        {/* Slug field */}
+        <Field label="URL Slug" required error={errors.slug}
+          hint="Unique identifier — lowercase letters, numbers, hyphens">
+          <div className="relative">
+            <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <Input
+              value={form.slug}
+              onChange={e => {
+                setSlugTouched(true);
+                setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }));
+              }}
+              placeholder="acme-corp"
+              className="pl-8 font-mono text-sm"
+            />
+          </div>
+        </Field>
+
         <Field label="Domain" required error={errors.domain}>
           <div className="relative">
             <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
@@ -173,59 +224,30 @@ function Step2({ form, setForm, errors }) {
           </div>
         </Field>
 
-        {form.deployment === "on-prem" && (
-          <>
-            <Field label="Solutions Architect">
-              <Select value={form.solutionsArchitect} onValueChange={set("solutionsArchitect")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SA_OPTIONS.map(sa => <SelectItem key={sa} value={sa}>{sa}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="License Start Date" required error={errors.licenseStart}>
-              <div className="relative">
-                <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
-                <Input type="date" value={form.licenseStart} onChange={e => set("licenseStart")(e.target.value)} className="pl-8" />
-              </div>
-            </Field>
-          </>
-        )}
-      </div>
-
-      {/* Trial toggle */}
-      <div className="flex items-start gap-3 p-4 bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] rounded-xl">
-        <Switch
-          checked={form.isTrial}
-          onCheckedChange={checked => setForm(f => ({ ...f, isTrial: checked }))}
-          className="data-[checked]:bg-amber-500 mt-0.5"
-        />
-        <div>
-          <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]">Start as Trial</p>
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8] mt-0.5">
-            Tenant starts in trial status. Billing is deferred — no invoice until a package is assigned and trial is converted.
-          </p>
-        </div>
+        <Field label="Max Users" hint="Leave blank for unlimited">
+          <Input
+            type="number" min="1" value={form.max_users}
+            onChange={e => set("max_users")(e.target.value)}
+            placeholder="e.g. 100"
+          />
+        </Field>
       </div>
     </div>
   );
 }
 
 // ─── STEP 3: Review & Confirm ─────────────────────────────────────────────────
+const PLAN_LABELS = { trial: "Trial", standard: "Standard", professional: "Professional", enterprise: "Enterprise" };
+
 function Step3({ form, onEditDetails }) {
   const rows = [
     { label: "Organisation", value: form.name || "—" },
+    { label: "Slug",         value: form.slug || "—", mono: true },
     { label: "Domain",       value: form.domain || "—" },
+    { label: "Plan",         value: PLAN_LABELS[form.plan] || "—" },
     { label: "Industry",     value: form.industry || "Not specified" },
     { label: "Contact",      value: `${form.contactName} · ${form.contactEmail}` },
-    {
-      label: "Deployment",
-      value: form.deployment === "saas" ? "SaaS Cloud" : form.deployment === "on-prem" ? "On-Premises" : "—",
-    },
-    ...(form.deployment === "on-prem" && form.solutionsArchitect
-      ? [{ label: "Solutions Architect", value: form.solutionsArchitect }]
-      : []),
-    ...(form.deployment === "on-prem" && form.licenseStart ? [{ label: "License Start", value: form.licenseStart }] : []),
+    ...(form.max_users ? [{ label: "Max Users", value: form.max_users.toString() }] : [{ label: "Max Users", value: "Unlimited" }]),
     { label: "Status",       value: form.isTrial ? "Trial" : "Active" },
     { label: "Packages",     value: "None — assign after creation" },
   ];
@@ -252,22 +274,18 @@ function Step3({ form, onEditDetails }) {
 
       {/* Summary card */}
       <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden">
-        <div className={`px-5 py-4 text-white ${
-          form.deployment === "on-prem"
-            ? "bg-gradient-to-br from-[#059669] to-[#047857]"
-            : "bg-gradient-to-br from-[#2563eb] to-[#1d4ed8]"
-        }`}>
+        <div className="px-5 py-4 text-white bg-gradient-to-br from-[#2563eb] to-[#1d4ed8]">
           <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-0.5">
-            {form.deployment === "saas" ? "SaaS Cloud" : "On-Premises"}
+            SaaS Cloud
           </p>
           <h3 className="text-xl font-bold">{form.name || "New Tenant"}</h3>
           <p className="text-sm opacity-70">{form.domain}</p>
         </div>
         <div className="divide-y divide-[#f1f5f9] dark:divide-[#334155]">
-          {rows.map(({ label, value }) => (
+          {rows.map(({ label, value, mono }) => (
             <div key={label} className="flex items-center justify-between px-5 py-2.5">
               <span className="text-xs text-[#94a3b8] font-medium">{label}</span>
-              <span className={`text-sm font-medium ${
+              <span className={`text-sm font-medium ${mono ? "font-mono" : ""} ${
                 label === "Packages" ? "text-[#94a3b8] italic" : "text-[#0f172a] dark:text-[#f1f5f9]"
               }`}>{value}</span>
             </div>
@@ -295,7 +313,6 @@ function Step3({ form, onEditDetails }) {
           `Welcome email sent to ${form.contactEmail || "the contact"}`,
           "You'll be redirected to the Tenant Detail page",
           "Assign a base tier + optional add-ons from the Packages tab",
-          ...(form.deployment === "on-prem" ? ["Infrastructure readiness checklist triggered for Solutions Architect"] : []),
         ].map((item, i) => (
           <div key={i} className="flex items-start gap-2 text-xs text-[#475569] dark:text-[#94a3b8]">
             <ArrowRight size={12} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
@@ -309,9 +326,8 @@ function Step3({ form, onEditDetails }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const INITIAL_FORM = {
-  deployment: "", name: "", domain: "", industry: "",
-  contactName: "", contactEmail: "",
-  solutionsArchitect: "Unassigned", licenseStart: "",
+  deployment: "saas", plan: "", name: "", slug: "", domain: "", industry: "",
+  contactName: "", contactEmail: "", max_users: "",
   isTrial: false,
 };
 
@@ -326,15 +342,16 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   const validate = stepNum => {
     const e = {};
     if (stepNum === 1) {
-      if (!form.deployment) e.deployment = "Please select a deployment type.";
-    }
-    if (stepNum === 2) {
+      if (!form.plan)                e.plan         = "Please select a plan.";
       if (!form.name.trim())         e.name         = "Organisation name is required.";
+      if (!form.slug.trim())         e.slug         = "Slug is required.";
+      else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) e.slug = "Slug must be lowercase letters, numbers, and hyphens only.";
+      else if (TENANTS.find(t => t.slug === form.slug.trim())) e.slug = "This slug is already taken.";
       if (!form.domain.trim())       e.domain       = "Domain is required.";
       if (!form.contactName.trim())  e.contactName  = "Contact name is required.";
       if (!form.contactEmail.trim()) e.contactEmail = "Contact email is required.";
       else if (!/\S+@\S+\.\S+/.test(form.contactEmail)) e.contactEmail = "Enter a valid email.";
-      if (form.deployment === "on-prem" && !form.licenseStart) e.licenseStart = "License start date is required.";
+      if (form.max_users && parseInt(form.max_users) < 1) e.max_users = "Must be at least 1.";
       const existing = TENANTS.find(t => t.domain.toLowerCase() === form.domain.trim().toLowerCase());
       if (existing) e.domain = `Domain already exists (${existing.name}).`;
     }
@@ -342,7 +359,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
     return Object.keys(e).length === 0;
   };
 
-  const next = () => { if (validate(step)) { setErrors({}); setStep(s => Math.min(3, s + 1)); } };
+  const next = () => { if (validate(step)) { setErrors({}); setStep(s => Math.min(2, s + 1)); } };
   const back = () => { setErrors({}); setStep(s => Math.max(1, s - 1)); };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -352,19 +369,19 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
       const newTenant = {
         id: Date.now(),
         name: form.name.trim(),
+        slug: form.slug.trim(),
         domain: form.domain.trim(),
-        deployment: form.deployment,
-        tier: null, seats: null,          // no tier until package assigned
-        status: form.isTrial ? "trial" : "active",
+        plan: form.plan,
+        deployment: "saas",
+        tier: null, seats: null,
+        max_users: form.max_users ? parseInt(form.max_users) : null,
+        status: form.plan === "trial" ? "trial" : "active",
         industry: form.industry || "Other",
         contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim(),
         createdAt: new Date().toISOString().split("T")[0],
-        ...(form.deployment === "on-prem" ? {
-          solutionsArchitect: form.solutionsArchitect !== "Unassigned" ? form.solutionsArchitect : undefined,
-          licenseStart: form.licenseStart,
-        } : {}),
         overrides: {},
+        settings: {},
         usage: { tokensConsumed: 0, seatsUsed: 0, flowExecutions: 0, storageGB: 0, trend: [0,0,0,0,0,0] },
       };
       setCreating(false);
@@ -422,7 +439,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
     );
   }
 
-  const isLastStep = step === 3;
+  const isLastStep = step === 2;
 
   return (
     <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
@@ -455,15 +472,8 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
             </div>
 
             <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl p-6 shadow-sm">
-              {step === 1 && <Step1 form={form} setForm={setForm} />}
-              {step === 2 && <Step2 form={form} setForm={setForm} errors={errors} />}
-              {step === 3 && <Step3 form={form} onEditDetails={() => setStep(2)} />}
-
-              {step === 1 && errors.deployment && (
-                <p className="flex items-center gap-1.5 mt-4 text-sm text-[#ef4444]">
-                  <AlertCircle size={14} />{errors.deployment}
-                </p>
-              )}
+              {step === 1 && <Step2 form={form} setForm={setForm} errors={errors} />}
+              {step === 2 && <Step3 form={form} onEditDetails={() => setStep(1)} />}
             </div>
 
             <div className="flex items-center justify-between">
@@ -482,7 +492,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
                     )}
                   </Button>
                 ) : (
-                  <Button onClick={next} disabled={step === 1 && !form.deployment}>
+                  <Button onClick={next}>
                     Continue <ChevronRight size={15} />
                   </Button>
                 )}

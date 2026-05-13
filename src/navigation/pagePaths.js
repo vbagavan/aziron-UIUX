@@ -14,6 +14,8 @@ export const PAGE_PATH = {
   "user-detail": "/users/detail",
   "user-groups": "/user-groups",
   usage: "/usage",
+  /** Sidebar “Roles” → tenant users until a dedicated roles route exists */
+  "users-roles": "/tenant-users",
   vault: "/vault",
   knowledge: "/knowledge",
   marketplace: "/marketplace",

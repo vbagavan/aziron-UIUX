@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { INITIAL_AGENTS } from "@/data/agentsCatalog";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -188,6 +189,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
   const hasDescription = Boolean(agent.description?.trim());
+  const { can } = usePermissions();
 
   const handleMenuToggle = (e) => {
     e.stopPropagation();
@@ -289,44 +291,42 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
           <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
             <Bot size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
           </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenMenu(null);
-              onEdit?.(agent);
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-          >
-            <Pencil size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenMenu(null);
-              onFork?.(agent);
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-          >
-            <GitFork size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenMenu(null);
-              onRequestVisibilityChange(agent);
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-          >
-            {agent.visibility === "public"
-              ? <Lock size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
-              : <Globe size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
-            }
-            {visibilityActionLabel}
-          </button>
-          <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-          <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
-            <Trash2 size={14} className="text-[#ef4444]" /> Delete
-          </button>
+          {can("agents.edit") && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onEdit?.(agent); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+            >
+              <Pencil size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
+            </button>
+          )}
+          {can("agents.fork") && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onFork?.(agent); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+            >
+              <GitFork size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+            </button>
+          )}
+          {can("agents.publish") && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestVisibilityChange(agent); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+            >
+              {agent.visibility === "public"
+                ? <Lock size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+                : <Globe size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+              }
+              {visibilityActionLabel}
+            </button>
+          )}
+          {can("agents.delete") && (
+            <>
+              <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
+              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
+                <Trash2 size={14} className="text-[#ef4444]" /> Delete
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -343,6 +343,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
   const rowBtnRef   = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
+  const { can } = usePermissions();
 
   const handleMenuToggle = (e) => {
     e.stopPropagation();
@@ -447,44 +448,42 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
               <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
                 <Bot size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
               </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenu(null);
-                  onEdit?.(agent);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-              >
-                <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenu(null);
-                  onFork?.(agent);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-              >
-                <GitFork size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenu(null);
-                  onRequestVisibilityChange(agent);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
-              >
-                {agent.visibility === "public"
-                  ? <Lock size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
-                  : <Globe size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
-                }
-                {visibilityActionLabel}
-              </button>
-              <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
-                <Trash2 size={13} className="text-[#ef4444]" /> Delete
-              </button>
+              {can("agents.edit") && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onEdit?.(agent); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                >
+                  <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
+                </button>
+              )}
+              {can("agents.fork") && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onFork?.(agent); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                >
+                  <GitFork size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+                </button>
+              )}
+              {can("agents.publish") && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestVisibilityChange(agent); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                >
+                  {agent.visibility === "public"
+                    ? <Lock size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
+                    : <Globe size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
+                  }
+                  {visibilityActionLabel}
+                </button>
+              )}
+              {can("agents.delete") && (
+                <>
+                  <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
+                  <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
+                    <Trash2 size={13} className="text-[#ef4444]" /> Delete
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -701,6 +700,7 @@ export default function AgentsListPage({
   onAgentsChange,
 }) {
   const navigate = useNavigate();
+  const { can } = usePermissions();
   const [searchQuery, setSearchQuery]   = useState("");
   const [openMenu, setOpenMenu]         = useState(null);
   const [viewMode, setViewMode]         = useState("grid");
@@ -882,13 +882,15 @@ export default function AgentsListPage({
                     </button>
                   </div>
 
-                  <button
-                    onClick={() => navigate("/agents/create")}
-                    className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
-                  >
-                    <Plus size={16} />
-                    Create Agent
-                  </button>
+                  {can("agents.create") && (
+                    <button
+                      onClick={() => navigate("/agents/create")}
+                      className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
+                    >
+                      <Plus size={16} />
+                      Create Agent
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1169,8 +1171,8 @@ export default function AgentsListPage({
                 setPublishBusy(true);
                 try {
                   handleSetVisibility(agentPendingPublish.id, "public");
-                  showToast("Agent published — now visible in the Agents list.");
                   setAgentPendingPublish(null);
+                  onNavigate?.("marketplace");
                 } finally {
                   setPublishBusy(false);
                 }
@@ -1222,7 +1224,7 @@ export default function AgentsListPage({
                 setPublishBusy(true);
                 try {
                   handleSetVisibility(agentPendingUnpublish.id, "private");
-                  showToast("Agent unpublished — hidden from the public list.");
+                  showToast(`"${agentPendingUnpublish.name}" unpublished — status set to Private.`);
                   setAgentPendingUnpublish(null);
                 } finally {
                   setPublishBusy(false);

@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useId } from "react";
+import { cn } from "@/lib/utils";
 import {
   Sparkles, Bot, BrainCog, Vault, BarChart2, LayoutDashboard, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
-  UserCircle, ShieldCheck, Clock, Building2, Tag, Store,
+  UserCircle, ShieldCheck, Clock, Building2, Tag, Store, ChevronRight,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, ROLES } from "@/context/AuthContext";
+import { ROLE_SCOPE, SCOPE_COLORS } from "@/config/rbac";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
@@ -34,9 +36,16 @@ const recentChatsData = [
   "Introduction to Company Culture", "First Week Check-in",
 ];
 
+/** Sidebar label for items that differ by role (e.g. org admin vs platform). */
+function navItemDisplayLabel(item, role) {
+  if (item.page === "tenants" && role === "tenantadmin") return "Organisation";
+  return item.label;
+}
+
 const navGroups = [
   {
     id: "build", label: "BUILD",
+    roles: ["superadmin", "tenantadmin", "tenantuser"],
     items: [
       { icon: Sparkles, label: "New Chat", page: "new-chat" },
       { icon: Bot,      label: "Agents",   page: "agents"   },
@@ -45,25 +54,28 @@ const navGroups = [
   },
   {
     id: "platform", label: "PLATFORM",
+    roles: ["superadmin", "tenantadmin", "tenantuser"],
     items: [
-      { icon: BrainCog,  label: "Knowledge Hub",  page: "knowledge" },
-      { icon: Store,     label: "Marketplace",    page: "marketplace" },
-      { icon: Vault,     label: "Vault",           page: "vault"     },
+      { icon: BrainCog,  label: "Knowledge Hub",  page: "knowledge",   roles: ["superadmin", "tenantadmin", "tenantuser"] },
+      { icon: Store,     label: "Marketplace",    page: "marketplace", roles: ["superadmin", "tenantadmin", "tenantuser"] },
+      { icon: Vault,     label: "Vault",           page: "vault",       roles: ["superadmin", "tenantadmin", "tenantuser"] },
       {
         icon: Users, label: "User Management", page: "users",
+        roles: ["superadmin", "tenantadmin"],
         subItems: [
-          { icon: UserCircle, label: "Users", page: "tenant-users" },
-          { icon: Users, label: "User Groups", page: "user-groups" },
-          { icon: ShieldCheck,label: "Roles", page: "users-roles" },
+          { icon: UserCircle,  label: "Users",       page: "tenant-users" },
+          { icon: Users,       label: "User Groups", page: "user-groups"  },
+          { icon: ShieldCheck, label: "Roles",       page: "users-roles"  },
         ],
       },
-      { icon: BarChart2, label: "Usage", page: "usage" },
-      { icon: LayoutDashboard, label: "Pulse", page: "pulse" },
+      { icon: BarChart2,        label: "Usage",   page: "usage",   roles: ["superadmin", "tenantadmin"] },
+      { icon: LayoutDashboard,  label: "Pulse",   page: "pulse",   roles: ["superadmin", "tenantadmin"] },
       {
         icon: Clock,
         label: "History",
         page: "history",
         activeFor: ["chat"],
+        roles: ["superadmin", "tenantadmin", "tenantuser"],
         subItems: recentChatsData.map(chat => ({
           label: chat,
           page: "chat",
@@ -75,9 +87,10 @@ const navGroups = [
   },
   {
     id: "admin", label: "ADMIN",
+    roles: ["superadmin", "tenantadmin"],
     items: [
-      { icon: Building2, label: "Tenants",        page: "tenants"       },
-      { icon: Tag,       label: "Pricing & Plans", page: "pricing-plans" },
+      { icon: Building2, label: "Tenants", page: "tenants", activeFor: ["tenant-detail", "tenant-create"], roles: ["superadmin", "tenantadmin"] },
+      { icon: Tag,       label: "Pricing & Plans", page: "pricing-plans", roles: ["superadmin"] },
     ],
   },
 ];
@@ -179,10 +192,31 @@ function LogoutModal({ onConfirm, onCancel, displayName = "Admin", displayEmail 
   );
 }
 
+/* ── Role badge color map ──────────────────────────────────────── */
+const roleBadgeStyles = {
+  superadmin:  { bg: "#ede9fe", text: "#6d28d9", dot: "#7c3aed" },
+  tenantadmin: { bg: "#dbeafe", text: "#1d4ed8", dot: "#2563eb" },
+  tenantuser:  { bg: "#f1f5f9", text: "#475569", dot: "#64748b" },
+};
+
+function RoleBadge({ roleId, small = false }) {
+  const role = ROLES[roleId];
+  if (!role) return null;
+  const s = roleBadgeStyles[roleId] ?? roleBadgeStyles.tenantuser;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-medium rounded-full leading-none ${small ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"}`}
+      style={{ background: s.bg, color: s.text }}>
+      <span className="rounded-full flex-shrink-0" style={{ width: small ? 4 : 5, height: small ? 4 : 5, background: s.dot }} />
+      {role.label}
+    </span>
+  );
+}
+
 /* ── User footer ──────────────────────────────────────────────── */
 function UserFooter({ onNavigate }) {
   const { state } = useSidebar();
-  const { auth, logout } = useAuth();
+  const { auth, logout, switchRole } = useAuth();
   const collapsed = state === "collapsed";
   const [open, setOpen] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
@@ -193,6 +227,7 @@ function UserFooter({ onNavigate }) {
   const displayName  = auth.user?.name  ?? "Admin";
   const displayEmail = auth.user?.email ?? "admin@aziro.com";
   const initials     = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const currentRole  = auth.role ?? "superadmin";
 
   useEffect(() => {
     if (!open) return;
@@ -208,7 +243,7 @@ function UserFooter({ onNavigate }) {
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       if (collapsed) {
-        setMenuStyle({ position: "fixed", left: rect.right + 8, bottom: window.innerHeight - rect.bottom, width: 188 });
+        setMenuStyle({ position: "fixed", left: rect.right + 8, bottom: window.innerHeight - rect.bottom, width: 220 });
       } else {
         setMenuStyle({ position: "fixed", left: rect.left, bottom: window.innerHeight - rect.top + 4, width: rect.width });
       }
@@ -216,39 +251,80 @@ function UserFooter({ onNavigate }) {
     setOpen(v => !v);
   };
 
-  const menuItems = [
-    { icon: Settings, label: "Settings", onClick: () => { setOpen(false); onNavigate?.("settings"); } },
-    { icon: LogOut,   label: "Logout",   danger: true, onClick: () => { setOpen(false); setShowLogout(true); } },
-  ];
+  const handleSwitchRole = (roleId) => {
+    switchRole(roleId);
+    setOpen(false);
+  };
 
   return (
     <>
       {open && (
         <div ref={menuRef}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden z-[9999] shadow-lg max-h-100 overflow-y-auto"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden z-[9999] shadow-lg"
           style={menuStyle}>
+
+          {/* User header */}
           <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
             <Avatar className="size-7 flex-shrink-0">
               <AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{displayName}</span>
-              <span className="text-xs text-slate-600 dark:text-slate-400">{displayEmail}</span>
+            <div className="flex flex-col min-w-0 gap-0.5">
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-none">{displayName}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{displayEmail}</span>
             </div>
           </div>
-          {menuItems.map(item => {
-            const Icon = item.icon;
-            return (
-              <button key={item.label} onClick={item.onClick}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
-                  item.danger
-                    ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-                    : "text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
-                }`}>
-                <Icon size={14} /> {item.label}
-              </button>
-            );
-          })}
+
+          {/* Role switcher */}
+          <div className="px-3 pt-2.5 pb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Switch Role</p>
+            <div className="flex flex-col gap-0.5">
+              {Object.values(ROLES).map(role => {
+                const isActive = currentRole === role.id;
+                const s = roleBadgeStyles[role.id];
+                return (
+                  <button
+                    key={role.id}
+                    onClick={() => handleSwitchRole(role.id)}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors ${
+                      isActive
+                        ? "bg-slate-50 dark:bg-slate-800"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                    }`}>
+                    {/* Color dot */}
+                    <span className="size-2 rounded-full flex-shrink-0 mt-0.5"
+                      style={{ background: s.dot }} />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className={`text-xs font-medium leading-none ${isActive ? "text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"}`}>
+                        {role.label}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">{role.sublabel}</span>
+                    </div>
+                    {isActive && (
+                      <span className="size-4 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: s.bg }}>
+                        <span className="size-1.5 rounded-full" style={{ background: s.dot }} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="mx-3 my-1.5 border-t border-slate-100 dark:border-slate-800" />
+
+          {/* Settings & Logout */}
+          <div className="pb-1.5">
+            <button onClick={() => { setOpen(false); onNavigate?.("settings"); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <Settings size={14} /> Settings
+            </button>
+            <button onClick={() => { setOpen(false); setShowLogout(true); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
         </div>
       )}
 
@@ -262,10 +338,13 @@ function UserFooter({ onNavigate }) {
 
       {collapsed ? (
         <button ref={triggerRef} onClick={handleToggle}
-          className={`flex items-center justify-center w-full p-1 rounded-2xl transition-colors ${
+          className={`relative flex items-center justify-center w-full p-1 rounded-2xl transition-colors ${
             open ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"
           }`}>
-          <Avatar className="size-6"><AvatarImage src={imgUserAvatar} /><AvatarFallback>A</AvatarFallback></Avatar>
+          <Avatar className="size-6"><AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
+          {/* Role dot indicator */}
+          <span className="absolute bottom-1 right-1 size-2 rounded-full border border-white dark:border-slate-950 ring-1 ring-white"
+            style={{ background: roleBadgeStyles[currentRole]?.dot ?? "#64748b" }} />
         </button>
       ) : (
         <button ref={triggerRef} onClick={handleToggle}
@@ -276,12 +355,21 @@ function UserFooter({ onNavigate }) {
           } border border-slate-200 dark:border-slate-700`}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Avatar className="size-6 flex-shrink-0"><AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
-            <div className="flex flex-col items-start flex-1 min-w-0">
-              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-none">{displayName}</span>
-              <span className="text-sm text-slate-600 dark:text-slate-400 leading-4 truncate w-full">{displayEmail}</span>
+            <div className="flex flex-col items-start flex-1 min-w-0 gap-0.5">
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-none truncate w-full">{displayName}</span>
+              <div className="flex items-center gap-1 min-w-0 w-full">
+                <span className="size-1.5 rounded-full flex-shrink-0"
+                  style={{ background: roleBadgeStyles[currentRole]?.dot ?? "#64748b" }} />
+                <span className="text-[11px] font-medium leading-none flex-shrink-0 whitespace-nowrap"
+                  style={{ color: roleBadgeStyles[currentRole]?.text ?? "#475569" }}>
+                  {ROLES[currentRole]?.label}
+                </span>
+                <span className="text-[11px] text-slate-300 dark:text-slate-600 flex-shrink-0">·</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 leading-none truncate">{displayEmail}</span>
+              </div>
             </div>
           </div>
-          <ChevronsUpDown size={16} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} text-slate-600 dark:text-slate-400`} />
+          <ChevronsUpDown size={16} className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""} text-slate-400 dark:text-slate-500`} />
         </button>
       )}
     </>
@@ -289,7 +377,8 @@ function UserFooter({ onNavigate }) {
 }
 
 /* ── Nav item (with optional submenu) ─────────────────────────── */
-function NavItem({ item, activePage, onNavigate }) {
+function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
+  const displayLabel = navItemDisplayLabel(item, role);
   const { state } = useSidebar();
   const sidebarCollapsed = state === "collapsed";
   const active = isActive(item.page, activePage, item.activeFor || []);
@@ -298,13 +387,14 @@ function NavItem({ item, activePage, onNavigate }) {
 
   // Initialize submenu open state: open if sidebar not collapsed AND (item is active OR child is active)
   const [subOpen, setSubOpen] = useState(!sidebarCollapsed && isParentActive);
-  const [isHovering, setIsHovering] = useState(false);
   const [showPopover, setShowPopover] = useState(false);
   const [popoverStyle, setPopoverStyle] = useState({});
-  const [isPopoverHovered, setIsPopoverHovered] = useState(false);
+  const isPopoverHoveredRef = useRef(false);
   const itemRef = useRef(null);
   const popoverRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+  const subCloseTimeoutRef = useRef(null);
+  const submenuPanelId = useId();
 
   // Auto-expand submenu when a child becomes active
   useEffect(() => {
@@ -313,82 +403,92 @@ function NavItem({ item, activePage, onNavigate }) {
     }
   }, [subActive, sidebarCollapsed, subOpen]);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      if (subCloseTimeoutRef.current) clearTimeout(subCloseTimeoutRef.current);
     };
   }, []);
 
-  // Close popover when clicking outside
+  // Close flyout on outside click or Escape (icon-collapsed submenus)
   useEffect(() => {
     if (!showPopover) return;
-    const h = (e) => {
+    const onDown = (e) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target) &&
           itemRef.current && !itemRef.current.contains(e.target)) {
         setShowPopover(false);
       }
     };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    const onKey = (e) => {
+      if (e.key === "Escape") setShowPopover(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [showPopover]);
+
+  const placeCollapsedSubmenu = () => {
+    if (itemRef.current) {
+      const rect = itemRef.current.getBoundingClientRect();
+      setPopoverStyle({
+        position: "fixed",
+        left: rect.right + 8,
+        top: rect.top,
+        width: 200,
+        zIndex: 99999,
+      });
+    }
+  };
 
   // Handle hover for both collapsed and expanded sidebars
   const handleHoverEnter = () => {
-    // Clear any pending close timeout
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
+    if (subCloseTimeoutRef.current) {
+      clearTimeout(subCloseTimeoutRef.current);
+      subCloseTimeoutRef.current = null;
+    }
 
     if (sidebarCollapsed && item.subItems?.length) {
-      // Show popover for collapsed sidebar
-      if (itemRef.current) {
-        const rect = itemRef.current.getBoundingClientRect();
-        setPopoverStyle({
-          position: "fixed",
-          left: rect.right + 8,
-          top: rect.top,
-          width: 200,
-          zIndex: 99999,
-        });
-      }
+      placeCollapsedSubmenu();
       setShowPopover(true);
     } else if (!sidebarCollapsed) {
-      // Show inline submenu for expanded sidebar
-      setIsHovering(true);
       setSubOpen(true);
     }
   };
 
   const handleHoverLeave = () => {
-    setIsHovering(false);
-    // Set a timeout to close popover only if popover is not hovered
     closeTimeoutRef.current = setTimeout(() => {
-      if (!isPopoverHovered && !isParentActive) {
+      if (!isPopoverHoveredRef.current && !isParentActive) {
         setShowPopover(false);
       }
     }, 150);
-    // Only close if not explicitly activated by child or parent
     if (!isParentActive && !sidebarCollapsed) {
-      setSubOpen(false);
+      if (subCloseTimeoutRef.current) clearTimeout(subCloseTimeoutRef.current);
+      subCloseTimeoutRef.current = setTimeout(() => {
+        setSubOpen(false);
+        subCloseTimeoutRef.current = null;
+      }, 200);
     }
   };
 
   const handlePopoverHoverEnter = () => {
-    // Clear any pending close timeout
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
-    setIsPopoverHovered(true);
+    isPopoverHoveredRef.current = true;
     setShowPopover(true);
   };
 
   const handlePopoverHoverLeave = () => {
-    setIsPopoverHovered(false);
+    isPopoverHoveredRef.current = false;
     if (!isParentActive) {
       setShowPopover(false);
     }
@@ -412,10 +512,32 @@ function NavItem({ item, activePage, onNavigate }) {
             className="group/sub w-full"
           >
               <SidebarMenuButton
-                tooltip={item.subItems?.length ? (sidebarCollapsed ? item.label : undefined) : item.label}
+                tooltip={item.subItems?.length ? (sidebarCollapsed ? displayLabel : undefined) : displayLabel}
                 isActive={isParentActive}
                 className="relative"
-                onClick={() => { if (!sidebarCollapsed) handleToggle(!subOpen); }}
+                aria-haspopup={item.subItems?.length ? "menu" : undefined}
+                aria-expanded={
+                  item.subItems?.length
+                    ? sidebarCollapsed
+                      ? showPopover
+                      : subOpen
+                    : undefined
+                }
+                aria-controls={
+                  sidebarCollapsed && item.subItems?.length ? submenuPanelId : undefined
+                }
+                onClick={() => {
+                  if (sidebarCollapsed && item.subItems?.length) {
+                    if (closeTimeoutRef.current) {
+                      clearTimeout(closeTimeoutRef.current);
+                      closeTimeoutRef.current = null;
+                    }
+                    placeCollapsedSubmenu();
+                    setShowPopover((v) => !v);
+                    return;
+                  }
+                  if (!sidebarCollapsed) handleToggle(!subOpen);
+                }}
               >
                 <span
                   className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
@@ -424,10 +546,18 @@ function NavItem({ item, activePage, onNavigate }) {
                 {item.icon && (
                   <item.icon
                     style={{ transform: isParentActive ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s" }}
-                    className={isParentActive ? "text-blue-900 dark:text-blue-400" : ""}
+                    className={cn(
+                      "transition-opacity duration-150",
+                      isParentActive
+                        ? "text-blue-900 dark:text-blue-400 opacity-100"
+                        : "opacity-50 group-hover/menu-button:opacity-100"
+                    )}
                   />
                 )}
-                <span className={isParentActive ? "font-medium" : ""}>{item.label}</span>
+                <span className={cn(
+                  "transition-opacity duration-150",
+                  isParentActive ? "font-medium opacity-100" : "opacity-70 group-hover/menu-button:opacity-100"
+                )}>{displayLabel}</span>
                 {!sidebarCollapsed && (
                   <ChevronDown
                     size={13}
@@ -447,9 +577,10 @@ function NavItem({ item, activePage, onNavigate }) {
                     return (
                       <SidebarMenuSubItem key={sub.label}>
                         <SidebarMenuSubButton
+                          render={<button type="button" />}
                           isActive={subIsActive}
                           onClick={() => onNavigate?.(sub.page)}
-                          className="gap-2"
+                          className="gap-2 w-full text-left"
                         >
                           {!sub.noIcon && sub.icon && (
                             <sub.icon size={13} className={subIsActive ? "text-blue-600" : "text-sidebar-foreground/60"} />
@@ -469,6 +600,8 @@ function NavItem({ item, activePage, onNavigate }) {
         {sidebarCollapsed && showPopover && (
           <div
             ref={popoverRef}
+            id={submenuPanelId}
+            role="menu"
             onMouseEnter={handlePopoverHoverEnter}
             onMouseLeave={handlePopoverHoverLeave}
             className="fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden pointer-events-auto max-h-100 overflow-y-auto z-[99999]"
@@ -479,6 +612,7 @@ function NavItem({ item, activePage, onNavigate }) {
               return (
                 <button
                   key={sub.label}
+                  role="menuitem"
                   onClick={(e) => {
                     e.stopPropagation();
                     onNavigate?.(sub.page);
@@ -511,7 +645,7 @@ function NavItem({ item, activePage, onNavigate }) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
-          tooltip={item.label}
+          tooltip={displayLabel}
           isActive={active}
           onClick={() => onNavigate?.(item.page)}
           className="relative"
@@ -520,7 +654,7 @@ function NavItem({ item, activePage, onNavigate }) {
             className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
             style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
           />
-          <span className={`truncate ${active ? "font-medium" : ""}`}>{item.label}</span>
+          <span className={`truncate ${active ? "font-medium" : ""}`}>{displayLabel}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -529,7 +663,7 @@ function NavItem({ item, activePage, onNavigate }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        tooltip={item.label}
+        tooltip={displayLabel}
         isActive={active}
         onClick={() => onNavigate?.(item.page)}
         className="relative"
@@ -540,21 +674,34 @@ function NavItem({ item, activePage, onNavigate }) {
         />
         <item.icon
           style={{ transform: active ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s" }}
-          className={isParentActive ? "text-blue-900 dark:text-blue-400" : ""}
+          className={cn(
+            "transition-opacity duration-150",
+            isParentActive
+              ? "text-blue-900 dark:text-blue-400 opacity-100"
+              : "opacity-50 group-hover/menu-button:opacity-100"
+          )}
         />
-        <span className={active ? "font-medium" : ""}>{item.label}</span>
+        <span className={cn(
+          "transition-opacity duration-150",
+          active ? "font-medium opacity-100" : "opacity-70 group-hover/menu-button:opacity-100"
+        )}>{displayLabel}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
 }
 
 /* ── Collapsible nav group ─────────────────────────────────────── */
-function NavGroup({ group, activePage, onNavigate }) {
+function NavGroup({ group, activePage, onNavigate, role }) {
   const { state } = useSidebar();
   const sidebarCollapsed = state === "collapsed";
 
+  // Filter items by role
+  const visibleItems = group.items.filter(item =>
+    !item.roles || item.roles.includes(role)
+  );
+
   // Check if any item in this group is active (for auto-expand behavior)
-  const hasActiveItem = hasActiveChild(group.items, activePage);
+  const hasActiveItem = hasActiveChild(visibleItems, activePage);
 
   // Initialize group open state: open by default, but can be manually toggled
   // Keep open if sidebar is not collapsed OR if an item in this group is active
@@ -567,6 +714,8 @@ function NavGroup({ group, activePage, onNavigate }) {
     }
   }, [hasActiveItem, open]);
 
+  if (visibleItems.length === 0) return null;
+
   return (
     <Collapsible
       open={sidebarCollapsed ? true : open}
@@ -574,8 +723,8 @@ function NavGroup({ group, activePage, onNavigate }) {
       className="group/collapsible"
     >
       <SidebarGroup>
-        <SidebarGroupLabel asChild>
-          <CollapsibleTrigger className="flex w-full items-center justify-between hover:text-sidebar-foreground">
+        <SidebarGroupLabel className="block px-0">
+          <CollapsibleTrigger className="flex h-8 w-full items-center justify-between rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden transition-[margin,opacity] hover:text-sidebar-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0">
             {group.label}
             <ChevronDown
               size={14}
@@ -586,12 +735,13 @@ function NavGroup({ group, activePage, onNavigate }) {
         <CollapsibleContent>
           <SidebarGroupContent>
             <SidebarMenu>
-              {group.items.map(item => (
+              {visibleItems.map(item => (
                 <NavItem
                   key={item.label}
                   item={item}
                   activePage={activePage}
                   onNavigate={onNavigate}
+                  role={role}
                 />
               ))}
             </SidebarMenu>
@@ -622,12 +772,47 @@ function LogoHeader({ onNavigate }) {
   );
 }
 
+/* ── Scope context strip ──────────────────────────────────────── */
+function ScopeStrip({ role }) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const scope = ROLE_SCOPE[role] ?? ROLE_SCOPE.tenantuser;
+  const c     = SCOPE_COLORS[scope.color] ?? SCOPE_COLORS.slate;
+
+  if (isCollapsed) {
+    return (
+      <div className="flex justify-center px-2 pb-1">
+        <span className="size-2 rounded-full" title={`${scope.label} — ${scope.sublabel}`}
+          style={{ background: c.dot }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-2 mb-1 px-2.5 py-1.5 rounded-xl flex items-center gap-2"
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+      <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
+      <div className="flex flex-col min-w-0">
+        <span className="text-[11px] font-semibold leading-none truncate" style={{ color: c.text }}>
+          {scope.label}
+        </span>
+        <span className="text-[10px] leading-none mt-0.5 truncate" style={{ color: c.dot, opacity: 0.75 }}>
+          {scope.sublabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main export ──────────────────────────────────────────────── */
 export default function AppSidebar({ activePage = "agents", onNavigate }) {
   const { auth } = useAuth();
+  const currentRole = auth.role ?? "superadmin";
 
-  // Tenant role: now has access to ADMIN section (Tenants, Pricing & Plans)
-  const visibleGroups = navGroups;
+  // Filter groups by role
+  const visibleGroups = navGroups.filter(group =>
+    !group.roles || group.roles.includes(currentRole)
+  );
 
   return (
     <Sidebar collapsible="icon">
@@ -635,9 +820,9 @@ export default function AppSidebar({ activePage = "agents", onNavigate }) {
       <LogoHeader onNavigate={onNavigate} />
 
       {/* Nav */}
-      <SidebarContent>
+      <SidebarContent role="navigation" aria-label="Main navigation">
         {visibleGroups.map(group => (
-          <NavGroup key={group.id} group={group} activePage={activePage} onNavigate={onNavigate} />
+          <NavGroup key={group.id} group={group} activePage={activePage} onNavigate={onNavigate} role={currentRole} />
         ))}
       </SidebarContent>
 

@@ -8,7 +8,10 @@ import {
   useParams,
 } from "react-router-dom";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { PAGE_PATH } from "@/navigation/pagePaths";
+import { TENANTS } from "@/data/adminData";
 import NewChatPage from "@/components/pages/NewChatPage";
 import AgentsListPage from "@/components/pages/AgentsListPage";
 import AgentDetailPage from "@/components/pages/AgentDetailPage";
@@ -92,6 +95,15 @@ function FlowViewRoute() {
 }
 
 /** Creates a draft via catalog and lands on `/flows/:id` (edit intent). */
+function TenantCreateRoute({ onNavigate, onTenantCreated }) {
+  const { can } = usePermissions();
+  if (!can("tenants.create")) {
+    const fallback = can("tenants.view") ? "/tenants/detail" : "/new-chat";
+    return <Navigate to={fallback} replace />;
+  }
+  return <TenantCreatePage onNavigate={onNavigate} onTenantCreated={onTenantCreated} />;
+}
+
 function CreateFlowRedirect() {
   const navigate = useNavigate();
   const { createDraftFlow } = useFlowCatalog();
@@ -114,13 +126,18 @@ function CreateFlowRedirect() {
 export default function AppRoutes() {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigate();
+  const { auth } = useAuth();
+
+  const isTenantAdmin = auth.role === "tenantadmin";
+  // Tenant admins always operate on their own org (Meridian Financial = TENANTS[0])
+  const ownTenant = TENANTS[0];
 
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [agents, setAgents] = useState(INITIAL_AGENTS);
   const [viewedAgent, setViewedAgent] = useState(null);
   const [initialMessage, setInitialMessage] = useState("");
   const [viewedUser, setViewedUser] = useState(null);
-  const [viewedTenant, setViewedTenant] = useState(null);
+  const [viewedTenant, setViewedTenant] = useState(isTenantAdmin ? ownTenant : null);
 
   const openAgent = useCallback((agent) => {
     setSelectedAgent(agent);
@@ -228,30 +245,49 @@ export default function AppRoutes() {
       <Route path="/usage" element={<UsagePage onNavigate={onNavigate} />} />
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
-      <Route path="/marketplace" element={<MarketplacePage onNavigate={onNavigate} />} />
+      <Route
+        path="/marketplace"
+        element={
+          <MarketplacePage
+            onNavigate={onNavigate}
+            workspaceAgents={agents}
+            onUnpublishAgent={(agentId) => {
+              patchAgent(agentId, { visibility: "private" });
+              navigate("/agents");
+            }}
+          />
+        }
+      />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 
       <Route
         path="/tenants"
         element={
-          <TenantListPage
-            onNavigate={onNavigate}
-            onViewTenant={(t) => {
-              setViewedTenant(t);
-              navigate("/tenants/detail");
-            }}
-            onCreateTenant={() => navigate("/tenants/new")}
-          />
+          isTenantAdmin
+            ? <Navigate to="/tenants/detail" replace />
+            : <TenantListPage
+                onNavigate={onNavigate}
+                onViewTenant={(t) => {
+                  setViewedTenant(t);
+                  navigate("/tenants/detail");
+                }}
+                onCreateTenant={() => navigate("/tenants/new")}
+              />
         }
       />
       <Route
         path="/tenants/detail"
-        element={<TenantDetailPage tenant={viewedTenant} onNavigate={onNavigate} />}
+        element={
+          <TenantDetailPage
+            tenant={isTenantAdmin ? ownTenant : viewedTenant}
+            onNavigate={onNavigate}
+          />
+        }
       />
       <Route
         path="/tenants/new"
         element={
-          <TenantCreatePage
+          <TenantCreateRoute
             onNavigate={onNavigate}
             onTenantCreated={(t) => {
               setViewedTenant(t);

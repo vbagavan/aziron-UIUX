@@ -405,7 +405,7 @@ function SelectChip({ label, value, options, onChange }) {
   );
 }
 
-export default function AgentDetailPage({ agent, onNavigate }) {
+export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
   const currentAgent = agent || FALLBACK_AGENT;
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedRun, setSelectedRun] = useState(null);
@@ -492,7 +492,7 @@ export default function AgentDetailPage({ agent, onNavigate }) {
                   <Play size={14} />
                   Run now
                 </Button>
-                <Button variant="outline" className="gap-1.5">
+                <Button type="button" variant="outline" className="gap-1.5" onClick={() => onEditAgent?.()}>
                   <Pencil size={14} />
                   Edit
                 </Button>

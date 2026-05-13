@@ -3,12 +3,17 @@ import {
   AlertTriangle,
   ArrowRight,
   Bot,
+  CheckCircle2,
   ChevronDown,
   Copy,
+  ExternalLink,
   GitFork,
+  Globe,
   LayoutGrid,
+  Lock,
   Loader2,
   Search,
+  Sparkles,
   Users,
   Workflow,
   X,
@@ -117,6 +122,7 @@ const BADGE_STYLES = {
   Popular:  "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
   New:      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   Featured: "bg-primary/10 text-primary border-primary/20",
+  Yours:    "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20",
 };
 
 /** Fixed description block height (3 lines of text-xs) so cards align in grid rows */
@@ -601,9 +607,89 @@ function FlowCard({ flow, onUseTemplate, onPreview }) {
   );
 }
 
+// ─── Workspace (published) agent card ─────────────────────────────────────────
+// Matches AgentCard visually — only the footer actions differ.
+
+function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
+  return (
+    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-violet-500/20 bg-card shadow-sm transition-all duration-200 hover:border-violet-500/50 hover:shadow-md">
+      {/* Left accent bar — marks this as your card */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-violet-500/60" aria-hidden />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-violet-500 to-violet-400/50 transition-transform duration-200 group-hover:scale-x-100" />
+
+      {/* Body — same structure as AgentCard */}
+      <button
+        type="button"
+        className="flex min-h-0 flex-1 flex-col gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+        onClick={() => onManage?.()}
+        aria-label={`Manage ${agent.name}`}
+      >
+        <div className="shrink-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Bot className="size-4" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-foreground">{agent.name}</p>
+                  <KindPill kind="agent" />
+                </div>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">by Your workspace</p>
+              </div>
+            </div>
+            <ItemBadge label="Yours" />
+          </div>
+        </div>
+
+        <div className={CARD_DESC_BLOCK}>
+          <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
+            {agent.description || "No description provided."}
+          </p>
+        </div>
+
+        {/* no tags row — keep height consistent */}
+        <div className="min-h-[1.625rem]" />
+
+        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-[11px]">
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <CheckCircle2 className="size-3 text-primary" aria-hidden />
+            <span className="font-medium text-primary">{agent.success}%</span> success
+          </span>
+          <span className="text-muted-foreground capitalize">{agent.status}</span>
+        </div>
+      </button>
+
+      {/* Footer — workspace-specific actions */}
+      <div className="flex shrink-0 items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="min-h-9 gap-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          onClick={(e) => { e.stopPropagation(); onUnpublish?.(agent.id); }}
+        >
+          <Lock className="size-3" aria-hidden />
+          Unpublish
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="min-h-9 gap-1 text-foreground hover:bg-muted/60"
+          onClick={(e) => { e.stopPropagation(); onManage?.(); }}
+        >
+          Manage
+          <ArrowRight className="size-3" aria-hidden />
+        </Button>
+      </div>
+    </article>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function MarketplacePage({ onNavigate }) {
+export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpublishAgent }) {
   const [contentType,    setContentType]    = useState("all");
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery,    setSearchQuery]    = useState("");
@@ -639,6 +725,11 @@ export default function MarketplacePage({ onNavigate }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [focusSearch]);
 
+  const publishedWorkspaceAgents = useMemo(
+    () => (workspaceAgents ?? []).filter((a) => a.visibility === "public"),
+    [workspaceAgents],
+  );
+
   const displayedItems = useMemo(() => {
     let agents = contentType === "flows"  ? [] : STATIC_AGENTS;
     let flows  = contentType === "agents" ? [] : FLOWS;
@@ -658,8 +749,23 @@ export default function MarketplacePage({ onNavigate }) {
       ...flows.map((f)  => ({ ...f, _kind: "flow"  })),
     ];
 
-    return applySort(tagged, sortBy);
-  }, [contentType, activeCategory, searchQuery, sortBy]);
+    const sorted = applySort(tagged, sortBy);
+
+    // Prepend published workspace agents (agents only; skip for flows-only view)
+    if (contentType !== "flows") {
+      let wsAgents = publishedWorkspaceAgents;
+      if (searchQuery.trim()) {
+        wsAgents = wsAgents.filter((a) => matchesTextSearch(
+          { ...a, blurb: a.description ?? "" },
+          searchQuery,
+        ));
+      }
+      const wsTagged = wsAgents.map((a) => ({ ...a, _kind: "agent", _isWorkspace: true }));
+      return [...wsTagged, ...sorted];
+    }
+
+    return sorted;
+  }, [contentType, activeCategory, searchQuery, sortBy, publishedWorkspaceAgents]);
 
   const totalUnfiltered = STATIC_AGENTS.length + FLOWS.length;
 
@@ -843,8 +949,14 @@ export default function MarketplacePage({ onNavigate }) {
                 {displayedItems.length > 0 && (
                   <ul className="grid list-none gap-4 sm:grid-cols-2 lg:grid-cols-3 items-stretch" role="list">
                     {displayedItems.map((item) => (
-                      <li key={`${item._kind}-${item.id}`} className="min-h-0 h-full">
-                        {item._kind === "agent" ? (
+                      <li key={`${item._isWorkspace ? "ws" : item._kind}-${item.id}`} className="min-h-0 h-full">
+                        {item._isWorkspace ? (
+                          <WorkspaceAgentCard
+                            agent={item}
+                            onManage={() => onNavigate?.("agents")}
+                            onUnpublish={onUnpublishAgent}
+                          />
+                        ) : item._kind === "agent" ? (
                           <AgentCard
                             agent={item}
                             isForked={forkedIds.has(String(item.id))}

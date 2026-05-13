@@ -42,83 +42,103 @@ export const ONPREM_TIERS = {
 // ─── Tenant list ─────────────────────────────────────────────────────────────
 export const TENANTS = [
   {
-    id: 1, name: "Meridian Financial", domain: "meridian.io",
-    deployment: "saas", tier: "scale", seats: 620, status: "active",
+    id: 1, name: "Meridian Financial", slug: "meridian-financial", domain: "meridian.io",
+    deployment: "saas", tier: "scale", plan: "enterprise", seats: 620, max_users: 620, status: "active",
     industry: "Finance", contactName: "Sarah Chen", contactEmail: "s.chen@meridian.io",
-    createdAt: "2024-03-15", overrides: {},
+    createdAt: "2024-03-15", overrides: {}, settings: {},
+    subscriptionRenewalDate: "2026-12-01",
+    billingProfile: {
+      billingEmail: "accounts-payable@meridian.io",
+      legalEntity: "Meridian Financial Group Ltd",
+      taxId: "GB 284 719 402",
+      purchaseOrder: "PO-MER-2025-0042",
+      lastPaymentStatus: "Paid",
+      lastPaymentDate: "2026-04-01",
+      financeHelpUrl: "mailto:finance@aziron.com?subject=Meridian%20billing",
+    },
     usage: { tokensConsumed: 1840, seatsUsed: 607, flowExecutions: 84200, storageGB: 312,
+      memberCount: 607, agentCount: 42, workflowCount: 18, vectorDbCount: 6, providerCount: 3,
       trend: [820, 940, 1100, 1280, 1560, 1840] },
   },
   {
-    id: 2, name: "Nexus Health Systems", domain: "nexushealth.com",
-    deployment: "on-prem", tier: "scale", seats: null, status: "active",
+    id: 2, name: "Nexus Health Systems", slug: "nexus-health", domain: "nexushealth.com",
+    deployment: "on-prem", tier: "scale", plan: "enterprise", seats: null, max_users: null, status: "active",
     industry: "Healthcare", contactName: "Dr. James Ruiz", contactEmail: "j.ruiz@nexushealth.com",
-    createdAt: "2024-01-08", solutionsArchitect: "Alex Kim", licenseStart: "2024-02-01", overrides: {},
+    createdAt: "2024-01-08", solutionsArchitect: "Alex Kim", licenseStart: "2024-02-01", overrides: {}, settings: {},
     usage: { tokensConsumed: 3100, seatsUsed: null, flowExecutions: 198000, storageGB: null,
+      memberCount: 312, agentCount: 89, workflowCount: 34, vectorDbCount: 12, providerCount: 4,
       trend: [1400, 1800, 2100, 2500, 2800, 3100] },
   },
   {
-    id: 3, name: "Vanta Logistics", domain: "vantalog.co",
-    deployment: "saas", tier: "growth", seats: 245, status: "active",
+    id: 3, name: "Vanta Logistics", slug: "vanta-logistics", domain: "vantalog.co",
+    deployment: "saas", tier: "growth", plan: "professional", seats: 245, max_users: 500, status: "active",
     industry: "Logistics", contactName: "Mark Obasi", contactEmail: "m.obasi@vantalog.co",
-    createdAt: "2024-06-22", overrides: { agents: 15 },
+    createdAt: "2024-06-22", overrides: { agents: 15 }, settings: {},
     usage: { tokensConsumed: 520, seatsUsed: 237, flowExecutions: 32100, storageGB: 28,
+      memberCount: 237, agentCount: 15, workflowCount: 9, vectorDbCount: 3, providerCount: 2,
       trend: [180, 240, 310, 390, 450, 520] },
   },
   {
-    id: 4, name: "Orion EdTech", domain: "orionlearn.com",
-    deployment: "saas", tier: "lite", seats: 88, status: "active",
+    id: 4, name: "Orion EdTech", slug: "orion-edtech", domain: "orionlearn.com",
+    deployment: "saas", tier: "lite", plan: "standard", seats: 88, max_users: 100, status: "active",
     industry: "Education", contactName: "Priya Patel", contactEmail: "p.patel@orionlearn.com",
-    createdAt: "2024-09-10", overrides: {},
+    createdAt: "2024-09-10", overrides: {}, settings: {},
     usage: { tokensConsumed: 180, seatsUsed: 71, flowExecutions: 3800, storageGB: 3.2,
+      memberCount: 71, agentCount: 4, workflowCount: 2, vectorDbCount: 1, providerCount: 1,
       trend: [40, 70, 95, 120, 150, 180] },
   },
   {
-    id: 5, name: "Apex Manufacturing", domain: "apexmfg.com",
-    deployment: "on-prem", tier: "growth", seats: null, status: "active",
+    id: 5, name: "Apex Manufacturing", slug: "apex-manufacturing", domain: "apexmfg.com",
+    deployment: "on-prem", tier: "growth", plan: "professional", seats: null, max_users: null, status: "active",
     industry: "Manufacturing", contactName: "Tom Hargreaves", contactEmail: "t.hargreaves@apexmfg.com",
-    createdAt: "2024-05-30", solutionsArchitect: "Maria Santos", licenseStart: "2024-06-15", overrides: {},
+    createdAt: "2024-05-30", solutionsArchitect: "Maria Santos", licenseStart: "2024-06-15", overrides: {}, settings: {},
     usage: { tokensConsumed: 1650, seatsUsed: null, flowExecutions: 187000, storageGB: null,
+      memberCount: 198, agentCount: 23, workflowCount: 11, vectorDbCount: 5, providerCount: 2,
       trend: [700, 900, 1100, 1280, 1450, 1650] },
   },
   {
-    id: 6, name: "Brightline Retail", domain: "brightlineretail.com",
-    deployment: "saas", tier: "growth", seats: 182, status: "active",
+    id: 6, name: "Brightline Retail", slug: "brightline-retail", domain: "brightlineretail.com",
+    deployment: "saas", tier: "growth", plan: "professional", seats: 182, max_users: 250, status: "active",
     industry: "Retail", contactName: "Lisa Monroe", contactEmail: "l.monroe@brightlineretail.com",
-    createdAt: "2024-07-14", overrides: { flowExecPerMonth: 80000 },
+    createdAt: "2024-07-14", overrides: { flowExecPerMonth: 80000 }, settings: {},
     usage: { tokensConsumed: 390, seatsUsed: 175, flowExecutions: 61200, storageGB: 22,
+      memberCount: 175, agentCount: 10, workflowCount: 7, vectorDbCount: 2, providerCount: 2,
       trend: [90, 140, 200, 270, 330, 390] },
   },
   {
-    id: 7, name: "Strategos Consulting", domain: "strategos.io",
-    deployment: "saas", tier: "lite", seats: 42, status: "trial",
+    id: 7, name: "Strategos Consulting", slug: "strategos", domain: "strategos.io",
+    deployment: "saas", tier: "lite", plan: "trial", seats: 42, max_users: 50, status: "trial",
     industry: "Consulting", contactName: "David Ng", contactEmail: "d.ng@strategos.io",
-    createdAt: "2025-03-01", overrides: {},
+    createdAt: "2025-03-01", trialEndsAt: "2026-06-01", overrides: {}, settings: {},
     usage: { tokensConsumed: 62, seatsUsed: 38, flowExecutions: 1100, storageGB: 0.8,
+      memberCount: 38, agentCount: 3, workflowCount: 1, vectorDbCount: 1, providerCount: 1,
       trend: [0, 0, 8, 18, 38, 62] },
   },
   {
-    id: 8, name: "Cobalt Insurance", domain: "cobaltins.com",
-    deployment: "saas", tier: "scale", seats: 510, status: "active",
+    id: 8, name: "Cobalt Insurance", slug: "cobalt-insurance", domain: "cobaltins.com",
+    deployment: "saas", tier: "scale", plan: "enterprise", seats: 510, max_users: null, status: "active",
     industry: "Insurance", contactName: "Rachel Torres", contactEmail: "r.torres@cobaltins.com",
-    createdAt: "2023-11-20", overrides: { knowledgeHubGB: 800 },
+    createdAt: "2023-11-20", overrides: { knowledgeHubGB: 800 }, settings: { hipaa: true },
     usage: { tokensConsumed: 2250, seatsUsed: 498, flowExecutions: null, storageGB: 445,
+      memberCount: 498, agentCount: 51, workflowCount: 22, vectorDbCount: 9, providerCount: 4,
       trend: [1100, 1400, 1700, 1900, 2100, 2250] },
   },
   {
-    id: 9, name: "Zenith Pharma", domain: "zenithpharma.com",
-    deployment: "on-prem", tier: "lite", seats: null, status: "active",
+    id: 9, name: "Zenith Pharma", slug: "zenith-pharma", domain: "zenithpharma.com",
+    deployment: "on-prem", tier: "lite", plan: "standard", seats: null, max_users: null, status: "active",
     industry: "Pharma", contactName: "Yuki Tanaka", contactEmail: "y.tanaka@zenithpharma.com",
-    createdAt: "2024-10-05", solutionsArchitect: "Ben Carter", licenseStart: "2024-11-01", overrides: {},
+    createdAt: "2024-10-05", solutionsArchitect: "Ben Carter", licenseStart: "2024-11-01", overrides: {}, settings: {},
     usage: { tokensConsumed: 850, seatsUsed: null, flowExecutions: 41000, storageGB: null,
+      memberCount: 145, agentCount: 8, workflowCount: 4, vectorDbCount: 2, providerCount: 1,
       trend: [200, 350, 480, 610, 730, 850] },
   },
   {
-    id: 10, name: "Pulsar Media", domain: "pulsarmedia.tv",
-    deployment: "saas", tier: "growth", seats: 130, status: "suspended",
+    id: 10, name: "Pulsar Media", slug: "pulsar-media", domain: "pulsarmedia.tv",
+    deployment: "saas", tier: "growth", plan: "professional", seats: 130, max_users: 150, status: "suspended",
     industry: "Media", contactName: "Chris Blake", contactEmail: "c.blake@pulsarmedia.tv",
-    createdAt: "2024-04-18", overrides: {},
+    createdAt: "2024-04-18", overrides: {}, settings: {},
     usage: { tokensConsumed: 0, seatsUsed: 0, flowExecutions: 0, storageGB: 18,
+      memberCount: 0, agentCount: 7, workflowCount: 3, vectorDbCount: 1, providerCount: 1,
       trend: [280, 310, 320, 290, 145, 0] },
   },
 ];
@@ -189,52 +209,57 @@ export const TENANT_USER_USAGE = {
 export const TENANT_USERS = {
   1: [
     { id:1, name:"Sarah Chen",       email:"s.chen@meridian.io",      role:"Admin",  status:"Active",   lastActive:"Today, 9:24 AM"      },
-    { id:2, name:"Raj Patel",        email:"r.patel@meridian.io",     role:"Member", status:"Active",   lastActive:"Today, 8:45 AM"      },
-    { id:3, name:"Lisa Wong",        email:"l.wong@meridian.io",      role:"Member", status:"Active",   lastActive:"Yesterday, 4:12 PM"  },
-    { id:4, name:"Marcus Brown",     email:"m.brown@meridian.io",     role:"Member", status:"Active",   lastActive:"2 days ago"          },
-    { id:5, name:"Anya Novak",       email:"a.novak@meridian.io",     role:"Member", status:"Active",   lastActive:"3 days ago"          },
-    { id:6, name:"Kevin Shah",       email:"k.shah@meridian.io",      role:"Member", status:"Invited",  lastActive:"—"                   },
-    { id:7, name:"Priya Lal",        email:"p.lal@meridian.io",       role:"Member", status:"Inactive", lastActive:"15 days ago"         },
+    { id:2, name:"Raj Patel",        email:"r.patel@meridian.io",     role:"Editor", status:"Active",   lastActive:"Today, 8:45 AM"      },
+    { id:3, name:"Lisa Wong",        email:"l.wong@meridian.io",      role:"Editor", status:"Active",   lastActive:"Yesterday, 4:12 PM"  },
+    { id:4, name:"Marcus Brown",     email:"m.brown@meridian.io",     role:"Viewer", status:"Active",   lastActive:"2 days ago"          },
+    { id:5, name:"Anya Novak",       email:"a.novak@meridian.io",     role:"Editor", status:"Active",   lastActive:"3 days ago"          },
+    { id:6, name:"Kevin Shah",       email:"k.shah@meridian.io",      role:"Editor", status:"Invited",  lastActive:"—"                   },
+    { id:7, name:"Priya Lal",        email:"p.lal@meridian.io",       role:"Editor", status:"Inactive", lastActive:"15 days ago"         },
   ],
   3: [
     { id:1,  name:"Mark Obasi",      email:"m.obasi@vantalog.co",     role:"Admin",  status:"Active",   lastActive:"Today, 10:01 AM"     },
     { id:2,  name:"Priya Singh",     email:"p.singh@vantalog.co",     role:"Admin",  status:"Active",   lastActive:"Today, 7:30 AM"      },
-    { id:3,  name:"Claire Walsh",    email:"c.walsh@vantalog.co",     role:"Member", status:"Active",   lastActive:"Today, 9:33 AM"      },
-    { id:4,  name:"Tom Reeves",      email:"t.reeves@vantalog.co",    role:"Member", status:"Active",   lastActive:"Today, 8:55 AM"      },
-    { id:5,  name:"Nina Park",       email:"n.park@vantalog.co",      role:"Member", status:"Active",   lastActive:"Yesterday, 6:20 PM"  },
-    { id:6,  name:"Sam Diallo",      email:"s.diallo@vantalog.co",    role:"Member", status:"Active",   lastActive:"Yesterday, 2:40 PM"  },
-    { id:7,  name:"Amara Osei",      email:"a.osei@vantalog.co",      role:"Member", status:"Active",   lastActive:"2 days ago"          },
-    { id:8,  name:"Liam Chen",       email:"l.chen@vantalog.co",      role:"Member", status:"Active",   lastActive:"2 days ago"          },
-    { id:9,  name:"Fatima Al-Rashid",email:"f.alrashid@vantalog.co",  role:"Member", status:"Active",   lastActive:"3 days ago"          },
-    { id:10, name:"Jacob Okonkwo",   email:"j.okonkwo@vantalog.co",   role:"Member", status:"Invited",  lastActive:"—"                   },
-    { id:11, name:"Yara Hassan",     email:"y.hassan@vantalog.co",    role:"Member", status:"Invited",  lastActive:"—"                   },
-    { id:12, name:"Derek Mills",     email:"d.mills@vantalog.co",     role:"Member", status:"Inactive", lastActive:"18 days ago"         },
+    { id:3,  name:"Claire Walsh",    email:"c.walsh@vantalog.co",     role:"Editor", status:"Active",   lastActive:"Today, 9:33 AM"      },
+    { id:4,  name:"Tom Reeves",      email:"t.reeves@vantalog.co",    role:"Editor", status:"Active",   lastActive:"Today, 8:55 AM"      },
+    { id:5,  name:"Nina Park",       email:"n.park@vantalog.co",      role:"Viewer", status:"Active",   lastActive:"Yesterday, 6:20 PM"  },
+    { id:6,  name:"Sam Diallo",      email:"s.diallo@vantalog.co",    role:"Editor", status:"Active",   lastActive:"Yesterday, 2:40 PM"  },
+    { id:7,  name:"Amara Osei",      email:"a.osei@vantalog.co",      role:"Editor", status:"Active",   lastActive:"2 days ago"          },
+    { id:8,  name:"Liam Chen",       email:"l.chen@vantalog.co",      role:"Viewer", status:"Active",   lastActive:"2 days ago"          },
+    { id:9,  name:"Fatima Al-Rashid",email:"f.alrashid@vantalog.co",  role:"Editor", status:"Active",   lastActive:"3 days ago"          },
+    { id:10, name:"Jacob Okonkwo",   email:"j.okonkwo@vantalog.co",   role:"Editor", status:"Invited",  lastActive:"—"                   },
+    { id:11, name:"Yara Hassan",     email:"y.hassan@vantalog.co",    role:"Editor", status:"Invited",  lastActive:"—"                   },
+    { id:12, name:"Derek Mills",     email:"d.mills@vantalog.co",     role:"Editor", status:"Inactive", lastActive:"18 days ago"         },
   ],
   4: [
     { id:1, name:"Priya Patel",      email:"p.patel@orionlearn.com",  role:"Admin",  status:"Active",   lastActive:"Today, 11:00 AM"     },
-    { id:2, name:"James Obi",        email:"j.obi@orionlearn.com",    role:"Member", status:"Active",   lastActive:"Today, 10:20 AM"     },
-    { id:3, name:"Soo-Yeon Kim",     email:"s.kim@orionlearn.com",    role:"Member", status:"Active",   lastActive:"Yesterday"           },
-    { id:4, name:"Aaron Vasquez",    email:"a.vasquez@orionlearn.com",role:"Member", status:"Invited",  lastActive:"—"                   },
-    { id:5, name:"Marie Dupont",     email:"m.dupont@orionlearn.com", role:"Member", status:"Inactive", lastActive:"21 days ago"         },
+    { id:2, name:"James Obi",        email:"j.obi@orionlearn.com",    role:"Editor", status:"Active",   lastActive:"Today, 10:20 AM"     },
+    { id:3, name:"Soo-Yeon Kim",     email:"s.kim@orionlearn.com",    role:"Editor", status:"Active",   lastActive:"Yesterday"           },
+    { id:4, name:"Aaron Vasquez",    email:"a.vasquez@orionlearn.com",role:"Editor", status:"Invited",  lastActive:"—"                   },
+    { id:5, name:"Marie Dupont",     email:"m.dupont@orionlearn.com", role:"Editor", status:"Inactive", lastActive:"21 days ago"         },
+  ],
+  5: [
+    { id:1, name:"Tom Hargreaves", email:"t.hargreaves@apexmfg.com", role:"Admin",  status:"Active",   lastActive:"Today, 9:18 AM"     },
+    { id:2, name:"Jamie Porter",   email:"j.porter@apexmfg.com",     role:"Editor", status:"Active",   lastActive:"Yesterday, 3:40 PM" },
+    { id:3, name:"Kim Adeyemi",    email:"k.adeyemi@apexmfg.com",    role:"Viewer", status:"Invited",  lastActive:"—"                  },
   ],
   6: [
     { id:1, name:"Lisa Monroe",      email:"l.monroe@brightlineretail.com",role:"Admin",  status:"Active",   lastActive:"Today, 9:05 AM"  },
-    { id:2, name:"Brian Watts",      email:"b.watts@brightlineretail.com", role:"Member", status:"Active",   lastActive:"Today, 8:30 AM"  },
-    { id:3, name:"Chloe Martin",     email:"c.martin@brightlineretail.com",role:"Member", status:"Active",   lastActive:"Yesterday"       },
-    { id:4, name:"Dev Kapoor",       email:"d.kapoor@brightlineretail.com",role:"Member", status:"Invited",  lastActive:"—"               },
+    { id:2, name:"Brian Watts",      email:"b.watts@brightlineretail.com", role:"Editor", status:"Active",   lastActive:"Today, 8:30 AM"  },
+    { id:3, name:"Chloe Martin",     email:"c.martin@brightlineretail.com",role:"Editor", status:"Active",   lastActive:"Yesterday"       },
+    { id:4, name:"Dev Kapoor",       email:"d.kapoor@brightlineretail.com",role:"Editor", status:"Invited",  lastActive:"—"               },
   ],
   7: [
     { id:1, name:"David Ng",         email:"d.ng@strategos.io",       role:"Admin",  status:"Active",   lastActive:"Today, 8:00 AM"      },
-    { id:2, name:"Elena Ross",       email:"e.ross@strategos.io",     role:"Member", status:"Active",   lastActive:"Yesterday"           },
-    { id:3, name:"Paulo Ferreira",   email:"p.ferreira@strategos.io", role:"Member", status:"Invited",  lastActive:"—"                   },
+    { id:2, name:"Elena Ross",       email:"e.ross@strategos.io",     role:"Editor", status:"Active",   lastActive:"Yesterday"           },
+    { id:3, name:"Paulo Ferreira",   email:"p.ferreira@strategos.io", role:"Editor", status:"Invited",  lastActive:"—"                   },
   ],
   8: [
     { id:1, name:"Rachel Torres",    email:"r.torres@cobaltins.com",  role:"Admin",  status:"Active",   lastActive:"Today, 10:15 AM"     },
-    { id:2, name:"Greg Palmer",      email:"g.palmer@cobaltins.com",  role:"Member", status:"Active",   lastActive:"Today, 9:00 AM"      },
-    { id:3, name:"Mia Johansson",    email:"m.johansson@cobaltins.com",role:"Member",status:"Active",   lastActive:"Yesterday, 5:30 PM"  },
-    { id:4, name:"Oscar Leung",      email:"o.leung@cobaltins.com",   role:"Member", status:"Active",   lastActive:"2 days ago"          },
-    { id:5, name:"Dana Hill",        email:"d.hill@cobaltins.com",    role:"Member", status:"Inactive", lastActive:"10 days ago"         },
-    { id:6, name:"Felix Nguyen",     email:"f.nguyen@cobaltins.com",  role:"Member", status:"Invited",  lastActive:"—"                   },
+    { id:2, name:"Greg Palmer",      email:"g.palmer@cobaltins.com",  role:"Editor", status:"Active",   lastActive:"Today, 9:00 AM"      },
+    { id:3, name:"Mia Johansson",    email:"m.johansson@cobaltins.com",role:"Editor",status:"Active",   lastActive:"Yesterday, 5:30 PM"  },
+    { id:4, name:"Oscar Leung",      email:"o.leung@cobaltins.com",   role:"Viewer", status:"Active",   lastActive:"2 days ago"          },
+    { id:5, name:"Dana Hill",        email:"d.hill@cobaltins.com",    role:"Editor", status:"Inactive", lastActive:"10 days ago"         },
+    { id:6, name:"Felix Nguyen",     email:"f.nguyen@cobaltins.com",  role:"Editor", status:"Invited",  lastActive:"—"                   },
   ],
 };
 
@@ -272,6 +297,89 @@ export function formatMRR(n) {
   return `$${n.toLocaleString()}`;
 }
 
+// ─── Tenant admins (users with is_admin=true per org) ────────────────────────
+export const TENANT_ADMINS = {
+  1: [
+    { id: "ua-1-1", userId: "u-101", name: "Sarah Chen",    email: "s.chen@meridian.io",   grantedAt: "2024-03-15", grantedBy: "super-admin" },
+    { id: "ua-1-2", userId: "u-102", name: "Marcus Brown",  email: "m.brown@meridian.io",  grantedAt: "2024-08-01", grantedBy: "s.chen@meridian.io" },
+  ],
+  2: [
+    { id: "ua-2-1", userId: "u-201", name: "Dr. James Ruiz", email: "j.ruiz@nexushealth.com", grantedAt: "2024-01-08", grantedBy: "super-admin" },
+  ],
+  3: [
+    { id: "ua-3-1", userId: "u-301", name: "Mark Obasi",   email: "m.obasi@vantalog.co",   grantedAt: "2024-06-22", grantedBy: "super-admin" },
+    { id: "ua-3-2", userId: "u-302", name: "Priya Singh",  email: "p.singh@vantalog.co",   grantedAt: "2024-09-10", grantedBy: "m.obasi@vantalog.co" },
+  ],
+  4: [
+    { id: "ua-4-1", userId: "u-401", name: "Priya Patel",  email: "p.patel@orionlearn.com", grantedAt: "2024-09-10", grantedBy: "super-admin" },
+  ],
+  5: [
+    { id: "ua-5-1", userId: "u-501", name: "Tom Hargreaves", email: "t.hargreaves@apexmfg.com", grantedAt: "2024-05-30", grantedBy: "super-admin" },
+  ],
+  6: [
+    { id: "ua-6-1", userId: "u-601", name: "Lisa Monroe",  email: "l.monroe@brightlineretail.com", grantedAt: "2024-07-14", grantedBy: "super-admin" },
+  ],
+  7: [
+    { id: "ua-7-1", userId: "u-701", name: "David Ng",     email: "d.ng@strategos.io",      grantedAt: "2025-03-01", grantedBy: "super-admin" },
+  ],
+  8: [
+    { id: "ua-8-1", userId: "u-801", name: "Rachel Torres", email: "r.torres@cobaltins.com", grantedAt: "2023-11-20", grantedBy: "super-admin" },
+    { id: "ua-8-2", userId: "u-802", name: "Greg Palmer",   email: "g.palmer@cobaltins.com", grantedAt: "2024-02-14", grantedBy: "r.torres@cobaltins.com" },
+  ],
+  9: [
+    { id: "ua-9-1", userId: "u-901", name: "Yuki Tanaka",  email: "y.tanaka@zenithpharma.com", grantedAt: "2024-10-05", grantedBy: "super-admin" },
+  ],
+  10: [
+    { id: "ua-10-1", userId: "u-1001", name: "Chris Blake", email: "c.blake@pulsarmedia.tv", grantedAt: "2024-04-18", grantedBy: "super-admin" },
+  ],
+};
+
+// ─── Tenant email domains ─────────────────────────────────────────────────────
+export const TENANT_DOMAINS = {
+  1:  [
+    { domain: "meridian.io",      verified: true,  addedAt: "2024-03-15" },
+    { domain: "meridian-corp.com", verified: false, addedAt: "2025-01-10" },
+  ],
+  2:  [{ domain: "nexushealth.com", verified: true, addedAt: "2024-01-08" }],
+  3:  [
+    { domain: "vantalog.co",   verified: true,  addedAt: "2024-06-22" },
+    { domain: "vantalog.com",  verified: true,  addedAt: "2024-07-01" },
+  ],
+  4:  [{ domain: "orionlearn.com", verified: true, addedAt: "2024-09-10" }],
+  5:  [{ domain: "apexmfg.com",    verified: true, addedAt: "2024-05-30" }],
+  6:  [{ domain: "brightlineretail.com", verified: true, addedAt: "2024-07-14" }],
+  7:  [{ domain: "strategos.io",   verified: false, addedAt: "2025-03-01" }],
+  8:  [
+    { domain: "cobaltins.com",   verified: true,  addedAt: "2023-11-20" },
+    { domain: "cobalt-ins.com",  verified: true,  addedAt: "2024-01-05" },
+  ],
+  9:  [{ domain: "zenithpharma.com", verified: true, addedAt: "2024-10-05" }],
+  10: [{ domain: "pulsarmedia.tv",   verified: true, addedAt: "2024-04-18" }],
+};
+
+// ─── Tenant audit log entries ─────────────────────────────────────────────────
+export const TENANT_AUDIT_LOG = {
+  1: [
+    { id: "al-1-1", actor: "super-admin",            action: "tenant.created",       detail: "Tenant created",                    ts: "2024-03-15T09:00:00Z" },
+    { id: "al-1-2", actor: "s.chen@meridian.io",     action: "domain.added",         detail: "Added domain meridian-corp.com",    ts: "2025-01-10T14:22:00Z" },
+    { id: "al-1-3", actor: "super-admin",            action: "admin.granted",        detail: "Granted admin to Marcus Brown",     ts: "2024-08-01T11:05:00Z" },
+    { id: "al-1-4", actor: "s.chen@meridian.io",     action: "plan.changed",         detail: "Plan changed: professional → enterprise", ts: "2024-11-15T10:30:00Z" },
+  ],
+  3: [
+    { id: "al-3-1", actor: "super-admin",            action: "tenant.created",       detail: "Tenant created",                    ts: "2024-06-22T08:00:00Z" },
+    { id: "al-3-2", actor: "super-admin",            action: "admin.granted",        detail: "Granted admin to Priya Singh",      ts: "2024-09-10T16:40:00Z" },
+    { id: "al-3-3", actor: "m.obasi@vantalog.co",    action: "domain.added",         detail: "Added domain vantalog.com",         ts: "2024-07-01T09:15:00Z" },
+    { id: "al-3-4", actor: "super-admin",            action: "override.set",         detail: "Set agents override: 15",           ts: "2024-10-01T12:00:00Z" },
+  ],
+  7: [
+    { id: "al-7-1", actor: "super-admin",            action: "tenant.created",       detail: "Tenant created (trial)",            ts: "2025-03-01T10:00:00Z" },
+  ],
+  10: [
+    { id: "al-10-1", actor: "super-admin",           action: "tenant.created",       detail: "Tenant created",                    ts: "2024-04-18T09:00:00Z" },
+    { id: "al-10-2", actor: "super-admin",           action: "tenant.suspended",     detail: "Tenant suspended (non-payment)",    ts: "2025-01-10T15:00:00Z" },
+  ],
+};
+
 export const TIER_CFG = {
   lite:   { bg: "#475569", text: "#ffffff", ring: "#94a3b8" },
   growth: { bg: "#2563eb", text: "#ffffff", ring: "#93c5fd" },
@@ -284,10 +392,18 @@ export const DEPLOY_CFG = {
 };
 
 export const STATUS_CFG = {
-  active:    { dot: "#16a34a", text: "#16a34a", label: "Active"    },
-  trial:     { dot: "#f59e0b", text: "#d97706", label: "Trial"     },
-  suspended: { dot: "#ef4444", text: "#dc2626", label: "Suspended" },
-  churned:   { dot: "#94a3b8", text: "#64748b", label: "Churned"   },
+  active:    { dot: "#16a34a", text: "#16a34a", label: "Active",    bg: "#dcfce7", badgeText: "#15803d" },
+  trial:     { dot: "#f59e0b", text: "#d97706", label: "Trial",     bg: "#fef9c3", badgeText: "#a16207" },
+  suspended: { dot: "#ef4444", text: "#dc2626", label: "Suspended", bg: "#fee2e2", badgeText: "#b91c1c" },
+  deleted:   { dot: "#94a3b8", text: "#64748b", label: "Deleted",   bg: "#f1f5f9", badgeText: "#475569" },
+  churned:   { dot: "#94a3b8", text: "#64748b", label: "Churned",   bg: "#f1f5f9", badgeText: "#475569" },
+};
+
+export const PLAN_CFG = {
+  trial:        { label: "Trial",        color: "#f59e0b", bg: "#fef9c3", text: "#a16207" },
+  standard:     { label: "Standard",     color: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" },
+  professional: { label: "Professional", color: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" },
+  enterprise:   { label: "Enterprise",   color: "#2563eb", bg: "#dbeafe", text: "#1d4ed8" },
 };
 
 export const INV_STATUS_CFG = {

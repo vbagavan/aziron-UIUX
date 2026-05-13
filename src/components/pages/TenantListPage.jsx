@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import {
   Building2, Search, X, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
   MoreVertical, Eye, ShieldOff, Shield, Filter, Users, DollarSign,
-  Server, TrendingUp, Plus,
+  TrendingUp, Plus, Trash2, RefreshCw,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import {
-  TENANTS, DEPLOY_CFG, STATUS_CFG, formatMRR,
+  TENANTS, STATUS_CFG, PLAN_CFG, formatMRR,
 } from "@/data/adminData";
 import { getBaseTierPackage, computePackageMRR } from "@/data/packagesData";
 
@@ -53,9 +53,9 @@ function SortIcon({ col, sortKey, sortDir }) {
 }
 
 // ─── Row menu ─────────────────────────────────────────────────────────────────
-function RowMenu({ tenant, onView, onToggleSuspend }) {
+function RowMenu({ tenant, onView, onToggleSuspend, onDelete }) {
   const [open, setOpen] = useState(false);
-  const [style, setStyle] = useState({});
+  const [menuStyle, setMenuStyle] = useState({});
   const btnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -72,10 +72,12 @@ function RowMenu({ tenant, onView, onToggleSuspend }) {
   const toggle = () => {
     if (!open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setStyle({ position: "fixed", top: r.bottom + 4, right: window.innerWidth - r.right, width: 168, zIndex: 9999 });
+      setMenuStyle({ position: "fixed", top: r.bottom + 4, right: window.innerWidth - r.right, width: 180, zIndex: 9999 });
     }
     setOpen(v => !v);
   };
+
+  const isDeleted = tenant.status === "deleted";
 
   return (
     <>
@@ -84,22 +86,38 @@ function RowMenu({ tenant, onView, onToggleSuspend }) {
         <MoreVertical size={14} />
       </button>
       {open && (
-        <div ref={menuRef} style={style}
-          className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden"
-          style={{ ...style, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
+        <div ref={menuRef}
+          className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden py-1"
+          style={{ ...menuStyle, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}>
           <button onClick={e => { e.stopPropagation(); setOpen(false); onView(); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
             <Eye size={13} /> View Details
           </button>
-          <button onClick={e => { e.stopPropagation(); setOpen(false); onToggleSuspend(); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-              tenant.status === "suspended"
-                ? "text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]"
-                : "text-[#ef4444] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a]"
-            }`}>
-            {tenant.status === "suspended" ? <Shield size={13} /> : <ShieldOff size={13} />}
-            {tenant.status === "suspended" ? "Reactivate" : "Suspend"}
-          </button>
+          {!isDeleted && (
+            <button onClick={e => { e.stopPropagation(); setOpen(false); onToggleSuspend(); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                tenant.status === "suspended"
+                  ? "text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]"
+                  : "text-[#f59e0b] hover:bg-[#fffbeb] dark:hover:bg-[#451a03]"
+              }`}>
+              {tenant.status === "suspended"
+                ? <><RefreshCw size={13} /> Reactivate</>
+                : <><ShieldOff size={13} /> Suspend</>
+              }
+            </button>
+          )}
+          <div className="border-t border-[#f1f5f9] dark:border-[#334155] my-1" />
+          {isDeleted ? (
+            <button onClick={e => { e.stopPropagation(); setOpen(false); onToggleSuspend(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16] transition-colors">
+              <RefreshCw size={13} /> Restore Tenant
+            </button>
+          ) : (
+            <button onClick={e => { e.stopPropagation(); setOpen(false); onDelete(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#dc2626] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a] transition-colors">
+              <Trash2 size={13} /> Delete Tenant
+            </button>
+          )}
         </div>
       )}
     </>
@@ -110,7 +128,6 @@ function RowMenu({ tenant, onView, onToggleSuspend }) {
 export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenant }) {
   const [tenants, setTenants] = useState(TENANTS);
   const [search, setSearch] = useState("");
-  const [filterDeploy, setFilterDeploy] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortKey, setSortKey] = useState("name");
@@ -121,9 +138,8 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const totalMRR = TENANTS.reduce((s, t) => s + computePackageMRR(t.id, t.usage?.tokensConsumed ?? 0), 0);
-  const activeSaasSeats = TENANTS.filter(t => t.deployment === "saas" && t.status === "active")
+  const activeSaasSeats = TENANTS.filter(t => t.status === "active")
     .reduce((s, t) => s + (getBaseTierPackage(t.id)?.assignment?.seats || t.seats || 0), 0);
-  const onPremCount = TENANTS.filter(t => t.deployment === "on-prem").length;
   const activeCount = TENANTS.filter(t => t.status === "active").length;
 
   // ── Filter + sort ──────────────────────────────────────────────────────────
@@ -131,7 +147,6 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
     .filter(t => {
       if (search && !t.name.toLowerCase().includes(search.toLowerCase()) &&
           !t.domain.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterDeploy !== "all" && t.deployment !== filterDeploy) return false;
       if (filterTier   !== "all" && t.tier !== filterTier) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       return true;
@@ -158,15 +173,22 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
   };
 
   const toggleSuspend = (id) => {
+    setTenants(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      if (t.status === "deleted") return { ...t, status: "active" };
+      return { ...t, status: t.status === "suspended" ? "active" : "suspended" };
+    }));
+  };
+
+  const deleteTenant = (id) => {
     setTenants(prev => prev.map(t =>
-      t.id === id ? { ...t, status: t.status === "suspended" ? "active" : "suspended" } : t
+      t.id === id ? { ...t, status: "deleted" } : t
     ));
   };
 
   const COL = [
     { key: "name",   label: "Tenant",     sortable: true  },
     { key: "tier",   label: "Tier",       sortable: true  },
-    { key: null,     label: "Deployment", sortable: false  },
     { key: "seats",  label: "Seats",      sortable: true  },
     { key: "mrr",    label: "MRR",        sortable: true  },
     { key: "status", label: "Status",     sortable: true  },
@@ -204,10 +226,9 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
 
           {/* Stats row */}
           <div className="flex gap-3 flex-wrap">
-            <StatCard icon={Building2}  label="Total Tenants"      value={TENANTS.length} sub={`${activeCount} active`} color="#2563eb" />
-            <StatCard icon={Users}      label="Active SaaS Seats"  value={activeSaasSeats.toLocaleString()} sub="across active tenants" color="#0ea5e9" />
-            <StatCard icon={Server}     label="On-Prem Licenses"   value={onPremCount} sub="self-hosted" color="#059669" />
-            <StatCard icon={DollarSign} label="Total MRR"          value={`$${(totalMRR / 1000).toFixed(0)}k`} sub="platform fees only" color="#7c3aed" />
+            <StatCard icon={Building2}  label="Total Tenants"     value={TENANTS.length} sub={`${activeCount} active`} color="#2563eb" />
+            <StatCard icon={Users}      label="Active Seats"      value={activeSaasSeats.toLocaleString()} sub="across active tenants" color="#0ea5e9" />
+            <StatCard icon={DollarSign} label="Total MRR"         value={`$${(totalMRR / 1000).toFixed(0)}k`} sub="platform fees only" color="#7c3aed" />
           </div>
 
           {/* Filter bar */}
@@ -231,14 +252,14 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
               {/* Filter toggle */}
               <button onClick={() => setShowFilters(v => !v)}
                 className={`flex items-center gap-1.5 h-9 px-3 rounded-[8px] border text-sm font-medium transition-colors ${
-                  showFilters || filterDeploy !== "all" || filterTier !== "all" || filterStatus !== "all"
+                  showFilters || filterTier !== "all" || filterStatus !== "all"
                     ? "border-[#2563eb] bg-[#eff6ff] text-[#2563eb] dark:bg-[#1e3a8a] dark:text-[#93c5fd] dark:border-[#1e3a8a]"
                     : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#475569] dark:text-[#94a3b8]"
                 }`}>
                 <Filter size={13} /> Filters
-                {(filterDeploy !== "all" || filterTier !== "all" || filterStatus !== "all") && (
+                {(filterTier !== "all" || filterStatus !== "all") && (
                   <span className="size-4 rounded-full bg-[#2563eb] text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                    {[filterDeploy, filterTier, filterStatus].filter(f => f !== "all").length}
+                    {[filterTier, filterStatus].filter(f => f !== "all").length}
                   </span>
                 )}
               </button>
@@ -248,9 +269,8 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
             {showFilters && (
               <div className="flex items-center gap-2 flex-wrap">
                 {[
-                  { label: "Deployment", state: filterDeploy, set: setFilterDeploy, opts: [["all","All"], ["saas","SaaS"], ["on-prem","On-Prem"]] },
                   { label: "Tier",       state: filterTier,   set: setFilterTier,   opts: [["all","All"], ["lite","Lite"], ["growth","Growth"], ["scale","Scale"]] },
-                  { label: "Status",     state: filterStatus, set: setFilterStatus, opts: [["all","All"], ["active","Active"], ["trial","Trial"], ["suspended","Suspended"]] },
+                  { label: "Status",     state: filterStatus, set: setFilterStatus, opts: [["all","All"], ["active","Active"], ["trial","Trial"], ["suspended","Suspended"], ["deleted","Deleted"]] },
                 ].map(({ label, state, set, opts }) => (
                   <div key={label} className="flex items-center gap-1">
                     <span className="text-xs text-[#94a3b8] font-medium">{label}:</span>
@@ -291,7 +311,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
                 <tbody>
                   {paged.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-12 text-sm text-[#94a3b8]">
+                      <td colSpan={6} className="text-center py-12 text-sm text-[#94a3b8]">
                         No tenants match your filters.
                       </td>
                     </tr>
@@ -299,12 +319,17 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
                     const baseTier = getBaseTierPackage(t.id);
                     const mrr = computePackageMRR(t.id, t.usage?.tokensConsumed ?? 0);
                     const seats = baseTier?.assignment?.seats ?? t.seats;
-                    const deployCfg = DEPLOY_CFG[t.deployment];
                     const statusCfg = STATUS_CFG[t.status] || STATUS_CFG.active;
+                    const planCfg = PLAN_CFG[t.plan];
+                    const isDeleted = t.status === "deleted";
                     return (
                       <tr key={t.id}
-                        onClick={() => onViewTenant?.(t)}
-                        className="border-b border-[#f8fafc] dark:border-[#1e293b] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] cursor-pointer transition-colors">
+                        onClick={() => !isDeleted && onViewTenant?.(t)}
+                        className={`border-b border-[#f8fafc] dark:border-[#1e293b] transition-colors ${
+                          isDeleted
+                            ? "opacity-50 bg-[#f8fafc] dark:bg-[#0f172a]"
+                            : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] cursor-pointer"
+                        }`}>
                         {/* Tenant name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -314,42 +339,53 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
                             </div>
                             <div>
                               <p className="font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-none">{t.name}</p>
-                              <p className="text-xs text-[#94a3b8] mt-0.5">{t.domain}</p>
+                              <p className="text-xs text-[#94a3b8] mt-0.5">
+                                {t.slug && <span className="font-mono">{t.slug}</span>}
+                                {t.slug && " · "}
+                                {t.domain}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        {/* Tier (from packages) */}
+                        {/* Plan + Tier */}
                         <td className="px-4 py-3">
-                          {baseTier ? (
-                            <span className="inline-flex items-center h-5 px-2 rounded-full text-xs font-semibold text-white"
-                              style={{ background: baseTier.pkg.color }}>
-                              {baseTier.pkg.name.replace("SaaS ", "").replace("On-Prem ", "")}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center h-5 px-2 rounded-full text-xs font-semibold bg-[#f1f5f9] dark:bg-[#334155] text-[#94a3b8]">
-                              No package
-                            </span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {planCfg && (
+                              <span className="inline-flex items-center h-5 px-2 rounded-full text-xs font-semibold w-fit"
+                                style={{ background: planCfg.bg, color: planCfg.text }}>
+                                {planCfg.label}
+                              </span>
+                            )}
+                            {baseTier ? (
+                              <span className="inline-flex items-center h-4 px-1.5 rounded text-[10px] font-semibold text-white w-fit"
+                                style={{ background: baseTier.pkg.color }}>
+                                {baseTier.pkg.name.replace("SaaS ", "").replace("On-Prem ", "")}
+                              </span>
+                            ) : !planCfg && (
+                              <span className="inline-flex items-center h-5 px-2 rounded-full text-xs font-semibold bg-[#f1f5f9] dark:bg-[#334155] text-[#94a3b8]">
+                                No package
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        {/* Deployment */}
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center h-5 px-2 rounded-full text-xs font-semibold"
-                            style={{ background: deployCfg.bg + "22", color: deployCfg.bg }}>
-                            {deployCfg.label}
-                          </span>
-                        </td>
-                        {/* Seats */}
+                        {/* Seats / max_users */}
                         <td className="px-4 py-3 text-[#475569] dark:text-[#94a3b8] tabular-nums">
-                          {t.deployment === "on-prem" ? "Unlimited" : (seats?.toLocaleString() ?? "—")}
+                          {t.max_users
+                            ? `${seats?.toLocaleString() ?? "—"} / ${t.max_users.toLocaleString()}`
+                            : (seats?.toLocaleString() ?? "—")
+                          }
                         </td>
                         {/* MRR */}
                         <td className="px-4 py-3 font-semibold text-[#0f172a] dark:text-[#f1f5f9] tabular-nums">
-                          {mrr > 0 ? formatMRR(mrr) : <span className="text-[#94a3b8] font-normal">—</span>}
+                          {isDeleted
+                            ? <span className="text-[#94a3b8] font-normal text-xs">—</span>
+                            : mrr > 0 ? formatMRR(mrr) : <span className="text-[#94a3b8] font-normal">—</span>
+                          }
                         </td>
                         {/* Status */}
                         <td className="px-4 py-3">
-                          <span className="flex items-center gap-1.5 text-xs font-medium"
-                            style={{ color: statusCfg.text }}>
+                          <span className="inline-flex items-center gap-1.5 h-5 px-2 rounded-full text-xs font-semibold"
+                            style={{ background: statusCfg.bg, color: statusCfg.badgeText ?? statusCfg.text }}>
                             <span className="size-1.5 rounded-full flex-shrink-0"
                               style={{ background: statusCfg.dot }} />
                             {statusCfg.label}
@@ -361,6 +397,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onCreateTenan
                             tenant={t}
                             onView={() => onViewTenant?.(t)}
                             onToggleSuspend={() => toggleSuspend(t.id)}
+                            onDelete={() => deleteTenant(t.id)}
                           />
                         </td>
                       </tr>
