@@ -10,9 +10,27 @@ export const ROLES = {
 };
 
 const ROLE_PROFILES = {
-  superadmin:  { name: "Admin",        email: "admin@aziro.com"       },
-  tenantadmin: { name: "Sarah Chen",   email: "admin@meridian.com"    },
-  tenantuser:  { name: "Jane Cooper",  email: "jane@meridian.com"     },
+  superadmin: {
+    name: "Admin",
+    email: "admin@aziro.com",
+    employeeId: "EMP-2024-000",
+    department: "Operations",
+    joiningDate: "2022-03-14",
+  },
+  tenantadmin: {
+    name: "Sarah Chen",
+    email: "admin@meridian.com",
+    employeeId: "EMP-2023-014",
+    department: "Human Resources",
+    joiningDate: "2021-06-15",
+  },
+  tenantuser: {
+    name: "Jane Cooper",
+    email: "jane@meridian.com",
+    employeeId: "EMP-2024-001",
+    department: "Engineering",
+    joiningDate: "2024-01-08",
+  },
 };
 
 export function AuthProvider({ children }) {
