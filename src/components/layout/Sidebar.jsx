@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import {
   Sparkles, Bot, BrainCog, Vault, BarChart2, LayoutDashboard, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
-  UserCircle, ShieldCheck, Clock, Building2, Tag, Store, ChevronRight,
+  UserCircle, ShieldCheck, Clock, Building2, Tag, Store, ChevronRight, ClipboardList, Shield,
 } from "lucide-react";
 import { useAuth, ROLES } from "@/context/AuthContext";
 import { ROLE_SCOPE, SCOPE_COLORS } from "@/config/rbac";
@@ -68,6 +68,7 @@ const navGroups = [
           { icon: ShieldCheck, label: "Roles",       page: "users-roles"  },
         ],
       },
+      { icon: Shield,           label: "Employee Insurance", page: "employee-insurance", roles: ["tenantuser", "tenantadmin"] },
       { icon: BarChart2,        label: "Usage",   page: "usage",   roles: ["superadmin", "tenantadmin"] },
       { icon: LayoutDashboard,  label: "Pulse",   page: "pulse",   roles: ["superadmin", "tenantadmin"] },
       {
@@ -89,8 +90,9 @@ const navGroups = [
     id: "admin", label: "ADMIN",
     roles: ["superadmin", "tenantadmin"],
     items: [
-      { icon: Building2, label: "Tenants", page: "tenants", activeFor: ["tenant-detail", "tenant-create"], roles: ["superadmin", "tenantadmin"] },
-      { icon: Tag,       label: "Pricing & Plans", page: "pricing-plans", roles: ["superadmin"] },
+      { icon: Building2,     label: "Tenants",              page: "tenants",              activeFor: ["tenant-detail", "tenant-create"], roles: ["superadmin", "tenantadmin"] },
+      { icon: Tag,           label: "Pricing & Plans",      page: "pricing-plans",        roles: ["superadmin"] },
+      { icon: ClipboardList, label: "Insurance Management", page: "insurance-management", roles: ["superadmin"] },
     ],
   },
 ];
