@@ -1,15 +1,21 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useId } from "react";
+import { createPortal } from "react-dom";
 import {
   Shield, ShieldCheck, ChevronRight, CheckCircle2, Clock, Calendar,
   Heart, Eye, Smile, Activity, Star, AlertTriangle,
   ArrowRight, ChevronDown, Info, Zap, Users, FileText,
   X, SkipForward, Lock, PanelRightOpen, Plus, Mail, RefreshCw, Pencil, Trash2,
+  MessageCircle, Send, PhoneCall, ChevronLeft, Download, Headphones,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 import { EnrollmentLivePreview } from "@/components/features/insurance/EnrollmentLivePreview";
+import { EmployeeInsuranceDashboard } from "@/components/features/insurance/EmployeeInsuranceDashboard";
 import {
   formatEnrollmentSavedRelative,
   FAMILY_DEPENDENT_RELATION_OPTIONS,
@@ -222,8 +228,181 @@ const ENROLL_STEP2_SECTION_NAV = [
   { id: 1, label: "Review & submit", anchor: "coverage" },
 ];
 
-const DRAFT_KEY    = "aziron_enrollment_draft";
+const DRAFT_KEY       = "aziron_enrollment_draft";
+const SUBMITTED_KEY   = "aziron_enrollment_submitted";
 const ADD_MEMBER_HINT_KEY = "aziron_add_member_hint_dismissed";
+
+/** Post-submit workflow statuses (employee-facing). */
+const WORKFLOW_STATUS_META = {
+  submitted: {
+    label: "Submitted",
+    description: "Your enrollment was received. HR will review it after the window closes.",
+    badge: "border-primary/30 bg-primary/10 text-primary",
+  },
+  under_review: {
+    label: "Under review",
+    description: "HR is reviewing your submission. No action is needed from you right now.",
+    badge: "border-warning-ring bg-warning/10 text-warning",
+  },
+  approved: {
+    label: "Approved",
+    description: "Your policy is active. Review your coverage summary and documents below.",
+    badge: "border-success-ring bg-success/10 text-success",
+  },
+  pending_clarification: {
+    label: "Pending clarification",
+    description: "HR needs more information. Use the conversation panel or contact HR directly.",
+    badge: "border-destructive/30 bg-destructive/10 text-destructive",
+  },
+};
+
+function generateEnrollmentRefId() {
+  const year = new Date().getFullYear();
+  const n = Math.floor(10000 + Math.random() * 90000);
+  return `INS-${year}-${n}`;
+}
+
+function saveSubmission(record) {
+  try {
+    localStorage.setItem(SUBMITTED_KEY, JSON.stringify(record));
+  } catch {
+    /* localStorage unavailable */
+  }
+}
+
+function loadSubmission() {
+  try {
+    const raw = localStorage.getItem(SUBMITTED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.form) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clearEnrollmentStorage() {
+  try {
+    localStorage.removeItem(SUBMITTED_KEY);
+    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(ADD_MEMBER_HINT_KEY);
+  } catch {
+    /* localStorage unavailable */
+  }
+}
+
+function formatEnrollmentSubmittedAt(ts) {
+  if (!ts) return "—";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(ts));
+}
+
+function formatPolicyDate(isoDate) {
+  if (!isoDate) return "—";
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
+/** Mock insurer-issued policy metadata (prototype). */
+function buildPolicyDetails(submission) {
+  const ref = submission?.refId ?? "INS-2026-00000";
+  const suffix = ref.replace(/\D/g, "").slice(-5).padStart(5, "0") || "00000";
+  return {
+    policyNumber: `HF-GRP-2026-${suffix}`,
+    insurerName: "ICICI Lombard General Insurance Co. Ltd.",
+    effectiveDate: "2026-06-01",
+    expiryDate: "2027-05-31",
+    issuedAt: Date.now(),
+  };
+}
+
+function deriveInsuredMembers(enrollmentSummary, firstName) {
+  const employeeName = enrollmentSummary?.legalNameAsPerId || firstName || "You";
+  const employeeDob = enrollmentSummary?.dob || enrollmentSummary?.dateOfBirth || "";
+  const employeeGender = enrollmentSummary?.gender || "";
+  const deps = (enrollmentSummary?.familyDependents ?? []).filter((d) => d.saved);
+  return [
+    {
+      id: "self",
+      name: employeeName,
+      relation: "Employee (Self)",
+      dob: employeeDob,
+      gender: employeeGender,
+    },
+    ...deps.map((d) => ({
+      id: d.id,
+      name: d.name || "—",
+      relation: familyDependentRelationLabel(d.relation),
+      dob: d.dob || "",
+      gender: familyDependentEffectiveGender(d.relation, d.gender, employeeGender),
+    })),
+  ];
+}
+
+function buildSubmissionTimelineSteps(workflowStatus) {
+  const ws = WORKFLOW_STATUS_META[workflowStatus] ? workflowStatus : "submitted";
+  const submittedDone = true;
+  const reviewDone = ws === "under_review" || ws === "approved" || ws === "pending_clarification";
+  const reviewActive = ws === "under_review" || ws === "pending_clarification";
+  const emailDone = ws === "approved";
+  const coverageDone = ws === "approved";
+
+  return [
+    {
+      icon: <CheckCircle2 size={13} />,
+      iconBg: "bg-success",
+      iconColor: "text-white",
+      label: "Enrollment submitted",
+      date: DEADLINE.label,
+      dateColor: "text-muted-foreground",
+      desc: "Your form is locked in for Batch 1",
+      done: submittedDone,
+    },
+    {
+      icon: <RefreshCw size={13} />,
+      iconBg: reviewActive ? "bg-warning/15" : reviewDone ? "bg-success/10" : "bg-muted",
+      iconColor: reviewActive ? "text-warning" : reviewDone ? "text-success" : "text-muted-foreground",
+      label: ws === "pending_clarification" ? "Clarification requested" : "HR review",
+      date: "May 15, 2026",
+      dateColor: "text-muted-foreground",
+      desc:
+        ws === "pending_clarification"
+          ? "Reply via the conversation panel or email HR with your reference ID"
+          : "HR reviews all submissions after the window closes",
+      done: reviewDone && ws !== "pending_clarification",
+      active: reviewActive,
+    },
+    {
+      icon: <Mail size={13} />,
+      iconBg: emailDone ? "bg-success/10" : "bg-muted",
+      iconColor: emailDone ? "text-success" : "text-muted-foreground",
+      label: "Confirmation email",
+      date: "After provider approval",
+      dateColor: "text-muted-foreground",
+      desc: "Sent to your work inbox — check spam if you do not see it",
+      done: emailDone,
+    },
+    {
+      icon: <Heart size={13} />,
+      iconBg: coverageDone ? "bg-success/10" : "bg-muted",
+      iconColor: coverageDone ? "text-success" : "text-muted-foreground",
+      label: "Coverage activates",
+      date: "June 1, 2026",
+      dateColor: coverageDone ? "text-success font-semibold" : "text-muted-foreground",
+      desc: "Policy goes live after Finance sign-off",
+      done: coverageDone,
+    },
+  ];
+}
 
 function calcAge(dob) {
   if (!dob) return "";
@@ -447,6 +626,290 @@ function DraftBadge({ state, savedAt }) {
   );
 }
 
+// ─── Policy Assistant (conversation panel) ────────────────────────────────────
+
+const HR_CONTACT = {
+  name: "Priya Nair",
+  role: "HR Benefits Specialist",
+  email: "hr-benefits@aziron.com",
+  phone: "+91 98765 43210",
+  availability: "Mon–Fri, 9 AM – 6 PM IST",
+};
+
+const CLAIM_SUPPORT = {
+  label: "Claims helpdesk",
+  phone: "1800-266-7766",
+  email: "claims@healthfirst.in",
+  availability: "24/7 — cashless pre-auth & reimbursement queries",
+};
+
+const POLICY_DOCUMENTS = [
+  { id: "schedule", label: "Policy schedule", description: "Terms, benefits, and exclusions" },
+  { id: "member-card", label: "Member ID card", description: "For cashless admission at network hospitals" },
+  { id: "premium-receipt", label: "Premium receipt (80D)", description: "For income-tax filing" },
+];
+
+const SUGGESTED_QUESTIONS = [
+  "What does my policy cover?",
+  "How do I add my spouse or children?",
+  "What is the premium for my family?",
+  "When is the enrollment deadline?",
+  "What if I miss the deadline?",
+  "How do cashless claims work?",
+];
+
+const POST_SUBMIT_SUGGESTED_QUESTIONS = [
+  "What does Under Review mean?",
+  "When will my coverage start?",
+  "Can I change a dependent after submitting?",
+  "Who do I contact at HR?",
+];
+
+const POLICY_QA = {
+  "what does my policy cover": {
+    answer:
+      "Your HealthFirst Plus Group Mediclaim Policy covers:\n• **Medical** — Hospitalisation, surgeries & OPD visits\n• **Dental** — Cleanings, fillings & orthodontics\n• **Vision** — Eyeglasses, contacts & eye exams\n• **Critical Illness** — 40+ conditions covered\n• **Mental Health** — Therapy & counselling sessions\n• **Life Insurance** — Up to ₹50L for your family\n\nSum insured is ₹5,00,000 with access to 10,000+ cashless hospitals.",
+  },
+  "how do i add my spouse or children": {
+    answer:
+      "During enrollment you can choose one of these coverage options:\n• **Myself + Spouse** — ₹2,400/yr\n• **Myself + Parents** — ₹3,100/yr\n• **Full Family** (spouse, parents & up to 2 children) — ₹4,200/yr\n\nClick **Continue Enrollment**, select your coverage type on Step 0, then add each dependent's details (name, date of birth, relationship). All additions must be submitted before the deadline.",
+  },
+  "what is the premium for my family": {
+    answer:
+      "Premiums are calculated as annual amounts:\n• **Self only** — ₹0 (fully employer-paid)\n• **Self + Spouse** — ₹2,400/yr\n• **Self + Parents** — ₹3,100/yr\n• **Full Family** — ₹4,200/yr\n\nThe employee contribution is deducted from your salary in monthly instalments. Final amounts are confirmed by HR after the enrollment window closes.",
+  },
+  "when is the enrollment deadline": {
+    answer:
+      "The current enrollment window closes on **June 15, 2026** (Batch 1: May 1–15).\n\nAfter this date the window is locked and you will need to wait for the next batch. We recommend completing enrollment at least 2 days early to avoid any last-minute issues.",
+  },
+  "what if i miss the deadline": {
+    answer:
+      "If you don't enroll before June 15, 2026, the system automatically assigns you **employee-only coverage** at no cost to you.\n\n⚠️ Important implications:\n• Dependents (spouse, parents, children) will **not** be covered\n• You cannot add dependents until the next enrollment batch\n• You'll receive an email confirmation when the auto-assignment runs\n\nThe next enrollment window is Batch 2 (May 15–31).",
+  },
+  "how do cashless claims work": {
+    answer:
+      "Cashless claims let you get treated at network hospitals without paying upfront:\n\n1. **Find a network hospital** — use the HealthFirst Plus app or website (10,000+ hospitals)\n2. **Show your e-card** — present your policy ID at the insurance desk\n3. **Pre-authorisation** — hospital sends the request; approval usually arrives in 30–60 min\n4. **Get treated** — the insurer settles directly with the hospital\n5. **Pay only non-covered amounts** — e.g. consumables or room upgrades if applicable\n\nFor emergencies, cashless approval can be obtained within 6 hours.",
+  },
+};
+
+function matchAnswer(input) {
+  const key = input.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+  for (const [pattern, data] of Object.entries(POLICY_QA)) {
+    const words = pattern.split(" ");
+    const matchCount = words.filter((w) => key.includes(w)).length;
+    if (matchCount >= Math.ceil(words.length * 0.6)) return data.answer;
+  }
+  return null;
+}
+
+function renderAnswer(text) {
+  return text.split("\n").map((line, i) => {
+    const bold = line.replace(/\*\*(.+?)\*\*/g, (_, m) => `<strong>${m}</strong>`);
+    return (
+      <p
+        key={i}
+        className={`text-xs leading-relaxed text-white/90 ${line.startsWith("•") ? "pl-1" : ""} ${i > 0 ? "mt-1" : ""}`}
+        dangerouslySetInnerHTML={{ __html: bold }}
+      />
+    );
+  });
+}
+
+function PolicyAssistant({ onClose, variant = "enrollment", refId }) {
+  const isPostSubmit = variant === "post-submit";
+  const suggestions = isPostSubmit ? POST_SUBMIT_SUGGESTED_QUESTIONS : SUGGESTED_QUESTIONS;
+
+  const [messages, setMessages] = useState(() => [
+    {
+      id: "welcome",
+      role: "assistant",
+      text: isPostSubmit
+        ? `Your enrollment is on file${refId ? ` (Ref: ${refId})` : ""}. Ask about your status, coverage, or how to reach HR.`
+        : `Hi there! I'm your Policy Assistant. Ask me anything about your HealthFirst Plus coverage, premiums, dependents, or the enrollment process.`,
+      showSuggestions: true,
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [showHR, setShowHR] = useState(isPostSubmit);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = useCallback(
+    (text) => {
+      const userText = (text || input).trim();
+      if (!userText) return;
+      setInput("");
+
+      const userMsg = { id: `u-${Date.now()}`, role: "user", text: userText };
+      const answer = matchAnswer(userText);
+      const botMsg = {
+        id: `b-${Date.now()}`,
+        role: "assistant",
+        text:
+          answer ??
+          "I don't have a specific answer for that yet. You can contact your HR Benefits Specialist for personalised help — tap the button below.",
+        showHRPrompt: !answer,
+      };
+
+      setMessages((prev) => [...prev, userMsg, botMsg]);
+      if (!answer) setShowHR(true);
+    },
+    [input],
+  );
+
+  const handleKey = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    },
+    [sendMessage],
+  );
+
+  return (
+    <div className="relative z-10 flex flex-col h-full min-h-0">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center justify-center size-7 rounded-full transition-colors"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+              aria-label="Back to policy card"
+            >
+              <ChevronLeft size={14} className="text-white" />
+            </button>
+          ) : null}
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)" }}
+          >
+            <span className="size-1.5 rounded-full bg-success animate-pulse" />
+            <span className="text-xs text-white font-medium">Policy Assistant</span>
+          </div>
+        </div>
+        <span className="text-[10px] text-white/60">Powered by Aziron AI</span>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-3" style={{ minHeight: 0 }}>
+        {messages.map((msg) => (
+          <div key={msg.id}>
+            {msg.role === "user" ? (
+              <div className="flex justify-end">
+                <div
+                  className="max-w-[80%] rounded-2xl rounded-tr-sm px-3.5 py-2.5"
+                  style={{ background: "rgba(255,255,255,0.22)", border: "1px solid rgba(255,255,255,0.18)" }}
+                >
+                  <p className="text-xs text-white leading-relaxed">{msg.text}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div
+                  className="rounded-2xl rounded-tl-sm px-3.5 py-3"
+                  style={{ background: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.12)" }}
+                >
+                  {renderAnswer(msg.text)}
+                  {msg.showHRPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => setShowHR(true)}
+                      className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-white/80 underline underline-offset-2 hover:text-white transition-colors"
+                    >
+                      <PhoneCall size={11} />
+                      Contact HR Benefits Team
+                    </button>
+                  )}
+                </div>
+                {msg.showSuggestions && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {suggestions.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => sendMessage(q)}
+                        className="text-[11px] rounded-full px-2.5 py-1 text-white/85 transition-colors hover:bg-white/20"
+                        style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* HR Contact card */}
+      {showHR && (
+        <div
+          className="rounded-2xl px-3.5 py-3 mb-3 flex flex-col gap-2"
+          style={{ background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.15)" }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="size-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <PhoneCall size={12} className="text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white">{HR_CONTACT.name}</p>
+              <p className="text-[11px] text-white/70">{HR_CONTACT.role}</p>
+            </div>
+          </div>
+          <div className="space-y-1 pl-9">
+            <p className="text-[11px] text-white/80">
+              <span className="text-white/50">Email: </span>
+              <a href={`mailto:${HR_CONTACT.email}`} className="underline underline-offset-2 hover:text-white transition-colors">
+                {HR_CONTACT.email}
+              </a>
+            </p>
+            <p className="text-[11px] text-white/80">
+              <span className="text-white/50">Phone: </span>{HR_CONTACT.phone}
+            </p>
+            <p className="text-[11px] text-white/60">{HR_CONTACT.availability}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div
+        className="flex items-center gap-2 rounded-2xl px-3 py-2"
+        style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder={isPostSubmit ? "Ask about your enrollment status…" : "Ask about your policy…"}
+          className="flex-1 bg-transparent text-xs text-white placeholder-white/45 outline-none min-w-0"
+        />
+        <button
+          type="button"
+          onClick={() => sendMessage()}
+          disabled={!input.trim()}
+          className="flex items-center justify-center size-7 rounded-full transition-all disabled:opacity-40"
+          style={{ background: input.trim() ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)" }}
+          aria-label="Send message"
+        >
+          <Send size={12} className="text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── View: Confirmation landing ───────────────────────────────────────────────
 
 const FEATURE_TAGS = [
@@ -455,11 +918,6 @@ const FEATURE_TAGS = [
   { icon: Heart,    label: "Parents Included"         },
   { icon: Clock,    label: "24/7 Support"             },
   { icon: Activity, label: "Annual Health Checkup"    },
-];
-
-const STATS = [
-  { value: "10K+", label: "Hospitals"   },
-  { value: "24/7", label: "Support"     },
 ];
 
 const INFO_CARDS = [
@@ -493,42 +951,26 @@ const TRUST_BADGES = [
 
 function ConfirmationView({ firstName, onProceed }) {
   const [policyOpen, setPolicyOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const landingUrgency = getEnrollmentUrgency();
   return (
     <div
-      className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
+      className="relative flex w-full flex-1 flex-col min-h-0"
       style={{
         background: "linear-gradient(147.5deg, var(--background) 0%, color-mix(in srgb, var(--primary) 15%, transparent) 50%, color-mix(in srgb, var(--chart-chart-4) 20%, transparent) 100%)",
       }}
     >
-      {/* Decorative blur blobs */}
-      <div
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          width: 384, height: 384,
-          top: -160, right: 0,
-          background: "rgba(198,210,255,0.4)",
-          filter: "blur(64px)",
-        }}
-      />
-      <div
-        className="absolute pointer-events-none rounded-full"
-        style={{
-          width: 384, height: 384,
-          left: -128, top: 358,
-          background: "rgba(221,214,255,0.4)",
-          filter: "blur(64px)",
-        }}
-      />
+      <div className="pointer-events-none absolute -top-40 right-0 size-96 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute top-[22rem] -left-32 size-96 rounded-full bg-chart-chart-4/20 blur-3xl" aria-hidden />
 
-      <div className="relative z-10 flex w-full max-w-[1100px] flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-8">
+      <div className="relative z-10 flex w-full flex-1 flex-col gap-4 px-4 py-4 lg:flex-row lg:items-stretch lg:gap-5 lg:px-6 lg:py-4">
 
-        {/* ── LEFT PANEL ──────────────────────────────────────────────── */}
+        {/* ── LEFT PANEL (fixed conversation / policy) ───────────────── */}
         <div
-          className="relative order-2 flex min-h-[280px] w-full flex-col justify-between overflow-hidden rounded-2xl border border-white/20 p-5 shadow-lg sm:min-h-[320px] sm:rounded-3xl sm:p-6 lg:order-1 lg:min-h-[580px] lg:flex-[0_0_38%] lg:max-w-none lg:p-8"
+          className="relative flex w-full flex-1 flex-col overflow-hidden rounded-2xl border border-marketing-glass-border p-5 shadow-lg sm:p-6 lg:order-1 lg:min-h-[min(520px,70vh)] lg:w-[min(400px,38%)] lg:max-w-[420px] lg:flex-none"
           style={{
-            background: "linear-gradient(127.24deg, var(--primary) 0%, var(--destructive) 100%)",
-            boxShadow: "0px 20px 25px -5px rgba(97,95,255,0.2), 0px 8px 10px -6px rgba(97,95,255,0.2)",
+            background: "linear-gradient(127.24deg, var(--marketing-gradient-from) 0%, var(--marketing-gradient-to) 100%)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           {/* Glow blobs inside card */}
@@ -537,75 +979,77 @@ function ConfirmationView({ firstName, onProceed }) {
           <div className="absolute pointer-events-none rounded-full opacity-40"
             style={{ width: 256, height: 256, left: -40, bottom: 0, background: "rgba(244,168,255,0.4)", filter: "blur(64px)" }} />
 
-          {/* Top content */}
-          <div className="relative z-10 flex flex-col gap-6">
-            {/* Enrollment open badge */}
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full w-fit"
-              style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)" }}
-            >
-              <span className="size-1.5 rounded-full bg-success animate-pulse" />
-              <span className="text-xs text-white">Enrollment open</span>
-            </div>
+          {chatOpen ? (
+            /* ── CONVERSATION MODE ─────────────────────────────────── */
+            <PolicyAssistant onClose={() => setChatOpen(false)} />
+          ) : (
+            /* ── POLICY CARD MODE ──────────────────────────────────── */
+            <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-between gap-4">
+              {/* Top content */}
+              <div className="flex flex-col gap-6">
+                {/* Enrollment open badge */}
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-marketing-glass-border bg-marketing-glass px-3 py-1.5">
+                  <span className="size-1.5 rounded-full bg-success motion-safe-pulse" aria-hidden />
+                  <span className="text-xs text-marketing-glass-foreground">Enrollment open</span>
+                </div>
 
-            {/* Heading */}
-            <div>
-              <h2 className="text-xl font-medium leading-snug text-white sm:text-2xl sm:leading-9" style={{ letterSpacing: "-0.53px" }}>
-                HealthFirst Plus<br />Group Mediclaim Policy
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/85 sm:mt-4 sm:text-base sm:leading-6" style={{ letterSpacing: "-0.31px" }}>
-                Comprehensive healthcare coverage designed for you and your family — with cashless access at 10,000+ hospitals.
-              </p>
-            </div>
+                {/* Heading */}
+                <div>
+                  <h2 className="text-xl font-medium leading-snug text-white sm:text-2xl sm:leading-9" style={{ letterSpacing: "-0.53px" }}>
+                    HealthFirst Plus<br />Group Mediclaim Policy
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-white/85 sm:mt-4 sm:text-base sm:leading-6" style={{ letterSpacing: "-0.31px" }}>
+                    Comprehensive healthcare coverage designed for you and your family — with cashless access at 10,000+ hospitals.
+                  </p>
+                </div>
 
-            {/* Feature tags */}
-            <div className="flex flex-wrap gap-2">
-              {FEATURE_TAGS.map((entry) => {
-                const IconComponent = entry.icon;
-                return (
-                  <div
-                    key={entry.label}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs text-white"
-                    style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)" }}
-                  >
-                    <IconComponent size={12} />
-                    {entry.label}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Stats row */}
-          <div className="relative z-10 mt-6 flex gap-2 sm:mt-8 sm:gap-3">
-            {STATS.map(({ value, label }) => (
-              <div
-                key={label}
-                className="flex flex-1 flex-col rounded-xl px-2.5 py-2.5 sm:rounded-2xl sm:px-3 sm:py-3"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}
-              >
-                <span className="text-sm font-medium leading-tight text-white sm:text-base sm:leading-6" style={{ letterSpacing: "-0.71px" }}>{value}</span>
-                <span className="text-xs text-white/75 mt-0.5">{label}</span>
+                {/* Feature tags */}
+                <div className="flex flex-wrap gap-2">
+                  {FEATURE_TAGS.map((entry) => {
+                    const IconComponent = entry.icon;
+                    return (
+                      <div
+                        key={entry.label}
+                        className="inline-flex items-center gap-2 rounded-full border border-marketing-glass-border bg-marketing-glass px-3 py-1.5 text-xs text-marketing-glass-foreground"
+                      >
+                        <IconComponent size={12} />
+                        {entry.label}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Ask a question CTA */}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setChatOpen(true)}
+                className="h-auto w-full justify-start gap-2.5 rounded-2xl border border-marketing-glass-border bg-marketing-glass px-4 py-3 text-left text-marketing-glass-foreground hover:bg-marketing-glass/80 hover:text-marketing-glass-foreground"
+              >
+                <div className="flex items-center justify-center size-7 rounded-full shrink-0" style={{ background: "rgba(255,255,255,0.2)" }}>
+                  <MessageCircle size={13} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white">Have questions?</p>
+                  <p className="text-[11px] text-white/65 mt-0.5">Ask about coverage, premiums or dependents</p>
+                </div>
+                <ChevronRight size={14} className="shrink-0 text-marketing-glass-foreground/50" aria-hidden />
+              </Button>
+            </div>
+          )}
         </div>
 
-        {/* ── RIGHT PANEL ─────────────────────────────────────────────── */}
+        {/* ── RIGHT PANEL (enrollment info) ───────────────────────────── */}
         <div
-          className="order-1 flex min-h-0 w-full flex-col rounded-2xl sm:rounded-3xl lg:order-2 lg:min-h-[580px] lg:flex-1"
-          style={{
-            background: "rgba(255,255,255,0.8)",
-            border: "1px solid rgba(226,232,240,0.7)",
-            boxShadow: "0px 20px 25px 0px rgba(226,232,240,0.5), 0px 8px 10px 0px rgba(226,232,240,0.5)",
-          }}
+          className="flex w-full min-w-0 flex-1 flex-col rounded-2xl border border-marketing-panel-border bg-marketing-panel shadow-lg backdrop-blur-md lg:order-2 lg:flex-1"
         >
-          <div className="flex flex-1 flex-col px-4 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-7 lg:px-8 lg:pb-6 lg:pt-8">
+          <div className="flex flex-col px-4 pb-4 pt-4 sm:px-5 sm:pb-5 sm:pt-5 lg:px-6 lg:py-5">
 
             {/* Enrollment context eyebrow */}
             <div className="flex items-center gap-2 mb-4">
               <span className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold uppercase tracking-[1.2px]">
-                <span className="size-1.5 rounded-full bg-success animate-pulse inline-block" />
+                <span className="size-1.5 rounded-full bg-success motion-safe-pulse inline-block" aria-hidden />
                 Open Enrollment · Closes May 15
               </span>
               <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, color-mix(in srgb, var(--primary) 30%, transparent), transparent)" }} />
@@ -613,13 +1057,12 @@ function ConfirmationView({ firstName, onProceed }) {
 
             {/* Draft banner — only shown when draft exists */}
             {typeof window !== "undefined" && !!localStorage.getItem("aziron_enrollment_draft") && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 mb-3">
-                <div className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-primary">You have a saved draft</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Your progress is saved — continue where you left off.</p>
-                </div>
-              </div>
+              <Alert className="mb-3 border-primary/20 bg-primary/5">
+                <AlertTitle className="text-primary text-xs">You have a saved draft</AlertTitle>
+                <AlertDescription className="text-[11px]">
+                  Your progress is saved — continue where you left off.
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Heading */}
@@ -673,76 +1116,50 @@ function ConfirmationView({ firstName, onProceed }) {
               <strong className="font-semibold text-foreground">individual-only coverage</strong> at no extra cost — see details below.
             </p>
 
-            <PostDeadlineAutoEnrollmentNotice collapsible className="mb-6" />
+            <PostDeadlineAutoEnrollmentNotice collapsible className="mb-4" />
 
             {/* Info cards */}
             <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {INFO_CARDS.map((card) => {
                 const IconComponent = card.icon;
                 return (
-                  <div
-                    key={card.label}
-                    className="flex flex-col p-4 rounded-2xl"
-                    style={{
-                      background: "rgba(255,255,255,0.8)",
-                      border: "1px solid rgba(226,232,240,0.8)",
-                      boxShadow: "0px 1px 3px rgba(0,0,0,0.1), 0px 1px 2px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <div className="size-9 rounded-xl flex items-center justify-center mb-4" style={{ background: card.bg }}>
-                      <IconComponent size={16} className="text-white" />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground uppercase mb-1" style={{ letterSpacing: "0.6px" }}>{card.label}</p>
-                    <p className="text-sm text-foreground leading-5" style={{ letterSpacing: "-0.15px" }}>{card.value}</p>
-                  </div>
+                  <Card key={card.label} className="border-border/80 shadow-sm">
+                    <CardContent className="flex flex-col p-4">
+                      <div className="mb-4 flex size-9 items-center justify-center rounded-xl" style={{ background: card.bg }}>
+                        <IconComponent size={16} className="text-primary-foreground" aria-hidden />
+                      </div>
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{card.label}</p>
+                      <p className="text-sm leading-5 text-foreground">{card.value}</p>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
 
-            {/* Policy Preview row */}
-            <div
-              className="mb-5 flex cursor-pointer flex-col gap-3 rounded-2xl px-4 py-4 transition-colors hover:bg-card/90 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(226,232,240,0.8)" }}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <FileText size={16} className="text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-5 text-foreground" style={{ letterSpacing: "-0.15px" }}>Policy Preview</p>
-                  <p className="text-xs font-medium text-muted-foreground">Coverage, network &amp; eligibility details</p>
-                </div>
-              </div>
-              <ChevronRight size={16} className="shrink-0 self-end text-muted-foreground sm:self-auto" />
-            </div>
-
             {/* CTA buttons */}
-            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <button
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
                 onClick={onProceed}
-                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-2xl text-base font-medium text-white transition-opacity hover:opacity-90 sm:flex-1"
-                style={{
-                  background: "linear-gradient(173.46deg, var(--primary) 0%, var(--chart-chart-4) 100%)",
-                  filter: "drop-shadow(0px 10px 7.5px rgba(97,95,255,0.3)) drop-shadow(0px 4px 3px rgba(97,95,255,0.3))",
-                  letterSpacing: "-0.31px",
-                }}
+                className="h-[50px] w-full shrink-0 rounded-2xl px-6 text-base font-medium shadow-md sm:w-[280px] bg-gradient-to-br from-primary to-chart-chart-4 hover:opacity-90"
               >
                 Continue Enrollment
-                <ArrowRight size={16} />
-              </button>
-              <button
+                <ArrowRight size={16} aria-hidden />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setPolicyOpen(true)}
-                className="flex h-[50px] w-full shrink-0 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-6 text-base font-medium text-foreground transition-colors hover:bg-muted sm:w-auto"
-                style={{ letterSpacing: "-0.31px" }}
+                className="h-[50px] w-full shrink-0 rounded-2xl px-6 text-base font-medium sm:w-auto"
                 aria-label="Open policy details panel"
               >
                 View Policy Details
-                <Eye size={14} />
-              </button>
+                <Eye size={14} aria-hidden />
+              </Button>
             </div>
 
             {/* Trust badges */}
-            <div className="flex flex-wrap items-center gap-3 border-t border-[rgba(226,232,240,0.7)] pt-5 sm:gap-5">
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-5 sm:gap-5">
               {TRUST_BADGES.map((row) => {
                 const IconComponent = row.icon;
                 return (
@@ -2790,14 +3207,10 @@ function EnrollView({ auth, onSuccess }) {
           <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-1.25rem)] lg:min-h-0 lg:overflow-y-auto lg:pr-1 [scrollbar-gutter:stable]">
             <EnrollmentLivePreview
               policy={POLICY}
-              deadline={{ label: DEADLINE.label, cycle: DEADLINE.cycle }}
               form={form}
               status={status}
               previewFocusKey={previewFocusKey}
-              canSubmit={canSubmit}
-              warnings={warnings}
               compact={false}
-              onNavigateToSection={scrollToAnchor}
             />
           </aside>
         )}
@@ -2812,14 +3225,10 @@ function EnrollView({ auth, onSuccess }) {
           <div className="max-h-[calc(88vh-4.5rem)] overflow-y-auto overscroll-contain p-4">
             <EnrollmentLivePreview
               policy={POLICY}
-              deadline={{ label: DEADLINE.label, cycle: DEADLINE.cycle }}
               form={form}
               status={status}
               previewFocusKey={previewFocusKey}
-              canSubmit={canSubmit}
-              warnings={warnings}
               compact
-              onNavigateToSection={scrollToAnchor}
             />
           </div>
         </SheetContent>
@@ -2880,230 +3289,241 @@ function SkippedState({ firstName, onReturn }) {
   );
 }
 
-// ─── View: Success ────────────────────────────────────────────────────────────
+// ─── View: Submitted dashboard (persistent after enrollment) ─────────────────
 
-function SuccessState({ firstName, enrollmentSummary, onNavigate }) {
-  const REF_ID = "INS-2026-00847";
-  const [copied, setCopied] = useState(false);
+function SubmittedDashboardView({ firstName, submission, onUpdateSubmission, onPreviewEnrollment }) {
+  const refId = submission?.refId ?? "—";
+  const workflowStatus = submission?.workflowStatus ?? "submitted";
+  const isApproved = workflowStatus === "approved";
+  const enrollmentSummary = submission?.form ?? {};
+  const statusMeta = WORKFLOW_STATUS_META[workflowStatus] ?? WORKFLOW_STATUS_META.submitted;
+  const [chatOpen, setChatOpen] = useState(false);
 
-  // Derived summary data from submitted form
-  const coverageLakh   = Number(enrollmentSummary?.coverageLakh) || 3;
-  const deps           = (enrollmentSummary?.familyDependents ?? []).filter((d) => d.saved);
-  const annualPremium  = computeFloaterAnnualPremiumINR(coverageLakh, deps.length);
-  const sumInsured     = coverageSumInsuredDisplay(coverageLakh);
-  const employeeName   = enrollmentSummary?.legalNameAsPerId || firstName || "You";
-  const employeeDob    = enrollmentSummary?.dob   || enrollmentSummary?.dateOfBirth || "";
-  const employeeGender = enrollmentSummary?.gender || "";
+  useEffect(() => {
+    if (!chatOpen) return undefined;
+    const prevBody = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+    };
+  }, [chatOpen]);
 
-  /** All insured members: employee first, then saved dependents */
-  const insuredMembers = [
-    {
-      id:       "self",
-      name:     employeeName,
-      relation: "Employee (Self)",
-      dob:      employeeDob,
-      gender:   employeeGender,
-      isSelf:   true,
-    },
-    ...deps.map((d) => ({
-      id:       d.id,
-      name:     d.name || "—",
-      relation: familyDependentRelationLabel(d.relation),
-      dob:      d.dob || "",
-      gender:   familyDependentEffectiveGender(d.relation, d.gender, employeeGender),
-      isSelf:   false,
-    })),
-  ];
+  const policyDetails = submission?.policyDetails ?? buildPolicyDetails(submission);
+  const policyDetailsUi = {
+    ...policyDetails,
+    effectiveLabel: formatPolicyDate(policyDetails.effectiveDate),
+    expiryLabel: formatPolicyDate(policyDetails.expiryDate),
+  };
 
-  /** Per-member premium breakdown using the 16% loading per extra member */
-  const basePremium = annualPremium && insuredMembers.length
-    ? computeFloaterAnnualPremiumINR(coverageLakh, 0)
-    : null;
-  const memberPremiums = insuredMembers.map((m, i) => {
-    if (!basePremium) return null;
-    if (i === 0) return basePremium;
-    return Math.round(basePremium * 0.16);
-  });
+  const coverageLakh = Number(enrollmentSummary?.coverageLakh) || 3;
+  const deps = (enrollmentSummary?.familyDependents ?? []).filter((d) => d.saved);
+  const annualPremium = computeFloaterAnnualPremiumINR(coverageLakh, deps.length);
+  const sumInsured = coverageSumInsuredDisplay(coverageLakh);
+  const coverageLabel = deps.length > 0 ? "Family floater" : "Individual";
+  const insuredMembers = deriveInsuredMembers(enrollmentSummary, firstName);
+  const steps = buildSubmissionTimelineSteps(workflowStatus);
 
-  const steps = [
-    {
-      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
-      iconBg: "bg-success/100", iconColor: "text-white",
-      label: "Submission deadline",
-      date: DEADLINE.label, dateColor: "text-muted-foreground",
-      desc: "Your form is locked in for Batch 1",
-      done: true,
-    },
-    {
-      icon: <RefreshCw size={13} />,
-      iconBg: "bg-success/10", iconColor: "text-success",
-      label: "HR review",
-      date: "May 15, 2026", dateColor: "text-muted-foreground",
-      desc: "HR reviews all submissions after the window closes — nothing more needed from you",
-      done: false,
-    },
-    {
-      icon: <Mail size={13} />,
-      iconBg: "bg-muted", iconColor: "text-muted-foreground",
-      label: "Confirmation email",
-      date: "You'll receive an email once the policy provider approves your enrollment.",
-      dateColor: "text-muted-foreground font-medium",
-      desc: "Work inbox — check spam.",
-      done: false,
-    },
-    {
-      icon: <Heart size={13} />,
-      iconBg: "bg-muted", iconColor: "text-muted-foreground",
-      label: "Coverage activates",
-      date: "June 1, 2026", dateColor: "text-success font-semibold",
-      desc: "Policy goes live after Finance sign-off — you'll receive your policy card",
-      done: false,
-    },
-  ];
+  const toggleApprovedPreview = () => {
+    if (!onUpdateSubmission) return;
+    if (isApproved) {
+      onUpdateSubmission({ ...submission, workflowStatus: "submitted", policyDetails: undefined });
+    } else {
+      onUpdateSubmission({
+        ...submission,
+        workflowStatus: "approved",
+        policyDetails: buildPolicyDetails(submission),
+      });
+    }
+  };
+
+  const overviewTiles = isApproved
+    ? [
+        { label: "Policy number", value: policyDetails.policyNumber, copy: true },
+        { label: "Insurer", value: policyDetails.insurerName },
+        { label: "Plan type", value: POLICY.name },
+        { label: "Coverage type", value: coverageLabel },
+        { label: "Effective date", value: policyDetailsUi.effectiveLabel },
+        { label: "Expiry date", value: policyDetailsUi.expiryLabel },
+        { label: "Annual premium", value: annualPremium != null ? `${formatEnrollmentPremiumInr(annualPremium)}/yr` : "—" },
+      ]
+    : [
+        { label: "Reference ID", value: refId, copy: true },
+        { label: "Plan", value: "HealthFirst Plus Mediclaim" },
+        { label: "Sum insured", value: sumInsured },
+        { label: "Coverage type", value: coverageLabel },
+        { label: "Annual premium", value: annualPremium != null ? `${formatEnrollmentPremiumInr(annualPremium)}/yr` : "—" },
+        { label: "Submitted", value: formatEnrollmentSubmittedAt(submission?.submittedAt) },
+      ];
+
+  const previewToggle = import.meta.env.DEV && (onUpdateSubmission || onPreviewEnrollment) ? (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/5 px-3 py-2.5">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">Preview</span>
+      {onUpdateSubmission && (
+        <Button type="button" variant="outline" size="sm" onClick={toggleApprovedPreview}>
+          {isApproved ? "Show submitted view" : "Show approved policy view"}
+        </Button>
+      )}
+      {onPreviewEnrollment && (
+        <Button type="button" variant="outline" size="sm" onClick={onPreviewEnrollment}>
+          Show enrollment view
+        </Button>
+      )}
+    </div>
+  ) : null;
+
+  const fabButton = !chatOpen ? (
+    <button
+      type="button"
+      onClick={() => setChatOpen(true)}
+      className="fixed bottom-6 right-6 z-[200] flex size-14 items-center justify-center rounded-full text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      style={{
+        background: "linear-gradient(145deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 70%, var(--success) 30%) 100%)",
+        boxShadow: "0px 12px 28px -6px color-mix(in srgb, var(--primary) 45%, transparent)",
+      }}
+      aria-label="Open policy assistant"
+    >
+      <MessageCircle size={22} strokeWidth={2} aria-hidden />
+      <span className="absolute -top-0.5 -right-0.5 flex size-3.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-50" />
+        <span className="relative inline-flex size-3.5 rounded-full border-2 border-white bg-success" />
+      </span>
+    </button>
+  ) : null;
+
+  const chatOverlay = chatOpen ? (
+    <div className="fixed inset-0 z-[210]" role="presentation">
+      <button
+        type="button"
+        className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+        onClick={() => setChatOpen(false)}
+        aria-label="Close policy assistant"
+      />
+      <div
+        className="absolute z-10 flex flex-col overflow-hidden rounded-2xl border border-white/20 p-5 shadow-2xl inset-x-4 bottom-4 top-auto max-h-[min(85vh,720px)] h-[min(72vh,640px)] sm:inset-x-auto sm:right-6 sm:bottom-6 sm:left-auto sm:top-auto sm:h-[min(80vh,680px)] sm:w-[min(420px,calc(100vw-2rem))]"
+        style={{
+          background: "linear-gradient(127.24deg, var(--primary) 0%, var(--destructive) 100%)",
+          boxShadow: "0px 24px 48px -12px rgba(15,23,42,0.35)",
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Policy assistant"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <PolicyAssistant variant="post-submit" refId={refId} onClose={() => setChatOpen(false)} />
+      </div>
+    </div>
+  ) : null;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-muted">
-      <div className="max-w-xl mx-auto px-4 py-10 space-y-3">
-
-        {/* Card 1 — confirmation */}
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 pt-8 pb-7 text-center">
-
-            {/* Icon */}
-            <div className="size-14 rounded-full bg-success/100 flex items-center justify-center mx-auto mb-5 shadow-md shadow-success/20" role="img" aria-label="Enrollment confirmed">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-
-            {/* Heading */}
-            <h2 className="text-2xl font-bold text-foreground tracking-tight">
-              You're enrolled,{" "}
-              <span className="text-success">{firstName}.</span>
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-              Coverage starts <strong className="text-foreground">June 1, 2026</strong>
-            </p>
-
-            {/* Key facts grid */}
-            <div className="mt-5 w-full rounded-xl border border-border overflow-hidden text-left">
-              {[
-                { label: "Plan",     value: "HealthFirst Plus Mediclaim" },
-                { label: "Coverage", value: `${deps.length > 0 ? "Family" : "Individual"} · ${sumInsured}` },
-                { label: "Your cost", value: annualPremium != null ? `${formatEnrollmentPremiumInr(annualPremium)}/yr` : "—" },
-              ].map(({ label, value }, i) => (
-                <div key={label} className={`flex items-center justify-between px-4 py-2.5 ${i > 0 ? "border-t border-border" : ""}`}>
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                  <span className="text-xs font-semibold text-foreground">{value}</span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
-                <span className="text-xs text-muted-foreground">Ref ID</span>
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(REF_ID); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-primary transition-colors"
-                  title="Click to copy"
-                >
-                  {REF_ID}
-                  {copied
-                    ? <CheckCircle2 size={11} className="text-success" />
-                    : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                  }
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* What's next — timeline with descriptions */}
-          <div className="border-t border-border px-6 py-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-5">What's next</p>
-            <div className="relative">
-              {/* Vertical connector line */}
-              <div className="absolute left-[11px] top-6 bottom-6 w-px bg-border" aria-hidden />
-              <div className="space-y-5">
-                {steps.map((s, i) => (
-                  <div key={i} className="flex gap-3.5">
-                    <div className={`relative z-10 size-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.iconBg} ${s.iconColor}`}>
-                      {s.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className={`text-sm font-semibold leading-tight ${s.done ? "text-success" : "text-foreground"}`}>{s.label}</span>
-                        <span className={`text-xs shrink-0 mt-0.5 max-w-[58%] text-right leading-snug ${s.dateColor}`}>{s.date}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <div className="flex justify-center pt-2 pb-4">
-          <button
-            onClick={() => onNavigate?.("new-chat")}
-            className="inline-flex items-center justify-center gap-2 h-11 px-8 rounded-xl text-sm font-semibold text-white bg-foreground hover:opacity-90 transition-opacity shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50 focus-visible:ring-offset-2"
-          >
-            Back to Home <ArrowRight size={14} />
-          </button>
-        </div>
-
+    <div className="relative flex w-full flex-1 flex-col min-h-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--muted)_70%,var(--background))_0%,var(--background)_32%)]">
+      <div className="mx-auto w-full max-w-5xl px-4 py-5 pb-28 sm:px-6 sm:py-6">
+          <EmployeeInsuranceDashboard
+            firstName={firstName}
+            isApproved={isApproved}
+            workflowStatus={workflowStatus}
+            statusMeta={statusMeta}
+            policyDetails={policyDetailsUi}
+            policyName={POLICY.name}
+            refId={refId}
+            sumInsured={sumInsured}
+            coverageLabel={coverageLabel}
+            annualPremium={annualPremium}
+            insuredMembers={insuredMembers}
+            steps={steps}
+            overviewTiles={overviewTiles}
+            pendingClarification={workflowStatus === "pending_clarification"}
+            onOpenAssistant={() => setChatOpen(true)}
+            previewToggle={previewToggle}
+        />
       </div>
+
+      {typeof document !== "undefined" && createPortal(
+        <>
+          {fabButton}
+          {chatOverlay}
+        </>,
+        document.body,
+      )}
     </div>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Insurance content (embeddable, no layout shell) ─────────────────────────
 
-export default function EmployeeInsurancePage({ onNavigate }) {
+export function InsuranceContent({ onNavigate: _onNavigate }) {
   const { auth } = useAuth();
   const firstName = auth.user?.name?.split(" ")[0] ?? "there";
 
-  // "landing" | "skip-confirm" | "enroll" | "skipped" | "success"
-  const [view, setView] = useState("landing");
-  const [enrollmentSummary, setEnrollmentSummary] = useState(null);
+  const [submission, setSubmission] = useState(() => loadSubmission());
+  const [view, setView] = useState(() => (loadSubmission() ? "submitted" : "landing"));
+
+  const handleSubmitSuccess = useCallback((formData) => {
+    const record = {
+      refId: generateEnrollmentRefId(),
+      submittedAt: Date.now(),
+      workflowStatus: "submitted",
+      form: formData,
+    };
+    saveSubmission(record);
+    setSubmission(record);
+    setView("submitted");
+  }, []);
+
+  const handleUpdateSubmission = useCallback((next) => {
+    saveSubmission(next);
+    setSubmission(next);
+  }, []);
+
+  const handlePreviewFreshEnrollment = useCallback(() => {
+    clearEnrollmentStorage();
+    setSubmission(null);
+    setView("landing");
+  }, []);
 
   return (
+    <div className="flex min-h-0 w-full flex-1 flex-col">
+      {view === "landing" && (
+        <ConfirmationView firstName={firstName} onProceed={() => setView("enroll")} />
+      )}
+      {view === "skip-confirm" && (
+        <SkipView firstName={firstName} onBack={() => setView("landing")} onConfirmSkip={() => setView("skipped")} />
+      )}
+      {view === "enroll" && (
+        <EnrollView auth={auth} onSuccess={handleSubmitSuccess} />
+      )}
+      {view === "skipped" && <SkippedState firstName={firstName} onReturn={() => setView("landing")} />}
+      {view === "submitted" && submission && (
+        <SubmittedDashboardView
+          firstName={firstName}
+          submission={submission}
+          onUpdateSubmission={handleUpdateSubmission}
+          onPreviewEnrollment={handlePreviewFreshEnrollment}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Main page (standalone route, kept for direct access) ────────────────────
+
+export default function EmployeeInsurancePage({ onNavigate }) {
+  return (
     <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
-      <Sidebar activePage="employee-insurance" onNavigate={onNavigate} />
+      <Sidebar activePage="my-profile" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border" />
-            <span className="text-sm text-muted-foreground">Platform</span>
+            <span className="text-sm text-muted-foreground">My Profile</span>
             <ChevronRight size={14} className="text-muted-foreground" />
-            <span className="text-sm text-foreground font-medium">Employee Insurance</span>
-            {view === "enroll" && (
-              <>
-                <ChevronRight size={14} className="text-muted-foreground" />
-                <span className="text-sm text-foreground font-medium">Enrollment Form</span>
-              </>
-            )}
+            <span className="text-sm text-foreground font-medium">Insurance</span>
           </div>
         </AppHeader>
 
-        <div className="flex-1 overflow-y-auto flex flex-col">
-          {view === "landing" && (
-            <ConfirmationView
-              firstName={firstName}
-              onProceed={() => setView("enroll")}
-            />
-          )}
-          {view === "skip-confirm" && (
-            <SkipView firstName={firstName} onBack={() => setView("landing")} onConfirmSkip={() => setView("skipped")} />
-          )}
-          {view === "enroll" && (
-            <EnrollView
-              auth={auth}
-              onSuccess={(formData) => { setEnrollmentSummary(formData); setView("success"); }}
-            />
-          )}
-          {view === "skipped"  && <SkippedState firstName={firstName} onReturn={() => setView("landing")} />}
-          {view === "success"  && <SuccessState firstName={firstName} enrollmentSummary={enrollmentSummary} onNavigate={onNavigate} />}
+        <div className="flex min-h-0 flex-1 flex-col basis-0 overflow-y-auto overscroll-y-contain">
+          <InsuranceContent onNavigate={onNavigate} />
         </div>
       </div>
     </div>
