@@ -18,16 +18,16 @@ export default function MessageActions({
         className,
       )}
     >
-      <Button variant="ghost" size="icon-xs" className="text-[#64748b] hover:text-[#111827] dark:text-[#94a3b8] dark:hover:text-white" onClick={onCopy}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onCopy}>
         {copied ? <Check /> : <Copy />}
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-[#64748b] hover:text-[#111827] dark:text-[#94a3b8] dark:hover:text-white" onClick={onRegenerate}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onRegenerate}>
         <RefreshCw />
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-[#64748b] hover:text-[#111827] dark:text-[#94a3b8] dark:hover:text-white" onClick={onThumbsUp}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onThumbsUp}>
         <ThumbsUp />
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-[#64748b] hover:text-[#111827] dark:text-[#94a3b8] dark:hover:text-white" onClick={onThumbsDown}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onThumbsDown}>
         <ThumbsDown />
       </Button>
     </div>

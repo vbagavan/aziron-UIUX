@@ -46,7 +46,7 @@ function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 px-1 py-0.5">
       {[0, 1, 2].map(i => (
-        <span key={i} className="size-1.5 rounded-full bg-[#94a3b8] dark:bg-[#64748b]"
+        <span key={i} className="size-1.5 rounded-full bg-muted dark:bg-card"
           style={{ animation: `ncBounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
       ))}
       <style>{`@keyframes ncBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-4px)}}`}</style>
@@ -282,15 +282,15 @@ const WAVE_KF = `
 `;
 
 const VOICE_COLOR = {
-  connecting: '#c4b5fd',
-  listening:  '#a78bfa',
-  sending:    '#93c5fd',
-  speaking:   '#c4b5fd',
-  error:      '#f87171',
+  connecting: 'var(--chart-chart-4)',
+  listening:  'var(--chart-chart-4)',
+  sending:    'var(--chart-chart-2)',
+  speaking:   'var(--chart-chart-4)',
+  error:      'var(--destructive)',
 };
 
 function VoiceInputCenter({ state }) {
-  const color  = VOICE_COLOR[state] || '#c4b5fd';
+  const color  = VOICE_COLOR[state] || 'var(--chart-chart-4)';
   const active = state === 'listening' || state === 'speaking' || state === 'sending';
   const baseOpacity = active ? 0.88 : 0.45;
 
@@ -317,11 +317,11 @@ function VoiceInputCenter({ state }) {
       >
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.2" />
-            <stop offset="25%" stopColor="#93c5fd" stopOpacity="0.5" />
+            <stop offset="0%" stopColor="var(--info)" stopOpacity="0.2" />
+            <stop offset="25%" stopColor="var(--chart-chart-2)" stopOpacity="0.5" />
             <stop offset="50%" stopColor={color} stopOpacity="1" />
-            <stop offset="75%" stopColor="#5eead4" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#d9f99d" stopOpacity="0.2" />
+            <stop offset="75%" stopColor="var(--success)" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="var(--success)" stopOpacity="0.2" />
           </linearGradient>
           <filter id={filterId}>
             <feGaussianBlur stdDeviation="2.5" />
@@ -628,7 +628,7 @@ export default function NewChatPage({ onNavigate }) {
   const promptBox = (
     voiceActive ? (
       <div
-        className="overflow-hidden rounded-[24px] border border-[#2557ff]/35 bg-white shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)] dark:bg-[#050816]"
+        className="overflow-hidden rounded-[24px] border border-border/35 bg-card shadow-[0_18px_70px_-36px_rgba(3,8,22,.45)] dark:bg-card"
         style={{
           boxShadow: "0 0 0 1px rgba(37,87,255,.12), 0 18px 70px -36px rgba(3,8,22,.30)",
         }}
@@ -656,7 +656,7 @@ export default function NewChatPage({ onNavigate }) {
             {voiceState === VS.LISTENING && (
               <div className="mb-2 flex justify-center">
                 <span
-                  className="text-[11px] sm:text-[12px] font-medium tracking-[0.02em] text-[#c4b5fd] drop-shadow-[0_0_10px_rgba(196,181,253,.28)] dark:text-white/80"
+                  className="text-[11px] sm:text-[12px] font-medium tracking-[0.02em] text-foreground drop-shadow-[0_0_10px_rgba(196,181,253,.28)] dark:text-white/80"
                   style={{ animation: "voiceListeningFade 2.2s ease-in-out infinite" }}
                 >
                   Listening...
@@ -680,7 +680,7 @@ export default function NewChatPage({ onNavigate }) {
             <div className="relative mt-4 sm:mt-6 flex items-center justify-center">
               <div className="absolute inset-x-[-18px] top-1/2 -translate-y-1/2 sm:inset-x-[-56px] lg:inset-x-[-92px]">
                 <div className="relative">
-                  <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/20" />
+                  <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-card/20" />
                   <div className="opacity-95">
                     <VoiceInputCenter state={voiceState} />
                   </div>
@@ -689,10 +689,10 @@ export default function NewChatPage({ onNavigate }) {
 
               <div className="relative z-10">
                 <div
-                  className="absolute inset-[-12px] rounded-full border border-[#8b5cf6]/28 sm:inset-[-14px] lg:inset-[-18px]"
+                  className="absolute inset-[-12px] rounded-full border border-border/28 sm:inset-[-14px] lg:inset-[-18px]"
                   style={{ animation: "voiceReferenceRing 2.8s ease-in-out infinite" }}
                 />
-                <div className="absolute inset-[-20px] rounded-full border border-[#6366f1]/18 sm:inset-[-24px] lg:inset-[-30px]" />
+                <div className="absolute inset-[-20px] rounded-full border border-chart-chart-3/18 sm:inset-[-24px] lg:inset-[-30px]" />
                 <div className="rounded-full scale-[0.58] sm:scale-[0.84] lg:scale-100 shadow-[0_0_28px_rgba(236,72,153,0.18),0_0_66px_rgba(99,102,241,0.2)]">
                   <VoiceOrb state={voiceState === VS.SENDING ? VS.CONNECTING : voiceState} size={82} />
                 </div>
@@ -703,7 +703,7 @@ export default function NewChatPage({ onNavigate }) {
               <button
                 onClick={stopVoiceInput}
                 aria-label="Stop voice mode"
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-[#0f172a]/8 dark:bg-white/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-[#0f172a] dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-[#0f172a]/12 dark:hover:bg-white/14"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-muted/8 dark:bg-card/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-foreground dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-muted/12 dark:hover:bg-card/14"
               >
                 <Square size={14} className="fill-current" />
                 <span>Stop</span>
@@ -802,7 +802,7 @@ export default function NewChatPage({ onNavigate }) {
 
               {isTyping && (
                 <AIMessage>
-                  <div className="inline-flex items-center rounded-full bg-background px-2 py-1 dark:bg-white/[0.04]">
+                  <div className="inline-flex items-center rounded-full bg-background px-2 py-1 dark:bg-card/[0.04]">
                     <TypingIndicator />
                   </div>
                 </AIMessage>
@@ -815,7 +815,7 @@ export default function NewChatPage({ onNavigate }) {
 
         {/* ── Input ── */}
         {hasMessages && (
-          <div className="sticky bottom-0 flex-shrink-0 border-t border-border bg-background/92 px-4 pb-4 pt-3 backdrop-blur dark:border-white/[0.05] dark:bg-background/88">
+          <div className="sticky bottom-0 flex-shrink-0 border-t border-border bg-background/92 px-4 pb-4 pt-3 backdrop-blur dark:border-card/[0.05] dark:bg-background/88">
             <div className="mx-auto max-w-[760px]">
               {!voiceActive && (
                 <div className="mb-3 flex justify-center">

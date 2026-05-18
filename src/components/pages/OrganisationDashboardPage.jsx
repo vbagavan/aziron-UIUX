@@ -30,8 +30,8 @@ import {
 import { PERMISSIONS } from "@/config/rbac";
 
 const AVATAR_GRAD = [
-  ["#1e3a8a", "#2563eb"], ["#0f766e", "#14b8a6"], ["#7c2d12", "#ea580c"],
-  ["#581c87", "#a855f7"], ["#0c4a6e", "#0284c7"],
+  ["var(--primary)", "var(--primary)"], ["var(--success)", "var(--success)"], ["var(--warning)", "var(--warning)"],
+  ["var(--chart-chart-4)", "var(--chart-chart-4)"], ["var(--info)", "var(--info)"],
 ];
 
 function initials(name) {
@@ -661,7 +661,7 @@ function BillingHealthPanel({ tenant, deployCfg, onNavigate, onGoToMembers, clas
             {maxUsers ? (
               <span className={cn(
                 "text-[11px] font-semibold tabular-nums",
-                seatPct >= 90 ? "text-destructive" : seatPct >= 75 ? "text-amber-600" : "text-foreground",
+                seatPct >= 90 ? "text-destructive" : seatPct >= 75 ? "text-warning" : "text-foreground",
               )}>
                 {seats} / {maxUsers.toLocaleString()} · {seatPct}%
               </span>
@@ -744,7 +744,7 @@ function BillingHealthPanel({ tenant, deployCfg, onNavigate, onGoToMembers, clas
         {/* Risk flags */}
         {risks.length > 0 && (
           <div className="rounded-xl border border-amber-200/70 bg-amber-50/60 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-warning dark:text-amber-400">
               Attention needed
             </p>
             <ul className="flex flex-col gap-1.5">
@@ -755,7 +755,7 @@ function BillingHealthPanel({ tenant, deployCfg, onNavigate, onGoToMembers, clas
                     strokeWidth={2}
                     aria-hidden
                   />
-                  <span className={r.level === "danger" ? "font-medium text-destructive" : "text-amber-700 dark:text-amber-400"}>
+                  <span className={r.level === "danger" ? "font-medium text-destructive" : "text-warning dark:text-amber-400"}>
                     {r.label}
                   </span>
                 </li>
@@ -890,7 +890,7 @@ function ResourceUsageOverview({ tenant, onNavigate }) {
 
               <p className={cn(
                 "mt-2 text-[11px] font-medium",
-                row.trendDanger ? "text-amber-600" : "text-muted-foreground/90",
+                row.trendDanger ? "text-warning" : "text-muted-foreground/90",
               )}>
                 {row.trend}
               </p>
@@ -1015,15 +1015,15 @@ const AUDIT_CATEGORY_META = {
   },
   identity: {
     label: "Identity", icon: Users,
-    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    avatar: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
-    dot: "bg-blue-500",
+    badge: "bg-primary/15 text-primary dark:bg-blue-900/30 dark:text-blue-300",
+    avatar: "bg-primary/15 text-primary dark:bg-blue-900/50 dark:text-blue-300",
+    dot: "bg-primary",
   },
   billing: {
     label: "Billing", icon: CreditCard,
-    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    avatar: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
-    dot: "bg-emerald-500",
+    badge: "bg-success/15 text-success dark:bg-emerald-900/30 dark:text-emerald-300",
+    avatar: "bg-success/15 text-success dark:bg-emerald-900/50 dark:text-emerald-300",
+    dot: "bg-success/100",
   },
   settings: {
     label: "Settings", icon: Settings2,
@@ -1042,7 +1042,7 @@ const AUDIT_CATEGORY_META = {
 function auditSeverityDot(severity) {
   if (severity === "danger")  return "bg-rose-500";
   if (severity === "warning") return "bg-amber-500";
-  if (severity === "success") return "bg-emerald-500";
+  if (severity === "success") return "bg-success/100";
   return "bg-primary/40";
 }
 
@@ -1464,7 +1464,7 @@ export default function OrganisationDashboardPage({
       {showSeatWarning && (
         <div className="shrink-0 border-b border-amber-200/80 bg-amber-50/80 px-4 py-2.5 dark:border-amber-900/40 dark:bg-amber-950/30">
           <div className="mx-auto flex max-w-[1728px] flex-wrap items-center justify-between gap-x-4 gap-y-1 sm:px-2">
-            <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
+            <div className="flex items-center gap-2 text-sm text-warning-foreground dark:text-amber-300">
               <AlertTriangle className="size-4 shrink-0" strokeWidth={2} aria-hidden />
               <span>
                 <span className="font-semibold">{seats} / {maxUsers} seats used ({seatPct}%)</span>
@@ -1475,14 +1475,14 @@ export default function OrganisationDashboardPage({
               <button
                 type="button"
                 onClick={goToMembers}
-                className="text-xs font-semibold text-amber-700 underline underline-offset-2 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
+                className="text-xs font-semibold text-warning underline underline-offset-2 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
               >
                 Manage members
               </button>
               <span className="text-amber-400" aria-hidden>·</span>
               <button
                 type="button"
-                className="text-xs font-semibold text-amber-700 underline underline-offset-2 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
+                className="text-xs font-semibold text-warning underline underline-offset-2 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200"
               >
                 Upgrade plan
               </button>

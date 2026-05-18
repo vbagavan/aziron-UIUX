@@ -31,16 +31,16 @@ export function useSplashCursor() {
 
     // Vibrant color palette for splashes
     const colorPalette = [
-      '#a855f7', // Purple
-      '#3b82f6', // Blue
-      '#22c55e', // Green
-      '#f97316', // Orange
-      '#ec4899', // Pink
-      '#0ea5e9', // Sky Blue
-      '#8b5cf6', // Violet
-      '#06b6d4', // Cyan
-      '#f43f5e', // Rose
-      '#14b8a6', // Teal
+      'var(--chart-chart-4)', // Purple
+      'var(--primary)', // Blue
+      'var(--success)', // Green
+      'var(--warning)', // Orange
+      'var(--destructive)', // Pink
+      'var(--info)', // Sky Blue
+      'var(--chart-chart-4)', // Violet
+      'var(--info)', // Cyan
+      'var(--destructive)', // Rose
+      'var(--success)', // Teal
     ];
 
     const getRandomColor = () => {

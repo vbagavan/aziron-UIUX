@@ -46,7 +46,7 @@ function buildTrend(current, months = 6) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 /** SVG circular progress ring */
-function RingProgress({ pct, size = 80, strokeWidth = 8, color = "#2563eb" }) {
+function RingProgress({ pct, size = 80, strokeWidth = 8, color = "var(--primary)" }) {
   const r = (size - strokeWidth) / 2;
   const circ = 2 * Math.PI * r;
   const filled = Math.min(pct ?? 0, 100);
@@ -55,7 +55,7 @@ function RingProgress({ pct, size = 80, strokeWidth = 8, color = "#2563eb" }) {
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
       <circle
         cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth}
+        fill="none" stroke="var(--border)" strokeWidth={strokeWidth}
         className="dark:stroke-muted"
       />
       <circle
@@ -245,7 +245,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
     },
   ];
 
-  const ringColor = seatPct == null ? "#2563eb" : seatPct >= 90 ? "#ef4444" : seatPct >= 75 ? "#f59e0b" : "#2563eb";
+  const ringColor = seatPct == null ? "var(--primary)" : seatPct >= 90 ? "var(--destructive)" : seatPct >= 75 ? "var(--warning)" : "var(--primary)";
 
   return (
     <div className="col-span-12 flex flex-col gap-6 pb-4">
@@ -458,7 +458,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
                   aria-hidden
                 />
                 <div className="min-w-0">
-                  <p className={cn("text-xs font-semibold", a.level === "danger" ? "text-destructive" : "text-amber-700 dark:text-amber-400")}>
+                  <p className={cn("text-xs font-semibold", a.level === "danger" ? "text-destructive" : "text-warning dark:text-amber-400")}>
                     {a.msg}
                   </p>
                   {a.action && (
@@ -467,7 +467,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
                       onClick={() => a.navId && onNavigate?.(a.navId)}
                       className={cn(
                         "mt-0.5 text-[11px] font-medium underline-offset-2 hover:underline",
-                        a.level === "danger" ? "text-destructive" : "text-amber-600 dark:text-amber-400",
+                        a.level === "danger" ? "text-destructive" : "text-warning dark:text-amber-400",
                       )}
                     >
                       {a.action} →
@@ -528,7 +528,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
             current={members}
             prev={Math.round(members * PREV_SHAPE[5])}
             data={memberTrend}
-            color="#2563eb"
+            color="var(--primary)"
             icon={Users}
           />
           <TrendCard
@@ -536,7 +536,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
             current={agents}
             prev={Math.round(agents * PREV_SHAPE[5])}
             data={agentTrend}
-            color="#8b5cf6"
+            color="var(--chart-chart-4)"
             icon={Bot}
           />
           <TrendCard
@@ -544,7 +544,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
             current={workflows}
             prev={Math.round(workflows * PREV_SHAPE[5])}
             data={workflowTrend}
-            color="#14b8a6"
+            color="var(--success)"
             icon={Workflow}
           />
           <TrendCard
@@ -552,7 +552,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
             current={vectorDbs}
             prev={Math.round(vectorDbs * PREV_SHAPE[5])}
             data={vectorTrend}
-            color="#f59e0b"
+            color="var(--warning)"
             icon={Database}
           />
         </div>
@@ -631,7 +631,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
           <p className="mr-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Export</p>
           {[
             { icon: FileSpreadsheet, label: "CSV",  color: "text-green-600" },
-            { icon: FileText,        label: "PDF",  color: "text-red-500" },
+            { icon: FileText,        label: "PDF",  color: "text-destructive" },
             { icon: FileJson,        label: "JSON", color: "text-amber-500" },
           ].map((ex) => {
             const Icon = ex.icon;

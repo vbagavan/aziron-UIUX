@@ -238,9 +238,9 @@ export default function LoginPage() {
 
     function drawBackground() {
       const bg = ctx.createRadialGradient(W * 0.3, H * 0.4, 0, W * 0.3, H * 0.4, W * 0.85);
-      bg.addColorStop(0, "#0F1835");
-      bg.addColorStop(0.5, "#0A0F1E");
-      bg.addColorStop(1, "#060A14");
+      bg.addColorStop(0, "#1e293b");
+      bg.addColorStop(0.5, "#0f172a");
+      bg.addColorStop(1, "#020617");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
@@ -314,13 +314,13 @@ export default function LoginPage() {
     if (!detectedRole) return null;
     const cred = CREDENTIALS[detectedRole];
     if (detectedRole === 'admin') {
-      return { name: 'System Administrator', color: '#DC2626', bgColor: '#FEE2E2' };
+      return { name: 'System Administrator', color: 'var(--destructive)', bgColor: 'var(--destructive)/10' };
     }
     if (detectedRole === 'tenant' && cred.tenantId === 3) {
-      return { name: 'Vanta Logistics', color: '#2563EB', bgColor: '#DBEAFE' };
+      return { name: 'Vanta Logistics', color: 'var(--primary)', bgColor: 'var(--primary)/10' };
     }
     if (detectedRole === 'user' && cred.tenantId === 4) {
-      return { name: 'Acme Corp', color: '#059669', bgColor: '#D1FAE5' };
+      return { name: 'Acme Corp', color: 'var(--success)', bgColor: 'var(--success)/10' };
     }
     return null;
   };
@@ -334,29 +334,29 @@ export default function LoginPage() {
     page: "relative z-10 flex w-full h-screen",
 
     left: "flex-1 flex flex-col justify-end pb-18 pl-18 pointer-events-none",
-    brandBadge: "inline-flex items-center gap-2 bg-blue-500/18 border border-blue-400/25 border-solid rounded-full px-4 py-1.5 w-fit mb-7",
+    brandBadge: "inline-flex items-center gap-2 bg-primary/18 border border-blue-400/25 border-solid rounded-full px-4 py-1.5 w-fit mb-7",
     brandDot: "w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_8px_#4ADE80]",
 
-    right: "w-120 min-w-105 flex items-center justify-center p-10 pr-12 bg-white/96 shadow-[-40px_0_80px_rgba(0,0,0,0.35)] relative overflow-hidden",
+    right: "w-120 min-w-105 flex items-center justify-center p-10 pr-12 bg-card/96 shadow-[-40px_0_80px_rgba(0,0,0,0.35)] relative overflow-hidden",
     box: "w-full max-w-96 flex flex-col items-center",
 
     input: "w-full px-3.5 py-2.5 border border-slate-300 rounded-2xl text-sm text-slate-900 bg-slate-50 outline-none transition-all duration-200",
-    inputFocus: "border-blue-500 bg-white shadow-[0_0_0_3px_rgba(37,99,235,0.12)]",
+    inputFocus: "border-primary bg-card shadow-[0_0_0_3px_rgba(37,99,235,0.12)]",
     btnPrimary: "w-full py-3.25 px-0 border-none rounded-2xl cursor-pointer text-sm font-semibold text-white leading-none bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-[0_4px_20px_rgba(37,99,235,0.35)] mt-1.5 relative overflow-hidden transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]",
-    btnMs: "w-full py-2.5 px-0 border border-slate-300 rounded-2xl bg-white cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-center gap-2.5 transition-all duration-200 hover:border-slate-400 hover:shadow-sm",
+    btnMs: "w-full py-2.5 px-0 border border-slate-300 rounded-2xl bg-card cursor-pointer text-sm font-medium text-slate-700 flex items-center justify-center gap-2.5 transition-all duration-200 hover:border-slate-400 hover:shadow-sm",
   };
 
   const AzironLogo = () => (
     <svg width="58" height="58" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="lg1" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#1D4ED8" />
-          <stop offset="50%" stopColor="#3B82F6" />
-          <stop offset="100%" stopColor="#818CF8" />
+          <stop offset="0%" stopColor="var(--primary)" />
+          <stop offset="50%" stopColor="var(--primary)" />
+          <stop offset="100%" stopColor="var(--chart-chart-3)" />
         </linearGradient>
         <linearGradient id="lg2" x1="0" y1="80" x2="80" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#60A5FA" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#C084FC" stopOpacity="0.3" />
+          <stop offset="0%" stopColor="var(--chart-chart-2)" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="var(--chart-chart-4)" stopOpacity="0.3" />
         </linearGradient>
       </defs>
       <path d="M40 8 L68 68 H52 L40 42 L28 68 H12 Z" fill="url(#lg1)" />
@@ -381,9 +381,9 @@ export default function LoginPage() {
 
   const MsIcon = () => (
     <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
-      <div className="bg-red-500 rounded-[1px]" />
+      <div className="bg-destructive/100 rounded-[1px]" />
       <div className="bg-green-500 rounded-[1px]" />
-      <div className="bg-blue-500 rounded-[1px]" />
+      <div className="bg-primary rounded-[1px]" />
       <div className="bg-yellow-500 rounded-[1px]" />
     </div>
   );
@@ -397,14 +397,14 @@ export default function LoginPage() {
         <div className={S.left}>
           <div className={S.brandBadge}>
             <div className={`${S.brandDot} animate-pulse`} />
-            <span className="text-xs leading-none uppercase text-blue-300 font-semibold tracking-[0.12em]">
+            <span className="text-xs leading-none uppercase text-blue-100 font-semibold tracking-[0.12em]">
               Live neural network
             </span>
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.06] text-white mb-5 tracking-[-0.02em]">
             Build{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               Intelligent
             </span>
             <br />
@@ -425,7 +425,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-2.5">
             {getFeatures().map(({ icon, label }) => (
               <div key={label} className="inline-flex items-center gap-2.5 w-fit">
-                <div className="w-7 h-7 rounded-lg bg-blue-500/25 border border-blue-400/2 flex items-center justify-center font-normal">
+                <div className="w-7 h-7 rounded-lg bg-primary/25 border border-blue-400/2 flex items-center justify-center font-normal">
                   {icon}
                 </div>
                 <span className="text-sm font-normal text-slate-400 leading-none tracking-[0.01em]">{label}</span>
@@ -473,16 +473,16 @@ export default function LoginPage() {
 
               {/* Tenant Detection Badge */}
               {tenantInfo && (
-                <div className="w-full p-3.5 bg-slate-50 border border-slate-200 border-solid rounded-2xl flex items-center gap-2">
-                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="w-full p-3.5 bg-slate-50 border border-slate-200 border-solid rounded-2xl flex items-center gap-2" style={{ borderColor: `var(--${detectedRole === 'admin' ? 'destructive' : detectedRole === 'tenant' ? 'primary' : 'success'})/30` }}>
+                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: tenantInfo.color }}>
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                   </svg>
                   <div className="flex-1">
-                    <div className="text-xs font-semibold uppercase tracking-[0.05em] leading-none" style={{ color: tenantInfo.color }}>
+                    <div className="text-xs font-bold uppercase tracking-[0.05em] leading-none text-slate-900" style={{ color: tenantInfo.color }}>
                       {detectedRole === 'admin' ? 'Administrator' : 'Tenant Workspace'}
                     </div>
-                    <div className="text-sm font-medium leading-4" style={{ color: tenantInfo.color }}>
+                    <div className="text-sm font-bold leading-4 text-slate-900" style={{ color: tenantInfo.color }}>
                       {tenantInfo.name}
                     </div>
                   </div>
@@ -526,13 +526,13 @@ export default function LoginPage() {
 
               {/* Error */}
               {error && (
-                <div className="w-full p-3.5 bg-red-50 border border-red-200 border-solid rounded-2xl flex items-center gap-2">
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <div className="w-full p-3.5 bg-destructive/10 border border-red-200 border-solid rounded-2xl flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="var(--destructive)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
                   </svg>
-                  <span className="text-xs text-red-700 font-normal">{error}</span>
+                  <span className="text-xs text-red-700 font-semibold">{error}</span>
                 </div>
               )}
 
@@ -543,13 +543,13 @@ export default function LoginPage() {
             </form>
 
             {/* Demo hint - show available test accounts */}
-            <div className="w-full mt-3.5 p-3 bg-blue-50 border border-blue-200 border-solid rounded-2xl">
-              <div className="text-xs text-blue-800 font-semibold mb-1.5">Demo Accounts:</div>
-              <div className="text-xs text-blue-700 leading-5">
+            <div className="w-full mt-3.5 p-3 bg-primary/10 border border-primary/25 border-solid rounded-2xl">
+              <div className="text-xs text-blue-700 font-bold mb-1.5">Demo Accounts:</div>
+              <div className="text-xs text-blue-900 leading-5">
                 <div>• <strong>admin@aziro.com</strong> - Administrator</div>
                 <div>• <strong>tenant@azio.com</strong> - Vanta Logistics (Tenant)</div>
                 <div>• <strong>user@aziro.com</strong> - Acme Corp (User)</div>
-                <div className="mt-1 opacity-80">Password: <strong>admin123</strong></div>
+                <div className="mt-1 opacity-90">Password: <strong>admin123</strong></div>
               </div>
             </div>
 

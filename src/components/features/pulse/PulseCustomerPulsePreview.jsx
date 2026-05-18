@@ -37,9 +37,9 @@ const responseTrend = [
 ];
 
 const sentimentSlices = [
-  { name: "Positive", value: 58, fill: "#0ea5e9" },
-  { name: "Neutral", value: 27, fill: "#94a3b8" },
-  { name: "Negative", value: 15, fill: "#f43f5e" },
+  { name: "Positive", value: 58, fill: "var(--info)" },
+  { name: "Neutral", value: 27, fill: "var(--muted-foreground)" },
+  { name: "Negative", value: 15, fill: "var(--destructive)" },
 ];
 
 const topIssues = [
@@ -52,7 +52,7 @@ const topIssues = [
 
 function Kpi({ icon: Icon, label, value, sub, ring }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
       <div className={`mb-2 flex size-9 items-center justify-center rounded-lg ${ring}`}>
         <Icon className="size-4 text-white" />
       </div>
@@ -75,14 +75,14 @@ export default function PulseCustomerPulsePreview({ compact = false }) {
               For support teams, CX leaders, and CRM ops — from ticket handling to intelligent customer experience.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-card/10 bg-card/5 px-3 py-2 text-xs">
             <Zap className="size-4 text-amber-300" />
             <span className="text-slate-200">
               <span className="font-semibold text-white">Differentiator:</span> support → proactive customer intelligence
             </span>
           </div>
         </div>
-        <p className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1 text-[11px] text-sky-100">
+        <p className="mt-3 inline-flex items-center gap-2 rounded-md bg-card/10 px-2.5 py-1 text-[11px] text-sky-100">
           <Sparkles className="size-3.5" />
           Core value: tickets → smarter CX decisions
         </p>
@@ -102,7 +102,7 @@ export default function PulseCustomerPulsePreview({ compact = false }) {
         </section>
 
         <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Clock className="size-4 text-cyan-600" />
               Response time trends
@@ -111,20 +111,20 @@ export default function PulseCustomerPulsePreview({ compact = false }) {
             <div className="h-52 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={responseTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="d" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="d" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line yAxisId="left" type="monotone" dataKey="first" name="First response (min)" stroke="#0284c7" strokeWidth={2} dot={{ r: 3 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="resolve" name="Resolution (h)" stroke="#0d9488" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="left" type="monotone" dataKey="first" name="First response (min)" stroke="var(--info)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="resolve" name="Resolution (h)" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <ThumbsUp className="size-4 text-sky-600" />
               Customer sentiment
@@ -157,27 +157,27 @@ export default function PulseCustomerPulsePreview({ compact = false }) {
         </div>
 
         <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <TrendingDown className="size-4 text-amber-600" />
+              <TrendingDown className="size-4 text-warning" />
               Top issues
             </h3>
             <p className="mb-2 text-[11px] text-slate-500">Recurring complaints (volume)</p>
             <div className="h-52 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topIssues} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="issue"
                     width={compact ? 100 : 120}
-                    tick={{ fontSize: 10, fill: "#64748b" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip formatter={(v) => [v, "Tickets"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="count" radius={[0, 6, 6, 0]} fill="#0ea5e9" />
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} fill="var(--info)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -190,14 +190,14 @@ export default function PulseCustomerPulsePreview({ compact = false }) {
             </h3>
             <p className="mb-4 text-[11px] text-slate-600">Share of tickets auto-resolved vs escalated to humans</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border border-white/80 bg-white p-3 text-center shadow-sm">
+              <div className="rounded-lg border border-card/80 bg-card p-3 text-center shadow-sm">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Auto-resolved</p>
                 <p className="mt-1 text-2xl font-bold tabular-nums text-cyan-700">41%</p>
-                <p className="mt-1 flex items-center justify-center gap-1 text-[10px] text-emerald-600">
+                <p className="mt-1 flex items-center justify-center gap-1 text-[10px] text-success">
                   <ThumbsUp className="size-3" /> +4.2pp MoM
                 </p>
               </div>
-              <div className="rounded-lg border border-white/80 bg-white p-3 text-center shadow-sm">
+              <div className="rounded-lg border border-card/80 bg-card p-3 text-center shadow-sm">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Escalated</p>
                 <p className="mt-1 text-2xl font-bold tabular-nums text-slate-800">59%</p>
                 <p className="mt-1 flex items-center justify-center gap-1 text-[10px] text-slate-500">

@@ -70,7 +70,7 @@ function heatColor(v) {
 
 function Kpi({ icon: Icon, label, value, sub, accent }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
       <div className={`mb-2 flex size-9 items-center justify-center rounded-lg ${accent}`}>
         <Icon className="size-4 text-white" />
       </div>
@@ -93,14 +93,14 @@ export default function PulseGrowthPreview({ compact = false }) {
               For founders, product teams, and growth teams — from raw metrics to actionable business insights.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-card/10 bg-card/5 px-3 py-2 text-xs">
             <Zap className="size-4 text-amber-300" />
             <span className="text-slate-200">
               <span className="font-semibold text-white">Differentiator:</span> analytics + AI strategy suggestions
             </span>
           </div>
         </div>
-        <p className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/10 px-2.5 py-1 text-[11px] text-emerald-100">
+        <p className="mt-3 inline-flex items-center gap-2 rounded-md bg-card/10 px-2.5 py-1 text-[11px] text-emerald-100">
           <TrendingUp className="size-3.5" />
           Core value: raw metrics → actionable insights
         </p>
@@ -110,7 +110,7 @@ export default function PulseGrowthPreview({ compact = false }) {
         {/* Revenue overview */}
         <section>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <DollarSign className="size-4 text-emerald-600" />
+            <DollarSign className="size-4 text-success" />
             Revenue overview
           </h3>
           <div className={`mb-4 grid gap-3 ${compact ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
@@ -119,24 +119,24 @@ export default function PulseGrowthPreview({ compact = false }) {
             <Kpi icon={PieChart} label="Net margin" value="31%" sub="After CAC payback" accent="bg-slate-700" />
             <Kpi icon={Users} label="Active accounts" value="14.5k" sub="Paying + trial" accent="bg-violet-600" />
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <p className="mb-2 text-xs font-medium text-slate-600">MRR, ARR &amp; profit trend</p>
             <div className="h-52 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={revenueTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="grMrr" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#059669" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#059669" stopOpacity={0} />
+                      <stop offset="0%" stopColor="var(--success)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="m" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="m" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Area type="monotone" dataKey="mrr" name="MRR ($k)" stroke="#059669" strokeWidth={2} fill="url(#grMrr)" />
-                  <Line type="monotone" dataKey="arr" name="ARR ($k)" stroke="#0d9488" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="profit" name="Profit ($k)" stroke="#6366f1" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                  <Area type="monotone" dataKey="mrr" name="MRR ($k)" stroke="var(--success)" strokeWidth={2} fill="url(#grMrr)" />
+                  <Line type="monotone" dataKey="arr" name="ARR ($k)" stroke="var(--success)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="profit" name="Profit ($k)" stroke="var(--chart-chart-3)" strokeWidth={2} dot={false} strokeDasharray="4 2" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -145,7 +145,7 @@ export default function PulseGrowthPreview({ compact = false }) {
 
         <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
           {/* User funnel */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Filter className="size-4 text-teal-600" />
               User funnel
@@ -172,7 +172,7 @@ export default function PulseGrowthPreview({ compact = false }) {
           </div>
 
           {/* Top channels */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <PieChart className="size-4 text-violet-600" />
               Top channels
@@ -181,20 +181,20 @@ export default function PulseGrowthPreview({ compact = false }) {
             <div className="h-52 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={channels} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="ch"
                     width={compact ? 88 : 100}
-                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip formatter={(v) => [`${v}%`, "Share"]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="val" radius={[0, 6, 6, 0]} fill="#10b981">
+                  <Bar dataKey="val" radius={[0, 6, 6, 0]} fill="var(--success)">
                     {channels.map((_, i) => (
-                      <Cell key={i} fill={["#059669", "#0d9488", "#6366f1", "#8b5cf6", "#94a3b8"][i % 5]} />
+                      <Cell key={i} fill={["var(--success)", "var(--success)", "var(--chart-chart-3)", "var(--chart-chart-4)", "var(--muted-foreground)"][i % 5]} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -204,7 +204,7 @@ export default function PulseGrowthPreview({ compact = false }) {
         </div>
 
         {/* Cohort analysis */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
             <Users className="size-4 text-slate-700" />
             Cohort analysis
@@ -254,7 +254,7 @@ export default function PulseGrowthPreview({ compact = false }) {
             {aiRecs.map((text) => (
               <li
                 key={text}
-                className="flex gap-2 rounded-lg border border-violet-100 bg-white/80 px-3 py-2 text-xs leading-relaxed text-slate-800"
+                className="flex gap-2 rounded-lg border border-violet-100 bg-card/80 px-3 py-2 text-xs leading-relaxed text-slate-800"
               >
                 <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
                 {text}

@@ -10,11 +10,11 @@ const MAX_STEPS   = 200;
 
 function normalizeStep(raw, index) {
   if (!raw || typeof raw !== "object") {
-    return { label: `Step ${index + 1}`, icon: "Bot", color: "#6366f1", status: "pending" };
+    return { label: `Step ${index + 1}`, icon: "Bot", color: "var(--chart-chart-3)", status: "pending" };
   }
   const label = String(raw.label ?? "").trim() || `Step ${index + 1}`;
   const icon = typeof raw.icon === "string" && raw.icon.trim() ? raw.icon.trim() : "Bot";
-  const color = typeof raw.color === "string" && raw.color.trim() ? raw.color.trim() : "#6366f1";
+  const color = typeof raw.color === "string" && raw.color.trim() ? raw.color.trim() : "var(--chart-chart-3)";
   return { ...raw, label, icon, color, status: raw.status ?? "pending" };
 }
 

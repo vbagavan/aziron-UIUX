@@ -11,7 +11,7 @@ export const PACKAGES = {
     features: { hipaa: false, sso: true, auditLogs: false, dedicatedInfra: false, advancedAnalytics: false },
     support: "Email", uptime: "99.9%",
     description: "Perfect for small teams getting started with AI automation.",
-    color: "#475569", gradient: "from-[#475569] to-[#334155]",
+    color: "var(--muted-foreground)", gradient: "from-muted-foreground to-[#334155]",
   },
   "saas-growth": {
     id: "saas-growth", name: "SaaS Growth", type: "base_tier", deployment: "saas",
@@ -21,7 +21,7 @@ export const PACKAGES = {
     features: { hipaa: false, sso: true, auditLogs: true, dedicatedInfra: false, advancedAnalytics: false },
     support: "Priority", uptime: "99.9%",
     description: "For growing teams that need more power and flexibility.",
-    color: "#2563eb", gradient: "from-[#1d4ed8] to-[#2563eb]",
+    color: "var(--primary)", gradient: "from-primary to-[#2563eb]",
   },
   "saas-scale": {
     id: "saas-scale", name: "SaaS Scale", type: "base_tier", deployment: "saas",
@@ -31,7 +31,7 @@ export const PACKAGES = {
     features: { hipaa: true, sso: true, auditLogs: true, dedicatedInfra: true, advancedAnalytics: false },
     support: "Dedicated", uptime: "99.9%",
     description: "Enterprise-grade platform for large-scale deployments.",
-    color: "#7c3aed", gradient: "from-[#6d28d9] to-[#7c3aed]",
+    color: "var(--chart-chart-4)", gradient: "from-[#6d28d9] to-[#7c3aed]",
   },
 
   // ── Add-on packages ──────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export const PACKAGES = {
     limitBoosts: {},
     description: "BAA agreement, HIPAA-compliant data handling, and audit controls.",
     tagline: "+$500/mo",
-    color: "#059669", iconKey: "shield",
+    color: "var(--success)", iconKey: "shield",
   },
   "addon-sso-audit": {
     id: "addon-sso-audit", name: "SSO & Audit Logs", type: "addon", deployment: "saas",
@@ -51,7 +51,7 @@ export const PACKAGES = {
     limitBoosts: {},
     description: "SAML/OIDC single sign-on and full activity audit trail.",
     tagline: "+$150/mo",
-    color: "#7c3aed", iconKey: "key",
+    color: "var(--chart-chart-4)", iconKey: "key",
   },
   "addon-analytics": {
     id: "addon-analytics", name: "Advanced Analytics", type: "addon", deployment: "saas",
@@ -60,7 +60,7 @@ export const PACKAGES = {
     limitBoosts: {},
     description: "Deep usage reports, custom dashboards, and CSV/API data exports.",
     tagline: "+$200/mo",
-    color: "#2563eb", iconKey: "trending-up",
+    color: "var(--primary)", iconKey: "trending-up",
   },
   "addon-storage-100gb": {
     id: "addon-storage-100gb", name: "Storage Expansion", type: "addon", deployment: "saas",
@@ -69,7 +69,7 @@ export const PACKAGES = {
     limitBoosts: { knowledgeHubGB: 100 },
     description: "Expand Knowledge Hub by 100 GB per unit purchased.",
     tagline: "+$50/mo per 100 GB",
-    color: "#f59e0b", iconKey: "hard-drive",
+    color: "var(--warning)", iconKey: "hard-drive",
   },
   "addon-agents-10": {
     id: "addon-agents-10", name: "Agent Expansion", type: "addon", deployment: "saas",
@@ -78,7 +78,7 @@ export const PACKAGES = {
     limitBoosts: { agents: 10 },
     description: "Add 10 additional agents to your tenant per unit.",
     tagline: "+$100/mo per 10 agents",
-    color: "#0ea5e9", iconKey: "sparkles",
+    color: "var(--info)", iconKey: "sparkles",
   },
   "addon-support-priority": {
     id: "addon-support-priority", name: "Priority Support Upgrade", type: "addon", deployment: "saas",
@@ -87,7 +87,7 @@ export const PACKAGES = {
     limitBoosts: {},
     description: "Upgrades Lite tier to Priority support with 4-hour response SLA.",
     tagline: "+$300/mo",
-    color: "#ec4899", iconKey: "headphones",
+    color: "var(--destructive)", iconKey: "headphones",
   },
 };
 
@@ -210,8 +210,8 @@ export function computePackageMRR(tenantId, tokensConsumed = 0) {
 
 /** pkg status badge config */
 export const PKG_STATUS_CFG = {
-  active:    { bg: "#dcfce7", text: "#16a34a", label: "Active"    },
-  trial:     { bg: "#fef9c3", text: "#ca8a04", label: "Trial"     },
-  cancelled: { bg: "#fee2e2", text: "#dc2626", label: "Cancelled" },
-  scheduled: { bg: "#eff6ff", text: "#2563eb", label: "Scheduled" },
+  active:    { bg: "var(--success)/10", text: "var(--success)", label: "Active"    },
+  trial:     { bg: "var(--warning)/20", text: "var(--warning)", label: "Trial"     },
+  cancelled: { bg: "var(--destructive)/10", text: "var(--destructive)", label: "Cancelled" },
+  scheduled: { bg: "var(--primary)/10", text: "var(--primary)", label: "Scheduled" },
 };

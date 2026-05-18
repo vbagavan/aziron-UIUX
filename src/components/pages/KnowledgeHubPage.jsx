@@ -4,7 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 
 export default function KnowledgeHubPage({ onNavigate }) {
   return (
-    <div className="flex min-h-svh min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-svh min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="knowledge" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
@@ -15,7 +15,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
             <div className="w-full max-w-[720px] text-center">
               <div className="flex flex-col items-center justify-center gap-4">
                 <div className="size-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <BrainCog size={32} className="text-purple-600 dark:text-purple-400" />
+                  <BrainCog size={32} className="text-primary dark:text-purple-400" />
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-2xl font-semibold text-foreground">Knowledge Hub</h1>

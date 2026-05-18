@@ -53,10 +53,10 @@ const FALLBACK_AGENT = {
 };
 
 const STATUS_STYLE = {
-  active: { dot: "#22c55e", bg: "#dcfce7", text: "#15803d", label: "Active" },
-  idle: { dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", label: "Idle" },
-  error: { dot: "#ef4444", bg: "#fef2f2", text: "#dc2626", label: "Error" },
-  disabled: { dot: "#cbd5e1", bg: "#f8fafc", text: "#94a3b8", label: "Disabled" },
+  active: { dot: "var(--success)", bg: "var(--success)/10", text: "var(--success)", label: "Active" },
+  idle: { dot: "var(--muted-foreground)", bg: "var(--muted)", text: "var(--muted-foreground)", label: "Idle" },
+  error: { dot: "var(--destructive)", bg: "var(--destructive)/10", text: "var(--destructive)", label: "Error" },
+  disabled: { dot: "var(--border)", bg: "var(--background)", text: "var(--muted-foreground)", label: "Disabled" },
 };
 
 function generateRuns(agent) {
@@ -215,7 +215,7 @@ function buildInsights(agent, runs) {
         trendPercent: successTrend,
         points: successSpark,
         status: failures.length >= 2 ? "dropping" : failures.length === 1 ? "stable" : "improving",
-        accent: "#22c55e",
+        accent: "var(--success)",
         metric: failures.length > 0 ? `${failures.length} failed` : "All clear",
       },
       {
@@ -225,7 +225,7 @@ function buildInsights(agent, runs) {
         trendPercent: latencyTrend,
         points: latencySpark,
         status: avgLatency > 3 ? "critical" : avgLatency > 2.2 ? "warning" : "good",
-        accent: "#60a5fa",
+        accent: "var(--chart-chart-2)",
         metric: "p50 execution",
       },
       {
@@ -235,7 +235,7 @@ function buildInsights(agent, runs) {
         trendPercent: tokenTrend,
         points: tokenSpark,
         status: "stable",
-        accent: "#8b5cf6",
+        accent: "var(--chart-chart-4)",
         metric: "last 7 days",
       },
       {
@@ -245,7 +245,7 @@ function buildInsights(agent, runs) {
         trendPercent: throughputTrend,
         points: throughputSpark,
         status: "improving",
-        accent: "#f59e0b",
+        accent: "var(--warning)",
         metric: "runs per day",
       },
     ],
@@ -357,15 +357,15 @@ function RunHistoryTab({ runs, filters, setFilters, onSelectRun }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] dark:border-[#334155] dark:bg-[#111827]">
+      <div className="rounded-2xl border border-border bg-card px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] dark:border-border dark:bg-card">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <SearchField value={filters.search} onChange={(value) => setFilters((prev) => ({ ...prev, search: value }))} />
           <SelectChip label="Status" value={filters.status} options={[["all", "All"], ["success", "Success"], ["failed", "Failed"]]} onChange={(value) => setFilters((prev) => ({ ...prev, status: value }))} />
           <SelectChip label="Duration" value={filters.duration} options={[["all", "All"], ["lt2", "< 2s"], ["2to3", "2–3s"], ["gt3", "> 3s"]]} onChange={(value) => setFilters((prev) => ({ ...prev, duration: value }))} />
           <SelectChip label="Tokens" value={filters.tokens} options={[["all", "All"], ["lt1200", "< 1200"], ["1200to1800", "1200–1800"], ["gt1800", "> 1800"]]} onChange={(value) => setFilters((prev) => ({ ...prev, tokens: value }))} />
           <SelectChip label="Time Range" value={filters.range} options={[["1h", "1h"], ["24h", "24h"], ["7d", "7d"]]} onChange={(value) => setFilters((prev) => ({ ...prev, range: value }))} />
-          <label className="flex items-center justify-between rounded-xl border border-[#e2e8f0] px-3 py-2 text-sm dark:border-[#334155]">
-            <span className="text-[#475569] dark:text-[#cbd5e1]">Show anomalies</span>
+          <label className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-sm dark:border-border">
+            <span className="text-muted-foreground dark:text-muted-foreground">Show anomalies</span>
             <input type="checkbox" checked={filters.anomaliesOnly} onChange={(e) => setFilters((prev) => ({ ...prev, anomaliesOnly: e.target.checked }))} className="size-4 rounded accent-[#2563eb]" />
           </label>
         </div>
@@ -380,13 +380,13 @@ function RunHistoryTab({ runs, filters, setFilters, onSelectRun }) {
 
 function SearchField({ value, onChange }) {
   return (
-    <label className="rounded-xl border border-[#e2e8f0] px-3 py-2 dark:border-[#334155]">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#94a3b8] dark:text-[#64748b]">Search</span>
+    <label className="rounded-xl border border-border px-3 py-2 dark:border-border">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-muted-foreground">Search</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search run ID"
-        className="mt-2 w-full bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8] dark:text-[#f8fafc]"
+        className="mt-2 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground dark:text-foreground"
       />
     </label>
   );
@@ -394,9 +394,9 @@ function SearchField({ value, onChange }) {
 
 function SelectChip({ label, value, options, onChange }) {
   return (
-    <label className="rounded-xl border border-[#e2e8f0] px-3 py-2 dark:border-[#334155]">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#94a3b8] dark:text-[#64748b]">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full bg-transparent text-sm text-[#0f172a] outline-none dark:text-[#f8fafc]">
+    <label className="rounded-xl border border-border px-3 py-2 dark:border-border">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-muted-foreground">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full bg-transparent text-sm text-foreground outline-none dark:text-foreground">
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>{optionLabel}</option>
         ))}
@@ -444,7 +444,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -452,43 +452,43 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
 
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-6 py-6">
-            <nav className="flex items-center gap-1.5 text-xs text-[#94a3b8] dark:text-[#64748b]">
-              <button onClick={() => onNavigate("agents")} className="transition-colors hover:text-[#64748b] dark:hover:text-[#94a3b8]">Agents</button>
+            <nav className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-muted-foreground">
+              <button onClick={() => onNavigate("agents")} className="transition-colors hover:text-muted-foreground dark:hover:text-muted-foreground">Agents</button>
               <ChevronRight size={12} />
-              <span className="font-medium text-[#475569] dark:text-[#94a3b8]">{currentAgent.name}</span>
+              <span className="font-medium text-muted-foreground dark:text-muted-foreground">{currentAgent.name}</span>
             </nav>
 
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div className="flex items-start gap-4">
-                <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-[#e2e8f0] bg-white shadow-sm dark:border-[#334155] dark:bg-[#111827]">
+                <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-border bg-card shadow-sm dark:border-border dark:bg-card">
                   <img src={imgAvatarRobot} alt="" className="h-[58%] w-[58%] object-contain opacity-90" />
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-[#0f172a] dark:text-[#f8fafc]">{currentAgent.name}</h1>
+                    <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-foreground dark:text-foreground">{currentAgent.name}</h1>
                     <StatusPill status={currentAgent.status} />
-                    <div className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-medium text-[#1d4ed8] dark:bg-[#0f172a] dark:text-[#93c5fd]">
+                    <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary dark:bg-background dark:text-primary">
                       {insights.metrics[0].value} success
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-[#64748b] dark:text-[#94a3b8]">
-                    <ProviderLogo provider={currentAgent.provider} className="size-3.5 text-[#475569] dark:text-[#cbd5e1]" fallbackClassName="size-3.5" />
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
+                    <ProviderLogo provider={currentAgent.provider} className="size-3.5 text-muted-foreground dark:text-muted-foreground" fallbackClassName="size-3.5" />
                     <span>{currentAgent.model}</span>
-                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
+                    <span className="text-foreground dark:text-foreground">·</span>
                     <Clock size={11} />
                     <span>Last run {currentAgent.lastRun}</span>
-                    <span className="text-[#e2e8f0] dark:text-[#334155]">·</span>
+                    <span className="text-foreground dark:text-foreground">·</span>
                     <span>{failures.length} recent failures</span>
                   </div>
 
-                  <p className="max-w-3xl text-sm leading-6 text-[#64748b] dark:text-[#94a3b8]">{currentAgent.description}</p>
+                  <p className="max-w-3xl text-sm leading-6 text-muted-foreground dark:text-muted-foreground">{currentAgent.description}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Button className="gap-1.5 bg-[#0f172a] text-white hover:bg-[#1e293b] dark:bg-[#f8fafc] dark:text-[#0f172a] dark:hover:bg-[#e2e8f0]">
+                <Button className="gap-1.5 bg-muted text-white hover:bg-card dark:bg-muted dark:text-foreground dark:hover:bg-border">
                   <Play size={14} />
                   Run now
                 </Button>
@@ -502,7 +502,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 border-b border-[#e2e8f0] dark:border-[#334155]">
+            <div className="flex items-center gap-1 border-b border-border dark:border-border">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.id;
@@ -510,7 +510,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active ? "border-[#0f172a] text-[#0f172a] dark:border-[#f8fafc] dark:text-[#f8fafc]" : "border-transparent text-[#64748b] hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:text-[#f8fafc]"}`}
+                    className={`inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${active ? "border-border text-foreground dark:border-border dark:text-foreground" : "border-transparent text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground"}`}
                   >
                     <Icon size={14} />
                     {tab.label}
@@ -552,19 +552,19 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
       <RunDetailsDrawer run={selectedRun} open={drawerOpen} onOpenChange={setDrawerOpen} />
 
       <Dialog open={testConfigOpen} onOpenChange={setTestConfigOpen}>
-        <DialogContent className="max-w-lg bg-white dark:bg-[#111827]">
+        <DialogContent className="max-w-lg bg-card">
           <DialogHeader>
             <DialogTitle>Test Configuration</DialogTitle>
             <DialogDescription>Validate the current configuration with a dry-run before saving changes.</DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] px-4 py-4 text-sm leading-6 text-[#475569] dark:border-[#334155] dark:bg-[#0f172a] dark:text-[#cbd5e1]">
+          <div className="rounded-2xl border border-border bg-muted px-4 py-4 text-sm leading-6 text-muted-foreground dark:border-border dark:bg-background dark:text-muted-foreground">
             Dry-run succeeded. Expected latency is 1.8s with current timeout, and the webhook target responded normally.
           </div>
 
           <DialogFooter className="bg-transparent p-0 pt-2 sm:justify-end">
             <Button variant="outline" onClick={() => setTestConfigOpen(false)}>Close</Button>
-            <Button className="bg-[#2563eb] text-white hover:bg-[#1d4ed8]" onClick={() => setTestConfigOpen(false)}>Looks good</Button>
+            <Button className="bg-primary text-white hover:bg-primary" onClick={() => setTestConfigOpen(false)}>Looks good</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

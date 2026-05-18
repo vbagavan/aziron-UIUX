@@ -41,7 +41,7 @@ const CURATED_TEMPLATES = [
     icon: LayoutDashboard,
     sentinel: PULSE_RECHART_DASHBOARD,
     chipClass:
-      "border-blue-200/80 bg-blue-50/90 text-blue-900 hover:bg-blue-100 dark:border-blue-800/80 dark:bg-blue-950/40 dark:text-blue-100",
+      "border-primary/25/80 bg-primary/10/90 text-blue-900 hover:bg-primary/15 dark:border-blue-800/80 dark:bg-blue-950/40 dark:text-blue-100",
   },
   {
     id: "devops",
@@ -61,7 +61,7 @@ const CURATED_TEMPLATES = [
     icon: TrendingUp,
     sentinel: PULSE_GROWTH_DASHBOARD,
     chipClass:
-      "border-emerald-200/80 bg-emerald-50/90 text-emerald-900 hover:bg-emerald-100 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100",
+      "border-emerald-200/80 bg-success/10/90 text-emerald-900 hover:bg-success/15 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-100",
   },
   {
     id: "customer",
@@ -421,9 +421,9 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
   const previewTemplateMeta = templateMetaFromHtml(generatedHTML);
 
   return (
-    <div className="flex h-full max-h-svh min-h-0 flex-col overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex h-full max-h-svh min-h-0 flex-col overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-card dark:bg-slate-900 shrink-0">
         <button
           type="button"
           onClick={onBack}
@@ -449,7 +449,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               onClick={handleSave}
               size="sm"
               title="Saves title (from first message), prompt text, preview type (curated dashboard token or HTML stub), and mobile/desktop toggle. Reopen from Pulse list."
-              className="h-8 bg-blue-600 text-xs text-white hover:bg-blue-700"
+              className="h-8 bg-primary text-xs text-white hover:bg-primary/90"
             >
               Save UI
             </Button>
@@ -461,7 +461,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
       <div className="flex h-0 min-h-0 min-w-0 flex-1 overflow-hidden">
 
         {/* ── Left Panel: Conversation (25% of row) ── */}
-        <div className="flex h-full max-h-full min-h-0 w-[25%] max-w-[25%] flex-none flex-col self-stretch overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex h-full max-h-full min-h-0 w-[25%] max-w-[25%] flex-none flex-col self-stretch overflow-hidden border-r border-slate-200 bg-card dark:border-slate-800 dark:bg-slate-900">
 
           {/* Chat messages — min-h-0 so flex child can shrink on Windows / short viewports */}
           <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain p-4 space-y-4">
@@ -489,7 +489,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                         disabled={isGenerating}
                         className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-[11px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${chipClass}`}
                       >
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-white/70 shadow-sm dark:bg-slate-900/50">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-card/70 shadow-sm dark:bg-slate-900/50">
                           <Icon className="size-3.5 text-slate-600 dark:text-slate-300" aria-hidden />
                         </span>
                         <span className="min-w-0 leading-tight">{label}</span>
@@ -507,9 +507,9 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                         type="button"
                         onClick={() => generateUI(ex.prompt)}
                         disabled={isGenerating}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left text-[11px] text-foreground transition-colors hover:border-blue-300 hover:bg-blue-50/80 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-blue-700 dark:hover:bg-slate-800 disabled:pointer-events-none disabled:opacity-50"
+                        className="w-full rounded-lg border border-slate-200 bg-card px-2.5 py-2 text-left text-[11px] text-foreground transition-colors hover:border-blue-300 hover:bg-primary/10/80 dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-blue-700 dark:hover:bg-slate-800 disabled:pointer-events-none disabled:opacity-50"
                       >
-                        <span className="font-medium text-blue-700 dark:text-blue-300">{ex.label}</span>
+                        <span className="font-medium text-primary dark:text-blue-300">{ex.label}</span>
                         <span className="mt-0.5 block text-[10px] text-muted-foreground">{ex.hint}</span>
                       </button>
                     ))}
@@ -523,12 +523,12 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                   <div key={message.id ?? `msg-${idx}`} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[85%] ${
                       message.type === "user"
-                        ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
+                        ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
                         : "bg-slate-100 dark:bg-slate-800 text-foreground rounded-2xl rounded-tl-sm"
                     } px-3.5 py-2.5`}>
                       {message.type === "ai" && message.template && (
-                        <p className="mb-2 inline-flex max-w-full items-center gap-1 rounded-md border border-blue-200/80 bg-blue-50/90 px-2 py-0.5 text-[10px] font-semibold text-blue-800 dark:border-blue-800/80 dark:bg-blue-950/50 dark:text-blue-200">
-                          <span className="text-blue-600/80 dark:text-blue-400/90">Using</span>
+                        <p className="mb-2 inline-flex max-w-full items-center gap-1 rounded-md border border-primary/25/80 bg-primary/10/90 px-2 py-0.5 text-[10px] font-semibold text-blue-800 dark:border-blue-800/80 dark:bg-blue-950/50 dark:text-primary/80">
+                          <span className="text-primary/80 dark:text-blue-400/90">Using</span>
                           <span className="truncate">
                             {CURATED_TEMPLATES.find((t) => t.id === message.template)?.badge ?? message.template}
                           </span>
@@ -539,7 +539,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                           {message.refs.map((r) => (
                             <span
                               key={r.id}
-                              className="inline-flex items-center gap-1 rounded-md bg-white/18 px-2 py-0.5 font-mono text-[11px] font-medium text-white ring-1 ring-white/25"
+                              className="inline-flex items-center gap-1 rounded-md bg-card/18 px-2 py-0.5 font-mono text-[11px] font-medium text-white ring-1 ring-white/25"
                             >
                               <MousePointer2 className="size-3 shrink-0 opacity-90" aria-hidden />
                               {r.label}
@@ -580,7 +580,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                           key={chip}
                           type="button"
                           onClick={() => generateUI(chip)}
-                          className="text-[11px] px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-muted-foreground hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 hover:border-blue-400 transition-all"
+                          className="text-[11px] px-2.5 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-muted-foreground hover:bg-primary/10 dark:hover:bg-slate-800 hover:text-primary hover:border-blue-400 transition-all"
                         >
                           {chip}
                         </button>
@@ -594,7 +594,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
           </div>
 
           {/* ── Prompt input ── */}
-          <div className="shrink-0 border-t border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+          <div className="shrink-0 border-t border-slate-200 bg-card p-3 dark:border-slate-800 dark:bg-slate-900">
             {!isEmpty && (
               <div className="mb-2.5">
                 <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Templates</p>
@@ -613,20 +613,20 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                 </div>
               </div>
             )}
-            <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 pb-2 pt-2.5 transition-colors focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:focus-within:border-blue-500">
+            <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 pb-2 pt-2.5 transition-colors focus-within:border-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:focus-within:border-primary">
               {elementRefs.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {elementRefs.map((r) => (
                     <span
                       key={r.id}
-                      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-blue-700 py-0.5 pl-1.5 pr-0.5 text-[11px] font-medium text-white shadow-sm dark:bg-blue-600"
+                      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-blue-700 py-0.5 pl-1.5 pr-0.5 text-[11px] font-medium text-white shadow-sm dark:bg-primary"
                     >
                       <MousePointer2 className="size-3 shrink-0 opacity-90" aria-hidden />
                       <span className="truncate font-mono">{r.label}</span>
                       <button
                         type="button"
                         onClick={() => setElementRefs((prev) => prev.filter((x) => x.id !== r.id))}
-                        className="ml-0.5 flex size-6 shrink-0 items-center justify-center rounded-md text-white/90 hover:bg-white/15"
+                        className="ml-0.5 flex size-6 shrink-0 items-center justify-center rounded-md text-white/90 hover:bg-card/15"
                         aria-label={`Remove ${r.label}`}
                       >
                         <X className="size-3.5" />
@@ -662,7 +662,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                   title={isMobileFirst ? "Use desktop width in preview" : "Use mobile width in preview"}
                   aria-label={isMobileFirst ? "Preview at mobile width, on" : "Preview at mobile width, off"}
                   aria-pressed={isMobileFirst}
-                  className={`rounded-lg p-1.5 transition-colors ${isMobileFirst ? "bg-blue-100 text-blue-600 dark:bg-blue-900/40" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                  className={`rounded-lg p-1.5 transition-colors ${isMobileFirst ? "bg-primary/15 text-primary dark:bg-blue-900/40" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"}`}
                 >
                   <Smartphone className="w-4 h-4" aria-hidden />
                 </button>
@@ -671,11 +671,11 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                   onClick={() => generateUI()}
                   disabled={(!prompt.trim() && elementRefs.length === 0) || isGenerating}
                   aria-label={isGenerating ? "Sending" : "Send message"}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                 >
                   {isGenerating ? (
                     <div
-                      className="size-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"
+                      className="size-3.5 animate-spin rounded-full border-2 border-card border-t-transparent"
                       aria-hidden
                     />
                   ) : (
@@ -697,7 +697,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
         {/* ── Right Panel: Live Preview (remaining ~75%) ── */}
         <div className="flex h-full max-h-full min-h-0 min-w-0 flex-1 flex-col self-stretch overflow-hidden bg-slate-100 dark:bg-slate-950">
           {/* Preview toolbar */}
-          <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur">
+          <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-card/70 dark:bg-slate-900/70 backdrop-blur">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="flex shrink-0 gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
@@ -708,7 +708,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                 <span className="text-xs font-medium text-muted-foreground">Live Preview</span>
                 {previewTemplateMeta ? (
                   <span
-                    className="truncate text-[10px] font-semibold text-blue-700 dark:text-blue-300"
+                    className="truncate text-[10px] font-semibold text-primary dark:text-blue-300"
                     title={previewTemplateMeta.badge}
                   >
                     {previewTemplateMeta.badge}
@@ -732,7 +732,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                   }
                   className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
                     pickElementMode
-                      ? "bg-blue-600 text-white shadow-sm dark:bg-blue-500"
+                      ? "bg-primary text-primary-foreground shadow-sm dark:bg-primary"
                       : "text-slate-500 hover:bg-slate-100 hover:text-foreground dark:text-slate-400 dark:hover:bg-slate-800"
                   }`}
                   title="Click an element in the preview to add a reference chip to your prompt"
@@ -764,7 +764,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                 </>
               )}
               {isMobileFirst ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-medium">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 dark:bg-blue-900/40 text-primary dark:text-blue-400 font-medium">
                   Mobile
                 </span>
               ) : (
@@ -796,7 +796,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               >
                 {pickElementMode && (
                   <div className="pointer-events-none absolute inset-0 z-[1] flex items-start justify-center p-2">
-                    <span className="rounded-full bg-blue-600/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
+                    <span className="rounded-full bg-primary/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
                       Click an element in the preview to attach it to your prompt
                     </span>
                   </div>
@@ -813,7 +813,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               >
                 {pickElementMode && (
                   <div className="pointer-events-none absolute inset-0 z-[1] flex items-start justify-center p-2">
-                    <span className="rounded-full bg-blue-600/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
+                    <span className="rounded-full bg-primary/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
                       Click an element in the preview to attach it to your prompt
                     </span>
                   </div>
@@ -830,7 +830,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               >
                 {pickElementMode && (
                   <div className="pointer-events-none absolute inset-0 z-[1] flex items-start justify-center p-2">
-                    <span className="rounded-full bg-blue-600/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
+                    <span className="rounded-full bg-primary/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
                       Click an element in the preview to attach it to your prompt
                     </span>
                   </div>
@@ -847,7 +847,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               >
                 {pickElementMode && (
                   <div className="pointer-events-none absolute inset-0 z-[1] flex items-start justify-center p-2">
-                    <span className="rounded-full bg-blue-600/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
+                    <span className="rounded-full bg-primary/95 px-3 py-1 text-[11px] font-medium text-white shadow-lg">
                       Click an element in the preview to attach it to your prompt
                     </span>
                   </div>
@@ -855,7 +855,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                 <PulseCustomerPulsePreview compact={isMobileFirst} />
               </div>
             ) : generatedHTML ? (
-              <div className={`bg-white dark:bg-slate-900 rounded-xl shadow-xl overflow-hidden transition-all ${isMobileFirst ? "w-[390px]" : "w-full max-w-5xl"}`}>
+              <div className={`bg-card dark:bg-slate-900 rounded-xl shadow-xl overflow-hidden transition-all ${isMobileFirst ? "w-[390px]" : "w-full max-w-5xl"}`}>
                 <iframe
                   title="UI Preview"
                   srcDoc={generatedHTML}

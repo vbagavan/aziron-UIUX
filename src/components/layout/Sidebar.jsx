@@ -196,9 +196,9 @@ function LogoutModal({ onConfirm, onCancel, displayName = "Admin", displayEmail 
 
 /* ── Role badge color map ──────────────────────────────────────── */
 const roleBadgeStyles = {
-  superadmin:  { bg: "#ede9fe", text: "#6d28d9", dot: "#7c3aed" },
-  tenantadmin: { bg: "#dbeafe", text: "#1d4ed8", dot: "#2563eb" },
-  tenantuser:  { bg: "#f1f5f9", text: "#475569", dot: "#64748b" },
+  superadmin:  { bg: "var(--accent)", text: "var(--chart-chart-4)", dot: "var(--chart-chart-4)" },
+  tenantadmin: { bg: "var(--primary)/10", text: "var(--primary)", dot: "var(--primary)" },
+  tenantuser:  { bg: "var(--muted)", text: "var(--muted-foreground)", dot: "var(--muted-foreground)" },
 };
 
 function RoleBadge({ roleId, small = false }) {
@@ -262,7 +262,7 @@ function UserFooter({ onNavigate }) {
     <>
       {open && (
         <div ref={menuRef}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden z-[9999] shadow-lg"
+          className="bg-card dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden z-[9999] shadow-lg"
           style={menuStyle}>
 
           {/* User header */}
@@ -323,7 +323,7 @@ function UserFooter({ onNavigate }) {
               <Settings size={14} /> Settings
             </button>
             <button onClick={() => { setOpen(false); setShowLogout(true); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 dark:hover:bg-red-950 transition-colors">
               <LogOut size={14} /> Logout
             </button>
           </div>
@@ -345,15 +345,15 @@ function UserFooter({ onNavigate }) {
           }`}>
           <Avatar className="size-6"><AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
           {/* Role dot indicator */}
-          <span className="absolute bottom-1 right-1 size-2 rounded-full border border-white dark:border-slate-950 ring-1 ring-white"
-            style={{ background: roleBadgeStyles[currentRole]?.dot ?? "#64748b" }} />
+          <span className="absolute bottom-1 right-1 size-2 rounded-full border border-card dark:border-slate-950 ring-1 ring-white"
+            style={{ background: roleBadgeStyles[currentRole]?.dot ?? "var(--muted-foreground)" }} />
         </button>
       ) : (
         <button ref={triggerRef} onClick={handleToggle}
           className={`flex items-center gap-2 w-full px-2 py-2 rounded-2xl transition-colors justify-between ${
             open
               ? "bg-slate-100 dark:bg-slate-800"
-              : "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+              : "bg-card dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
           } border border-slate-200 dark:border-slate-700`}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <Avatar className="size-6 flex-shrink-0"><AvatarImage src={imgUserAvatar} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
@@ -361,9 +361,9 @@ function UserFooter({ onNavigate }) {
               <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-none truncate w-full">{displayName}</span>
               <div className="flex items-center gap-1 min-w-0 w-full">
                 <span className="size-1.5 rounded-full flex-shrink-0"
-                  style={{ background: roleBadgeStyles[currentRole]?.dot ?? "#64748b" }} />
+                  style={{ background: roleBadgeStyles[currentRole]?.dot ?? "var(--muted-foreground)" }} />
                 <span className="text-[11px] font-medium leading-none flex-shrink-0 whitespace-nowrap"
-                  style={{ color: roleBadgeStyles[currentRole]?.text ?? "#475569" }}>
+                  style={{ color: roleBadgeStyles[currentRole]?.text ?? "var(--muted-foreground)" }}>
                   {ROLES[currentRole]?.label}
                 </span>
                 <span className="text-[11px] text-slate-300 dark:text-slate-600 flex-shrink-0">·</span>
@@ -542,7 +542,7 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
                 }}
               >
                 <span
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-primary transition-all duration-300"
                   style={{ height: isParentActive ? 18 : 0, opacity: isParentActive ? 1 : 0 }}
                 />
                 {item.icon && (
@@ -585,7 +585,7 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
                           className="gap-2 w-full text-left"
                         >
                           {!sub.noIcon && sub.icon && (
-                            <sub.icon size={13} className={subIsActive ? "text-blue-600" : "text-sidebar-foreground/60"} />
+                            <sub.icon size={13} className={subIsActive ? "text-primary" : "text-sidebar-foreground/60"} />
                           )}
                           <span className="truncate">{sub.label}</span>
                         </SidebarMenuSubButton>
@@ -606,7 +606,7 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
             role="menu"
             onMouseEnter={handlePopoverHoverEnter}
             onMouseLeave={handlePopoverHoverLeave}
-            className="fixed bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden pointer-events-auto max-h-100 overflow-y-auto z-[99999]"
+            className="fixed bg-card dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden pointer-events-auto max-h-100 overflow-y-auto z-[99999]"
             style={popoverStyle}
           >
             {item.subItems.map(sub => {
@@ -625,12 +625,12 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
                     sub.noIcon ? "pl-2" : ""
                   } ${
                     subIsActive
-                      ? "bg-blue-100 dark:bg-blue-950 text-blue-600 font-medium"
+                      ? "bg-primary/15 dark:bg-blue-950 text-primary font-medium"
                       : "text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
                   {!sub.noIcon && sub.icon && (
-                    <sub.icon size={13} className={subIsActive ? "text-blue-600" : ""} />
+                    <sub.icon size={13} className={subIsActive ? "text-primary" : ""} />
                   )}
                   <span className="truncate">{sub.label}</span>
                 </button>
@@ -653,7 +653,7 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
           className="relative"
         >
           <span
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-primary transition-all duration-300"
             style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
           />
           <span className={`truncate ${active ? "font-medium" : ""}`}>{displayLabel}</span>
@@ -671,7 +671,7 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
         className="relative"
       >
         <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-blue-600 transition-all duration-300"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-primary transition-all duration-300"
           style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
         />
         <item.icon

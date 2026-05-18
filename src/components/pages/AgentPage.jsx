@@ -86,17 +86,17 @@ const hubFiles = [
 function SparkLogo() {
   return (
     <svg width="22" height="24" viewBox="0 0 22 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0 14L9 8.5V19.5L0 14Z" fill="#2563EB" />
-      <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="#2563EB" />
-      <path d="M13 15L22 9.5V20.5L13 15Z" fill="#60A5FA" />
+      <path d="M0 14L9 8.5V19.5L0 14Z" fill="var(--primary)" />
+      <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="var(--primary)" />
+      <path d="M13 15L22 9.5V20.5L13 15Z" fill="var(--chart-chart-2)" />
     </svg>
   );
 }
 
 function AgentPlaceholder() {
   return (
-    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[4px] size-12 flex items-center justify-center overflow-hidden relative flex-shrink-0">
-      <Bot size={24} className="text-[#64748b]" />
+    <div className="bg-muted border border-border rounded-[4px] size-12 flex items-center justify-center overflow-hidden relative flex-shrink-0">
+      <Bot size={24} className="text-muted-foreground" />
     </div>
   );
 }
@@ -119,32 +119,32 @@ function CreateKnowledgeHubModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-[12px] w-[640px] max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-        <div className="border border-dashed border-[#6366f1] rounded-t-[12px] p-6 pb-4">
+      <div className="bg-card rounded-[12px] w-[640px] max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+        <div className="border border-dashed border-chart-chart-3 rounded-t-[12px] p-6 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#0f172a] leading-6">Create Knowledge Hub</h2>
-              <p className="text-sm text-[#6366f1] mt-1 leading-5">
+              <h2 className="text-lg font-semibold text-foreground leading-6">Create Knowledge Hub</h2>
+              <p className="text-sm text-chart-chart-3 mt-1 leading-5">
                 Store the files and knowledge your AI agents will use for answering questions, reasoning, and workflows.
               </p>
             </div>
-            <button onClick={onClose} className="text-[#64748b] hover:text-[#0f172a] ml-4 flex-shrink-0">
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground ml-4 flex-shrink-0">
               <X size={20} />
             </button>
           </div>
         </div>
 
-        <div className="mx-6 mt-4 mb-4 border border-dashed border-[#6366f1] rounded-[8px] overflow-hidden flex-1 min-h-0">
-          <div className="flex items-center px-4 py-3 border-b border-[#e2e8f0] bg-white">
+        <div className="mx-6 mt-4 mb-4 border border-dashed border-chart-chart-3 rounded-[8px] overflow-hidden flex-1 min-h-0">
+          <div className="flex items-center px-4 py-3 border-b border-border bg-card">
             <input
               type="checkbox"
               onChange={toggleAll}
               checked={files.length > 0 && Object.keys(checked).length === files.length}
               className="mr-4 size-4 accent-[#6366f1] cursor-pointer"
             />
-            <span className="flex-1 text-sm font-medium text-[#0f172a]">File Name</span>
-            <span className="w-24 text-sm font-medium text-[#0f172a] text-center">File Size</span>
-            <span className="w-32 text-sm font-medium text-[#0f172a] text-center">Created On</span>
+            <span className="flex-1 text-sm font-medium text-foreground">File Name</span>
+            <span className="w-24 text-sm font-medium text-foreground text-center">File Size</span>
+            <span className="w-32 text-sm font-medium text-foreground text-center">Created On</span>
             <span className="w-8" />
           </div>
 
@@ -152,7 +152,7 @@ function CreateKnowledgeHubModal({ onClose }) {
             {files.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center px-4 py-3 border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc]"
+                className="flex items-center px-4 py-3 border-b border-border last:border-0 hover:bg-muted"
               >
                 <input
                   type="checkbox"
@@ -160,12 +160,12 @@ function CreateKnowledgeHubModal({ onClose }) {
                   onChange={() => setChecked((prev) => ({ ...prev, [file.id]: !prev[file.id] }))}
                   className="mr-4 size-4 accent-[#6366f1] cursor-pointer"
                 />
-                <span className="flex-1 text-sm text-[#0f172a]">{file.name}</span>
-                <span className="w-24 text-sm text-[#0f172a] text-center">{file.size}</span>
-                <span className="w-32 text-sm text-[#0f172a] text-center">{file.date}</span>
+                <span className="flex-1 text-sm text-foreground">{file.name}</span>
+                <span className="w-24 text-sm text-foreground text-center">{file.size}</span>
+                <span className="w-32 text-sm text-foreground text-center">{file.date}</span>
                 <button
                   onClick={() => deleteFile(file.id)}
-                  className="w-8 flex justify-center text-[#ef4444] hover:text-[#dc2626]"
+                  className="w-8 flex justify-center text-destructive hover:text-destructive"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -174,11 +174,11 @@ function CreateKnowledgeHubModal({ onClose }) {
           </div>
         </div>
 
-        <div className="border border-dashed border-[#6366f1] rounded-b-[12px] mx-6 mb-6 px-4 py-3 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="text-sm font-medium text-[#0f172a] hover:text-[#64748b]">
+        <div className="border border-dashed border-chart-chart-3 rounded-b-[12px] mx-6 mb-6 px-4 py-3 flex items-center justify-end gap-3">
+          <button onClick={onClose} className="text-sm font-medium text-foreground hover:text-muted-foreground">
             Cancel
           </button>
-          <button className="flex items-center gap-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-5 py-2 rounded-[8px] transition-colors">
+          <button className="flex items-center gap-2 bg-primary hover:bg-primary text-white text-sm font-medium px-5 py-2 rounded-[8px] transition-colors">
             Next <ArrowRight size={16} />
           </button>
         </div>
@@ -197,31 +197,31 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
 
   return (
     <div className="relative">
-      <div className="group flex items-center gap-2 bg-white border border-[#e2e8f0] rounded-[8px] px-3 py-2 min-w-[150px]">
+      <div className="group flex items-center gap-2 bg-card border border-border rounded-[8px] px-3 py-2 min-w-[150px]">
         {/* File icon */}
-        <div className="w-7 h-8 bg-[#f1f5f9] rounded-[3px] flex items-end justify-center pb-0.5 flex-shrink-0 relative">
+        <div className="w-7 h-8 bg-muted rounded-[3px] flex items-end justify-center pb-0.5 flex-shrink-0 relative">
           <div
-            className="absolute top-0 right-0 w-2 h-2 bg-white"
+            className="absolute top-0 right-0 w-2 h-2 bg-card"
             style={{ clipPath: "polygon(0 0,100% 100%,100% 0)" }}
           />
           <div
             className="absolute top-0 right-0 w-2 h-2"
-            style={{ background: "#e2e8f0", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
+            style={{ background: "var(--border)", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
           />
-          <span className="text-xs font-bold text-[#64748b] leading-none">{chip.type}</span>
+          <span className="text-xs font-bold text-muted-foreground leading-none">{chip.type}</span>
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-[#0f172a] truncate">{chip.name}</p>
+          <p className="text-xs font-medium text-foreground truncate">{chip.name}</p>
           {saved && (
-            <p className="text-xs text-[#16a34a] leading-none mt-0.5 truncate">
+            <p className="text-xs text-success leading-none mt-0.5 truncate">
               Saved to {saved.hubName} · {saved.chunks} chunks
             </p>
           )}
         </div>
 
         {saved ? (
-          <CheckCircle2 size={14} className="text-[#16a34a] flex-shrink-0" />
+          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
         ) : (
           <button
             onClick={(e) => {
@@ -229,7 +229,7 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
               setOpenMenu(isMenuOpen ? null : menuId);
               setHubPickerFor(null);
             }}
-            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[#64748b] hover:text-[#0f172a] p-0.5 rounded"
+            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-0.5 rounded"
           >
             <MoreHorizontal size={14} />
           </button>
@@ -238,19 +238,19 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
 
       {/* Chip context menu */}
       {isMenuOpen && (
-        <div className="absolute top-full mt-1 left-0 z-30 bg-white border border-[#e2e8f0] rounded-[8px] shadow-lg overflow-hidden w-[200px]">
+        <div className="absolute top-full mt-1 left-0 z-30 bg-card border border-border rounded-[8px] shadow-lg overflow-hidden w-[200px]">
           <button
             onClick={() => {
               setOpenMenu(null);
               setHubPickerFor(pickerId);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors text-left"
           >
-            <BrainCog size={14} className="text-[#64748b] flex-shrink-0" />
+            <BrainCog size={14} className="text-muted-foreground flex-shrink-0" />
             Save to Knowledge Hub
           </button>
-          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] hover:bg-[#f8fafc] transition-colors">
-            <Download size={14} className="text-[#64748b]" />
+          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+            <Download size={14} className="text-muted-foreground" />
             Download file
           </button>
         </div>
@@ -383,7 +383,7 @@ export default function AgentPage({ agent, onNavigate
         <div className="fixed inset-0 z-20" onClick={closeAll} />
       )}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="chat" onNavigate={onNavigate} />
 
         {/* Main Content */}
@@ -393,21 +393,21 @@ export default function AgentPage({ agent, onNavigate
           {/* Agent Panel */}
           <div className="flex flex-col flex-1 min-h-0">
             {/* Agent Panel Header */}
-            <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[#e2e8f0] px-4 dark:border-[#334155]">
+            <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-border px-4 dark:border-border">
               <AgentPlaceholder />
-              <p className="flex-1 text-base font-medium leading-6 text-[#0f172a] dark:text-[#f8fafc]">
+              <p className="flex-1 text-base font-medium leading-6 text-foreground dark:text-foreground">
                 {agent?.name ?? "Customer Appreciation"}
               </p>
               <div className="flex items-center pr-2">
                 <Separator orientation="vertical" className="h-6" />
               </div>
-              <button aria-label="Maximize" className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#1e293b]">
+              <button aria-label="Maximize" className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted">
                 <Maximize2 size={16} />
               </button>
               <button
                 aria-label="Close chat"
                 onClick={() => setConfirmClose(true)}
-                className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] opacity-70 transition-opacity hover:bg-[#f1f5f9] hover:opacity-100 dark:text-[#94a3b8] dark:hover:bg-[#1e293b]"
+                className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground opacity-70 transition-opacity hover:bg-muted hover:opacity-100 dark:text-muted-foreground dark:hover:bg-muted"
               >
                 <X size={16} />
               </button>
@@ -445,8 +445,8 @@ export default function AgentPage({ agent, onNavigate
 
                       {/* Bubble + three-dot */}
                       <div className="relative group">
-                        <div className="rounded-[12px] rounded-tr-[4px] border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 pr-8 dark:border-[#2d4b77] dark:bg-[#15233f]">
-                          <p className="text-sm leading-5 text-[#0f172a] dark:text-[#e5eefc]">
+                        <div className="rounded-[12px] rounded-tr-[4px] border border-primary/30 bg-primary/10 px-4 py-3 pr-8 dark:border-border dark:bg-card">
+                          <p className="text-sm leading-5 text-foreground dark:text-foreground">
                             Tell me about the Chennai water crisis and policy recommendations.
                           </p>
                         </div>
@@ -458,7 +458,7 @@ export default function AgentPage({ agent, onNavigate
                             setOpenMenu(openMenu === "bubble" ? null : "bubble");
                             setHubPickerFor(null);
                           }}
-                          className="absolute top-2 right-2 rounded p-0.5 text-[#64748b] opacity-0 transition-opacity hover:text-[#0f172a] group-hover:opacity-100 dark:text-[#94a3b8] dark:hover:text-[#f8fafc]"
+                          className="absolute top-2 right-2 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 dark:text-muted-foreground dark:hover:text-foreground"
                         >
                           <MoreHorizontal size={14} />
                         </button>
@@ -466,7 +466,7 @@ export default function AgentPage({ agent, onNavigate
 
                       {/* Bubble context menu */}
                       {openMenu === "bubble" && (
-                        <div className="relative z-30 w-[230px] overflow-hidden rounded-[8px] border border-[#e2e8f0] bg-white shadow-lg dark:border-[#334155] dark:bg-[#1e293b]">
+                        <div className="relative z-30 w-[230px] overflow-hidden rounded-[8px] border border-border bg-card shadow-lg dark:border-border dark:bg-card">
                           {unsavedSentChips.length > 0 && (
                             <button
                               onClick={(e) => {
@@ -474,22 +474,22 @@ export default function AgentPage({ agent, onNavigate
                                 setOpenMenu(null);
                                 setHubPickerFor("bubble");
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted dark:text-foreground dark:hover:bg-muted"
                             >
-                            <Vault size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+                            <Vault size={14} className="text-muted-foreground dark:text-muted-foreground" />
                               Save all to Knowledge Hub ({unsavedSentChips.length}{" "}
                               {unsavedSentChips.length === 1 ? "file" : "files"})
                             </button>
                           )}
-                          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] transition-colors hover:bg-[#f8fafc] dark:text-[#f8fafc] dark:hover:bg-[#0f172a]">
-                            <Copy size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+                          <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted dark:text-foreground dark:hover:bg-muted">
+                            <Copy size={14} className="text-muted-foreground dark:text-muted-foreground" />
                             Copy
                           </button>
                           <button
                             onClick={() => { setOpenMenu(null); setConfirmDeleteMsg(true); }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                           >
-                            <Trash2 size={14} className="text-[#ef4444]" />
+                            <Trash2 size={14} className="text-destructive" />
                             Delete
                           </button>
                         </div>
@@ -519,15 +519,15 @@ export default function AgentPage({ agent, onNavigate
                   <div className="flex flex-col items-start w-full flex-shrink-0">
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
                       <img src={imgElements1} alt="" className="size-4 object-contain" />
-                      <span className="text-xs tracking-[0.12px] leading-4 text-[#0f172a] dark:text-[#f8fafc]">Reasoning</span>
-                      <ChevronRight size={16} className="text-[#64748b] dark:text-[#94a3b8]" />
+                      <span className="text-xs tracking-[0.12px] leading-4 text-foreground dark:text-foreground">Reasoning</span>
+                      <ChevronRight size={16} className="text-muted-foreground dark:text-muted-foreground" />
                     </button>
                   </div>
 
                   {/* Short response message */}
                   <div className="flex flex-col items-start w-full flex-shrink-0">
                     <div className="flex items-center p-[10px] rounded-lg w-full">
-                      <p className="text-base leading-6 text-[#4e4d4d] dark:text-[#d1d5db]">
+                      <p className="text-base leading-6 text-foreground dark:text-foreground">
                         Right now in Chennai it's clear and pleasant, around 24°C 🌙
                         <br />
                         For today, expect hazy sunshine with a high near 31°C and a low around 19°C.
@@ -538,7 +538,7 @@ export default function AgentPage({ agent, onNavigate
                   {/* Long response message */}
                   <div className="flex flex-col items-start w-full flex-shrink-0">
                     <div className="flex items-start justify-center p-[10px] rounded-lg w-full">
-                      <div className="flex-1 space-y-4 text-base leading-6 text-[#4e4d4d] dark:text-[#d1d5db]">
+                      <div className="flex-1 space-y-4 text-base leading-6 text-foreground dark:text-foreground">
                         <p>
                           The coastal city of Chennai has a metropolitan population of 10.6 million as per 2019 census.
                           As the city lacks a perennial water source, catering the water requirements of the population
@@ -569,7 +569,7 @@ export default function AgentPage({ agent, onNavigate
                   <div className="flex flex-col items-start w-full flex-shrink-0">
                     <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
                       <SparkLogo />
-                      <span className="whitespace-nowrap text-xs tracking-[0.12px] leading-4 text-[#0f172a] dark:text-[#f8fafc]">
+                      <span className="whitespace-nowrap text-xs tracking-[0.12px] leading-4 text-foreground dark:text-foreground">
                         Generating Response...
                       </span>
                     </div>
@@ -584,13 +584,13 @@ export default function AgentPage({ agent, onNavigate
                     ].map((source) => (
                       <div
                         key={source.label}
-                        className="flex items-center gap-1 overflow-hidden rounded-[6px] border border-[#e2e8f0] px-2 py-0.5 dark:border-[#334155]"
+                        className="flex items-center gap-1 overflow-hidden rounded-[6px] border border-border px-2 py-0.5 dark:border-border"
                       >
                         <Avatar className="size-3 rounded-full">
                           <AvatarImage src={source.src} className="object-cover" />
                           <AvatarFallback>S</AvatarFallback>
                         </Avatar>
-                        <span className="whitespace-nowrap text-xs font-medium leading-4 text-[#0f172a] dark:text-[#f8fafc]">
+                        <span className="whitespace-nowrap text-xs font-medium leading-4 text-foreground dark:text-foreground">
                           {source.label}
                         </span>
                       </div>
@@ -610,7 +610,7 @@ export default function AgentPage({ agent, onNavigate
                         key={btn.label}
                         aria-label={btn.label}
                         title={btn.label}
-                        className="flex size-8 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#1e293b]"
+                        className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted"
                       >
                         {btn.icon}
                       </button>
@@ -619,8 +619,8 @@ export default function AgentPage({ agent, onNavigate
                 </div>
 
                 {/* Prompt Box */}
-                <div className="w-full flex-shrink-0 rounded-[12px] bg-[#f8fafc] shadow-[8px_6px_130px_0px_rgba(37,99,235,0.16)] dark:bg-[#111827] dark:shadow-none">
-                  <div className="flex min-h-[100px] flex-col rounded-t-[12px] border border-[#e2e8f0] dark:border-[#334155]">
+                <div className="w-full flex-shrink-0 rounded-[12px] bg-muted shadow-[8px_6px_130px_0px_rgba(37,99,235,0.16)] dark:bg-card dark:shadow-none">
+                  <div className="flex min-h-[100px] flex-col rounded-t-[12px] border border-border dark:border-border">
 
                     {/* Attachments row */}
                     {attachments.length > 0 && (
@@ -628,7 +628,7 @@ export default function AgentPage({ agent, onNavigate
                         {attachments.map((att) => (
                           <div
                             key={att.id}
-                            className="group relative flex h-[108px] w-[84px] flex-shrink-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-[8px] border border-[#e2e8f0] bg-white dark:border-[#334155] dark:bg-[#0f172a]"
+                            className="group relative flex h-[108px] w-[84px] flex-shrink-0 flex-col items-center justify-center gap-2 overflow-hidden rounded-[8px] border border-border bg-card dark:border-border dark:bg-background"
                           >
                             {att.previewUrl ? (
                               <img
@@ -638,18 +638,18 @@ export default function AgentPage({ agent, onNavigate
                               />
                             ) : (
                               <div className="flex flex-col items-center gap-1.5">
-                                <div className="relative flex h-12 w-10 items-end justify-center rounded-[4px] bg-[#f1f5f9] pb-1 dark:bg-[#1e293b]">
+                                <div className="relative flex h-12 w-10 items-end justify-center rounded-[4px] bg-muted pb-1 dark:bg-card">
                                   <div
-                                    className="absolute top-0 right-0 h-3 w-3 bg-white dark:bg-[#0f172a]"
+                                    className="absolute top-0 right-0 h-3 w-3 bg-card dark:bg-background"
                                     style={{ clipPath: "polygon(0 0,100% 100%,100% 0)" }}
                                   />
                                   <div
                                     className="absolute top-0 right-0 w-3 h-3"
-                                    style={{ background: "#e2e8f0", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
+                                    style={{ background: "var(--border)", clipPath: "polygon(0 0,100% 100%,0 100%)" }}
                                   />
-                                  <span className="text-xs font-bold leading-none text-[#64748b] dark:text-[#94a3b8]">{att.type}</span>
+                                  <span className="text-xs font-bold leading-none text-muted-foreground dark:text-muted-foreground">{att.type}</span>
                                 </div>
-                                <span className="w-full truncate px-1 text-center text-xs leading-none text-[#64748b] dark:text-[#94a3b8]">
+                                <span className="w-full truncate px-1 text-center text-xs leading-none text-muted-foreground dark:text-muted-foreground">
                                   {att.name}
                                 </span>
                               </div>
@@ -662,9 +662,9 @@ export default function AgentPage({ agent, onNavigate
                             <button
                               onClick={() => removeAttachment(att.id)}
                               aria-label={`Remove ${att.name}`}
-                              className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-[4px] border border-[#e2e8f0] bg-white p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 dark:border-[#334155] dark:bg-[#0f172a]"
+                              className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-[4px] border border-border bg-card p-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 dark:border-border dark:bg-background"
                             >
-                              <X size={12} className="text-[#64748b] dark:text-[#94a3b8]" />
+                              <X size={12} className="text-muted-foreground dark:text-muted-foreground" />
                             </button>
 
                             {/* Inclusion toggle — shown when save to hub is on */}
@@ -676,8 +676,8 @@ export default function AgentPage({ agent, onNavigate
                                 }}
                                 className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center justify-center size-5 rounded-full border-2 transition-colors shadow-sm ${
                                   isIncluded(att.id)
-                                    ? "bg-[#16a34a] border-[#16a34a] text-white"
-                                    : "bg-white border-[#94a3b8] text-[#94a3b8]"
+                                    ? "bg-success/90 border-success/90 text-white"
+                                    : "bg-card border-border text-muted-foreground"
                                 }`}
                                 title={isIncluded(att.id) ? "Included — click to exclude" : "Excluded — click to include"}
                               >
@@ -690,21 +690,21 @@ export default function AgentPage({ agent, onNavigate
                     )}
 
                     {/* Save to Knowledge Hub row */}
-                    <div className="relative flex flex-col border-t border-[#e2e8f0] dark:border-[#334155]">
+                    <div className="relative flex flex-col border-t border-border dark:border-border">
                       <div className="flex items-center justify-between px-2 py-2">
                         {/* Left: toggle + label + status */}
                         <button className="flex items-center gap-3 py-2 cursor-pointer">
                           <Switch
                             checked={saveToHub}
                             onCheckedChange={setSaveToHub}
-                            className="data-[state=checked]:bg-[#2563eb]"
+                            className="data-[state=checked]:bg-primary"
                           />
                           <div className="flex flex-col items-start">
-                            <span className="whitespace-nowrap text-sm font-medium leading-none text-[#0f172a] dark:text-[#f8fafc]">
+                            <span className="whitespace-nowrap text-sm font-medium leading-none text-foreground dark:text-foreground">
                               Save to Knowledge Hub
                             </span>
                             {saveToHub && attachments.length > 0 && (
-                              <span className="mt-0.5 text-xs leading-none text-[#64748b] dark:text-[#94a3b8]">
+                              <span className="mt-0.5 text-xs leading-none text-muted-foreground dark:text-muted-foreground">
                                 {includedCount} of {attachments.length}{" "}
                                 {attachments.length === 1 ? "file" : "files"} will be saved
                               </span>
@@ -721,12 +721,12 @@ export default function AgentPage({ agent, onNavigate
                                 setHubPickerFor(hubPickerFor === "bar" ? null : "bar");
                                 setOpenMenu(null);
                               }}
-                              className="flex w-[240px] items-center gap-2 rounded-[6px] border border-[#cbd5e1] bg-white px-3 py-2 dark:border-[#334155] dark:bg-[#1e293b]"
+                              className="flex w-[240px] items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-2 dark:border-border dark:bg-card"
                             >
-                              <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left text-sm leading-5 text-[#64748b] dark:text-[#94a3b8]">
+                              <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left text-sm leading-5 text-muted-foreground dark:text-muted-foreground">
                                 {selectedHub ? selectedHub.name : "Select Knowledge hub"}
                               </span>
-                              <ChevronDown size={16} className="flex-shrink-0 text-[#64748b] dark:text-[#94a3b8]" />
+                              <ChevronDown size={16} className="flex-shrink-0 text-muted-foreground dark:text-muted-foreground" />
                             </button>
 
                             {/* KnowledgeHubPicker for bar */}
@@ -750,7 +750,7 @@ export default function AgentPage({ agent, onNavigate
                     </div>
 
                     {/* Text input row */}
-                    <div className="flex w-full items-center gap-2 border-t border-[#e2e8f0] p-4 dark:border-[#334155]">
+                    <div className="flex w-full items-center gap-2 border-t border-border p-4 dark:border-border">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -764,7 +764,7 @@ export default function AgentPage({ agent, onNavigate
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Attach file (PDF, Word, Excel, images)"
                         title="Attach file (PDF, Word, Excel, images)"
-                        className="flex size-10 flex-shrink-0 items-center justify-center rounded-full text-[#64748b] hover:bg-[#f1f5f9] dark:text-[#94a3b8] dark:hover:bg-[#1e293b]"
+                        className="flex size-10 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted"
                       >
                         <img src={imgVector25} alt="" className="size-4 object-contain" />
                       </button>
@@ -775,15 +775,15 @@ export default function AgentPage({ agent, onNavigate
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && message.trim()) { setMessage(""); } }}
                         placeholder="Ask anything, or describe your task…"
                         aria-label="Message input"
-                        className="min-w-0 flex-1 bg-transparent text-base leading-6 text-[#0f172a] placeholder:text-[#64748b] outline-none dark:text-[#f8fafc] dark:placeholder:text-[#94a3b8]"
+                        className="min-w-0 flex-1 bg-transparent text-base leading-6 text-foreground placeholder:text-muted-foreground outline-none dark:text-foreground dark:placeholder:text-muted-foreground"
                       />
                       <button
                         disabled={!message.trim()}
                         aria-label="Send message"
                         className={`flex items-center justify-center size-10 rounded-full border flex-shrink-0 transition-colors ${
                           message.trim()
-                            ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                            : "bg-white border-[#cbd5e1] text-[#cbd5e1] cursor-not-allowed dark:bg-[#1e293b] dark:border-[#334155] dark:text-[#64748b]"
+                            ? "bg-primary border-border text-white hover:bg-primary"
+                            : "bg-card border-border text-foreground cursor-not-allowed dark:bg-card dark:border-border dark:text-muted-foreground"
                         }`}
                       >
                         <Send size={16} />
@@ -792,29 +792,29 @@ export default function AgentPage({ agent, onNavigate
                   </div>
 
                   {/* Control panel */}
-                  <div className="flex h-9 items-center justify-between rounded-b-[12px] border-b border-l border-r border-[#e2e8f0] px-4 dark:border-[#334155]">
+                  <div className="flex h-9 items-center justify-between rounded-b-[12px] border-b border-l border-r border-border px-4 dark:border-border">
                     <div className="flex items-center gap-1">
-                      <button aria-label="Tools" title="Tools" className="flex h-9 items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-[#f1f5f9] dark:hover:bg-[#1e293b]">
+                      <button aria-label="Tools" title="Tools" className="flex h-9 items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-muted dark:hover:bg-muted">
                         <img src={imgElements2} alt="" className="size-4 object-contain" />
-                        <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Tools</span>
+                        <span className="text-xs text-muted-foreground dark:text-muted-foreground">Tools</span>
                       </button>
                       <div className="flex items-center justify-center h-4 w-0 mx-0">
-                        <div className="h-px w-4 rotate-90 bg-[#e2e8f0] dark:bg-[#334155]" />
+                        <div className="h-px w-4 rotate-90 bg-border dark:bg-border" />
                       </div>
-                      <button aria-label="Knowledge Hub" title="Knowledge Hub" className="flex items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-[#f1f5f9] dark:hover:bg-[#1e293b]">
+                      <button aria-label="Knowledge Hub" title="Knowledge Hub" className="flex items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-muted dark:hover:bg-muted">
                         <img src={imgElements3} alt="" className="size-4 object-contain" />
-                        <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Knowledge Hub</span>
+                        <span className="text-xs text-muted-foreground dark:text-muted-foreground">Knowledge Hub</span>
                       </button>
                       <div className="flex items-center justify-center h-4 w-0 mx-0">
-                        <div className="h-px w-4 rotate-90 bg-[#e2e8f0] dark:bg-[#334155]" />
+                        <div className="h-px w-4 rotate-90 bg-border dark:bg-border" />
                       </div>
                       <div className="flex items-center gap-2" title="Context window usage">
                         <img src={imgGroup25} alt="" className="size-[15px] object-contain" />
-                        <span className="text-xs leading-4 text-[#64748b] dark:text-[#94a3b8]">65% used</span>
+                        <span className="text-xs leading-4 text-muted-foreground dark:text-muted-foreground">65% used</span>
                       </div>
                     </div>
                     <div>
-                      <button aria-label="Select AI model" title="Select AI model" className="flex items-center gap-2 rounded-[6px] px-3 py-2 transition-colors hover:bg-[#f1f5f9] dark:hover:bg-[#1e293b]">
+                      <button aria-label="Select AI model" title="Select AI model" className="flex items-center gap-2 rounded-[6px] px-3 py-2 transition-colors hover:bg-muted dark:hover:bg-muted">
                         <img src={imgElements4} alt="" className="size-4 object-contain" />
                       </button>
                     </div>

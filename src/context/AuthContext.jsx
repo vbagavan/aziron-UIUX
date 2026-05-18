@@ -12,24 +12,37 @@ export const ROLES = {
 const ROLE_PROFILES = {
   superadmin: {
     name: "Admin",
+    /** As on government-issued ID (employee / verified records). */
+    legalName: "Alexandra R. Admin",
     email: "admin@aziro.com",
     employeeId: "EMP-2024-000",
     department: "Operations",
     joiningDate: "2022-03-14",
+    dateOfBirth: "1985-04-12",
+    mobile: "+1 (555) 010-0001",
+    gender: "Female",
   },
   tenantadmin: {
     name: "Sarah Chen",
+    legalName: "Sarah Min-Ji Chen",
     email: "admin@meridian.com",
     employeeId: "EMP-2023-014",
     department: "Human Resources",
     joiningDate: "2021-06-15",
+    dateOfBirth: "1990-08-20",
+    mobile: "+1 (555) 010-2201",
+    gender: "Female",
   },
   tenantuser: {
     name: "Jane Cooper",
+    legalName: "Jane Avery Cooper",
     email: "jane@meridian.com",
     employeeId: "EMP-2024-001",
     department: "Engineering",
     joiningDate: "2024-01-08",
+    dateOfBirth: "1995-11-03",
+    mobile: "+1 (555) 010-8422",
+    gender: "Female",
   },
 };
 

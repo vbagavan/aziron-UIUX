@@ -9,9 +9,9 @@ import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 
 const GROUP_STATUS = {
-  Active: { dot: "#16a34a", text: "#16a34a" },
-  Draft: { dot: "#f59e0b", text: "#d97706" },
-  Archived: { dot: "#94a3b8", text: "#64748b" },
+  Active: { dot: "var(--success)", text: "var(--success)" },
+  Draft: { dot: "var(--warning)", text: "var(--warning)" },
+  Archived: { dot: "var(--muted-foreground)", text: "var(--muted-foreground)" },
 };
 
 const INIT_GROUPS = [
@@ -48,7 +48,7 @@ function Popover({ open, onClose, anchor, width = "w-48", children }) {
   if (!open) return null;
 
   return (
-    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} overflow-hidden rounded-[10px] border border-[#e2e8f0] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-[#334155] dark:bg-[#1e293b]`}>
+    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-border dark:bg-card`}>
       {children}
     </div>
   );
@@ -61,18 +61,18 @@ function Toast({ message, onDone }) {
   }, [message, onDone]);
 
   return (
-    <div className="fixed bottom-5 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-2 rounded-[8px] bg-[#0f172a] px-4 py-2.5 text-sm font-medium text-white shadow-xl dark:bg-[#f1f5f9] dark:text-[#0f172a]">
-      <Check size={14} className="shrink-0 text-[#22c55e]" />
+    <div className="fixed bottom-5 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-2 rounded-[8px] bg-muted px-4 py-2.5 text-sm font-medium text-white shadow-xl dark:bg-muted dark:text-foreground">
+      <Check size={14} className="shrink-0 text-foreground" />
       {message}
     </div>
   );
 }
 
 function SortIcon({ sortKey, col, sortDir }) {
-  if (sortKey !== col) return <ChevronUp size={11} className="text-[#cbd5e1] dark:text-[#475569]" />;
+  if (sortKey !== col) return <ChevronUp size={11} className="text-foreground dark:text-muted-foreground" />;
   return sortDir === "asc"
-    ? <ChevronUp size={11} className="text-[#2563eb]" />
-    : <ChevronDown size={11} className="text-[#2563eb]" />;
+    ? <ChevronUp size={11} className="text-primary" />
+    : <ChevronDown size={11} className="text-primary" />;
 }
 
 export default function UserGroupsPage({ onNavigate }) {
@@ -149,17 +149,17 @@ export default function UserGroupsPage({ onNavigate }) {
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={() => setRowMenu(null)} />}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="user-groups" onNavigate={onNavigate} />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader onNavigate={onNavigate}>
             <nav className="ml-1 flex items-center gap-1.5 text-sm">
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("users")} className="h-auto px-0 text-[#64748b] transition-colors hover:bg-transparent hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">
+              <Button variant="ghost" size="sm" onClick={() => onNavigate("users")} className="h-auto px-0 text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground dark:text-muted-foreground dark:hover:bg-transparent dark:hover:text-foreground">
                 User Management
               </Button>
-              <ChevronRight size={13} className="text-[#cbd5e1] dark:text-[#475569]" />
-              <span className="font-medium text-[#0f172a] dark:text-[#f1f5f9]">User Groups</span>
+              <ChevronRight size={13} className="text-foreground dark:text-muted-foreground" />
+              <span className="font-medium text-foreground dark:text-foreground">User Groups</span>
             </nav>
           </AppHeader>
 
@@ -167,25 +167,25 @@ export default function UserGroupsPage({ onNavigate }) {
             <div className="mx-auto flex min-h-0 max-w-[1400px] flex-1 flex-col gap-4 px-6 py-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-[22px] font-semibold leading-8 tracking-[-0.4px] text-[#0f172a] dark:text-[#f1f5f9]">User Groups</h1>
-                  <p className="mt-0.5 text-sm text-[#64748b] dark:text-[#94a3b8]">Organize people into reusable teams and access cohorts.</p>
+                  <h1 className="text-[22px] font-semibold leading-8 tracking-[-0.4px] text-foreground dark:text-foreground">User Groups</h1>
+                  <p className="mt-0.5 text-sm text-muted-foreground dark:text-muted-foreground">Organize people into reusable teams and access cohorts.</p>
                 </div>
-                <Button className="h-9 gap-1.5 rounded-[7px] bg-[#2563eb] px-4 text-sm font-medium text-white shadow-sm hover:bg-[#1d4ed8]">
+                <Button className="h-9 gap-1.5 rounded-[7px] bg-primary px-4 text-sm font-medium text-white shadow-sm hover:bg-primary">
                   <Plus size={15} /> Create Group
                 </Button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-9 w-72 items-center gap-2 rounded-[7px] border border-[#e2e8f0] bg-white px-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-[#334155] dark:bg-[#1e293b]">
-                  <Search size={14} className="shrink-0 text-[#94a3b8]" />
+                <div className="flex h-9 w-72 items-center gap-2 rounded-[7px] border border-border bg-card px-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-border dark:bg-card">
+                  <Search size={14} className="shrink-0 text-muted-foreground" />
                   <input
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     placeholder="Search groups"
-                    className="flex-1 bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8] dark:text-[#f1f5f9]"
+                    className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground dark:text-foreground"
                   />
                   {search && (
-                    <Button variant="ghost" size="icon-xs" onClick={() => setSearch("")} className="size-5 rounded-full text-[#94a3b8] hover:bg-transparent hover:text-[#475569]">
+                    <Button variant="ghost" size="icon-xs" onClick={() => setSearch("")} className="size-5 rounded-full text-muted-foreground hover:bg-transparent hover:text-muted-foreground">
                       <X size={13} />
                     </Button>
                   )}
@@ -196,26 +196,26 @@ export default function UserGroupsPage({ onNavigate }) {
                     ref={statusRef}
                     variant="outline"
                     onClick={() => { setShowColsPop(false); setShowStatusPop((v) => !v); }}
-                    className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] border px-3 text-sm font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${statusFilter ? "border-[#2563eb] bg-[#eff6ff] text-[#2563eb]" : "border-[#e2e8f0] bg-white text-[#374151] hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#334155]"}`}
+                    className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] border px-3 text-sm font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${statusFilter ? "border-border bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"}`}
                   >
                     <Users size={12} /> Status {statusFilter && <span className="font-semibold">: {statusFilter}</span>}
-                    <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showStatusPop ? "rotate-180" : ""}`} />
+                    <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showStatusPop ? "rotate-180" : ""}`} />
                   </Button>
                   <Popover open={showStatusPop} onClose={() => setShowStatusPop(false)} anchor={statusRef} width="w-44">
                     <div className="py-1">
-                      <Button type="button" variant="ghost" size="sm" onClick={() => { setStatusFilter(null); setShowStatusPop(false); setPage(1); }} className={`flex h-auto w-full items-center justify-between gap-2 rounded-none px-3 py-2 text-sm transition-colors ${!statusFilter ? "bg-[#eff6ff] text-[#2563eb] dark:bg-[#1e3a8a]/30" : "text-[#374151] hover:bg-[#f8fafc] dark:text-[#cbd5e1] dark:hover:bg-[#334155]"}`}>
-                        All Statuses {!statusFilter && <Check size={13} className="text-[#2563eb]" />}
+                      <Button type="button" variant="ghost" size="sm" onClick={() => { setStatusFilter(null); setShowStatusPop(false); setPage(1); }} className={`flex h-auto w-full items-center justify-between gap-2 rounded-none px-3 py-2 text-sm transition-colors ${!statusFilter ? "bg-primary/10 text-primary dark:bg-primary/20/30" : "text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted"}`}>
+                        All Statuses {!statusFilter && <Check size={13} className="text-primary" />}
                       </Button>
                       {Object.keys(GROUP_STATUS).map((status) => {
                         const active = statusFilter === status;
                         const cfg = GROUP_STATUS[status];
                         return (
-                          <Button key={status} type="button" variant="ghost" size="sm" onClick={() => { setStatusFilter(status); setShowStatusPop(false); setPage(1); }} className={`flex h-auto w-full items-center justify-between gap-2 rounded-none px-3 py-2 text-sm transition-colors ${active ? "bg-[#eff6ff] dark:bg-[#1e3a8a]/30" : "hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
-                            <span className={`flex items-center gap-2 ${active ? "font-semibold text-[#2563eb]" : "text-[#374151] dark:text-[#cbd5e1]"}`}>
+                          <Button key={status} type="button" variant="ghost" size="sm" onClick={() => { setStatusFilter(status); setShowStatusPop(false); setPage(1); }} className={`flex h-auto w-full items-center justify-between gap-2 rounded-none px-3 py-2 text-sm transition-colors ${active ? "bg-primary/10 dark:bg-primary/20/30" : "hover:bg-muted dark:hover:bg-muted"}`}>
+                            <span className={`flex items-center gap-2 ${active ? "font-semibold text-primary" : "text-muted-foreground dark:text-muted-foreground"}`}>
                               <span className="size-2 rounded-full" style={{ backgroundColor: cfg.dot }} />
                               {status}
                             </span>
-                            {active && <Check size={13} className="text-[#2563eb]" />}
+                            {active && <Check size={13} className="text-primary" />}
                           </Button>
                         );
                       })}
@@ -228,17 +228,17 @@ export default function UserGroupsPage({ onNavigate }) {
                     ref={colsRef}
                     variant="outline"
                     onClick={() => { setShowStatusPop(false); setShowColsPop((v) => !v); }}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-[7px] border border-[#e2e8f0] bg-white px-3 text-sm font-medium text-[#374151] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#f8fafc] dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1] dark:hover:bg-[#334155]"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-[7px] border border-border bg-card px-3 text-sm font-medium text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"
                   >
                     <Settings size={13} /> Columns
-                    <ChevronDown size={12} className={`text-[#94a3b8] transition-transform ${showColsPop ? "rotate-180" : ""}`} />
+                    <ChevronDown size={12} className={`text-muted-foreground transition-transform ${showColsPop ? "rotate-180" : ""}`} />
                   </Button>
                   <Popover open={showColsPop} onClose={() => setShowColsPop(false)} anchor={colsRef} width="w-48">
                     <div className="py-1">
-                      <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Toggle Columns</p>
+                      <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Toggle Columns</p>
                       {ALL_COLS.map((col) => (
-                        <Button key={col.key} type="button" variant="ghost" size="sm" onClick={() => toggleCol(col.key)} className="flex h-auto w-full items-center gap-2.5 rounded-none px-3 py-2 text-sm text-[#374151] transition-colors hover:bg-[#f8fafc] dark:text-[#cbd5e1] dark:hover:bg-[#334155]">
-                          <span className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${visCols.has(col.key) ? "border-[#2563eb] bg-[#2563eb]" : "border-[#cbd5e1] dark:border-[#475569]"}`}>
+                        <Button key={col.key} type="button" variant="ghost" size="sm" onClick={() => toggleCol(col.key)} className="flex h-auto w-full items-center gap-2.5 rounded-none px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted">
+                          <span className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${visCols.has(col.key) ? "border-border bg-primary" : "border-border dark:border-border"}`}>
                             {visCols.has(col.key) && <Check size={10} className="text-white" />}
                           </span>
                           {col.label}
@@ -249,17 +249,17 @@ export default function UserGroupsPage({ onNavigate }) {
                 </div>
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-[#e2e8f0] bg-white shadow-[0_1px_4px_rgba(0,0,0,0.05)] dark:border-[#334155] dark:bg-[#1e293b]">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_1px_4px_rgba(0,0,0,0.05)] dark:border-border dark:bg-card">
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#e2e8f0] bg-[#f8fafc] dark:border-[#334155] dark:bg-[#0f172a]/40">
-                        {visCols.has("name") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] dark:text-[#94a3b8]">Group Name</th>}
-                        {visCols.has("description") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] dark:text-[#94a3b8]">Description</th>}
-                        {visCols.has("members") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={() => toggleSort("members")} className="inline-flex h-auto px-0 text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] hover:bg-transparent hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Members <SortIcon sortKey={sortKey} col="members" sortDir={sortDir} /></Button></th>}
-                        {visCols.has("owner") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] dark:text-[#94a3b8]">Owner</th>}
-                        {visCols.has("status") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] dark:text-[#94a3b8]">Status</th>}
-                        {visCols.has("updatedAt") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={() => toggleSort("updatedAt")} className="inline-flex h-auto px-0 text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b] hover:bg-transparent hover:text-[#0f172a] dark:text-[#94a3b8] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Updated <SortIcon sortKey={sortKey} col="updatedAt" sortDir={sortDir} /></Button></th>}
+                      <tr className="border-b border-border bg-muted dark:border-border dark:bg-background/40">
+                        {visCols.has("name") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground dark:text-muted-foreground">Group Name</th>}
+                        {visCols.has("description") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground dark:text-muted-foreground">Description</th>}
+                        {visCols.has("members") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={() => toggleSort("members")} className="inline-flex h-auto px-0 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-muted-foreground dark:hover:bg-transparent dark:hover:text-foreground">Members <SortIcon sortKey={sortKey} col="members" sortDir={sortDir} /></Button></th>}
+                        {visCols.has("owner") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground dark:text-muted-foreground">Owner</th>}
+                        {visCols.has("status") && <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground dark:text-muted-foreground">Status</th>}
+                        {visCols.has("updatedAt") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={() => toggleSort("updatedAt")} className="inline-flex h-auto px-0 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-muted-foreground dark:hover:bg-transparent dark:hover:text-foreground">Updated <SortIcon sortKey={sortKey} col="updatedAt" sortDir={sortDir} /></Button></th>}
                         <th className="w-10 px-4 py-3" />
                       </tr>
                     </thead>
@@ -267,20 +267,20 @@ export default function UserGroupsPage({ onNavigate }) {
                       {pageRows.length > 0 ? pageRows.map((group) => {
                         const statusCfg = GROUP_STATUS[group.status] || GROUP_STATUS.Active;
                         return (
-                          <tr key={group.id} className="border-b border-[#f1f5f9] transition-colors last:border-0 hover:bg-[#f8fafc] dark:border-[#334155] dark:hover:bg-[#0f172a]/30">
+                          <tr key={group.id} className="border-b border-border transition-colors last:border-0 hover:bg-muted dark:border-border dark:hover:bg-muted/30">
                             {visCols.has("name") && (
                               <td className="px-4 py-3.5">
                                 <div className="flex items-center gap-2.5">
-                                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb] dark:bg-[#1e3a8a] dark:text-[#60a5fa]">
+                                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
                                     <Users size={14} />
                                   </div>
-                                  <span className="whitespace-nowrap font-medium text-[#0f172a] dark:text-[#f1f5f9]">{group.name}</span>
+                                  <span className="whitespace-nowrap font-medium text-foreground dark:text-foreground">{group.name}</span>
                                 </div>
                               </td>
                             )}
-                            {visCols.has("description") && <td className="px-4 py-3.5 text-[#64748b] dark:text-[#94a3b8]">{group.description}</td>}
-                            {visCols.has("members") && <td className="px-4 py-3.5"><span className="inline-flex items-center rounded-full bg-[#f1f5f9] px-2.5 py-0.5 text-xs font-medium text-[#475569] dark:bg-[#334155] dark:text-[#cbd5e1]">{group.members} members</span></td>}
-                            {visCols.has("owner") && <td className="px-4 py-3.5 text-[#0f172a] dark:text-[#f1f5f9]">{group.owner}</td>}
+                            {visCols.has("description") && <td className="px-4 py-3.5 text-muted-foreground dark:text-muted-foreground">{group.description}</td>}
+                            {visCols.has("members") && <td className="px-4 py-3.5"><span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground dark:bg-border dark:text-muted-foreground">{group.members} members</span></td>}
+                            {visCols.has("owner") && <td className="px-4 py-3.5 text-foreground dark:text-foreground">{group.owner}</td>}
                             {visCols.has("status") && (
                               <td className="px-4 py-3.5">
                                 <span className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: statusCfg.text }}>
@@ -289,7 +289,7 @@ export default function UserGroupsPage({ onNavigate }) {
                                 </span>
                               </td>
                             )}
-                            {visCols.has("updatedAt") && <td className="whitespace-nowrap px-4 py-3.5 text-xs text-[#64748b] dark:text-[#94a3b8]">{group.updatedAt}</td>}
+                            {visCols.has("updatedAt") && <td className="whitespace-nowrap px-4 py-3.5 text-xs text-muted-foreground dark:text-muted-foreground">{group.updatedAt}</td>}
                             <td className="relative px-4 py-3.5">
                               <Button
                                 variant="ghost"
@@ -298,20 +298,20 @@ export default function UserGroupsPage({ onNavigate }) {
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setRowMenu((prev) => prev?.id === group.id ? null : { id: group.id, top: rect.bottom + 4, right: window.innerWidth - rect.right });
                                 }}
-                                className="flex size-7 items-center justify-center rounded-[5px] text-[#94a3b8] transition-colors hover:bg-[#f1f5f9] dark:hover:bg-[#334155]"
+                                className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:bg-muted dark:hover:bg-muted"
                               >
                                 <MoreVertical size={14} />
                               </Button>
 
                               {rowMenu?.id === group.id && (
-                                <div className="fixed z-50 w-48 overflow-hidden rounded-[10px] border border-[#e2e8f0] bg-white py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-[#334155] dark:bg-[#1e293b]" style={{ top: rowMenu.top, right: rowMenu.right }}>
-                                  <Button type="button" variant="ghost" size="sm" onClick={() => { setRowMenu(null); notify("Group editor coming next"); }} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-[#374151] transition-colors hover:bg-[#f8fafc] dark:text-[#cbd5e1] dark:hover:bg-[#334155]">
+                                <div className="fixed z-50 w-48 overflow-hidden rounded-[10px] border border-border bg-card py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-border dark:bg-card" style={{ top: rowMenu.top, right: rowMenu.right }}>
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => { setRowMenu(null); notify("Group editor coming next"); }} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted">
                                     <Pencil size={14} /> Edit group
                                   </Button>
-                                  <Button type="button" variant="ghost" size="sm" onClick={() => archiveGroup(group.id)} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-[#374151] transition-colors hover:bg-[#f8fafc] dark:text-[#cbd5e1] dark:hover:bg-[#334155]">
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => archiveGroup(group.id)} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted">
                                     <UserPlus size={14} /> Archive group
                                   </Button>
-                                  <Button type="button" variant="ghost" size="sm" onClick={() => deleteGroup(group.id)} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-[#dc2626] transition-colors hover:bg-[#fef2f2] dark:hover:bg-[#450a0a]">
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => deleteGroup(group.id)} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10 dark:hover:bg-muted">
                                     <Trash2 size={14} /> Delete group
                                   </Button>
                                 </div>
@@ -323,11 +323,11 @@ export default function UserGroupsPage({ onNavigate }) {
                         <tr>
                           <td colSpan={ALL_COLS.length + 1} className="px-4 py-16 text-center">
                             <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                              <div className="flex size-12 items-center justify-center rounded-full bg-[#eff6ff] text-[#2563eb] dark:bg-[#1e3a8a] dark:text-[#60a5fa]">
+                              <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
                                 <Users size={20} />
                               </div>
-                              <p className="font-medium text-[#0f172a] dark:text-[#f1f5f9]">No groups found</p>
-                              <p className="text-sm text-[#64748b] dark:text-[#94a3b8]">Try adjusting your search or create a new group.</p>
+                              <p className="font-medium text-foreground dark:text-foreground">No groups found</p>
+                              <p className="text-sm text-muted-foreground dark:text-muted-foreground">Try adjusting your search or create a new group.</p>
                             </div>
                           </td>
                         </tr>
@@ -336,15 +336,15 @@ export default function UserGroupsPage({ onNavigate }) {
                   </table>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-[#e2e8f0] px-4 py-3 dark:border-[#334155]">
-                  <p className="text-xs text-[#94a3b8]">Showing {(safePage - 1) * rpp + (pageRows.length ? 1 : 0)}-{(safePage - 1) * rpp + pageRows.length} of {sorted.length} groups</p>
+                <div className="flex items-center justify-between border-t border-border px-4 py-3 dark:border-border">
+                  <p className="text-xs text-muted-foreground">Showing {(safePage - 1) * rpp + (pageRows.length ? 1 : 0)}-{(safePage - 1) * rpp + pageRows.length} of {sorted.length} groups</p>
                   <div className="flex items-center gap-2">
-                    <select value={rpp} onChange={(e) => { setRpp(Number(e.target.value)); setPage(1); }} className="h-8 rounded-[6px] border border-[#e2e8f0] bg-white px-2 text-xs text-[#374151] outline-none dark:border-[#334155] dark:bg-[#1e293b] dark:text-[#cbd5e1]">
+                    <select value={rpp} onChange={(e) => { setRpp(Number(e.target.value)); setPage(1); }} className="h-8 rounded-[6px] border border-border bg-card px-2 text-xs text-muted-foreground outline-none dark:border-border dark:bg-card dark:text-muted-foreground">
                       {[10, 20, 50].map((n) => <option key={n} value={n}>{n} / page</option>)}
                     </select>
-                    <Button variant="outline" size="xs" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-[6px] border border-[#e2e8f0] px-2 py-1 text-xs text-[#374151] transition-colors enabled:hover:bg-[#f8fafc] dark:border-[#334155] dark:text-[#cbd5e1] dark:enabled:hover:bg-[#334155]">Prev</Button>
-                    <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">Page {safePage} of {totalPages}</span>
-                    <Button variant="outline" size="xs" disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="rounded-[6px] border border-[#e2e8f0] px-2 py-1 text-xs text-[#374151] transition-colors enabled:hover:bg-[#f8fafc] dark:border-[#334155] dark:text-[#cbd5e1] dark:enabled:hover:bg-[#334155]">Next</Button>
+                    <Button variant="outline" size="xs" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-[6px] border border-border px-2 py-1 text-xs text-muted-foreground transition-colors enabled:hover:bg-muted dark:border-border dark:text-muted-foreground dark:enabled:hover:bg-muted">Prev</Button>
+                    <span className="text-xs text-muted-foreground dark:text-muted-foreground">Page {safePage} of {totalPages}</span>
+                    <Button variant="outline" size="xs" disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="rounded-[6px] border border-border px-2 py-1 text-xs text-muted-foreground transition-colors enabled:hover:bg-muted dark:border-border dark:text-muted-foreground dark:enabled:hover:bg-muted">Next</Button>
                   </div>
                 </div>
               </div>

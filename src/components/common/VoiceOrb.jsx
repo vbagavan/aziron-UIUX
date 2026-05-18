@@ -93,7 +93,7 @@ const ORB_THEME = {
       #f87171,
       #fb7185
     )`,
-    baseFill: "#f4ecff",
+    baseFill: "var(--accent)",
     haloBg: "radial-gradient(circle, rgba(167,139,250,.52) 0%, rgba(59,130,246,.26) 45%, transparent 72%)",
     haloShadow: "0 0 32px rgba(124,58,237,.28), 0 0 68px rgba(59,130,246,.16)",
     orbShadow: (size, isError) => isError
@@ -120,7 +120,7 @@ const ORB_THEME = {
       #f87171,
       #fb7185
     )`,
-    baseFill: "#ede9fe",
+    baseFill: "var(--accent)",
     haloBg: "radial-gradient(circle, rgba(196,181,253,.5) 0%, rgba(147,197,253,.25) 45%, transparent 70%)",
     haloShadow: "0 0 40px rgba(108,92,231,0.25), 0 0 80px rgba(108,92,231,0.15)",
     orbShadow: (size, isError) => isError

@@ -28,88 +28,88 @@ import Sidebar from "@/components/layout/Sidebar";
 const NOTIFICATIONS = [
   {
     id: "c1", type: "critical", category: "security",
-    avatarBg: "#64748b", avatarInitials: "PR",
-    BadgeIcon: ServerCrash, badgeBg: "#ef4444",
+    avatarBg: "var(--muted-foreground)", avatarInitials: "PR",
+    BadgeIcon: ServerCrash, badgeBg: "var(--destructive)",
     title: "Production deployment failure",
     desc: "main branch · deploy #847 crashed at runtime",
     tag: "PROD", time: "Just now", unread: true, persistent: true,
   },
   {
     id: "c2", type: "critical", category: "security",
-    avatarBg: "#ef4444", avatarInitials: "CV",
-    BadgeIcon: ShieldAlert, badgeBg: "#ef4444",
+    avatarBg: "var(--destructive)", avatarInitials: "CV",
+    BadgeIcon: ShieldAlert, badgeBg: "var(--destructive)",
     title: "Security vulnerability detected",
     desc: "CVE-2024-1234 (critical) in lodash@4.17.11",
     tag: "CVE", time: "5 min ago", unread: true, persistent: true,
   },
   {
     id: "c3", type: "critical", category: "general",
-    avatarBg: "#2563eb", avatarInitials: "AI",
-    BadgeIcon: Bot, badgeBg: "#ef4444",
+    avatarBg: "var(--primary)", avatarInitials: "AI",
+    BadgeIcon: Bot, badgeBg: "var(--destructive)",
     title: "AI agent execution failure",
     desc: "Customer Support Agent · unhandled exception in run #23",
     tag: "AGENT", time: "12 min ago", unread: true, persistent: true,
   },
   {
     id: "c4", type: "critical", category: "security",
-    avatarBg: "#b91c1c", avatarInitials: "UA",
-    BadgeIcon: ShieldX, badgeBg: "#ef4444",
+    avatarBg: "var(--destructive)", avatarInitials: "UA",
+    BadgeIcon: ShieldX, badgeBg: "var(--destructive)",
     title: "Unauthorized access attempt",
     desc: "IP 203.0.113.42 · 14 failed logins on admin panel",
     tag: "SECURITY", time: "18 min ago", unread: true, persistent: true,
   },
   {
     id: "w1", type: "warning", category: "general",
-    avatarBg: "#d97706", avatarInitials: "CI",
-    BadgeIcon: Zap, badgeBg: "#f97316",
+    avatarBg: "var(--warning)", avatarInitials: "CI",
+    BadgeIcon: Zap, badgeBg: "var(--warning)",
     title: "Build pipeline instability",
     desc: "CI/CD · 3 of last 5 runs failed — flaky test suspected",
     tag: "CI/CD", time: "45 min ago", unread: true,
   },
   {
     id: "w2", type: "warning", category: "general",
-    avatarBg: "#b45309", avatarInitials: "AP",
-    BadgeIcon: Gauge, badgeBg: "#f97316",
+    avatarBg: "var(--warning)", avatarInitials: "AP",
+    BadgeIcon: Gauge, badgeBg: "var(--warning)",
     title: "API latency spike detected",
     desc: "p95 → 1.4s · 340% above baseline",
     tag: "API", time: "1h ago", unread: false,
   },
   {
     id: "w3", type: "warning", category: "general",
-    avatarBg: "#92400e", avatarInitials: "TC",
-    BadgeIcon: FlaskConical, badgeBg: "#f97316",
+    avatarBg: "var(--warning)", avatarInitials: "TC",
+    BadgeIcon: FlaskConical, badgeBg: "var(--warning)",
     title: "Test coverage below threshold",
     desc: "Coverage dropped to 68% · minimum required: 80%",
     tag: "TESTS", time: "2h ago", unread: false,
   },
   {
     id: "w4", type: "warning", category: "general",
-    avatarBg: "#7c3aed", avatarInitials: "DP",
-    BadgeIcon: DatabaseZap, badgeBg: "#f97316",
+    avatarBg: "var(--chart-chart-4)", avatarInitials: "DP",
+    BadgeIcon: DatabaseZap, badgeBg: "var(--warning)",
     title: "Data pipeline near capacity",
     desc: "Queue utilisation at 89% · auto-scaling triggered",
     tag: "PIPELINE", time: "3h ago", unread: false,
   },
   {
     id: "s1", type: "success", category: "general",
-    avatarBg: "#16a34a", avatarInitials: "PR",
-    BadgeIcon: Rocket, badgeBg: "#22c55e",
+    avatarBg: "var(--success)", avatarInitials: "PR",
+    BadgeIcon: Rocket, badgeBg: "var(--success)",
     title: "Production deployment successful",
     desc: "v2.4.1 deployed to prod · 0 errors · 12s build",
     tag: "DEPLOY", time: "3h ago", unread: false,
   },
   {
     id: "s2", type: "success", category: "general",
-    avatarBg: "#15803d", avatarInitials: "GH",
-    BadgeIcon: GitMerge, badgeBg: "#22c55e",
+    avatarBg: "var(--success)", avatarInitials: "GH",
+    BadgeIcon: GitMerge, badgeBg: "var(--success)",
     title: "PR #1247 merged — AI review passed",
     desc: "feat: knowledge-hub picker · reviewed by Aziron AI",
     tag: "PR", time: "4h ago", unread: false,
   },
   {
     id: "a1", type: "approval", category: "approval",
-    avatarBg: "#1d4ed8", avatarInitials: "AI",
-    BadgeIcon: GitPullRequest, badgeBg: "#2563eb",
+    avatarBg: "var(--primary)", avatarInitials: "AI",
+    BadgeIcon: GitPullRequest, badgeBg: "var(--primary)",
     title: "AI-generated code pending review",
     desc: "Aziron AI proposes 3 file changes in CustomerAgent.js",
     tag: "CODE", time: "15 min ago", unread: true, persistent: true,
@@ -117,8 +117,8 @@ const NOTIFICATIONS = [
   },
   {
     id: "a2", type: "approval", category: "approval",
-    avatarBg: "#1e40af", avatarInitials: "JA",
-    BadgeIcon: Rocket, badgeBg: "#2563eb",
+    avatarBg: "var(--primary)", avatarInitials: "JA",
+    BadgeIcon: Rocket, badgeBg: "var(--primary)",
     title: "Deployment approval required",
     desc: "staging → production · v2.5.0-rc.1 · requested by Jay",
     tag: "DEPLOY", time: "30 min ago", unread: true, persistent: true,
@@ -126,8 +126,8 @@ const NOTIFICATIONS = [
   },
   {
     id: "a3", type: "approval", category: "approval", category2: "security",
-    avatarBg: "#1e3a8a", avatarInitials: "SE",
-    BadgeIcon: ShieldAlert, badgeBg: "#2563eb",
+    avatarBg: "var(--primary)", avatarInitials: "SE",
+    BadgeIcon: ShieldAlert, badgeBg: "var(--primary)",
     title: "Security exception awaiting review",
     desc: "CORS bypass requested for partner API integration",
     tag: "SECURITY", time: "1h ago", unread: false, persistent: true,
@@ -135,8 +135,8 @@ const NOTIFICATIONS = [
   },
   {
     id: "a4", type: "approval", category: "approval",
-    avatarBg: "#1d4ed8", avatarInitials: "WF",
-    BadgeIcon: Clock, badgeBg: "#2563eb",
+    avatarBg: "var(--primary)", avatarInitials: "WF",
+    BadgeIcon: Clock, badgeBg: "var(--primary)",
     title: "Workflow paused — human decision needed",
     desc: "Invoice reconciliation agent waiting at step 4 of 7",
     tag: "WORKFLOW", time: "2h ago", unread: false, persistent: true,
@@ -145,16 +145,16 @@ const NOTIFICATIONS = [
 ];
 
 const TYPE_CONFIG = {
-  critical: { bar: "#ef4444", dot: "#ef4444", label: "CRITICAL", labelColor: "#ef4444" },
-  warning:  { bar: "#f97316", dot: "#f97316", label: "WARNING",  labelColor: "#f97316" },
-  success:  { bar: "#22c55e", dot: "#22c55e", label: "SUCCESS",  labelColor: "#22c55e" },
-  approval: { bar: "#2563eb", dot: "#2563eb", label: "APPROVAL", labelColor: "#2563eb" },
+  critical: { bar: "var(--destructive)", dot: "var(--destructive)", label: "CRITICAL", labelColor: "var(--destructive)" },
+  warning:  { bar: "var(--warning)", dot: "var(--warning)", label: "WARNING",  labelColor: "var(--warning)" },
+  success:  { bar: "var(--success)", dot: "var(--success)", label: "SUCCESS",  labelColor: "var(--success)" },
+  approval: { bar: "var(--primary)", dot: "var(--primary)", label: "APPROVAL", labelColor: "var(--primary)" },
 };
 
 const ACTION_STYLE = {
-  Approve: "bg-[#22c55e] text-white hover:bg-[#16a34a]",
-  Reject:  "border border-[#ef4444] text-[#ef4444] bg-white dark:bg-[#1e293b] hover:bg-[#fef2f2] dark:hover:bg-[#1e293b]",
-  Review:  "border border-[#2563eb] text-[#2563eb] bg-white dark:bg-[#1e293b] hover:bg-[#eff6ff] dark:hover:bg-[#1e3a8a]",
+  Approve: "bg-success text-white hover:bg-success/90",
+  Reject:  "border border-border text-destructive bg-card dark:bg-card hover:bg-destructive/10 dark:hover:bg-muted",
+  Review:  "border border-border text-primary bg-card dark:bg-card hover:bg-primary/10 dark:hover:bg-primary/20",
 };
 
 const TABS = [
@@ -168,10 +168,10 @@ const TABS = [
 const ALL_TAGS = [...new Set(NOTIFICATIONS.map((n) => n.tag))].sort();
 
 const FILTER_TYPE_OPTIONS = [
-  { value: "critical", label: "Critical", color: "#ef4444" },
-  { value: "warning",  label: "Warning",  color: "#f97316" },
-  { value: "success",  label: "Success",  color: "#22c55e" },
-  { value: "approval", label: "Approval", color: "#2563eb" },
+  { value: "critical", label: "Critical", color: "var(--destructive)" },
+  { value: "warning",  label: "Warning",  color: "var(--warning)" },
+  { value: "success",  label: "Success",  color: "var(--success)" },
+  { value: "approval", label: "Approval", color: "var(--primary)" },
 ];
 
 const FILTER_STATUS_OPTIONS = [
@@ -242,16 +242,16 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 z-50 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[12px] w-[280px] flex flex-col"
+      className="absolute right-0 top-full mt-2 z-50 bg-card dark:bg-card border border-border dark:border-border rounded-[12px] w-[280px] flex flex-col"
       style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#f1f5f9] dark:border-[#1e293b]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border dark:border-border">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal size={14} className="text-[#475569] dark:text-[#94a3b8]" />
-          <span className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">Filters</span>
+          <SlidersHorizontal size={14} className="text-muted-foreground dark:text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground dark:text-foreground">Filters</span>
           {hasAny && (
-            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[#2563eb] text-white text-xs font-bold">
+            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-xs font-bold">
               {countActiveFilters(filters)}
             </span>
           )}
@@ -259,7 +259,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
         {hasAny && (
           <button
             onClick={() => onChange(EMPTY_FILTERS)}
-            className="text-xs text-[#ef4444] font-medium hover:text-[#dc2626] transition-colors"
+            className="text-xs text-destructive font-medium hover:text-destructive transition-colors"
           >
             Clear all
           </button>
@@ -269,7 +269,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
       <div className="flex flex-col gap-4 p-4">
         {/* Type */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Type</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-muted-foreground dark:text-muted-foreground mb-2">Type</p>
           <div className="flex flex-col gap-1">
             {FILTER_TYPE_OPTIONS.map(({ value, label, color }) => {
               const active = filters.types.includes(value);
@@ -278,13 +278,13 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   key={value}
                   onClick={() => toggle("types", value)}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[6px] text-sm transition-colors w-full text-left ${
-                    active ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
+                    active ? "bg-background" : "hover:bg-muted dark:hover:bg-muted"
                   }`}
                 >
                   {/* Checkbox */}
                   <span
                     className={`flex-shrink-0 flex items-center justify-center size-4 rounded border-2 transition-colors ${
-                      active ? "border-transparent" : "border-[#cbd5e1]"
+                      active ? "border-transparent" : "border-border"
                     }`}
                     style={active ? { backgroundColor: color, borderColor: color } : {}}
                   >
@@ -296,10 +296,10 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   </span>
                   {/* Color dot */}
                   <span className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <span className={`text-sm ${active ? "font-medium text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#475569] dark:text-[#94a3b8]"}`}>
+                  <span className={`text-sm ${active ? "font-medium text-foreground dark:text-foreground" : "text-muted-foreground dark:text-muted-foreground"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-sm text-[#94a3b8] dark:text-[#64748b]">
+                  <span className="ml-auto text-sm text-muted-foreground dark:text-muted-foreground">
                     {NOTIFICATIONS.filter((n) => n.type === value).length}
                   </span>
                 </button>
@@ -310,7 +310,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Status */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Status</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-muted-foreground dark:text-muted-foreground mb-2">Status</p>
           <div className="flex flex-col gap-1">
             {FILTER_STATUS_OPTIONS.map(({ value, label }) => {
               const active = filters.statuses.includes(value);
@@ -319,12 +319,12 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   key={value}
                   onClick={() => toggle("statuses", value)}
                   className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-[6px] text-sm transition-colors w-full text-left ${
-                    active ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]"
+                    active ? "bg-background" : "hover:bg-muted dark:hover:bg-muted"
                   }`}
                 >
                   <span
                     className={`flex-shrink-0 flex items-center justify-center size-4 rounded border-2 transition-colors ${
-                      active ? "bg-[#2563eb] border-[#2563eb]" : "border-[#cbd5e1]"
+                      active ? "bg-primary border-border" : "border-border"
                     }`}
                   >
                     {active && (
@@ -333,10 +333,10 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                       </svg>
                     )}
                   </span>
-                  <span className={`text-sm ${active ? "font-medium text-[#0f172a] dark:text-[#f1f5f9]" : "text-[#475569] dark:text-[#94a3b8]"}`}>
+                  <span className={`text-sm ${active ? "font-medium text-foreground dark:text-foreground" : "text-muted-foreground dark:text-muted-foreground"}`}>
                     {label}
                   </span>
-                  <span className="ml-auto text-sm text-[#94a3b8] dark:text-[#64748b]">
+                  <span className="ml-auto text-sm text-muted-foreground dark:text-muted-foreground">
                     {value === "unread"     ? NOTIFICATIONS.filter((n) => n.unread).length
                     : value === "read"      ? NOTIFICATIONS.filter((n) => !n.unread).length
                     : NOTIFICATIONS.filter((n) => n.persistent).length}
@@ -349,13 +349,13 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
 
         {/* Tags */}
         <div>
-          <p className="text-sm font-bold tracking-[0.06em] uppercase text-[#94a3b8] dark:text-[#64748b] mb-2">Tag</p>
+          <p className="text-sm font-bold tracking-[0.06em] uppercase text-muted-foreground dark:text-muted-foreground mb-2">Tag</p>
           <div className="flex flex-wrap gap-1.5">
             {ALL_TAGS.map((tag) => {
               const active = filters.tags.includes(tag);
               // Find the type color for this tag
               const sample = NOTIFICATIONS.find((n) => n.tag === tag);
-              const color = sample ? TYPE_CONFIG[sample.type].bar : "#64748b";
+              const color = sample ? TYPE_CONFIG[sample.type].bar : "var(--muted-foreground)";
               return (
                 <button
                   key={tag}
@@ -363,7 +363,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
                   className={`px-2 py-[3px] rounded text-sm font-bold tracking-wide border transition-all ${
                     active
                       ? "text-white border-transparent"
-                      : "text-[#475569] dark:text-[#94a3b8] bg-[#f8fafc] dark:bg-[#0f172a] border-[#e2e8f0] dark:border-[#334155] hover:border-[#cbd5e1]"
+                      : "text-muted-foreground dark:text-muted-foreground bg-background border-border dark:border-border hover:border-border"
                   }`}
                   style={active ? { backgroundColor: color, borderColor: color } : {}}
                 >
@@ -386,7 +386,7 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
 
   return (
     <div
-      className={`group relative rounded-[12px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] transition-all duration-200 cursor-pointer ${
+      className={`group relative rounded-[12px] border border-border dark:border-border bg-card dark:bg-card transition-all duration-200 cursor-pointer ${
         expanded ? "shadow-md dark:shadow-none" : "hover:shadow-sm dark:hover:shadow-none"
       }`}
       onClick={() => onToggle(item.id)}
@@ -400,7 +400,7 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
               style={{ backgroundColor: cfg.dot }}
             />
           ) : (
-            <div className="size-2.5 rounded-full bg-[#e2e8f0]" />
+            <div className="size-2.5 rounded-full bg-border" />
           )}
         </div>
 
@@ -413,7 +413,7 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
             {item.avatarInitials}
           </div>
           <div
-            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white dark:border-[#1e293b] flex items-center justify-center"
+            className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-card dark:border-border flex items-center justify-center"
             style={{ backgroundColor: item.badgeBg }}
           >
             <BadgeIcon size={10} color="white" strokeWidth={2.5} />
@@ -424,16 +424,16 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <p className={`text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-snug ${item.unread ? "font-semibold" : "font-medium"}`}>
+              <p className={`text-sm text-foreground dark:text-foreground leading-snug ${item.unread ? "font-semibold" : "font-medium"}`}>
                 {item.title}
               </p>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5 leading-snug">{item.desc}</p>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5 leading-snug">{item.desc}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs text-[#94a3b8] dark:text-[#64748b] whitespace-nowrap">{item.time}</span>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground whitespace-nowrap">{item.time}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
-                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-6 rounded-full text-[#94a3b8] dark:text-[#64748b] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-all"
+                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-6 rounded-full text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted hover:text-muted-foreground dark:hover:text-muted-foreground transition-all"
               >
                 <X size={13} />
               </button>
@@ -455,14 +455,14 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
               {cfg.label}
             </span>
             {item.persistent && (
-              <span className="text-xs text-[#94a3b8] dark:text-[#64748b] bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] px-2 py-[2px] rounded font-medium">
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground bg-background border border-border dark:border-border px-2 py-[2px] rounded font-medium">
                 persistent
               </span>
             )}
             {item.unread && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMarkRead(item.id); }}
-                className="text-xs text-[#2563eb] hover:text-[#1d4ed8] font-medium transition-colors ml-auto"
+                className="text-xs text-primary hover:text-primary font-medium transition-colors ml-auto"
               >
                 Mark as read
               </button>
@@ -523,12 +523,12 @@ function SectionHeader({ type, count }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-4">
-      <div className="size-16 rounded-full bg-[#f8fafc] dark:bg-[#0f172a] border border-[#e2e8f0] dark:border-[#334155] flex items-center justify-center">
-        <BellOff size={24} className="text-[#cbd5e1]" />
+      <div className="size-16 rounded-full bg-background border border-border dark:border-border flex items-center justify-center">
+        <BellOff size={24} className="text-foreground" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="text-base font-medium text-[#475569] dark:text-[#94a3b8]">No notifications match</p>
-        <p className="text-sm text-[#94a3b8] dark:text-[#64748b]">Try adjusting your filters</p>
+        <p className="text-base font-medium text-muted-foreground dark:text-muted-foreground">No notifications match</p>
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground">Try adjusting your filters</p>
       </div>
     </div>
   );
@@ -562,15 +562,15 @@ export default function NotificationsPage({ onNavigate
   const tabCount = (key) => applyTab(items, key).filter((n) => n.unread).length;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="notifications" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0">
         <AppHeader onNavigate={onNavigate}>
           <nav className="flex items-center gap-1.5 text-sm ml-1">
-            <span className="text-[#64748b] dark:text-[#94a3b8]">Settings</span>
-            <ChevronRight size={13} className="text-[#cbd5e1] dark:text-[#475569]" />
-            <span className="text-[#0f172a] dark:text-[#f1f5f9] font-medium">Notifications</span>
+            <span className="text-muted-foreground dark:text-muted-foreground">Settings</span>
+            <ChevronRight size={13} className="text-foreground dark:text-muted-foreground" />
+            <span className="text-foreground dark:text-foreground font-medium">Notifications</span>
           </nav>
         </AppHeader>
 
@@ -580,14 +580,14 @@ export default function NotificationsPage({ onNavigate
             {/* ── Heading ── */}
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h1 className="text-[22px] font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-8 tracking-[-0.4px]">
+                <h1 className="text-[22px] font-semibold text-foreground dark:text-foreground leading-8 tracking-[-0.4px]">
                   Notifications
                 </h1>
-                <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5">
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">
                   {unreadCount > 0 ? (
                     <span>
                       You have{" "}
-                      <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{unreadCount} unread</span>{" "}
+                      <span className="font-semibold text-foreground dark:text-foreground">{unreadCount} unread</span>{" "}
                       notification{unreadCount !== 1 ? "s" : ""}
                     </span>
                   ) : "All notifications are read"}
@@ -598,7 +598,7 @@ export default function NotificationsPage({ onNavigate
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   >
                     <CheckCheck size={14} />
                     Mark all as read
@@ -612,14 +612,14 @@ export default function NotificationsPage({ onNavigate
                     onClick={() => setFilterOpen((v) => !v)}
                     className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
                       filterOpen || activeFilterCount > 0
-                        ? "bg-[#2563eb] text-white border-[#2563eb] hover:bg-[#1d4ed8]"
-                        : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"
+                        ? "bg-primary text-white border-border hover:bg-primary"
+                        : "border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"
                     }`}
                   >
                     <Filter size={14} />
                     Filter
                     {activeFilterCount > 0 && (
-                      <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[#2563eb] text-xs font-bold">
+                      <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-card text-primary text-xs font-bold">
                         {activeFilterCount}
                       </span>
                     )}
@@ -638,7 +638,7 @@ export default function NotificationsPage({ onNavigate
             </div>
 
             {/* ── Tabs ── */}
-            <div className="flex items-center gap-1 border-b border-[#e2e8f0] dark:border-[#334155] -mb-1">
+            <div className="flex items-center gap-1 border-b border-border dark:border-border -mb-1">
               {TABS.map(({ key, label }) => {
                 const cnt    = tabCount(key);
                 const active = activeTab === key;
@@ -648,14 +648,14 @@ export default function NotificationsPage({ onNavigate
                     onClick={() => { setActiveTab(key); setExpandedId(null); }}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                       active
-                        ? "border-[#2563eb] text-[#2563eb]"
-                        : "border-transparent text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9]"
+                        ? "border-border text-primary"
+                        : "border-transparent text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground"
                     }`}
                   >
                     {label}
                     {cnt > 0 && (
                       <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                        active ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8]"
+                        active ? "bg-primary text-white" : "bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"
                       }`}>
                         {cnt}
                       </span>
@@ -668,11 +668,11 @@ export default function NotificationsPage({ onNavigate
             {/* ── Active filter chips ── */}
             {countActiveFilters(filters) > 0 && (
               <div className="flex items-center gap-2 flex-wrap -mt-1">
-                <span className="text-xs text-[#94a3b8]">Active:</span>
+                <span className="text-xs text-muted-foreground">Active:</span>
                 {[
                   ...filters.types.map((v) => ({ key: "types", value: v, label: v.charAt(0).toUpperCase() + v.slice(1), color: TYPE_CONFIG[v].bar })),
-                  ...filters.statuses.map((v) => { const opt = FILTER_STATUS_OPTIONS.find((o) => o.value === v); return { key: "statuses", value: v, label: opt?.label ?? v, color: "#64748b" }; }),
-                  ...filters.tags.map((v) => { const sample = NOTIFICATIONS.find((n) => n.tag === v); return { key: "tags", value: v, label: v, color: sample ? TYPE_CONFIG[sample.type].bar : "#64748b" }; }),
+                  ...filters.statuses.map((v) => { const opt = FILTER_STATUS_OPTIONS.find((o) => o.value === v); return { key: "statuses", value: v, label: opt?.label ?? v, color: "var(--muted-foreground)" }; }),
+                  ...filters.tags.map((v) => { const sample = NOTIFICATIONS.find((n) => n.tag === v); return { key: "tags", value: v, label: v, color: sample ? TYPE_CONFIG[sample.type].bar : "var(--muted-foreground)" }; }),
                 ].map(({ key, value, label, color }) => (
                   <button
                     key={`${key}-${value}`}
@@ -685,7 +685,7 @@ export default function NotificationsPage({ onNavigate
                 ))}
                 <button
                   onClick={() => setFilters(EMPTY_FILTERS)}
-                  className="text-xs text-[#64748b] dark:text-[#94a3b8] hover:text-[#ef4444] font-medium transition-colors"
+                  className="text-xs text-muted-foreground dark:text-muted-foreground hover:text-destructive font-medium transition-colors"
                 >
                   Clear all
                 </button>
@@ -733,20 +733,20 @@ export default function NotificationsPage({ onNavigate
             )}
 
             {/* ── Footer stats ── */}
-            <div className="flex items-center justify-between py-1 text-xs text-[#94a3b8] dark:text-[#64748b]">
+            <div className="flex items-center justify-between py-1 text-xs text-muted-foreground dark:text-muted-foreground">
               <span>
                 {displayItems.length} notification{displayItems.length !== 1 ? "s" : ""}
-                {activeFilterCount > 0 && <span className="text-[#2563eb] font-medium"> (filtered)</span>}
+                {activeFilterCount > 0 && <span className="text-primary font-medium"> (filtered)</span>}
                 {" "}· {displayItems.filter((n) => n.unread).length} unread
               </span>
               <div className="flex items-center gap-3">
                 {items.filter((n) => n.type === "critical" && n.unread).length > 0 && (
-                  <span className="text-[#ef4444] font-medium">
+                  <span className="text-destructive font-medium">
                     {items.filter((n) => n.type === "critical" && n.unread).length} critical
                   </span>
                 )}
                 {items.filter((n) => n.type === "approval" && n.unread).length > 0 && (
-                  <span className="text-[#2563eb] font-medium">
+                  <span className="text-primary font-medium">
                     {items.filter((n) => n.type === "approval" && n.unread).length} pending approval
                   </span>
                 )}

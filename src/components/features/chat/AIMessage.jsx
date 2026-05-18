@@ -7,7 +7,7 @@ export default function AIMessage({ children, actions, className }) {
       role="assistant"
       actions={actions}
       contentClassName={cn(
-        "px-1 py-1 text-[#0f172a] dark:text-[#f8fafc]",
+        "px-1 py-1 text-foreground dark:text-foreground",
         className,
       )}
     >

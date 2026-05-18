@@ -18,7 +18,7 @@ function MinimalVoiceOrb({ state, muted }) {
   const isListening = state === VS.LISTENING;
   const isProcessing = state === VS.PROCESSING;
 
-  const orbColor = isListening ? "#7c3aed" : isProcessing ? "#f59e0b" : "#2563eb";
+  const orbColor = isListening ? "var(--chart-chart-4)" : isProcessing ? "var(--warning)" : "var(--primary)";
   const orbGlow = isListening
     ? "0 0 24px #7c3aed60, 0 0 48px #7c3aed30"
     : isProcessing
@@ -114,14 +114,14 @@ export default function VoiceConversation({ onClose, onSendMessage }) {
       <style>{MINIMAL_KEYFRAMES}</style>
       <div className="fixed inset-0 z-[9999] flex items-end justify-center p-6 pointer-events-none">
         <div className="pointer-events-auto mb-4 animate-[vFadeUp_0.3s_ease-out]">
-          <div className="bg-white/8 backdrop-blur-xl border border-white/15 rounded-2xl px-6 py-4 shadow-2xl"
+          <div className="bg-card/8 backdrop-blur-xl border border-card/15 rounded-2xl px-6 py-4 shadow-2xl"
             style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
             <MinimalVoiceOrb state={state} muted={muted} />
 
             {/* Live transcript */}
             {transcript && (
               <div className="mt-4 text-sm text-white/85 max-w-sm">
-                <p className="font-medium">&ldquo;{transcript}{state === VS.LISTENING ? <span className="inline-block w-0.5 h-4 bg-white/70 ml-1 align-middle" style={{ animation: "vCursor 1s step-end infinite" }} /> : ''}&rdquo;</p>
+                <p className="font-medium">&ldquo;{transcript}{state === VS.LISTENING ? <span className="inline-block w-0.5 h-4 bg-card/70 ml-1 align-middle" style={{ animation: "vCursor 1s step-end infinite" }} /> : ''}&rdquo;</p>
               </div>
             )}
           </div>

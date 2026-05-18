@@ -15,10 +15,10 @@ import { Button } from "@/components/ui/button";
 // ─── data ─────────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  ["#3b82f6","#1d4ed8"],["#8b5cf6","#6d28d9"],["#ec4899","#be185d"],
-  ["#f59e0b","#b45309"],["#10b981","#047857"],["#06b6d4","#0e7490"],
-  ["#f97316","#c2410c"],["#6366f1","#4338ca"],["#84cc16","#4d7c0f"],
-  ["#14b8a6","#0f766e"],
+  ["var(--primary)","var(--primary)"],["var(--chart-chart-4)","var(--chart-chart-4)"],["var(--destructive)","var(--destructive)"],
+  ["var(--warning)","var(--warning)"],["var(--success)","var(--success)"],["var(--info)","var(--info)"],
+  ["var(--warning)","var(--warning)"],["var(--chart-chart-3)","var(--chart-chart-3)"],["var(--success)","var(--success)"],
+  ["var(--success)","var(--success)"],
 ];
 
 const INIT_USERS = [
@@ -45,16 +45,16 @@ const STATUSES = ["Active","Inactive","Pending"];
 
 // Solid-fill role badges (Aziron design system)
 const ROLE_CFG = {
-  "Admin":       { bg:"#2563eb", text:"#ffffff" },
-  "Member":      { bg:"#334155", text:"#ffffff" },
-  "Super Admin": { bg:"#7c3aed", text:"#ffffff" },
+  "Admin":       { bg:"var(--primary)", text:"var(--primary-foreground)" },
+  "Member":      { bg:"var(--border)", text:"var(--primary-foreground)" },
+  "Super Admin": { bg:"var(--chart-chart-4)", text:"var(--primary-foreground)" },
 };
 
 // Status: just colored text + dot, no pill bg (Aziron style)
 const STATUS_CFG = {
-  Active:   { dot:"#16a34a", text:"#16a34a" },
-  Inactive: { dot:"#94a3b8", text:"#64748b" },
-  Pending:  { dot:"#f59e0b", text:"#d97706" },
+  Active:   { dot:"var(--success)", text:"var(--success)" },
+  Inactive: { dot:"var(--muted-foreground)", text:"var(--muted-foreground)" },
+  Pending:  { dot:"var(--warning)", text:"var(--warning)" },
 };
 
 const ALL_COLS = [
@@ -84,7 +84,7 @@ function Popover({ open, onClose, anchor, width="w-48", children }){
   },[open,onClose,anchor]);
   if(!open) return null;
   return(
-    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden`}>
+    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden`}>
       {children}
     </div>
   );
@@ -95,8 +95,8 @@ function Popover({ open, onClose, anchor, width="w-48", children }){
 function Toast({ message, onDone }){
   useEffect(()=>{ const t=setTimeout(onDone,2800); return()=>clearTimeout(t); },[onDone]);
   return(
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-[#0f172a] dark:bg-[#f1f5f9] text-white dark:text-[#0f172a] rounded-[8px] shadow-xl text-sm font-medium">
-      <Check size={14} className="text-[#22c55e] flex-shrink-0" />{message}
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-muted dark:bg-muted text-white dark:text-foreground rounded-[8px] shadow-xl text-sm font-medium">
+      <Check size={14} className="text-foreground flex-shrink-0" />{message}
     </div>
   );
 }
@@ -104,10 +104,10 @@ function Toast({ message, onDone }){
 // ─── SortIcon ─────────────────────────────────────────────────────────────────
 
 function SortIcon({ sortKey, col, sortDir }){
-  if(sortKey!==col) return <ChevronUp size={11} className="text-[#cbd5e1] dark:text-[#475569]"/>;
+  if(sortKey!==col) return <ChevronUp size={11} className="text-foreground dark:text-muted-foreground"/>;
   return sortDir==="asc"
-    ? <ChevronUp   size={11} className="text-[#2563eb]"/>
-    : <ChevronDown size={11} className="text-[#2563eb]"/>;
+    ? <ChevronUp   size={11} className="text-primary"/>
+    : <ChevronDown size={11} className="text-primary"/>;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -293,17 +293,17 @@ export default function UsersListPage({ onNavigate, onViewUser }){
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={()=>{ setRowMenu(null); setRowSubMenu(null); }}/>}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
           <AppHeader onNavigate={onNavigate}>
             <nav className="flex items-center gap-1.5 text-sm ml-1">
-              <Button variant="ghost" size="sm" onClick={()=>onNavigate("users")} className="h-auto px-0 text-[#64748b] dark:text-[#94a3b8] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9] transition-colors">
+              <Button variant="ghost" size="sm" onClick={()=>onNavigate("users")} className="h-auto px-0 text-muted-foreground dark:text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent dark:hover:text-foreground transition-colors">
                 User Management
               </Button>
-              <ChevronRight size={13} className="text-[#cbd5e1] dark:text-[#475569]"/>
-              <span className="text-[#0f172a] dark:text-[#f1f5f9] font-medium">Users</span>
+              <ChevronRight size={13} className="text-foreground dark:text-muted-foreground"/>
+              <span className="text-foreground dark:text-foreground font-medium">Users</span>
             </nav>
           </AppHeader>
 
@@ -313,10 +313,10 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               {/* heading */}
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <h1 className="text-[22px] font-semibold text-[#0f172a] dark:text-[#f1f5f9] leading-8 tracking-[-0.4px]">Users</h1>
-                  <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5">Manage user accounts and their access permissions.</p>
+                  <h1 className="text-[22px] font-semibold text-foreground dark:text-foreground leading-8 tracking-[-0.4px]">Users</h1>
+                  <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">Manage user accounts and their access permissions.</p>
                 </div>
-                <Button className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white gap-1.5 h-9 px-4 text-sm font-medium rounded-[7px] shadow-sm">
+                <Button className="bg-primary hover:bg-primary text-white gap-1.5 h-9 px-4 text-sm font-medium rounded-[7px] shadow-sm">
                   <Plus size={15}/> Invite User
                 </Button>
               </div>
@@ -324,13 +324,13 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               {/* ── toolbar row ── */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}
-                <div className="flex items-center gap-2 h-9 px-3 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[7px] w-64 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                  <Search size={14} className="text-[#94a3b8] flex-shrink-0"/>
+                <div className="flex items-center gap-2 h-9 px-3 bg-card dark:bg-card border border-border dark:border-border rounded-[7px] w-64 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                  <Search size={14} className="text-muted-foreground flex-shrink-0"/>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}
                     placeholder="Search by name or email"
-                    className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] outline-none bg-transparent"/>
+                    className="flex-1 text-sm text-foreground dark:text-foreground placeholder:text-muted-foreground outline-none bg-transparent"/>
                   {search && (
-                    <Button variant="ghost" size="icon-xs" onClick={()=>setSearch("")} className="size-5 rounded-full text-[#94a3b8] hover:bg-transparent hover:text-[#475569]">
+                    <Button variant="ghost" size="icon-xs" onClick={()=>setSearch("")} className="size-5 rounded-full text-muted-foreground hover:bg-transparent hover:text-muted-foreground">
                       <X size={13} />
                     </Button>
                   )}
@@ -339,26 +339,26 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Status filter */}
                 <div className="relative">
                   <Button ref={statusFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowStatusFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterStatus?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterStatus?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <Filter size={12}/> Status {filterStatus && <span className="font-semibold">: {filterStatus}</span>}
-                    <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showStatusFilt?"rotate-180":""}`}/>
+                    <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showStatusFilt?"rotate-180":""}`}/>
                   </Button>
                   <Popover open={showStatusFilt} onClose={()=>setShowStatusFilt(false)} anchor={statusFRef} width="w-44">
                     <div className="py-1">
                       <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterStatus(null);setShowStatusFilt(false);setPage(1);}}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterStatus?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
-                        All Statuses {!filterStatus && <Check size={13} className="text-[#2563eb]"/>}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterStatus?"bg-primary/10 dark:bg-primary/20/30 text-primary":"text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                        All Statuses {!filterStatus && <Check size={13} className="text-primary"/>}
                       </Button>
                       {STATUSES.map(s=>{
                         const cfg=STATUS_CFG[s]; const active=filterStatus===s;
                         return(
                           <Button key={s} type="button" variant="ghost" size="sm" onClick={()=>{setFilterStatus(s);setShowStatusFilt(false);setPage(1);}}
-                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-primary/10 dark:bg-primary/20/30":"hover:bg-muted dark:hover:bg-muted"}`}>
                             <span className="flex items-center gap-2">
                               <span className="size-2 rounded-full flex-shrink-0" style={{backgroundColor:cfg.dot}}/>
-                              <span className={active?"text-[#2563eb] font-semibold":"text-[#374151] dark:text-[#cbd5e1]"}>{s}</span>
+                              <span className={active?"text-primary font-semibold":"text-muted-foreground dark:text-muted-foreground"}>{s}</span>
                             </span>
-                            {active && <Check size={13} className="text-[#2563eb]"/>}
+                            {active && <Check size={13} className="text-primary"/>}
                           </Button>
                         );
                       })}
@@ -369,24 +369,24 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Role filter */}
                 <div className="relative">
                   <Button ref={roleFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowRoleFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterRole?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterRole?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <ShieldCheck size={12}/> Role {filterRole && <span className="font-semibold">: {filterRole}</span>}
-                    <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showRoleFilt?"rotate-180":""}`}/>
+                    <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showRoleFilt?"rotate-180":""}`}/>
                   </Button>
                   <Popover open={showRoleFilt} onClose={()=>setShowRoleFilt(false)} anchor={roleFRef} width="w-44">
                     <div className="py-1">
                       <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterRole(null);setShowRoleFilt(false);setPage(1);}}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterRole?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
-                        All Roles {!filterRole && <Check size={13} className="text-[#2563eb]"/>}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterRole?"bg-primary/10 dark:bg-primary/20/30 text-primary":"text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                        All Roles {!filterRole && <Check size={13} className="text-primary"/>}
                       </Button>
                       {ROLES.map(r=>{
                         const cfg=ROLE_CFG[r]; const active=filterRole===r;
                         return(
                           <Button key={r} type="button" variant="ghost" size="sm" onClick={()=>{setFilterRole(r);setShowRoleFilt(false);setPage(1);}}
-                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-primary/10 dark:bg-primary/20/30":"hover:bg-muted dark:hover:bg-muted"}`}>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
                               style={{color:cfg.text,backgroundColor:cfg.bg}}>{r}</span>
-                            {active && <Check size={13} className="text-[#2563eb]"/>}
+                            {active && <Check size={13} className="text-primary"/>}
                           </Button>
                         );
                       })}
@@ -397,26 +397,26 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Group filter */}
                 <div className="relative">
                   <Button ref={groupFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowGroupFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterGroup?"border-[#2563eb] bg-[#eff6ff] text-[#2563eb]":"border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterGroup?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <Users size={12}/> Group {filterGroup && <span className="font-semibold">: {ALL_GROUPS.find(g=>g.id===filterGroup)?.name}</span>}
-                    <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showGroupFilt?"rotate-180":""}`}/>
+                    <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showGroupFilt?"rotate-180":""}`}/>
                   </Button>
                   <Popover open={showGroupFilt} onClose={()=>setShowGroupFilt(false)} anchor={groupFRef} width="w-48">
                     <div className="py-1">
                       <Button type="button" variant="ghost" size="sm" onClick={()=>{setFilterGroup(null);setShowGroupFilt(false);setPage(1);}}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterGroup?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb]":"text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
-                        All Groups {!filterGroup && <Check size={13} className="text-[#2563eb]"/>}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${!filterGroup?"bg-primary/10 dark:bg-primary/20/30 text-primary":"text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                        All Groups {!filterGroup && <Check size={13} className="text-primary"/>}
                       </Button>
                       {ALL_GROUPS.map(g=>{
                         const active=filterGroup===g.id;
                         return(
                           <Button key={g.id} type="button" variant="ghost" size="sm" onClick={()=>{setFilterGroup(g.id);setShowGroupFilt(false);setPage(1);}}
-                            className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
-                            <span className={`flex items-center gap-2 ${active?"text-[#2563eb] font-semibold":"text-[#374151] dark:text-[#cbd5e1]"}`}>
-                              <span className="size-2 rounded-full bg-[#3b82f6] flex-shrink-0"/>
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${active?"bg-primary/10 dark:bg-primary/20/30":"hover:bg-muted dark:hover:bg-muted"}`}>
+                            <span className={`flex items-center gap-2 ${active?"text-primary font-semibold":"text-muted-foreground dark:text-muted-foreground"}`}>
+                              <span className="size-2 rounded-full bg-muted flex-shrink-0"/>
                               {g.name}
                             </span>
-                            {active && <Check size={13} className="text-[#2563eb]"/>}
+                            {active && <Check size={13} className="text-primary"/>}
                           </Button>
                         );
                       })}
@@ -427,17 +427,17 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Columns toggle */}
                 <div className="relative ml-auto">
                   <Button ref={colRef} variant="outline" onClick={()=>{ closeAllPops(); setShowColPop(v=>!v); }}
-                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                     <Settings size={13}/> Columns
-                    <ChevronDown size={12} className={`text-[#94a3b8] transition-transform ${showColPop?"rotate-180":""}`}/>
+                    <ChevronDown size={12} className={`text-muted-foreground transition-transform ${showColPop?"rotate-180":""}`}/>
                   </Button>
                   <Popover open={showColPop} onClose={()=>setShowColPop(false)} anchor={colRef} width="w-44">
                     <div className="py-1">
-                      <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Toggle Columns</p>
+                      <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Toggle Columns</p>
                       {ALL_COLS.map(col=>(
                         <Button key={col.key} type="button" variant="ghost" size="sm" onClick={()=>toggleCol(col.key)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
-                          <span className={`size-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${visCols.has(col.key)?"bg-[#2563eb] border-[#2563eb]":"border-[#cbd5e1] dark:border-[#475569]"}`}>
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                          <span className={`size-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${visCols.has(col.key)?"bg-primary border-border":"border-border dark:border-border"}`}>
                             {visCols.has(col.key) && <Check size={10} className="text-white"/>}
                           </span>
                           {col.label}
@@ -451,42 +451,42 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               {/* active filter chips */}
               {activeFilters.length>0 && (
                 <div className="flex items-center gap-2 flex-wrap -mt-1">
-                  <span className="text-xs text-[#94a3b8]">Filters:</span>
+                  <span className="text-xs text-muted-foreground">Filters:</span>
                   {activeFilters.map(f=>(
-                    <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium bg-[#eff6ff] dark:bg-[#1e3a8a]/30 text-[#2563eb] border border-[#bfdbfe] dark:border-[#1e3a8a]">
+                    <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium bg-primary/10 dark:bg-primary/20/30 text-primary border border-primary/30 dark:border-primary/20">
                       {f.label}
-                      <Button variant="ghost" size="icon-xs" onClick={f.clear} className="ml-0.5 size-4 rounded-full hover:bg-transparent hover:text-[#1d4ed8]"><X size={11}/></Button>
+                      <Button variant="ghost" size="icon-xs" onClick={f.clear} className="ml-0.5 size-4 rounded-full hover:bg-transparent hover:text-primary"><X size={11}/></Button>
                     </span>
                   ))}
                   <Button variant="ghost" size="sm" onClick={()=>{setFilterStatus(null);setFilterRole(null);setFilterGroup(null);setPage(1);}}
-                    className="text-xs text-[#64748b] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] underline underline-offset-2 transition-colors">
+                    className="text-xs text-muted-foreground hover:text-foreground dark:hover:text-foreground underline underline-offset-2 transition-colors">
                     Clear all
                   </Button>
                 </div>
               )}
 
               {/* ── table card ── */}
-              <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.05)] flex flex-col flex-1 min-h-0">
+              <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.05)] flex flex-col flex-1 min-h-0">
 
                 {/* ── Aziron action bar (shown inside table card, above thead) ── */}
                 {selected.length>0 && (
-                  <div className="flex items-center gap-1 px-4 py-2.5 border-b border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b]">
-                    <span className="text-sm text-[#64748b] dark:text-[#94a3b8] mr-2">{selected.length} selected</span>
+                  <div className="flex items-center gap-1 px-4 py-2.5 border-b border-border dark:border-border bg-card dark:bg-card">
+                    <span className="text-sm text-muted-foreground dark:text-muted-foreground mr-2">{selected.length} selected</span>
 
                     {/* Change Role */}
                     <div className="relative">
                       <Button ref={roleRef} variant="outline" size="sm" onClick={()=>{ closeAllPops(); setShowRolePop(v=>!v); }}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
                         <ShieldCheck size={13}/> Change Role
-                        <ChevronDown size={11} className={`text-[#94a3b8] transition-transform ${showRolePop?"rotate-180":""}`}/>
+                        <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showRolePop?"rotate-180":""}`}/>
                       </Button>
                       <Popover open={showRolePop} onClose={()=>setShowRolePop(false)} anchor={roleRef} width="w-44">
-                        <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Select Role</p>
+                        <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Select Role</p>
                         {ROLES.map(r=>{
                           const cfg=ROLE_CFG[r];
                           return(
                             <Button key={r} type="button" variant="ghost" size="sm" onClick={()=>applyBulkRole(r)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
                                 style={{color:cfg.text,backgroundColor:cfg.bg}}>{r}</span>
                             </Button>
@@ -497,14 +497,14 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                     {/* Add to Group */}
                     <Button variant="outline" size="sm" onClick={openAddGroupModal}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
                       <UserPlus size={13}/> Add to Group
                     </Button>
 
                     {/* Deactivate */}
                     {selActive.length>0 && (
                       <Button variant="outline" size="sm" onClick={()=>setDeactivateModal(true)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#dc2626] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a] transition-colors">
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-border dark:border-border text-sm font-medium text-destructive hover:bg-destructive/10 dark:hover:bg-muted transition-colors">
                         <UserX size={13}/> Deactivate
                       </Button>
                     )}
@@ -512,14 +512,14 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                     {/* Activate */}
                     {selInactive.length>0 && (
                       <Button variant="outline" size="sm" onClick={()=>setActivateModal(true)}
-                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#16a34a] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16] transition-colors">
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-border dark:border-border text-sm font-medium text-success hover:bg-success/10 dark:hover:bg-muted transition-colors">
                         <UserCheck size={13}/> Activate
                       </Button>
                     )}
 
                     {/* Clear selection */}
                     <Button variant="outline" size="sm" onClick={clearSelection}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors ml-auto">
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors ml-auto">
                       <X size={13}/> Clear Selection
                     </Button>
                   </div>
@@ -528,17 +528,17 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 <div className="flex-1 min-h-0 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a]/40">
+                    <tr className="border-b border-border dark:border-border bg-background/40">
                       <th className="w-10 px-4 py-3">
                         <input type="checkbox" checked={allChecked} onChange={toggleAll}
                           className="rounded accent-[#2563eb] cursor-pointer size-[15px]"/>
                       </th>
-                      {visCols.has("name")      && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Name</th>}
-                      {visCols.has("email")     && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("email")} className="inline-flex h-auto px-0 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Email <SortIcon sortKey={sortKey} col="email" sortDir={sortDir}/></Button></th>}
-                      {visCols.has("role")      && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Role</th>}
-                      {visCols.has("groups")    && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Groups</th>}
-                      {visCols.has("status")    && <th className="px-4 py-3 text-left text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em]">Status</th>}
-                      {visCols.has("lastLogin") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("lastLogin")} className="inline-flex h-auto px-0 text-xs font-semibold text-[#64748b] dark:text-[#94a3b8] uppercase tracking-[0.05em] hover:bg-transparent hover:text-[#0f172a] dark:hover:bg-transparent dark:hover:text-[#f1f5f9]">Last Login <SortIcon sortKey={sortKey} col="lastLogin" sortDir={sortDir}/></Button></th>}
+                      {visCols.has("name")      && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em]">Name</th>}
+                      {visCols.has("email")     && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("email")} className="inline-flex h-auto px-0 text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em] hover:bg-transparent hover:text-foreground dark:hover:bg-transparent dark:hover:text-foreground">Email <SortIcon sortKey={sortKey} col="email" sortDir={sortDir}/></Button></th>}
+                      {visCols.has("role")      && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em]">Role</th>}
+                      {visCols.has("groups")    && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em]">Groups</th>}
+                      {visCols.has("status")    && <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em]">Status</th>}
+                      {visCols.has("lastLogin") && <th className="px-4 py-3 text-left"><Button variant="ghost" size="sm" onClick={()=>toggleSort("lastLogin")} className="inline-flex h-auto px-0 text-xs font-semibold text-muted-foreground dark:text-muted-foreground uppercase tracking-[0.05em] hover:bg-transparent hover:text-foreground dark:hover:bg-transparent dark:hover:text-foreground">Last Login <SortIcon sortKey={sortKey} col="lastLogin" sortDir={sortDir}/></Button></th>}
                       <th className="w-10 px-4 py-3"/>
                     </tr>
                   </thead>
@@ -549,10 +549,10 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                       const names     = groupNames(user.groups);
                       return(
                         <tr key={user.id}
-                          className={`border-b last:border-0 border-[#f1f5f9] dark:border-[#334155] transition-colors cursor-pointer
+                          className={`border-b last:border-0 border-border dark:border-border transition-colors cursor-pointer
                             ${user.checked
-                              ?"bg-[#eff6ff] dark:bg-[#1e3a8a]/20"
-                              :"hover:bg-[#f8fafc] dark:hover:bg-[#0f172a]/30"}`}
+                              ?"bg-primary/10 dark:bg-primary/20/20"
+                              :"hover:bg-muted dark:hover:bg-muted/30"}`}
                           onClick={()=>onViewUser&&onViewUser(user)}
                         >
                           <td className="px-4 py-3.5" onClick={e=>e.stopPropagation()}>
@@ -567,11 +567,11 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                   style={{background:avatarGrad(user.id)}}>
                                   {initials(user.name)}
                                 </div>
-                                <span className="font-medium text-[#0f172a] dark:text-[#f1f5f9] whitespace-nowrap">{user.name}</span>
+                                <span className="font-medium text-foreground dark:text-foreground whitespace-nowrap">{user.name}</span>
                               </div>
                             </td>
                           )}
-                          {visCols.has("email") && <td className="px-4 py-3.5 text-[#64748b] dark:text-[#94a3b8] whitespace-nowrap">{user.email}</td>}
+                          {visCols.has("email") && <td className="px-4 py-3.5 text-muted-foreground dark:text-muted-foreground whitespace-nowrap">{user.email}</td>}
                           {visCols.has("role") && (
                             <td className="px-4 py-3.5">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
@@ -582,12 +582,12 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-1 flex-wrap">
                                 {names.slice(0,1).map((n,i)=>(
-                                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-xs font-medium bg-[#f0f9ff] dark:bg-[#0c4a6e] text-[#0369a1] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]">{n}</span>
+                                  <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-xs font-medium bg-muted dark:bg-card text-info dark:text-foreground border border-border dark:border-border">{n}</span>
                                 ))}
                                 {names.length>1 && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-xs font-medium border bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8] border-[#e2e8f0] dark:border-[#475569]">+{names.length-1}</span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] text-xs font-medium border bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground border-border dark:border-border">+{names.length-1}</span>
                                 )}
-                                {names.length===0 && <span className="text-[#94a3b8] text-xs">—</span>}
+                                {names.length===0 && <span className="text-muted-foreground text-xs">—</span>}
                               </div>
                             </td>
                           )}
@@ -601,7 +601,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                               </span>
                             </td>
                           )}
-                          {visCols.has("lastLogin") && <td className="px-4 py-3.5 text-[#64748b] dark:text-[#94a3b8] text-xs whitespace-nowrap">{user.lastLogin}</td>}
+                          {visCols.has("lastLogin") && <td className="px-4 py-3.5 text-muted-foreground dark:text-muted-foreground text-xs whitespace-nowrap">{user.lastLogin}</td>}
 
                           {/* row context menu */}
                           <td className="px-4 py-3.5 relative" onClick={e=>e.stopPropagation()}>
@@ -612,47 +612,47 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                 setRowMenu(prev=>prev?.id===user.id?null:{id:user.id,top:rect.bottom+4,right:window.innerWidth-rect.right});
                                 setRowSubMenu(null);
                               }}
-                              className="flex items-center justify-center size-7 rounded-[5px] text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors">
+                              className="flex items-center justify-center size-7 rounded-[5px] text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
                               <MoreVertical size={14}/>
                             </button>
 
                             {rowMenu?.id===user.id && (
                               <div
-                                className="fixed z-50 w-52 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-visible py-1"
+                                className="fixed z-50 w-52 bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-visible py-1"
                                 style={{top:rowMenu.top,right:rowMenu.right}}
                                 onClick={e=>e.stopPropagation()}>
 
                                 {/* View Profile */}
                                 <button onClick={()=>{onViewUser&&onViewUser(user);setRowMenu(null);}}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
-                                  <Eye size={14} className="text-[#94a3b8]"/> View Profile
+                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                                  <Eye size={14} className="text-muted-foreground"/> View Profile
                                 </button>
 
                                 {/* Edit User */}
                                 <button onClick={()=>{setEditModal({user,draft:{name:user.name,email:user.email,role:user.role,status:user.status}});setRowMenu(null);}}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
-                                  <Pencil size={14} className="text-[#94a3b8]"/> Edit User
+                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                                  <Pencil size={14} className="text-muted-foreground"/> Edit User
                                 </button>
 
-                                <div className="h-px bg-[#f1f5f9] dark:bg-[#334155] my-1 mx-2"/>
+                                <div className="h-px bg-muted dark:bg-border my-1 mx-2"/>
 
                                 {/* Change Role — inline flyout */}
                                 <div className="relative">
                                   <button onClick={()=>setRowSubMenu(v=>v==="role"?null:"role")}
-                                    className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
-                                    <span className="flex items-center gap-2.5"><ShieldCheck size={14} className="text-[#94a3b8]"/> Change Role</span>
-                                    <ChevronRight size={12} className="text-[#94a3b8]"/>
+                                    className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                                    <span className="flex items-center gap-2.5"><ShieldCheck size={14} className="text-muted-foreground"/> Change Role</span>
+                                    <ChevronRight size={12} className="text-muted-foreground"/>
                                   </button>
                                   {rowSubMenu==="role" && (
-                                    <div className="absolute left-full top-0 ml-1 w-40 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
+                                    <div className="absolute left-full top-0 ml-1 w-40 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
                                       {ROLES.map(r=>{
                                         const cfg=ROLE_CFG[r]; const active=user.role===r;
                                         return(
                                           <button key={r} onClick={()=>rowChangeRole(user.id,r)}
-                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-[#eff6ff] dark:bg-[#1e3a8a]/30":"hover:bg-[#f8fafc] dark:hover:bg-[#334155] text-[#374151] dark:text-[#cbd5e1]"}`}>
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors ${active?"bg-primary/10 dark:bg-primary/20/30":"hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"}`}>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
                                               style={{color:cfg.text,backgroundColor:cfg.bg}}>{r}</span>
-                                            {active && <Check size={12} className="text-[#2563eb]"/>}
+                                            {active && <Check size={12} className="text-primary"/>}
                                           </button>
                                         );
                                       })}
@@ -663,19 +663,19 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                 {/* Add to Group */}
                                 <div className="relative">
                                   <button onClick={()=>setRowSubMenu(v=>v==="add-group"?null:"add-group")}
-                                    className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 text-sm text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors">
-                                    <span className="flex items-center gap-2.5"><UserPlus size={14} className="text-[#94a3b8]"/> Add to Group</span>
-                                    <ChevronRight size={12} className="text-[#94a3b8]"/>
+                                    className="w-full flex items-center justify-between gap-2.5 px-3 py-2.5 text-sm text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                                    <span className="flex items-center gap-2.5"><UserPlus size={14} className="text-muted-foreground"/> Add to Group</span>
+                                    <ChevronRight size={12} className="text-muted-foreground"/>
                                   </button>
                                   {rowSubMenu==="add-group" && (
-                                    <div className="absolute left-full top-0 ml-1 w-44 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 overflow-hidden z-10">
+                                    <div className="absolute left-full top-0 ml-1 w-44 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 overflow-hidden z-10">
                                       {ALL_GROUPS.map(g=>{
                                         const has=user.groups.includes(g.id);
                                         return(
                                           <button key={g.id} onClick={()=>!has&&rowAddToGroup(user.id,g.id)}
-                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${has?"opacity-40 cursor-not-allowed text-[#374151] dark:text-[#cbd5e1]":"hover:bg-[#f8fafc] dark:hover:bg-[#334155] text-[#374151] dark:text-[#cbd5e1]"}`}>
-                                            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#3b82f6]"/>{g.name}</span>
-                                            {has && <Check size={12} className="text-[#94a3b8]"/>}
+                                            className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm transition-colors ${has?"opacity-40 cursor-not-allowed text-muted-foreground dark:text-muted-foreground":"hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"}`}>
+                                            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-muted"/>{g.name}</span>
+                                            {has && <Check size={12} className="text-muted-foreground"/>}
                                           </button>
                                         );
                                       })}
@@ -683,20 +683,20 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                   )}
                                 </div>
 
-                                <div className="h-px bg-[#f1f5f9] dark:bg-[#334155] my-1 mx-2"/>
+                                <div className="h-px bg-muted dark:bg-border my-1 mx-2"/>
 
                                 {/* Deactivate / Activate */}
                                 <button onClick={()=>rowToggleStatus(user.id)}
                                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
                                     user.status==="Active"
-                                      ?"text-[#dc2626] dark:text-[#fca5a5] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a]"
-                                      :"text-[#16a34a] dark:text-[#86efac] hover:bg-[#f0fdf4] dark:hover:bg-[#052e16]"}`}>
+                                      ?"text-destructive dark:text-destructive hover:bg-destructive/10 dark:hover:bg-muted"
+                                      :"text-success dark:text-success hover:bg-success/10 dark:hover:bg-muted"}`}>
                                   {user.status==="Active"?<><UserX size={14}/> Deactivate</>:<><UserCheck size={14}/> Activate</>}
                                 </button>
 
                                 {/* Remove User */}
                                 <button onClick={()=>{setRemoveModal({user});setRowMenu(null);}}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#dc2626] dark:text-[#fca5a5] hover:bg-[#fef2f2] dark:hover:bg-[#450a0a] transition-colors">
+                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-destructive dark:text-destructive hover:bg-destructive/10 dark:hover:bg-muted transition-colors">
                                   <Trash2 size={14}/> Remove User
                                 </button>
                               </div>
@@ -708,12 +708,12 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                       <tr>
                         <td colSpan="10">
                           <div className="flex flex-col items-center gap-3 py-16 px-4">
-                            <div className="size-12 rounded-full bg-[#f1f5f9] dark:bg-[#334155] flex items-center justify-center">
-                              <Users size={22} className="text-[#94a3b8]"/>
+                            <div className="size-12 rounded-full bg-muted dark:bg-border flex items-center justify-center">
+                              <Users size={22} className="text-muted-foreground"/>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm font-semibold text-[#374151] dark:text-[#cbd5e1]">No users found</p>
-                              <p className="text-xs text-[#94a3b8] mt-1">
+                              <p className="text-sm font-semibold text-muted-foreground dark:text-muted-foreground">No users found</p>
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {search||filterStatus||filterRole||filterGroup
                                   ?"Try adjusting your search or filters"
                                   :"No users have been added yet"}
@@ -721,7 +721,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                             </div>
                             {(search||filterStatus||filterRole||filterGroup) && (
                               <Button variant="ghost" size="sm" onClick={()=>{setSearch("");setFilterStatus(null);setFilterRole(null);setFilterGroup(null);}}
-                                className="text-xs text-[#2563eb] hover:underline font-medium">
+                                className="text-xs text-primary hover:underline font-medium">
                                 Clear all filters
                               </Button>
                             )}
@@ -735,24 +735,24 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               </div>
 
               {/* ── pagination ── */}
-              <div className="flex items-center justify-between text-xs text-[#64748b] dark:text-[#94a3b8] flex-wrap gap-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground dark:text-muted-foreground flex-wrap gap-3">
                 <span>{selected.length} of {filtered.length} row(s) selected.</span>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span>Rows per page:</span>
                     <select value={rpp} onChange={e=>{setRpp(Number(e.target.value));setPage(1);}}
-                      className="h-7 px-2 rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] text-xs outline-none cursor-pointer">
+                      className="h-7 px-2 rounded-[5px] border border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground text-xs outline-none cursor-pointer">
                       {[5,10,20,50].map(n=><option key={n}>{n}</option>)}
                     </select>
                   </div>
-                  <span className="text-[#374151] dark:text-[#cbd5e1] font-medium">Page {safePage} of {totalPages}</span>
+                  <span className="text-muted-foreground dark:text-muted-foreground font-medium">Page {safePage} of {totalPages}</span>
                   <div className="flex items-center gap-1">
                     <Button variant="outline" size="icon-sm" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}
-                      className="size-7 flex items-center justify-center rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      className="size-7 flex items-center justify-center rounded-[5px] border border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       <ChevronLeft size={13}/>
                     </Button>
                     <Button variant="outline" size="icon-sm" onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={safePage===totalPages}
-                      className="size-7 flex items-center justify-center rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-[#374151] dark:text-[#cbd5e1] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      className="size-7 flex items-center justify-center rounded-[5px] border border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                       <ChevronRight size={13}/>
                     </Button>
                   </div>
@@ -775,19 +775,19 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 Add {addGroupModal.count} User{addGroupModal.count>1?"s":""} to Group
               </DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-[#64748b] dark:text-[#94a3b8] -mt-1">Select one or more groups to add the selected users to.</p>
+            <p className="text-sm text-muted-foreground dark:text-muted-foreground -mt-1">Select one or more groups to add the selected users to.</p>
 
             <div className="flex flex-col gap-2">
               {ALL_GROUPS.map(g=>{
                 const checked=addGroupModal.groupChecks[g.id];
                 return(
-                  <label key={g.id} className={`flex items-start gap-3 p-3 rounded-[8px] border cursor-pointer transition-colors ${checked?"border-[#2563eb] bg-[#eff6ff] dark:bg-[#1e3a8a]/20":"border-[#e2e8f0] dark:border-[#334155] hover:bg-[#f8fafc] dark:hover:bg-[#334155]"}`}>
+                  <label key={g.id} className={`flex items-start gap-3 p-3 rounded-[8px] border cursor-pointer transition-colors ${checked?"border-border bg-primary/10 dark:bg-primary/20/20":"border-border dark:border-border hover:bg-muted dark:hover:bg-muted"}`}>
                     <input type="checkbox" checked={checked}
                       onChange={()=>setAddGroupModal(prev=>({...prev,groupChecks:{...prev.groupChecks,[g.id]:!prev.groupChecks[g.id]}}))}
                       className="mt-0.5 rounded accent-[#2563eb] cursor-pointer size-[15px] flex-shrink-0"/>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]">{g.name}</p>
-                      <p className="text-xs text-[#94a3b8] mt-0.5">{g.members} members · {g.desc}</p>
+                      <p className="text-sm font-medium text-foreground dark:text-foreground">{g.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{g.members} members · {g.desc}</p>
                     </div>
                   </label>
                 );
@@ -798,7 +798,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               <Button variant="outline" onClick={()=>setAddGroupModal(null)}>Cancel</Button>
               <Button onClick={confirmAddToGroup}
                 disabled={!Object.values(addGroupModal.groupChecks).some(Boolean)}
-                className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white gap-1.5">
+                className="bg-primary hover:bg-primary text-white gap-1.5">
                 <UserPlus size={14}/> Add to Group
               </Button>
             </DialogFooter>
@@ -811,28 +811,28 @@ export default function UsersListPage({ onNavigate, onViewUser }){
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <span className="size-8 rounded-full bg-[#fef2f2] dark:bg-[#450a0a] flex items-center justify-center flex-shrink-0">
-                <UserX size={15} className="text-[#dc2626]"/>
+              <span className="size-8 rounded-full bg-destructive/10 dark:bg-card flex items-center justify-center flex-shrink-0">
+                <UserX size={15} className="text-destructive"/>
               </span>
               Deactivate {selActive.length} User{selActive.length>1?"s":""}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#64748b] dark:text-[#94a3b8] px-1">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground px-1">
             These users will lose access immediately. You can reactivate them anytime.
           </p>
-          <div className="max-h-36 overflow-y-auto rounded-[8px] border border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a] divide-y divide-[#e2e8f0] dark:divide-[#334155]">
+          <div className="max-h-36 overflow-y-auto rounded-[8px] border border-border dark:border-border bg-background divide-y divide-border dark:divide-[#334155]">
             {selActive.map(u=>(
               <div key={u.id} className="flex items-center gap-2.5 px-3 py-2">
                 <div className="size-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                   style={{background:avatarGrad(u.id)}}>{initials(u.name)}</div>
-                <span className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]">{u.name}</span>
-                <span className="ml-auto text-xs text-[#94a3b8] truncate">{u.email}</span>
+                <span className="text-sm font-medium text-foreground dark:text-foreground">{u.name}</span>
+                <span className="ml-auto text-xs text-muted-foreground truncate">{u.email}</span>
               </div>
             ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setDeactivateModal(false)}>Cancel</Button>
-            <Button onClick={confirmDeactivate} className="bg-[#dc2626] hover:bg-[#b91c1c] text-white gap-1.5">
+            <Button onClick={confirmDeactivate} className="bg-muted hover:bg-destructive text-white gap-1.5">
               <UserX size={14}/> Deactivate
             </Button>
           </DialogFooter>
@@ -844,26 +844,26 @@ export default function UsersListPage({ onNavigate, onViewUser }){
         <DialogContent className="sm:max-w-[420px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <span className="size-8 rounded-full bg-[#f0fdf4] dark:bg-[#052e16] flex items-center justify-center flex-shrink-0">
-                <UserCheck size={15} className="text-[#16a34a]"/>
+              <span className="size-8 rounded-full bg-success/10 dark:bg-card flex items-center justify-center flex-shrink-0">
+                <UserCheck size={15} className="text-success"/>
               </span>
               Activate {selInactive.length} User{selInactive.length>1?"s":""}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#64748b] dark:text-[#94a3b8] px-1">These users will regain access immediately.</p>
-          <div className="max-h-36 overflow-y-auto rounded-[8px] border border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a] divide-y divide-[#e2e8f0] dark:divide-[#334155]">
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground px-1">These users will regain access immediately.</p>
+          <div className="max-h-36 overflow-y-auto rounded-[8px] border border-border dark:border-border bg-background divide-y divide-border dark:divide-[#334155]">
             {selInactive.map(u=>(
               <div key={u.id} className="flex items-center gap-2.5 px-3 py-2">
                 <div className="size-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                   style={{background:avatarGrad(u.id)}}>{initials(u.name)}</div>
-                <span className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]">{u.name}</span>
-                <span className="ml-auto text-xs text-[#94a3b8] truncate">{u.email}</span>
+                <span className="text-sm font-medium text-foreground dark:text-foreground">{u.name}</span>
+                <span className="ml-auto text-xs text-muted-foreground truncate">{u.email}</span>
               </div>
             ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setActivateModal(false)}>Cancel</Button>
-            <Button onClick={confirmActivate} className="bg-[#16a34a] hover:bg-[#15803d] text-white gap-1.5">
+            <Button onClick={confirmActivate} className="bg-success/90 hover:bg-muted text-white gap-1.5">
               <UserCheck size={14}/> Activate
             </Button>
           </DialogFooter>
@@ -875,18 +875,18 @@ export default function UsersListPage({ onNavigate, onViewUser }){
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
-              <span className="size-8 rounded-full bg-[#fef2f2] dark:bg-[#450a0a] flex items-center justify-center flex-shrink-0">
-                <Trash2 size={15} className="text-[#dc2626]"/>
+              <span className="size-8 rounded-full bg-destructive/10 dark:bg-card flex items-center justify-center flex-shrink-0">
+                <Trash2 size={15} className="text-destructive"/>
               </span>
               Remove User
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#64748b] dark:text-[#94a3b8] px-1">
-            Are you sure you want to remove <strong className="text-[#0f172a] dark:text-[#f1f5f9]">{removeModal?.user.name}</strong>? This cannot be undone.
+          <p className="text-sm text-muted-foreground dark:text-muted-foreground px-1">
+            Are you sure you want to remove <strong className="text-foreground dark:text-foreground">{removeModal?.user.name}</strong>? This cannot be undone.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setRemoveModal(null)}>Cancel</Button>
-            <Button onClick={()=>confirmRemove(removeModal.user.id)} className="bg-[#dc2626] hover:bg-[#b91c1c] text-white gap-1.5">
+            <Button onClick={()=>confirmRemove(removeModal.user.id)} className="bg-muted hover:bg-destructive text-white gap-1.5">
               <Trash2 size={14}/> Remove
             </Button>
           </DialogFooter>
@@ -899,34 +899,34 @@ export default function UsersListPage({ onNavigate, onViewUser }){
           <DialogContent className="sm:max-w-[440px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
-                <Pencil size={15} className="text-[#64748b]"/> Edit User
+                <Pencil size={15} className="text-muted-foreground"/> Edit User
               </DialogTitle>
             </DialogHeader>
 
             <div className="flex flex-col gap-3">
               {[{field:"name",label:"Full Name",type:"text"},{field:"email",label:"Email Address",type:"email"}].map(({field,label,type})=>(
                 <div key={field}>
-                  <label className="block text-xs font-semibold text-[#374151] dark:text-[#cbd5e1] mb-1.5 uppercase tracking-wide">{label}</label>
+                  <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-1.5 uppercase tracking-wide">{label}</label>
                   <input type={type} value={editModal.draft[field]}
                     onChange={e=>setEditModal(prev=>({...prev,draft:{...prev.draft,[field]:e.target.value}}))}
-                    className="w-full h-9 px-3 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] text-[#0f172a] dark:text-[#f1f5f9] text-sm outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/20 transition-colors"/>
+                    className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none focus:border-border focus:ring-1 focus:ring-[#2563eb]/20 transition-colors"/>
                 </div>
               ))}
 
               <div>
-                <label className="block text-xs font-semibold text-[#374151] dark:text-[#cbd5e1] mb-1.5 uppercase tracking-wide">Role</label>
+                <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-1.5 uppercase tracking-wide">Role</label>
                 <select value={editModal.draft.role}
                   onChange={e=>setEditModal(prev=>({...prev,draft:{...prev.draft,role:e.target.value}}))}
-                  className="w-full h-9 px-3 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] text-[#0f172a] dark:text-[#f1f5f9] text-sm outline-none cursor-pointer focus:border-[#2563eb] transition-colors">
+                  className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none cursor-pointer focus:border-border transition-colors">
                   {ROLES.map(r=><option key={r}>{r}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#374151] dark:text-[#cbd5e1] mb-1.5 uppercase tracking-wide">Status</label>
+                <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-1.5 uppercase tracking-wide">Status</label>
                 <select value={editModal.draft.status}
                   onChange={e=>setEditModal(prev=>({...prev,draft:{...prev.draft,status:e.target.value}}))}
-                  className="w-full h-9 px-3 rounded-[7px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#0f172a] text-[#0f172a] dark:text-[#f1f5f9] text-sm outline-none cursor-pointer focus:border-[#2563eb] transition-colors">
+                  className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none cursor-pointer focus:border-border transition-colors">
                   {STATUSES.map(s=><option key={s}>{s}</option>)}
                 </select>
               </div>
@@ -934,7 +934,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
             <DialogFooter>
               <Button variant="outline" onClick={()=>setEditModal(null)}>Cancel</Button>
-              <Button onClick={saveEdit} className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white">Save Changes</Button>
+              <Button onClick={saveEdit} className="bg-primary hover:bg-primary text-white">Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         )}

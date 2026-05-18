@@ -39,11 +39,11 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
   };
 
   return (
-    <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.1),0px_2px_4px_-3px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden w-[240px]">
+    <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[6px] shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.1),0px_2px_4px_-3px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden w-[240px]">
       {/* Search */}
-      <div className="border-b border-[#e2e8f0] dark:border-[#334155] flex items-center px-3 py-2.5">
+      <div className="border-b border-border dark:border-border flex items-center px-3 py-2.5">
         <div className="pr-2 flex-shrink-0">
-          <Search size={16} className="text-[#64748b] dark:text-[#94a3b8]" />
+          <Search size={16} className="text-muted-foreground dark:text-muted-foreground" />
         </div>
         <input
           autoFocus
@@ -51,7 +51,7 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search Knowledge Hub..."
           aria-label="Search knowledge hubs"
-          className="flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9] leading-5 outline-none placeholder:text-[#64748b] dark:placeholder:text-[#94a3b8] bg-transparent"
+          className="flex-1 text-sm text-foreground dark:text-foreground leading-5 outline-none placeholder:text-muted-foreground dark:placeholder:text-muted-foreground bg-transparent"
         />
       </div>
 
@@ -64,36 +64,36 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
               onSelect(hub);
               onClose?.();
             }}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
+            className="w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] hover:bg-muted dark:hover:bg-muted transition-colors"
           >
             <div className="flex flex-col items-start">
-              <span className="text-sm text-[#0a0a0a] leading-5">{hub.name}</span>
-              <span className="text-xs text-[#64748b] dark:text-[#94a3b8] tracking-[0.12px] leading-4 whitespace-nowrap">
+              <span className="text-sm text-foreground leading-5">{hub.name}</span>
+              <span className="text-xs text-muted-foreground dark:text-muted-foreground tracking-[0.12px] leading-4 whitespace-nowrap">
                 {hub.fileCount === 1 ? "1 File" : `${hub.fileCount} Files`}
               </span>
             </div>
             {selectedHubId === hub.id && (
-              <Check size={14} className="text-[#2563eb] flex-shrink-0" />
+              <Check size={14} className="text-primary flex-shrink-0" />
             )}
           </button>
         ))}
         {filtered.length === 0 && (
           <div className="flex flex-col items-center gap-1.5 py-4 px-2">
-            <Database size={20} className="text-[#cbd5e1]" />
-            <p className="text-xs text-[#94a3b8] text-center">No hubs found.</p>
+            <Database size={20} className="text-foreground" />
+            <p className="text-xs text-muted-foreground text-center">No hubs found.</p>
           </div>
         )}
       </div>
 
       {/* Create section */}
-      <div className="border-t border-[#e2e8f0] dark:border-[#334155] p-1">
+      <div className="border-t border-border dark:border-border p-1">
         {!creating ? (
           <button
             onClick={() => setCreating(true)}
-            className="w-full flex items-center justify-center gap-2 h-9 px-4 py-2 bg-white dark:bg-[#1e293b] border border-[#cbd5e1] dark:border-[#334155] rounded-[6px] hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
+            className="w-full flex items-center justify-center gap-2 h-9 px-4 py-2 bg-card dark:bg-card border border-border dark:border-border rounded-[6px] hover:bg-muted dark:hover:bg-muted transition-colors"
           >
-            <Plus size={20} className="text-[#0f172a] dark:text-[#f1f5f9] flex-shrink-0" />
-            <span className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-5 whitespace-nowrap">
+            <Plus size={20} className="text-foreground dark:text-foreground flex-shrink-0" />
+            <span className="text-sm font-medium text-foreground dark:text-foreground leading-5 whitespace-nowrap">
               Create new knowledge hub
             </span>
           </button>
@@ -108,9 +108,9 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
               }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               placeholder="Hub name..."
-              className="text-sm text-[#0f172a] dark:text-[#f1f5f9] bg-white dark:bg-[#0f172a] border border-[#cbd5e1] dark:border-[#334155] rounded-[6px] px-3 py-1.5 outline-none focus:border-[#2563eb] placeholder:text-[#94a3b8] dark:placeholder:text-[#64748b]"
+              className="text-sm text-foreground dark:text-foreground bg-card dark:bg-background border border-border dark:border-border rounded-[6px] px-3 py-1.5 outline-none focus:border-border placeholder:text-muted-foreground dark:placeholder:text-muted-foreground"
             />
-            {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+            {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex gap-1.5">
               <button
                 onClick={() => {
@@ -118,13 +118,13 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
                   setNewHubName("");
                   setError("");
                 }}
-                className="flex-1 text-xs font-medium text-[#64748b] dark:text-[#94a3b8] border border-[#e2e8f0] dark:border-[#334155] rounded-[6px] py-1.5 hover:bg-[#f8fafc] dark:hover:bg-[#1e293b] transition-colors"
+                className="flex-1 text-xs font-medium text-muted-foreground dark:text-muted-foreground border border-border dark:border-border rounded-[6px] py-1.5 hover:bg-muted dark:hover:bg-muted transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
-                className="flex-1 text-xs font-medium text-white bg-[#2563eb] rounded-[6px] py-1.5 hover:bg-[#1d4ed8] transition-colors"
+                className="flex-1 text-xs font-medium text-white bg-primary rounded-[6px] py-1.5 hover:bg-primary transition-colors"
               >
                 Create &amp; select
               </button>
