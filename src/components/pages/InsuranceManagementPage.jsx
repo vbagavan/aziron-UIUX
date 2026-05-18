@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import {
   ClipboardList, Users, FileText, CheckCircle2,
@@ -89,15 +89,57 @@ const DASHBOARD_SUMMARY = {
   emails_sent_last_sync: 18,
 };
 
-const CYCLE_TREND = [
-  { label: "Feb C1", cost: 1120, submissions: 98  },
-  { label: "Feb C2", cost: 1145, submissions: 112 },
-  { label: "Mar C1", cost: 1180, submissions: 119 },
-  { label: "Mar C2", cost: 1156, submissions: 107 },
-  { label: "Apr C1", cost: 1210, submissions: 124 },
-  { label: "Apr C2", cost: 1228, submissions: 131 },
-  { label: "May C1", cost: 1241, submissions: 127 },
+const BATCH_TREND = [
+  { label: "Feb B1", cost: 1120, submissions: 98  },
+  { label: "Feb B2", cost: 1145, submissions: 112 },
+  { label: "Mar B1", cost: 1180, submissions: 119 },
+  { label: "Mar B2", cost: 1156, submissions: 107 },
+  { label: "Apr B1", cost: 1210, submissions: 124 },
+  { label: "Apr B2", cost: 1228, submissions: 131 },
+  { label: "May B1", cost: 1241, submissions: 127 },
 ];
+
+const BATCH_DATA = {
+  b1: {
+    id: "b1", label: "Batch 1–15", range: "May 1–15, 2026", status: "active",
+    totalEmployees: 148, enrollmentStarted: 148, completed: 97, pending: 24, missedDeadline: 27,
+    totalPremium: 312500, autoAssigned: 15, companyContribution: 218750, employeeContribution: 93750,
+    dependents: {
+      Self:     { completed: 97,  pending: 24, missed: 27, coverage: 500000, premiumTotal: 97000, companyShare: 67900, empShare: 29100 },
+      Spouse:   { completed: 58,  pending: 16, missed: 14, coverage: 400000, premiumTotal: 74000, companyShare: 51800, empShare: 22200 },
+      Father:   { completed: 41,  pending: 12, missed: 10, coverage: 300000, premiumTotal: 52000, companyShare: 36400, empShare: 15600 },
+      Mother:   { completed: 45,  pending: 14, missed: 11, coverage: 300000, premiumTotal: 54000, companyShare: 37800, empShare: 16200 },
+      Children: { completed: 44,  pending: 13, missed: 9,  coverage: 200000, premiumTotal: 35500, companyShare: 24850, empShare: 10650 },
+    },
+  },
+  b2: {
+    id: "b2", label: "Batch 16–30", range: "May 16–30, 2026", status: "upcoming",
+    totalEmployees: 134, enrollmentStarted: 134, completed: 82, pending: 28, missedDeadline: 24,
+    totalPremium: 282500, autoAssigned: 12, companyContribution: 197750, employeeContribution: 84750,
+    dependents: {
+      Self:     { completed: 82,  pending: 28, missed: 24, coverage: 500000, premiumTotal: 86000, companyShare: 60200, empShare: 25800 },
+      Spouse:   { completed: 50,  pending: 20, missed: 15, coverage: 400000, premiumTotal: 68000, companyShare: 47600, empShare: 20400 },
+      Father:   { completed: 35,  pending: 14, missed: 10, coverage: 300000, premiumTotal: 48000, companyShare: 33600, empShare: 14400 },
+      Mother:   { completed: 38,  pending: 16, missed: 11, coverage: 300000, premiumTotal: 50000, companyShare: 35000, empShare: 15000 },
+      Children: { completed: 39,  pending: 15, missed: 9,  coverage: 200000, premiumTotal: 30500, companyShare: 21350, empShare: 9150  },
+    },
+  },
+};
+
+const MISSED_EMPLOYEES_DATA = [
+  { id: "EMP0042", name: "Brian Kwon",   dept: "Marketing",   batch: "b1", missedDays: 14, autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "auto_assigned"  },
+  { id: "EMP0061", name: "Frank Osei",   dept: "Sales",       batch: "b1", missedDays: 9,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
+  { id: "EMP0100", name: "James Okafor", dept: "Marketing",   batch: "b1", missedDays: 11, autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
+  { id: "EMP0161", name: "Rosa Kim",     dept: "Marketing",   batch: "b1", missedDays: 8,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
+  { id: "EMP0073", name: "Grace Tanner", dept: "Legal",       batch: "b1", missedDays: 3,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
+  { id: "EMP0201", name: "Tom Bradley",  dept: "Engineering", batch: "b2", missedDays: 5,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
+  { id: "EMP0218", name: "Nina Patel",   dept: "Finance",     batch: "b2", missedDays: 3,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
+  { id: "EMP0234", name: "Marcus Webb",  dept: "HR",          batch: "b2", missedDays: 7,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "auto_assigned"  },
+  { id: "EMP0249", name: "Priya Sharma", dept: "Operations",  batch: "b2", missedDays: 2,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
+  { id: "EMP0267", name: "Ali Hassan",   dept: "Product",     batch: "b2", missedDays: 4,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
+];
+
+const DEP_NAMES = ["Self", "Spouse", "Father", "Mother", "Children"];
 
 const STATUS_META = {
   approved:            { label: "Approved",            pill: "bg-success/10 text-success border-success-ring",             dot: "bg-success" },
@@ -469,179 +511,503 @@ function OverviewTab() {
   );
 }
 
-// ─── Tab: Cycle Processing ────────────────────────────────────────────────────
+// ─── Batch Processing Dashboard ──────────────────────────────────────────────
 
-function CycleTab() {
-  const currentCycle = {
-    number: 1, label: "Cycle 1 — May 2026",
-    start: "May 1", end: "May 15", cutoff: "May 15, 2026",
-    daysRemaining: 1, submissionsInBatch: 12, prevTotal: 18,
-    completionPct: 67, status: "active",
-  };
-  const nextCycle = { label: "Cycle 2 — May 2026", start: "May 15", end: "May 31", starts: "May 15, 2026" };
-
-  const batchQueue = EMPLOYEES.filter(e => ["submitted", "under_clarification"].includes(e.status));
-
+function CompletionDonut({ batch }) {
+  const data = [
+    { name: "Completed", value: batch.completed,      fill: "var(--success)"     },
+    { name: "Pending",   value: batch.pending,        fill: "var(--warning)"     },
+    { name: "Missed",    value: batch.missedDeadline, fill: "var(--destructive)" },
+  ];
+  const pct = Math.round((batch.completed / batch.totalEmployees) * 100);
   return (
-    <div className="space-y-5">
-      {/* Current cycle banner */}
-      <div className="rounded-2xl overflow-hidden border border-primary/30 bg-gradient-to-br from-primary to-primary/80" >
-        <div className="px-6 py-5 flex items-start justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="size-12 rounded-2xl bg-card/10 flex items-center justify-center flex-shrink-0">
-              <Zap size={22} className="text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">Current Active Cycle</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/20 text-success border border-green-400/30">LIVE</span>
-              </div>
-              <h2 className="text-xl font-bold text-white">{currentCycle.label}</h2>
-              <p className="text-sm text-primary/80 mt-1">
-                {currentCycle.start} → {currentCycle.end} · Processing begins on cutoff: <strong className="text-white">{currentCycle.cutoff}</strong>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-5 flex-shrink-0">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-white">{currentCycle.daysRemaining}</p>
-              <p className="text-xs text-primary/80 mt-0.5">day{currentCycle.daysRemaining !== 1 ? "s" : ""} to cutoff</p>
-            </div>
-            <div className="w-px h-10 bg-card/20" />
-            <div className="text-center">
-              <p className="text-3xl font-bold text-white">{currentCycle.submissionsInBatch}</p>
-              <p className="text-xs text-primary/80 mt-0.5">in this batch</p>
-            </div>
-          </div>
-        </div>
-        {/* Progress bar */}
-        <div className="px-6 pb-5">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-primary/80">Cycle completion</span>
-            <span className="text-xs font-semibold text-white">{currentCycle.completionPct}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-card/20">
-            <div className="h-2 rounded-full bg-card transition-all duration-500" style={{ width: `${currentCycle.completionPct}%` }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Cycle metrics */}
-      <div>
-        <SectionHeading icon={BarChart2} label="Cycle Metrics" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <MetricCard icon={Users}        label="Current Cycle Volume" value={currentCycle.submissionsInBatch}
-            sub="Submissions queued"                               variant="primary" />
-          <MetricCard icon={BarChart2}    label="vs Previous Cycle"   value={currentCycle.prevTotal}
-            sub="Apr C2 submissions"                              variant="info"
-            trend={Math.round((currentCycle.submissionsInBatch - currentCycle.prevTotal) / currentCycle.prevTotal * 100)} />
-          <MetricCard icon={CheckCircle2} label="Cycle Completion"    value={`${currentCycle.completionPct}%`}
-            sub="Of expected submissions"                         variant="success" />
-          <MetricCard icon={DollarSign}   label="Est. Cycle Cost"     value="$284k"
-            sub="Projected insurance cost"                        variant="warning" />
-        </div>
-      </div>
-
-      {/* Business logic callout */}
-      <div className="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning-ring">
-        <div className="size-8 rounded-xl bg-warning/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <Clock size={15} className="text-warning" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-warning-foreground">Batch Processing Logic</p>
-          <p className="text-xs text-warning mt-1 leading-relaxed">
-            All submissions received between <strong>May 1 – May 15</strong> are batched together.
-            Even if an employee submits on May 2nd, their request will not be processed until the <strong>cycle cutoff on May 15</strong>.
-            This consolidates requests for operational and financial processing.
-          </p>
-        </div>
-      </div>
-
-      {/* Cycle timeline */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <p className="text-sm font-semibold text-foreground mb-4">May 2026 — Processing Timeline</p>
-        <div className="relative">
-          {/* Track */}
-          <div className="absolute top-5 left-4 right-4 h-0.5 bg-border rounded-full" />
-          <div className="flex items-start justify-between relative">
-            {[
-              { day: "May 1",  label: "C1 Opens",        state: "done",    sub: "Enrollment begins" },
-              { day: "May 7",  label: "Mid-Cycle",        state: "done",    sub: "12 submissions so far" },
-              { day: "May 14", label: "Today",            state: "current", sub: "1 day to cutoff" },
-              { day: "May 15", label: "C1 Cutoff",        state: "next",    sub: "Processing begins" },
-              { day: "May 15", label: "C2 Opens",         state: "future",  sub: "Next cycle starts" },
-              { day: "May 31", label: "C2 Cutoff",        state: "future",  sub: "Month end" },
-            ].map((step, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 z-10">
-                <div className={`size-10 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-                  step.state === "done"    ? "bg-primary border-primary text-white" :
-                  step.state === "current" ? "bg-card border-blue-600 text-primary ring-4 ring-primary/20" :
-                  step.state === "next"    ? "bg-amber-50 border-warning text-warning" :
-                  "bg-card border-border text-muted-foreground"
-                }`}>
-                  {step.state === "done" ? <CheckCircle2 size={16} /> : step.state === "current" ? <Play size={12} /> : <ArrowRight size={12} />}
-                </div>
-                <div className="text-center">
-                  <p className="text-[11px] font-bold text-foreground">{step.day}</p>
-                  <p className={`text-[11px] font-semibold ${step.state === "current" ? "text-primary" : "text-muted-foreground"}`}>{step.label}</p>
-                  <p className="text-[10px] text-muted-foreground max-w-[70px]">{step.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Batch queue */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">Current Batch Queue</span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/15 text-primary">{batchQueue.length} pending processing</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Processing on May 15, 2026</span>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              {["Employee", "Department", "Plan", "Submitted", "Status", "Est. Cost"].map(h => (
-                <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {batchQueue.map(emp => (
-              <tr key={emp.id} className="border-b border-border hover:bg-muted transition-colors">
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <EmployeeAvatar id={emp.id} name={emp.name} />
-                    <span className="text-[13px] font-semibold text-foreground">{emp.name}</span>
-                  </div>
-                </td>
-                <td className="px-5 py-3"><span className="text-xs text-muted-foreground">{emp.dept}</span></td>
-                <td className="px-5 py-3"><span className="text-xs font-medium text-muted-foreground">{emp.plan}</span></td>
-                <td className="px-5 py-3"><span className="text-xs text-muted-foreground">{emp.submitted ? new Date(emp.submitted + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</span></td>
-                <td className="px-5 py-3"><StatusPill status={emp.status} /></td>
-                <td className="px-5 py-3"><span className="text-xs font-semibold text-foreground">{emp.cost > 0 ? `$${emp.cost}` : "—"}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Next cycle preview */}
-      <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted border border-border">
-        <div className="size-8 rounded-xl bg-border flex items-center justify-center flex-shrink-0">
-          <ArrowRight size={15} className="text-muted-foreground" />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">Next: {nextCycle.label}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{nextCycle.start} → {nextCycle.end} · Opens {nextCycle.starts}</p>
-        </div>
-        <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-border text-muted-foreground">Upcoming</span>
+    <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>
+      <ResponsiveContainer width={140} height={140}>
+        <PieChart>
+          <Pie data={data} cx="50%" cy="50%" innerRadius={46} outerRadius={62}
+            paddingAngle={3} dataKey="value" startAngle={90} endAngle={-270}>
+            {data.map((entry, i) => <Cell key={i} fill={entry.fill} stroke="transparent" />)}
+          </Pie>
+          <Tooltip formatter={(v, n) => [v, n]}
+            contentStyle={{ borderRadius: 10, fontSize: 11, border: "1px solid var(--border)", padding: "4px 8px" }} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <span className="text-xl font-bold text-foreground leading-none">{pct}%</span>
+        <span className="text-[10px] text-muted-foreground mt-0.5">Complete</span>
       </div>
     </div>
   );
+}
+
+function BatchProcessingDashboard() {
+  const [batchFilter, setBatchFilter]   = useState("all");
+  const [deptFilter,  setDeptFilter]    = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch]             = useState("");
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  const toggleRow = (id) => setExpandedRows(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const batches = Object.values(BATCH_DATA);
+
+  const depBarData = DEP_NAMES.map(dep => ({
+    name: dep,
+    "B1 Completed": BATCH_DATA.b1.dependents[dep].completed,
+    "B1 Pending":   BATCH_DATA.b1.dependents[dep].pending,
+    "B1 Missed":    BATCH_DATA.b1.dependents[dep].missed,
+    "B2 Completed": BATCH_DATA.b2.dependents[dep].completed,
+    "B2 Pending":   BATCH_DATA.b2.dependents[dep].pending,
+    "B2 Missed":    BATCH_DATA.b2.dependents[dep].missed,
+  }));
+
+  const filteredMissed = useMemo(() => MISSED_EMPLOYEES_DATA.filter(emp => {
+    const matchBatch  = batchFilter  === "all" || emp.batch  === batchFilter;
+    const matchDept   = deptFilter   === "all" || emp.dept   === deptFilter;
+    const matchStatus = statusFilter === "all" || emp.status === statusFilter;
+    const q = search.toLowerCase();
+    const matchSearch = !q || emp.name.toLowerCase().includes(q) || emp.id.toLowerCase().includes(q);
+    return matchBatch && matchDept && matchStatus && matchSearch;
+  }), [batchFilter, deptFilter, statusFilter, search]);
+
+  const totalPremium  = batches.reduce((s, b) => s + b.totalPremium, 0);
+  const totalCompany  = batches.reduce((s, b) => s + b.companyContribution, 0);
+  const totalEmployee = batches.reduce((s, b) => s + b.employeeContribution, 0);
+  const missedPremium = MISSED_EMPLOYEES_DATA.reduce((s, e) => s + e.monthlyPremium, 0);
+  const missedPayroll = MISSED_EMPLOYEES_DATA.reduce((s, e) => s + e.payrollDeduction, 0);
+
+  const premiumChartData = [
+    { batch: "B1–15",  company: Math.round(BATCH_DATA.b1.companyContribution / 1000), employee: Math.round(BATCH_DATA.b1.employeeContribution / 1000) },
+    { batch: "B16–30", company: Math.round(BATCH_DATA.b2.companyContribution / 1000), employee: Math.round(BATCH_DATA.b2.employeeContribution / 1000) },
+  ];
+
+  const missedStatusMeta = {
+    auto_assigned:  { label: "Auto-Assigned",  pill: "bg-info/10 text-info border-info-ring"         },
+    pending_review: { label: "Pending Review", pill: "bg-warning/10 text-warning border-warning-ring" },
+  };
+
+  return (
+    <div className="space-y-6">
+
+      {/* ── SECTION 1: Two-column batch overview ── */}
+      <div>
+        <SectionHeading icon={BarChart2} label="Batch Overview" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {batches.map(batch => {
+            const pct = v => Math.round((v / batch.totalEmployees) * 100);
+            return (
+              <div key={batch.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{batch.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{batch.range}</p>
+                  </div>
+                  <span className={cn(
+                    "px-2.5 py-0.5 rounded-full text-[10px] font-bold border",
+                    batch.status === "active"
+                      ? "bg-success/10 text-success border-success/25"
+                      : "bg-muted text-muted-foreground border-border",
+                  )}>
+                    {batch.status === "active" ? "ACTIVE" : "UPCOMING"}
+                  </span>
+                </div>
+
+                {/* Donut + key stats */}
+                <div className="flex items-center gap-5">
+                  <CompletionDonut batch={batch} />
+                  <div className="flex-1 space-y-2">
+                    {[
+                      { label: "Total Employees",    value: batch.totalEmployees,    color: "text-primary",         dot: "bg-primary"         },
+                      { label: "Enrollment Started", value: batch.enrollmentStarted, color: "text-info",            dot: "bg-info"            },
+                      { label: "Completed",          value: batch.completed,         color: "text-success",         dot: "bg-success"         },
+                      { label: "Pending",            value: batch.pending,           color: "text-warning",         dot: "bg-warning"         },
+                      { label: "Missed Deadline",    value: batch.missedDeadline,    color: "text-destructive",     dot: "bg-destructive"     },
+                      { label: "Auto-Assigned",      value: batch.autoAssigned,      color: "text-muted-foreground", dot: "bg-muted-foreground" },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("size-1.5 rounded-full flex-shrink-0", item.dot)} />
+                          <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                        </div>
+                        <span className={cn("text-xs font-bold tabular-nums", item.color)}>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Progress bars */}
+                <div className="space-y-2 pt-3 border-t border-border">
+                  {[
+                    { label: "Completed",       pct: pct(batch.completed),       bar: "bg-success"     },
+                    { label: "Pending",         pct: pct(batch.pending),         bar: "bg-warning"     },
+                    { label: "Missed Deadline", pct: pct(batch.missedDeadline),  bar: "bg-destructive" },
+                  ].map(item => (
+                    <div key={item.label}>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                        <span className="text-[11px] font-semibold text-foreground">{item.pct}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className={cn("h-1.5 rounded-full transition-all duration-500", item.bar)}
+                          style={{ width: `${item.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Premium footer */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {[
+                    { label: "Total Premium",   value: fmtCurrency(batch.totalPremium),         accent: "text-foreground" },
+                    { label: "Company",         value: fmtCurrency(batch.companyContribution),  accent: "text-success"    },
+                    { label: "Employee",        value: fmtCurrency(batch.employeeContribution), accent: "text-primary"    },
+                  ].map(item => (
+                    <div key={item.label} className="bg-muted rounded-xl px-3 py-2 text-center">
+                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className={cn("text-xs font-bold mt-0.5", item.accent)}>{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── SECTION 2: Dependent-wise stacked bar chart ── */}
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+        <SectionHeading icon={Users} label="Dependent-wise Enrollment Comparison" />
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4">
+          {[
+            { label: "B1 Completed", color: "#22c55e" },
+            { label: "B1 Pending",   color: "#f97316" },
+            { label: "B1 Missed",    color: "#fca5a5" },
+            { label: "B2 Completed", color: "#6366f1" },
+            { label: "B2 Pending",   color: "#eab308" },
+            { label: "B2 Missed",    color: "#ef4444" },
+          ].map(l => (
+            <div key={l.label} className="flex items-center gap-1.5">
+              <span className="size-2.5 rounded-sm flex-shrink-0" style={{ background: l.color }} />
+              <span className="text-[11px] text-muted-foreground">{l.label}</span>
+            </div>
+          ))}
+        </div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={depBarData} barSize={9} barGap={2} barCategoryGap="32%">
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+            <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.tooltipBorder}`, fontSize: 12 }} />
+            <Bar dataKey="B1 Completed" stackId="b1" fill="#22c55e" />
+            <Bar dataKey="B1 Pending"   stackId="b1" fill="#f97316" />
+            <Bar dataKey="B1 Missed"    stackId="b1" fill="#fca5a5" radius={[3,3,0,0]} />
+            <Bar dataKey="B2 Completed" stackId="b2" fill="#6366f1" />
+            <Bar dataKey="B2 Pending"   stackId="b2" fill="#eab308" />
+            <Bar dataKey="B2 Missed"    stackId="b2" fill="#ef4444" radius={[3,3,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* ── SECTION 3: Dependent split-up table ── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-border">
+          <SectionHeading icon={Users} label="Dependent Split-up Details" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+          {batches.map(batch => (
+            <div key={batch.id}>
+              <div className="px-5 py-2.5 bg-muted/40 border-b border-border flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">{batch.label}</span>
+                <span className={cn(
+                  "px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                  batch.status === "active" ? "bg-success/10 text-success border-success/25" : "bg-muted text-muted-foreground border-border",
+                )}>{batch.status === "active" ? "ACTIVE" : "UPCOMING"}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {["Dependent", "Completed", "Pending", "Missed", "Coverage", "Company", "Emp. Payable"].map(h => (
+                        <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DEP_NAMES.map(dep => {
+                      const d = batch.dependents[dep];
+                      return (
+                        <tr key={dep} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                          <td className="px-4 py-2.5"><span className="text-xs font-semibold text-foreground">{dep}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs font-bold text-success">{d.completed}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs font-bold text-warning">{d.pending}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs font-bold text-destructive">{d.missed}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs text-muted-foreground">{fmtCurrency(d.coverage)}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs text-success font-semibold">{fmtCurrency(d.companyShare)}</span></td>
+                          <td className="px-4 py-2.5"><span className="text-xs font-bold text-primary">{fmtCurrency(d.empShare)}</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── SECTION 4: Missed deadline employees ── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+        {/* Toolbar */}
+        <div className="px-5 py-4 border-b border-border space-y-3">
+          <div className="flex items-center gap-2">
+            <SectionHeading icon={Clock} label="Missed Deadline Employees" />
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-destructive/10 text-destructive border border-destructive/20">
+              {filteredMissed.length}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name / ID…"
+                className="h-8 pl-7 pr-3 w-44 rounded-xl text-xs bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+            </div>
+            {[
+              { value: batchFilter,  onChange: setBatchFilter,  opts: [["all","All Batches"],["b1","Batch 1–15"],["b2","Batch 16–30"]] },
+              { value: deptFilter,   onChange: setDeptFilter,   opts: [["all","All Depts"], ...DEPARTMENTS.map(d => [d, d])] },
+              { value: statusFilter, onChange: setStatusFilter, opts: [["all","All Statuses"],["auto_assigned","Auto-Assigned"],["pending_review","Pending Review"]] },
+            ].map((sel, i) => (
+              <div key={i} className="relative">
+                <select value={sel.value} onChange={e => sel.onChange(e.target.value)}
+                  className="h-8 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
+                  {sel.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+            ))}
+            <button className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors ml-auto">
+              <FileDown size={11} /> Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="w-8 px-3 py-3" />
+                {["Employee","ID","Dept","Batch","Missed Since","Auto Plan","Min. Coverage","Monthly Premium","Payroll Deduction","Status"].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMissed.length === 0 ? (
+                <tr><td colSpan={11} className="px-5 py-10 text-center text-sm text-muted-foreground">No employees match your filters.</td></tr>
+              ) : filteredMissed.map(emp => {
+                const expanded = expandedRows.has(emp.id);
+                const sm = missedStatusMeta[emp.status] ?? missedStatusMeta.auto_assigned;
+                return (
+                  <Fragment key={emp.id}>
+                    <tr className="border-b border-border hover:bg-muted/40 transition-colors">
+                      <td className="px-3 py-3">
+                        <button onClick={() => toggleRow(emp.id)}
+                          className="size-6 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors">
+                          <ChevronDown size={13} className={cn("transition-transform duration-200", expanded && "rotate-180")} />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <EmployeeAvatar id={parseInt(emp.id.replace("EMP", ""), 10)} name={emp.name} />
+                          <span className="text-[13px] font-semibold text-foreground whitespace-nowrap">{emp.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><span className="font-mono text-xs text-muted-foreground">{emp.id}</span></td>
+                      <td className="px-4 py-3"><span className="text-xs text-muted-foreground">{emp.dept}</span></td>
+                      <td className="px-4 py-3">
+                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                          emp.batch === "b1" ? "bg-primary/10 text-primary border-primary/20" : "bg-muted text-muted-foreground border-border")}>
+                          {emp.batch === "b1" ? "B1–15" : "B16–30"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-1 text-xs font-semibold text-destructive whitespace-nowrap">
+                          <Clock size={11} />{emp.missedDays}d ago
+                        </span>
+                      </td>
+                      <td className="px-4 py-3"><span className="text-xs text-muted-foreground whitespace-nowrap">{emp.autoPolicy}</span></td>
+                      <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{fmtCurrency(emp.minCoverage)}</span></td>
+                      <td className="px-4 py-3"><span className="text-xs font-bold text-primary">${emp.monthlyPremium}<span className="font-normal text-muted-foreground">/mo</span></span></td>
+                      <td className="px-4 py-3"><span className="text-xs font-bold text-warning">${emp.payrollDeduction}</span></td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap", sm.pill)}>
+                          {sm.label}
+                        </span>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr className="bg-muted/20 border-b border-border">
+                        <td colSpan={11} className="px-8 py-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {[
+                              { label: "Min. Coverage",     value: fmtCurrencyFull(emp.minCoverage),  accent: "text-foreground" },
+                              { label: "Monthly Premium",   value: `$${emp.monthlyPremium}/mo`,        accent: "text-primary"    },
+                              { label: "Payroll Deduction", value: `$${emp.payrollDeduction}/mo`,      accent: "text-warning"    },
+                              { label: "Company Share",     value: `$${emp.companyShare}/mo`,          accent: "text-success"    },
+                            ].map(item => (
+                              <div key={item.label} className="bg-card border border-border rounded-xl p-3">
+                                <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
+                                <p className={cn("text-sm font-bold mt-1", item.accent)}>{item.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── SECTION 5: Financial summary ── */}
+      <div className="space-y-4">
+        <SectionHeading icon={DollarSign} label="Financial Summary" />
+        <MetricCard icon={DollarSign} label="Total Premium" value={fmtCurrency(totalPremium)} variant="primary" />
+      </div>
+
+      {/* ── Batch-wise Report ── */}
+      <div>
+        <SectionHeading icon={BarChart2} label="Batch-wise Report" />
+        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  {["Batch", "Date Range", "Total Employees", "Enrollment Started", "Completed", "Pending", "Missed Deadline", "Total Premium", "Company Contribution", "Emp. Contribution"].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values(BATCH_DATA).map(batch => (
+                  <tr key={batch.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                    <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{batch.label}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs text-muted-foreground">{batch.range}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{batch.totalEmployees}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{batch.enrollmentStarted}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-bold text-success">{batch.completed}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-bold text-warning">{batch.pending}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-bold text-destructive">{batch.missedDeadline}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{fmtCurrency(batch.totalPremium)}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs text-success">{fmtCurrency(batch.companyContribution)}</span></td>
+                    <td className="px-4 py-3"><span className="text-xs text-primary">{fmtCurrency(batch.employeeContribution)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Consolidated Report ── */}
+      <div>
+        <SectionHeading icon={ClipboardList} label="Consolidated Report" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Summary Cards */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Overall Metrics</p>
+            <div className="space-y-3">
+              {[
+                { label: "Total Employees", value: Object.values(BATCH_DATA).reduce((s, b) => s + b.totalEmployees, 0), color: "text-foreground" },
+                { label: "Enrollment Started", value: Object.values(BATCH_DATA).reduce((s, b) => s + b.enrollmentStarted, 0), color: "text-primary" },
+                { label: "Completed", value: Object.values(BATCH_DATA).reduce((s, b) => s + b.completed, 0), color: "text-success" },
+                { label: "Pending", value: Object.values(BATCH_DATA).reduce((s, b) => s + b.pending, 0), color: "text-warning" },
+                { label: "Missed Deadline", value: Object.values(BATCH_DATA).reduce((s, b) => s + b.missedDeadline, 0), color: "text-destructive" },
+              ].map(item => (
+                <div key={item.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <span className="text-xs text-muted-foreground">{item.label}</span>
+                  <span className={cn("text-sm font-bold", item.color)}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Financial Summary */}
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Financial Summary</p>
+            <div className="space-y-3">
+              {[
+                { label: "Total Premium", value: fmtCurrency(Object.values(BATCH_DATA).reduce((s, b) => s + b.totalPremium, 0)), color: "text-foreground" },
+                { label: "Company Contribution", value: fmtCurrency(Object.values(BATCH_DATA).reduce((s, b) => s + b.companyContribution, 0)), color: "text-success" },
+                { label: "Employee Contribution", value: fmtCurrency(Object.values(BATCH_DATA).reduce((s, b) => s + b.employeeContribution, 0)), color: "text-primary" },
+              ].map(item => (
+                <div key={item.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <span className="text-xs text-muted-foreground">{item.label}</span>
+                  <span className={cn("text-sm font-bold", item.color)}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Location Summary */}
+          <div className="lg:col-span-2 bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-5 py-3 border-b border-border bg-muted/40">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Location-wise Enrollment</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    {["Location", "Employees", "Enrolled", "Enrollment %", "Current Cost", "Previous Cost", "Change"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {LOCATION_COST.map(loc => {
+                    const enrollmentPct = Math.round((loc.enrolled / loc.employees) * 100);
+                    const change = loc.cost - loc.prev;
+                    const changePct = Math.round((change / loc.prev) * 100);
+                    return (
+                      <tr key={loc.location} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                        <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{loc.location}</span></td>
+                        <td className="px-4 py-3"><span className="text-xs text-foreground">{loc.employees}</span></td>
+                        <td className="px-4 py-3"><span className="text-xs font-semibold text-success">{loc.enrolled}</span></td>
+                        <td className="px-4 py-3"><span className="text-xs font-semibold text-primary">{enrollmentPct}%</span></td>
+                        <td className="px-4 py-3"><span className="text-xs font-semibold text-foreground">{fmtCurrency(loc.cost)}</span></td>
+                        <td className="px-4 py-3"><span className="text-xs text-muted-foreground">{fmtCurrency(loc.prev)}</span></td>
+                        <td className="px-4 py-3">
+                          <span className={cn("text-xs font-semibold", change >= 0 ? "text-destructive" : "text-success")}>
+                            {change >= 0 ? "+" : ""}{fmtCurrency(change)} ({changePct >= 0 ? "+" : ""}{changePct}%)
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+
+// ─── Tab: Batch Processing ────────────────────────────────────────────────────
+
+function BatchTab() {
+  return <BatchProcessingDashboard />;
 }
 
 // ─── Tab: Financial Insights ──────────────────────────────────────────────────
@@ -727,12 +1093,12 @@ function FinancialTab() {
       <div className="bg-card border border-border rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-semibold text-foreground">Insurance Cost Trend (7 Cycles)</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Total estimated liability per cycle · in $k</p>
+            <p className="text-sm font-semibold text-foreground">Insurance Cost Trend (7 Batches)</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Total estimated liability per batch · in $k</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={CYCLE_TREND}>
+          <LineChart data={BATCH_TREND}>
             <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} domain={["auto", "auto"]} tickFormatter={v => `$${v}k`} />
@@ -799,153 +1165,6 @@ function FinancialTab() {
   );
 }
 
-// ─── Tab: Reports & Export ────────────────────────────────────────────────────
-
-function ReportsTab() {
-  const [dateFrom, setDateFrom]     = useState("2026-05-01");
-  const [dateTo, setDateTo]         = useState("2026-05-15");
-  const [deptFilter, setDeptFilter] = useState("all");
-  const [statusFilter, setStatus]   = useState("all");
-  const [category, setCategory]     = useState("all");
-  const [generating, setGenerating] = useState(null);
-
-  const handleGenerate = (type) => {
-    setGenerating(type);
-    setTimeout(() => setGenerating(null), 1800);
-  };
-
-  const REPORT_TYPES = [
-    { id: "excel",       icon: FileSpreadsheet, label: "Excel Export",          desc: "Full data export as .xlsx with all employee records and statuses", variant: "success" },
-    { id: "cycle",       icon: RefreshCw,       label: "Cycle-wise Report",     desc: "Submission volume, completion %, and cost estimates per cycle",    variant: "primary" },
-    { id: "daily",       icon: Calendar,        label: "Daily Operational",     desc: "Day-by-day submission counts and status changes",                  variant: "info" },
-    { id: "dept",        icon: Building2,       label: "Department Summary",    desc: "Per-department enrollment rates, costs, and pending actions",      variant: "warning" },
-    { id: "status",      icon: ClipboardList,   label: "Submission Status",     desc: "Breakdown by status — approved, pending, rejected, clarification", variant: "warning" },
-    { id: "financial",   icon: DollarSign,      label: "Financial Estimation",  desc: "Projected insurance liability and cost per cycle for Finance team", variant: "info" },
-  ];
-
-  return (
-    <div className="space-y-5">
-      {/* Filter panel */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={14} className="text-muted-foreground" />
-          <p className="text-sm font-semibold text-foreground">Report Filters</p>
-          <span className="text-xs text-muted-foreground">Applied to all exports below</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date From</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl text-xs bg-muted border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Date To</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl text-xs bg-muted border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Department</label>
-            <div className="relative">
-              <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}
-                className="w-full h-9 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-                <option value="all">All Departments</option>
-                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Status</label>
-            <div className="relative">
-              <select value={statusFilter} onChange={e => setStatus(e.target.value)}
-                className="w-full h-9 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-                <option value="all">All Statuses</option>
-                {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-              <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Employee Category</label>
-            <div className="relative">
-              <select value={category} onChange={e => setCategory(e.target.value)}
-                className="w-full h-9 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-                <option value="all">All Employees</option>
-                <option value="full_time">Full-time</option>
-                <option value="part_time">Part-time</option>
-                <option value="contract">Contract</option>
-              </select>
-              <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium">Active filters:</span>
-            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{dateFrom} → {dateTo}</span>
-            {deptFilter !== "all" && <span className="px-2 py-0.5 rounded-full bg-accent text-purple-700 font-medium">{deptFilter}</span>}
-            {statusFilter !== "all" && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-warning font-medium">{STATUS_META[statusFilter]?.label}</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Report types */}
-      <div>
-        <SectionHeading icon={FileDown} label="Available Reports" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {REPORT_TYPES.map(r => (
-            <div key={r.id} className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3 hover:border-info-ring transition-colors">
-              <div className="flex items-start gap-3">
-                <div className={cn("size-9 rounded-xl flex items-center justify-center flex-shrink-0", METRIC_VARIANT[r.variant].iconBg)}>
-                  <r.icon size={16} className={METRIC_VARIANT[r.variant].icon} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{r.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{r.desc}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-border">
-                <button
-                  onClick={() => handleGenerate(r.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-xs font-semibold transition-colors text-primary-foreground",
-                    generating === r.id ? "bg-muted-foreground" : "bg-primary",
-                  )}
-                  disabled={generating === r.id}
-                >
-                  {generating === r.id
-                    ? <><RefreshCw size={11} className="animate-spin" /> Generating…</>
-                    : <><Download size={11} /> Download</>
-                  }
-                </button>
-                <button
-                  onClick={() => handleGenerate(r.id + "_preview")}
-                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  <Eye size={11} /> Preview
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Share to Finance */}
-      <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/5 to-info/10 border border-info-ring">
-        <div className="size-10 rounded-2xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-          <Send size={18} className="text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">Share Estimation Report with Finance Team</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Auto-send cycle-level financial summaries for budgeting, approvals, and fund allocation.</p>
-        </div>
-        <button className="flex items-center gap-1.5 h-9 px-4 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors flex-shrink-0">
-          <Send size={13} /> Send to Finance
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Section heading helper ───────────────────────────────────────────────────
 
@@ -962,9 +1181,8 @@ function SectionHeading({ icon: Icon, label }) {
 
 const TABS = [
   { id: "overview",   label: "Overview"          },
-  { id: "cycle",      label: "Cycle Processing"  },
+  { id: "batch",      label: "Batch Processing"  },
   { id: "financial",  label: "Financial Insights"},
-  { id: "reports",    label: "Reports & Export"  },
 ];
 
 export default function InsuranceManagementPage({ onNavigate }) {
@@ -992,7 +1210,7 @@ export default function InsuranceManagementPage({ onNavigate }) {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-foreground">Insurance Management</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Cycle 1 · May 1–15</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Batch 1 · May 1–15</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Benefits enrollment oversight · Super Admin</p>
               </div>
@@ -1023,9 +1241,8 @@ export default function InsuranceManagementPage({ onNavigate }) {
 
             {/* Tab content */}
             {activeTab === "overview"  && <OverviewTab />}
-            {activeTab === "cycle"     && <CycleTab />}
+            {activeTab === "batch"     && <BatchTab />}
             {activeTab === "financial" && <FinancialTab />}
-            {activeTab === "reports"   && <ReportsTab />}
 
           </div>
         </div>
