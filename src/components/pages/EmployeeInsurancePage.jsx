@@ -61,7 +61,7 @@ const DEADLINE = {
       year: "numeric",
     });
   },
-  cycle: "Cycle 1",
+  cycle: "Batch 1",
   cycleRange: "May 1 – May 15",
 };
 
@@ -1052,7 +1052,7 @@ function SkipView({ firstName, onBack, onConfirmSkip }) {
             <h3 className="text-lg font-bold text-foreground">Are you sure, {firstName}?</h3>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               Skipping now means you may miss the <strong className="text-foreground">{DEADLINE.label}</strong> enrollment deadline.
-              The next enrollment window opens with Cycle 2 (May 15–31).
+              The next enrollment window opens with Batch 2 (May 15–31).
             </p>
             <div className="mt-4 p-3.5 rounded-2xl bg-warning/10 border border-warning/20 text-left w-full">
               <p className="text-xs text-warning-foreground leading-relaxed">
@@ -2163,7 +2163,7 @@ function SubmitConfirmModal({ open, onClose, onConfirm, form }) {
             <div>
               <p className="text-xs font-semibold text-foreground">HealthFirst Plus Group Mediclaim Policy 2026</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Sum insured: <span className="font-medium text-foreground">{sumInsured || "—"}</span> · Floater · Cycle 1
+                Sum insured: <span className="font-medium text-foreground">{sumInsured || "—"}</span> · Floater · Batch 1
               </p>
             </div>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-success/10 text-success border border-success/30 shrink-0">
@@ -2672,7 +2672,7 @@ function EnrollView({ auth, onSuccess }) {
             <ul className="space-y-0.5 ml-3 mt-1.5 list-disc list-outside">
               <li>Family members are <strong className="text-foreground">not included</strong> in the automatic plan</li>
               <li>Your cost is <strong className="text-foreground">₹0</strong> — the company pays for individual coverage</li>
-              <li>You can update your coverage during the next enrollment cycle</li>
+              <li>You can update your coverage during the next enrollment batch</li>
             </ul>
           </div>
         </details>
@@ -2868,7 +2868,7 @@ function SkippedState({ firstName, onReturn }) {
         <div className="bg-warning/10 border border-warning/20 rounded-2xl p-4 text-left">
           <p className="text-xs text-warning-foreground font-semibold mb-1">Reminder</p>
           <p className="text-xs text-warning leading-relaxed">
-            The enrollment window closes at the end of {DEADLINE.cycle} ({DEADLINE.cycleRange}). Missing this window means waiting until Cycle 2 (May 15–31).
+            The enrollment window closes at the end of {DEADLINE.cycle} ({DEADLINE.cycleRange}). Missing this window means waiting until Batch 2 (May 15–31).
           </p>
         </div>
         <button onClick={onReturn}
@@ -2931,7 +2931,7 @@ function SuccessState({ firstName, enrollmentSummary, onNavigate }) {
       iconBg: "bg-success/100", iconColor: "text-white",
       label: "Submission deadline",
       date: DEADLINE.label, dateColor: "text-muted-foreground",
-      desc: "Your form is locked in for Cycle 1",
+      desc: "Your form is locked in for Batch 1",
       done: true,
     },
     {
