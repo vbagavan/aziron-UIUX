@@ -432,33 +432,33 @@ export const TENANT_AUDIT_LOG = {
 };
 
 export const TIER_CFG = {
-  lite:   { bg: "#475569", text: "#ffffff", ring: "#94a3b8" },
-  growth: { bg: "#2563eb", text: "#ffffff", ring: "#93c5fd" },
-  scale:  { bg: "#7c3aed", text: "#ffffff", ring: "#c4b5fd" },
+  lite:   { bg: "var(--muted-foreground)", text: "var(--primary-foreground)", ring: "var(--muted-foreground)" },
+  growth: { bg: "var(--primary)", text: "var(--primary-foreground)", ring: "var(--chart-chart-2)" },
+  scale:  { bg: "var(--chart-chart-4)", text: "var(--primary-foreground)", ring: "var(--chart-chart-4)" },
 };
 
 export const DEPLOY_CFG = {
-  saas: { bg: "#0ea5e9", text: "#ffffff", label: "Cloud" },
+  saas: { bg: "var(--info)", text: "var(--primary-foreground)", label: "Cloud" },
 };
 
 export const STATUS_CFG = {
-  active:    { dot: "#16a34a", text: "#16a34a", label: "Active",    bg: "#dcfce7", badgeText: "#15803d" },
-  trial:     { dot: "#2563eb", text: "#2563eb", label: "Trial",     bg: "#dbeafe", badgeText: "#1d4ed8" },
-  suspended: { dot: "#ef4444", text: "#dc2626", label: "Suspended", bg: "#fee2e2", badgeText: "#b91c1c" },
-  deleted:   { dot: "#94a3b8", text: "#64748b", label: "Deleted",   bg: "#f1f5f9", badgeText: "#475569" },
-  churned:   { dot: "#94a3b8", text: "#64748b", label: "Churned",   bg: "#f1f5f9", badgeText: "#475569" },
+  active:    { dot: "var(--success)", text: "var(--success)", label: "Active",    bg: "var(--success)/10", badgeText: "var(--success)" },
+  trial:     { dot: "var(--primary)", text: "var(--primary)", label: "Trial",     bg: "var(--primary)/10", badgeText: "var(--primary)" },
+  suspended: { dot: "var(--destructive)", text: "var(--destructive)", label: "Suspended", bg: "var(--destructive)/10", badgeText: "var(--destructive)" },
+  deleted:   { dot: "var(--muted-foreground)", text: "var(--muted-foreground)", label: "Deleted",   bg: "var(--muted)", badgeText: "var(--muted-foreground)" },
+  churned:   { dot: "var(--muted-foreground)", text: "var(--muted-foreground)", label: "Churned",   bg: "var(--muted)", badgeText: "var(--muted-foreground)" },
 };
 
 export const PLAN_CFG = {
-  trial:        { label: "Trial",        color: "#f59e0b", bg: "#fef9c3", text: "#a16207" },
-  standard:     { label: "Standard",     color: "#0ea5e9", bg: "#e0f2fe", text: "#0369a1" },
-  professional: { label: "Professional", color: "#8b5cf6", bg: "#ede9fe", text: "#6d28d9" },
-  enterprise:   { label: "Enterprise",   color: "#2563eb", bg: "#dbeafe", text: "#1d4ed8" },
+  trial:        { label: "Trial",        color: "var(--warning)", bg: "var(--warning)/20", text: "var(--warning)" },
+  standard:     { label: "Standard",     color: "var(--info)", bg: "var(--info)/10", text: "var(--info)" },
+  professional: { label: "Professional", color: "var(--chart-chart-4)", bg: "var(--accent)", text: "var(--chart-chart-4)" },
+  enterprise:   { label: "Enterprise",   color: "var(--primary)", bg: "var(--primary)/10", text: "var(--primary)" },
 };
 
 export const INV_STATUS_CFG = {
-  paid:    { bg: "#dcfce7", text: "#16a34a", label: "Paid"    },
-  overdue: { bg: "#fee2e2", text: "#dc2626", label: "Overdue" },
-  pending: { bg: "#fef9c3", text: "#ca8a04", label: "Pending" },
-  draft:   { bg: "#f1f5f9", text: "#64748b", label: "Draft"   },
+  paid:    { bg: "var(--success)/10", text: "var(--success)", label: "Paid"    },
+  overdue: { bg: "var(--destructive)/10", text: "var(--destructive)", label: "Overdue" },
+  pending: { bg: "var(--warning)/20", text: "var(--warning)", label: "Pending" },
+  draft:   { bg: "var(--muted)", text: "var(--muted-foreground)", label: "Draft"   },
 };

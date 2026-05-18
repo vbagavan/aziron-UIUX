@@ -61,7 +61,7 @@ export default function NotFoundPage({ onNavigate }) {
           <div className="pt-4 flex justify-center lg:justify-start">
             <button
               onClick={() => onNavigate?.("new-chat")}
-              className="px-10 py-3 rounded-lg bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              className="px-10 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-lg hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg"
             >
               Back to Homepage
             </button>

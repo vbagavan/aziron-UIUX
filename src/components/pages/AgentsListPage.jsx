@@ -28,9 +28,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 
 // Hash agent name → one of 8 gradient pairs for initials avatar
 const GRADIENTS = [
-  ["#6366f1","#8b5cf6"], ["#3b82f6","#06b6d4"], ["#10b981","#14b8a6"],
-  ["#f59e0b","#f97316"], ["#ec4899","#f43f5e"], ["#8b5cf6","#ec4899"],
-  ["#06b6d4","#3b82f6"], ["#f97316","#eab308"],
+  ["var(--chart-chart-3)","var(--chart-chart-4)"], ["var(--primary)","var(--info)"], ["var(--success)","var(--success)"],
+  ["var(--warning)","var(--warning)"], ["var(--destructive)","var(--destructive)"], ["var(--chart-chart-4)","var(--destructive)"],
+  ["var(--info)","var(--primary)"], ["var(--warning)","var(--warning)"],
 ];
 function nameToGradient(name) {
   const h = [...name].reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -55,10 +55,10 @@ function AnimCount({ to, className = "" }) {
 }
 
 const STATUS_CONFIG = {
-  active:   { label: "Active",   dot: "#22c55e", bg: "#dcfce7", text: "#15803d", border: "#bbf7d0" },
-  idle:     { label: "Idle",     dot: "#94a3b8", bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" },
-  error:    { label: "Error",    dot: "#ef4444", bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
-  disabled: { label: "Disabled", dot: "#cbd5e1", bg: "#f8fafc", text: "#94a3b8", border: "#e2e8f0" },
+  active:   { label: "Active",   dot: "var(--success)", bg: "var(--success)/10", text: "var(--success)", border: "var(--success-ring)" },
+  idle:     { label: "Idle",     dot: "var(--muted-foreground)", bg: "var(--muted)", text: "var(--muted-foreground)", border: "var(--border)" },
+  error:    { label: "Error",    dot: "var(--destructive)", bg: "var(--destructive)/10", text: "var(--destructive)", border: "var(--destructive-ring)" },
+  disabled: { label: "Disabled", dot: "var(--border)", bg: "var(--background)", text: "var(--muted-foreground)", border: "var(--border)" },
 };
 
 function formatCatalogDate(d = new Date()) {
@@ -158,7 +158,7 @@ function AgentAvatar({ size = "lg", name = "" }) {
       />
       <Bot
         size={botPx}
-        className="relative z-10 text-[#475569] dark:text-[#94a3b8]"
+        className="relative z-10 text-muted-foreground dark:text-muted-foreground"
         style={{ filter: `drop-shadow(0 0 4px ${g1}40)` }}
         aria-hidden
       />
@@ -169,10 +169,10 @@ function AgentAvatar({ size = "lg", name = "" }) {
 // ─── Success bar ─────────────────────────────────────────────────────────────
 
 function SuccessBar({ pct }) {
-  const color = pct >= 90 ? "#22c55e" : pct >= 70 ? "#f97316" : "#ef4444";
+  const color = pct >= 90 ? "var(--success)" : pct >= 70 ? "var(--warning)" : "var(--destructive)";
   return (
     <div className="flex items-center gap-2 w-full">
-      <div className="flex-1 h-1.5 bg-[#f1f5f9] dark:bg-[#334155] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-muted dark:bg-border rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-xs font-medium w-8 text-right flex-shrink-0" style={{ color }}>{pct}%</span>
@@ -203,10 +203,10 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
   return (
     <>
     <div
-      className={`group h-full min-h-[164px] bg-white dark:bg-[#1e293b] border rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden ${
+      className={`group h-full min-h-[164px] bg-card dark:bg-card border rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden ${
         isSelected
-          ? "border-[#2563eb] ring-2 ring-[#2563eb]/20 shadow-md"
-          : "border-[#e2e8f0] dark:border-[#334155]"
+          ? "border-border ring-2 ring-[#2563eb]/20 shadow-md"
+          : "border-border dark:border-border"
       }`}
       style={{ "--accent": statusCfg.dot }}
       onClick={() => onOpen(agent)}
@@ -222,7 +222,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
         <div className="relative flex-shrink-0">
           <AgentAvatar name={agent.name} />
           <span
-            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white"
+            className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card"
             style={{ backgroundColor: statusCfg.dot }}
             title={statusCfg.label}
           />
@@ -230,9 +230,9 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex items-center gap-1.5 min-w-0">
             {agent.accessEnabled && (
-              <div className="bg-[#dc2626] border-2 border-[#f8fafc] dark:border-[#1e293b] rounded-full size-2 flex-shrink-0" />
+              <div className="bg-muted border-2 border-border dark:border-border rounded-full size-2 flex-shrink-0" />
             )}
-            <p className="flex-1 text-base font-medium text-[#0f172a] dark:text-[#f1f5f9] leading-6 truncate">
+            <p className="flex-1 text-base font-medium text-foreground dark:text-foreground leading-6 truncate">
               {agent.name}
             </p>
             <button
@@ -241,24 +241,24 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
               aria-label="Agent options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-8 rounded-[6px] text-[#64748b] dark:text-[#94a3b8] hover:bg-[#f1f5f9] dark:hover:bg-[#334155] transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+              className="flex items-center justify-center size-8 rounded-[6px] text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
             >
               <MoreVertical size={16} />
             </button>
           </div>
           <div className="flex items-center gap-1">
             {agent.visibility === "public" ? (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success-ring">
                 <Globe size={9} /> Public
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
                 <Lock size={9} /> Private
               </span>
             )}
           </div>
           <p
-            className={`text-xs leading-4 tracking-[0.12px] overflow-hidden ${hasDescription ? "text-[#64748b] dark:text-[#94a3b8]" : "text-[#94a3b8] dark:text-[#64748b] italic"}`}
+            className={`text-xs leading-4 tracking-[0.12px] overflow-hidden ${hasDescription ? "text-muted-foreground dark:text-muted-foreground" : "text-muted-foreground dark:text-muted-foreground italic"}`}
             style={{ height: 35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
           >
             {hasDescription ? agent.description : "No description added yet."}
@@ -266,64 +266,64 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
         </div>
       </div>
 
-      <div className="mt-auto h-px bg-[#e2e8f0] dark:bg-[#334155] w-full flex-shrink-0" />
+      <div className="mt-auto h-px bg-border dark:bg-border w-full flex-shrink-0" />
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.date}</span>
+          <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-4 whitespace-nowrap">{agent.date}</span>
         </div>
         <div className="flex items-center gap-1">
           <ProviderLogo provider={agent.provider} className="size-3" fallbackClassName="size-3" />
-          <span className="text-xs font-medium text-[#64748b] dark:text-[#94a3b8] leading-4 whitespace-nowrap">{agent.model}</span>
+          <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-4 whitespace-nowrap">{agent.model}</span>
         </div>
       </div>
 
       {/* Context menu — fixed so it escapes any overflow:hidden ancestor */}
       {isMenuOpen && (
         <div
-          className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
+          className="fixed z-[9999] bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden w-[160px]"
           style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-            <Eye size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> View
+          <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+            <Eye size={14} className="text-muted-foreground dark:text-muted-foreground" /> View
           </button>
-          <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-            <Bot size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
+          <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+            <Bot size={14} className="text-muted-foreground dark:text-muted-foreground" /> Open
           </button>
           {can("agents.edit") && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onEdit?.(agent); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
             >
-              <Pencil size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
+              <Pencil size={14} className="text-muted-foreground dark:text-muted-foreground" /> Edit
             </button>
           )}
           {can("agents.fork") && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onFork?.(agent); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
             >
-              <GitFork size={14} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+              <GitFork size={14} className="text-muted-foreground dark:text-muted-foreground" /> Fork agent
             </button>
           )}
           {can("agents.publish") && (
             <button
               onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestVisibilityChange(agent); }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
             >
               {agent.visibility === "public"
-                ? <Lock size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
-                : <Globe size={14} className="text-[#64748b] dark:text-[#94a3b8]" />
+                ? <Lock size={14} className="text-muted-foreground dark:text-muted-foreground" />
+                : <Globe size={14} className="text-muted-foreground dark:text-muted-foreground" />
               }
               {visibilityActionLabel}
             </button>
           )}
           {can("agents.delete") && (
             <>
-              <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
-                <Trash2 size={14} className="text-[#ef4444]" /> Delete
+              <div className="h-px bg-border dark:bg-border" />
+              <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
+                <Trash2 size={14} className="text-destructive" /> Delete
               </button>
             </>
           )}
@@ -357,9 +357,9 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
   return (
     <>
     <tr
-      className={`group border-b border-[#f1f5f9] dark:border-[#1e293b] transition-all duration-150 cursor-pointer ${zebra ? "bg-[#fafafa] dark:bg-[#0f172a]" : "bg-white dark:bg-[#1e293b]"}`}
+      className={`group border-b border-border dark:border-border transition-all duration-150 cursor-pointer ${zebra ? "bg-background dark:bg-background" : "bg-card dark:bg-card"}`}
       style={hovered ? {
-        backgroundColor: "#f0f7ff",
+        backgroundColor: "var(--primary)/10",
         boxShadow: `inset 3px 0 0 ${statusCfg.dot}, inset 0 0 0 1px rgba(37,99,235,0.06)`,
       } : {}}
       onMouseEnter={() => setHovered(true)}
@@ -373,8 +373,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
 
       {/* Agent name */}
       <td className="px-3 py-2.5 min-w-[180px]">
-        <p className="text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9] truncate max-w-[220px]">{agent.name}</p>
-        <p className="text-xs text-[#94a3b8] dark:text-[#64748b] truncate max-w-[220px]">{agent.date}</p>
+        <p className="text-sm font-medium text-foreground dark:text-foreground truncate max-w-[220px]">{agent.name}</p>
+        <p className="text-xs text-muted-foreground dark:text-muted-foreground truncate max-w-[220px]">{agent.date}</p>
       </td>
 
       {/* Provider / Model */}
@@ -382,8 +382,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
         <div className="flex items-center gap-1.5">
           <ProviderLogo provider={agent.provider} className="size-4" fallbackClassName="size-4" />
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-[#475569] dark:text-[#94a3b8] leading-none">{agent.provider}</span>
-            <span className="text-sm text-[#94a3b8] dark:text-[#64748b] leading-none">{agent.model}</span>
+            <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-none">{agent.provider}</span>
+            <span className="text-sm text-muted-foreground dark:text-muted-foreground leading-none">{agent.model}</span>
           </div>
         </div>
       </td>
@@ -401,7 +401,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
 
       {/* Last run */}
       <td className="px-3 py-2.5 w-[120px]">
-        <span className="text-xs text-[#64748b] dark:text-[#94a3b8]">{agent.lastRun}</span>
+        <span className="text-xs text-muted-foreground dark:text-muted-foreground">{agent.lastRun}</span>
       </td>
 
       {/* Success rate */}
@@ -414,8 +414,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
         <span
           className={`text-sm font-semibold px-2 py-0.5 rounded-full border ${
             agent.accessEnabled
-              ? "bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe]"
-              : "bg-[#f8fafc] text-[#94a3b8] border-[#e2e8f0]"
+              ? "bg-primary/10 text-primary border-primary/30"
+              : "bg-muted text-muted-foreground border-border"
           }`}
         >
           {agent.accessEnabled ? "Enabled" : "Disabled"}
@@ -431,56 +431,56 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
             aria-label="Agent options"
             aria-haspopup="true"
             aria-expanded={isMenuOpen}
-            className="flex items-center justify-center size-7 rounded-[6px] text-[#94a3b8] dark:text-[#64748b] hover:bg-[#e2e8f0] dark:hover:bg-[#334155] hover:text-[#475569] dark:hover:text-[#94a3b8] transition-colors opacity-30 group-hover:opacity-100"
+            className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground dark:text-muted-foreground hover:bg-border dark:hover:bg-muted hover:text-muted-foreground dark:hover:text-muted-foreground transition-colors opacity-30 group-hover:opacity-100"
           >
             <MoreVertical size={14} />
           </button>
 
           {isMenuOpen && (
             <div
-              className="fixed z-[9999] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-[10px] overflow-hidden w-[160px]"
+              className="fixed z-[9999] bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden w-[160px]"
               style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-                <Eye size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> View
+              <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                <Eye size={13} className="text-muted-foreground dark:text-muted-foreground" /> View
               </button>
-              <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
-                <Bot size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Open
+              <button onClick={() => { setOpenMenu(null); onOpen(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
+                <Bot size={13} className="text-muted-foreground dark:text-muted-foreground" /> Open
               </button>
               {can("agents.edit") && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onEdit?.(agent); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
                 >
-                  <Pencil size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Edit
+                  <Pencil size={13} className="text-muted-foreground dark:text-muted-foreground" /> Edit
                 </button>
               )}
               {can("agents.fork") && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onFork?.(agent); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
                 >
-                  <GitFork size={13} className="text-[#64748b] dark:text-[#94a3b8]" /> Fork agent
+                  <GitFork size={13} className="text-muted-foreground dark:text-muted-foreground" /> Fork agent
                 </button>
               )}
               {can("agents.publish") && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestVisibilityChange(agent); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
                 >
                   {agent.visibility === "public"
-                    ? <Lock size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
-                    : <Globe size={13} className="text-[#64748b] dark:text-[#94a3b8]" />
+                    ? <Lock size={13} className="text-muted-foreground dark:text-muted-foreground" />
+                    : <Globe size={13} className="text-muted-foreground dark:text-muted-foreground" />
                   }
                   {visibilityActionLabel}
                 </button>
               )}
               {can("agents.delete") && (
                 <>
-                  <div className="h-px bg-[#e2e8f0] dark:bg-[#334155]" />
-                  <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors">
-                    <Trash2 size={13} className="text-[#ef4444]" /> Delete
+                  <div className="h-px bg-border dark:bg-border" />
+                  <button onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestDelete(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
+                    <Trash2 size={13} className="text-destructive" /> Delete
                   </button>
                 </>
               )}
@@ -503,16 +503,16 @@ function ColHeader({ label, sortKey, sort, onSort, className = "" }) {
       onClick={() => sortKey && onSort(sortKey)}
     >
       <div className="flex items-center gap-1 group/col">
-        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-[#2563eb]" : "text-[#94a3b8] dark:text-[#64748b]"}`}>
+        <span className={`text-sm font-bold tracking-[0.06em] uppercase ${active ? "text-primary" : "text-muted-foreground dark:text-muted-foreground"}`}>
           {label}
         </span>
         {sortKey && (
           <span className={`transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover/col:opacity-50"}`}>
             {active && sort.dir === "asc"
-              ? <ChevronUp size={12} className="text-[#2563eb]" />
+              ? <ChevronUp size={12} className="text-primary" />
               : active && sort.dir === "desc"
-              ? <ChevronDown size={12} className="text-[#2563eb]" />
-              : <ChevronsUpDown size={12} className="text-[#94a3b8]" />
+              ? <ChevronDown size={12} className="text-primary" />
+              : <ChevronsUpDown size={12} className="text-muted-foreground" />
             }
           </span>
         )}
@@ -572,16 +572,16 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
       animate={{ width: isExpanded ? "100%" : 400, opacity: 1 }}
       exit={{ width: 0, opacity: 0 }}
       transition={{ duration: 0.22, ease: "easeInOut" }}
-      className={`${isExpanded ? "flex-1 min-w-0" : "flex-shrink-0"} border-l border-[#e2e8f0] bg-[#f8fafc] flex flex-col overflow-hidden`}
+      className={`${isExpanded ? "flex-1 min-w-0" : "flex-shrink-0"} border-l border-border bg-muted flex flex-col overflow-hidden`}
       style={{ minWidth: 0 }}
     >
       {/* Header — matches AgentPage */}
-      <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-white px-4">
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[4px] size-9 flex items-center justify-center overflow-hidden flex-shrink-0">
-          <Bot size={18} className="text-[#64748b]" />
+      <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-border bg-card px-4">
+        <div className="bg-muted border border-border rounded-[4px] size-9 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <Bot size={18} className="text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#0f172a] truncate">{agent.name}</p>
+          <p className="text-sm font-semibold text-foreground truncate">{agent.name}</p>
           <div className="flex items-center gap-1.5">
             <span className="size-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusCfg.dot }} />
             <span className="text-xs capitalize" style={{ color: statusCfg.text }}>{statusCfg.label}</span>
@@ -590,11 +590,11 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
         <button
           aria-label={isExpanded ? "Restore panel size" : "Maximize"}
           onClick={onToggleExpand}
-          className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+          className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted transition-colors"
         >
           {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
         </button>
-        <button aria-label="Close" onClick={onClose} className="flex size-7 items-center justify-center rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+        <button aria-label="Close" onClick={onClose} className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted transition-colors">
           <X size={15} />
         </button>
       </div>
@@ -606,15 +606,15 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
         {messages.map((msg, i) => {
           if (msg.role === "user") return (
             <div key={i} className="flex justify-end w-full flex-shrink-0">
-              <div className="max-w-[80%] rounded-[12px] rounded-tr-[4px] border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3">
-                <p className="text-sm leading-5 text-[#0f172a] whitespace-pre-line">{msg.text}</p>
+              <div className="max-w-[80%] rounded-[12px] rounded-tr-[4px] border border-primary/30 bg-primary/10 px-4 py-3">
+                <p className="text-sm leading-5 text-foreground whitespace-pre-line">{msg.text}</p>
               </div>
             </div>
           );
           return (
             <div key={i} className="flex flex-col items-start w-full flex-shrink-0">
-              <div className="w-full rounded-[12px] rounded-tl-[4px] bg-white border border-[#e2e8f0] px-4 py-3">
-                <p className="text-sm leading-6 text-[#4e4d4d] whitespace-pre-line">
+              <div className="w-full rounded-[12px] rounded-tl-[4px] bg-card border border-border px-4 py-3">
+                <p className="text-sm leading-6 text-foreground whitespace-pre-line">
                   {msg.text.replace(/\*\*(.*?)\*\*/g, "$1")}
                 </p>
               </div>
@@ -627,7 +627,7 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
                   { icon: <RotateCcw size={14} />, label: "Regenerate" },
                 ].map((btn) => (
                   <button key={btn.label} aria-label={btn.label} title={btn.label}
-                    className="flex size-7 items-center justify-center rounded-full text-[#94a3b8] hover:bg-[#f1f5f9] hover:text-[#64748b] transition-colors">
+                    className="flex size-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-muted-foreground transition-colors">
                     {btn.icon}
                   </button>
                 ))}
@@ -638,9 +638,9 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
 
         {loading && (
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex gap-1 px-4 py-3 rounded-[12px] rounded-tl-[4px] bg-white border border-[#e2e8f0]">
+            <div className="flex gap-1 px-4 py-3 rounded-[12px] rounded-tl-[4px] bg-card border border-border">
               {[0, 1, 2].map((i) => (
-                <span key={i} className="size-1.5 rounded-full bg-[#94a3b8] animate-bounce"
+                <span key={i} className="size-1.5 rounded-full bg-muted animate-bounce"
                   style={{ animationDelay: `${i * 150}ms` }} />
               ))}
             </div>
@@ -650,9 +650,9 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
 
       {/* Prompt box — matches AgentPage style */}
       <div className="px-4 pb-4 pt-2 flex-shrink-0">
-        <div className="rounded-[12px] bg-white shadow-[0_4px_24px_0_rgba(37,99,235,0.10)] border border-[#e2e8f0] overflow-hidden">
+        <div className="rounded-[12px] bg-card shadow-[0_4px_24px_0_rgba(37,99,235,0.10)] border border-border overflow-hidden">
           {/* Text input row */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e2e8f0]">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
             <input
               ref={inputRef}
               type="text"
@@ -660,7 +660,7 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
               placeholder={`Ask ${agent.name} anything…`}
-              className="flex-1 bg-transparent text-sm leading-5 text-[#0f172a] placeholder:text-[#94a3b8] outline-none"
+              className="flex-1 bg-transparent text-sm leading-5 text-foreground placeholder:text-muted-foreground outline-none"
             />
             <button
               onClick={send}
@@ -668,8 +668,8 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
               aria-label="Send message"
               className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 transition-colors ${
                 input.trim() && !loading
-                  ? "bg-[#2563eb] border-[#2563eb] text-white hover:bg-[#1d4ed8]"
-                  : "bg-white border-[#cbd5e1] text-[#cbd5e1] cursor-not-allowed"
+                  ? "bg-primary border-border text-white hover:bg-primary"
+                  : "bg-card border-border text-foreground cursor-not-allowed"
               }`}
             >
               <Send size={14} />
@@ -677,11 +677,11 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
           </div>
           {/* Control bar */}
           <div className="flex items-center gap-1 px-3 py-2">
-            <button className="flex items-center gap-1.5 h-7 rounded-[6px] px-2 text-xs text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+            <button className="flex items-center gap-1.5 h-7 rounded-[6px] px-2 text-xs text-muted-foreground hover:bg-muted transition-colors">
               <Paperclip size={12} /> Attach
             </button>
-            <div className="h-4 w-px bg-[#e2e8f0] mx-1" />
-            <span className="text-xs text-[#94a3b8]">Claude-sonnet</span>
+            <div className="h-4 w-px bg-border mx-1" />
+            <span className="text-xs text-muted-foreground">Claude-sonnet</span>
           </div>
         </div>
       </div>
@@ -830,7 +830,7 @@ export default function AgentsListPage({
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
         <div className="flex flex-1 min-w-0 min-h-0">
@@ -843,10 +843,10 @@ export default function AgentsListPage({
               {/* Page title + toolbar */}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-semibold text-[#0f172a] leading-8 tracking-[-0.6px]">
+                  <h1 className="text-2xl font-semibold text-foreground leading-8 tracking-[-0.6px]">
                     Agents
                   </h1>
-                  <p className="text-sm text-[#64748b] leading-5">
+                  <p className="text-sm text-muted-foreground leading-5">
                     Build and manage your team of digital workers.
                   </p>
                 </div>
@@ -861,10 +861,10 @@ export default function AgentsListPage({
                     <ExpandableSearch.Input placeholder="Search agents…" className="w-[240px]" />
                   </ExpandableSearch.Provider>
 
-                  <div className="flex items-center bg-white border border-[#e2e8f0] rounded-[6px] h-9 p-1 gap-0.5">
+                  <div className="flex items-center bg-card border border-border rounded-[6px] h-9 p-1 gap-0.5">
                     <button
                       onClick={() => setViewMode("grid")}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-[#f1f5f9] text-[#0f172a]" : "text-[#94a3b8] hover:text-[#64748b]"}`}
+                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-muted-foreground"}`}
                       title="Grid view"
                       aria-label="Switch to grid view"
                       aria-pressed={viewMode === "grid"}
@@ -873,7 +873,7 @@ export default function AgentsListPage({
                     </button>
                     <button
                       onClick={() => setViewMode("list")}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-[#f1f5f9] text-[#0f172a]" : "text-[#94a3b8] hover:text-[#64748b]"}`}
+                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-muted-foreground"}`}
                       title="List view"
                       aria-label="Switch to list view"
                       aria-pressed={viewMode === "list"}
@@ -885,7 +885,7 @@ export default function AgentsListPage({
                   {can("agents.create") && (
                     <button
                       onClick={() => navigate("/agents/create")}
-                      className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
+                      className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
                     >
                       <Plus size={16} />
                       Create Agent
@@ -1010,9 +1010,9 @@ export default function AgentsListPage({
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white border border-[#e2e8f0] rounded-[8px] overflow-hidden">
+                  <div className="bg-card border border-border rounded-[8px] overflow-hidden">
                     <table className="w-full border-collapse">
-                      <thead className="sticky top-0 z-10 border-b border-[#e2e8f0]" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
+                      <thead className="sticky top-0 z-10 border-b border-border" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
                         <tr>
                           <th className="px-4 py-3 w-[52px]" />
                           <ColHeader label="Agent"          sortKey="name"     sort={sort} onSort={handleSort} className="min-w-[180px]" />
@@ -1047,12 +1047,12 @@ export default function AgentsListPage({
               ) : !filteredEmpty ? (
                 /* Empty state — no agents in catalog */
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="size-14 bg-[#f1f5f9] rounded-[12px] flex items-center justify-center">
-                    <Cpu size={28} className="text-[#94a3b8]" />
+                  <div className="size-14 bg-muted rounded-[12px] flex items-center justify-center">
+                    <Cpu size={28} className="text-muted-foreground" />
                   </div>
                   <div className="flex flex-col items-center gap-1">
-                    <p className="text-sm font-semibold text-[#0f172a]">No agents found</p>
-                    <p className="text-sm text-[#64748b]">Try adjusting your search or segment filter.</p>
+                    <p className="text-sm font-semibold text-foreground">No agents found</p>
+                    <p className="text-sm text-muted-foreground">Try adjusting your search or segment filter.</p>
                   </div>
                   <button
                     type="button"
@@ -1060,13 +1060,13 @@ export default function AgentsListPage({
                       setSearchQuery("");
                       setSegmentFilter(null);
                     }}
-                    className="text-sm font-medium text-[#2563eb] hover:underline"
+                    className="text-sm font-medium text-primary hover:underline"
                   >
                     Clear filters
                   </button>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
                   >
                     <Plus size={16} /> Create your first agent
                   </button>
@@ -1194,8 +1194,8 @@ export default function AgentsListPage({
           className="flex max-h-[min(90vh,420px)] w-[calc(100vw-2rem)] max-w-sm flex-col gap-0 overflow-hidden p-0 sm:w-full"
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4 pr-14">
-            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
-              <Globe className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden />
+            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-warning/15 dark:bg-amber-950">
+              <Globe className="h-6 w-6 text-warning dark:text-amber-400" aria-hidden />
             </div>
             <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug">
               Unpublish "{agentPendingUnpublish?.name || "this agent"}"?

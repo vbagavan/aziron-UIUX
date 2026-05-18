@@ -18,9 +18,9 @@ function fmtLimit(v, unit = "") {
 
 // ─── Tier highlight colours ───────────────────────────────────────────────────
 const TIER_STYLES = {
-  lite:   { gradient: "from-[#475569] to-[#334155]", accent: "#94a3b8", badge: "bg-[#475569]", featured: false  },
-  growth: { gradient: "from-[#1d4ed8] to-[#2563eb]", accent: "#60a5fa", badge: "bg-[#2563eb]", featured: true   },
-  scale:  { gradient: "from-[#6d28d9] to-[#7c3aed]", accent: "#c4b5fd", badge: "bg-[#7c3aed]", featured: false  },
+  lite:   { gradient: "from-muted-foreground to-[#334155]", accent: "var(--muted-foreground)", badge: "bg-muted", featured: false  },
+  growth: { gradient: "from-primary to-[#2563eb]", accent: "var(--chart-chart-2)", badge: "bg-primary", featured: true   },
+  scale:  { gradient: "from-[#6d28d9] to-[#7c3aed]", accent: "var(--chart-chart-4)", badge: "bg-muted", featured: false  },
 };
 
 // ─── Editable value cell ─────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ function EditableValue({ value, editMode, onChange, unit = "" }) {
       value={value ?? ""}
       onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))}
       placeholder="Unlimited"
-      className="w-24 h-6 px-2 text-xs rounded-[5px] border border-[#60a5fa]/60 bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 text-center tabular-nums"
+      className="w-24 h-6 px-2 text-xs rounded-[5px] border border-border/60 bg-card/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 text-center tabular-nums"
     />
   );
 }
@@ -52,11 +52,11 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
 
   return (
     <div className={`relative flex flex-col rounded-2xl overflow-hidden border-2 ${
-      isGrowth ? "border-[#2563eb] shadow-lg shadow-blue-500/20" : "border-[#e2e8f0] dark:border-[#334155]"
+      isGrowth ? "border-border shadow-lg shadow-blue-500/20" : "border-border dark:border-border"
     }`}>
       {isGrowth && (
         <div className="absolute top-3 right-3 z-10">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#2563eb] shadow-sm">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card text-primary shadow-sm">
             MOST POPULAR
           </span>
         </div>
@@ -74,7 +74,7 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
                 type="number" min="1"
                 value={def.pricePerSeat}
                 onChange={e => onChange("pricePerSeat", Number(e.target.value))}
-                className="w-16 text-3xl font-bold bg-white/15 rounded-[6px] text-center border border-white/30 focus:outline-none focus:ring-1 focus:ring-white/50"
+                className="w-16 text-3xl font-bold bg-card/15 rounded-[6px] text-center border border-card/30 focus:outline-none focus:ring-1 focus:ring-white/50"
               />
             </div>
           ) : (
@@ -92,7 +92,7 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
                 type="number" min="0" step="0.01"
                 value={def.tokenRatePerM}
                 onChange={e => onChange("tokenRatePerM", parseFloat(e.target.value))}
-                className="w-12 bg-transparent border-b border-white/40 text-center focus:outline-none"
+                className="w-12 bg-transparent border-b border-card/40 text-center focus:outline-none"
               />
               / 1M
             </span>
@@ -103,15 +103,15 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
       </div>
 
       {/* Features */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-[#1e293b] px-5 py-4 gap-3">
+      <div className="flex-1 flex flex-col bg-card dark:bg-card px-5 py-4 gap-3">
         {/* Limits */}
         {ROWS.map(({ key, label, icon: Icon, unit }) => (
           <div key={key} className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-[#64748b] dark:text-[#94a3b8]">
+            <span className="flex items-center gap-2 text-muted-foreground dark:text-muted-foreground">
               <Icon size={13} />
               {label}
             </span>
-            <span className="font-semibold text-[#0f172a] dark:text-[#f1f5f9]">
+            <span className="font-semibold text-foreground dark:text-foreground">
               {editMode ? (
                 <div className="flex items-center gap-1">
                   <input
@@ -119,9 +119,9 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
                     value={def.limits[key] ?? ""}
                     onChange={e => onChange(`limits.${key}`, e.target.value === "" ? null : Number(e.target.value))}
                     placeholder="∞"
-                    className="w-20 h-6 px-2 text-xs text-right rounded-[5px] border border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a] text-[#0f172a] dark:text-[#f1f5f9] focus:outline-none focus:ring-1 focus:ring-[#2563eb]/40 tabular-nums"
+                    className="w-20 h-6 px-2 text-xs text-right rounded-[5px] border border-border dark:border-border bg-background text-foreground dark:text-foreground focus:outline-none focus:ring-1 focus:ring-[#2563eb]/40 tabular-nums"
                   />
-                  <span className="text-xs text-[#94a3b8]">{unit}</span>
+                  <span className="text-xs text-muted-foreground">{unit}</span>
                 </div>
               ) : (
                 `${fmtLimit(def.limits[key])}${unit}`
@@ -130,7 +130,7 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
           </div>
         ))}
 
-        <div className="border-t border-[#f1f5f9] dark:border-[#334155] pt-3 mt-1 flex flex-col gap-2">
+        <div className="border-t border-border dark:border-border pt-3 mt-1 flex flex-col gap-2">
           {[
             ["SSO (Google & Microsoft)", true],
             ["Audit Logs", def.auditLogs],
@@ -141,11 +141,11 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
           ].map(([label, enabled], i) => (
             <span key={i} className={`flex items-center gap-2 text-xs ${
               enabled
-                ? "text-[#475569] dark:text-[#94a3b8]"
-                : "text-[#cbd5e1] dark:text-[#475569] line-through"
+                ? "text-muted-foreground dark:text-muted-foreground"
+                : "text-foreground dark:text-muted-foreground line-through"
             }`}>
               {enabled
-                ? <Check size={12} className="text-[#16a34a] flex-shrink-0" />
+                ? <Check size={12} className="text-success flex-shrink-0" />
                 : <X size={12} className="flex-shrink-0" />}
               {label}
             </span>
@@ -154,7 +154,7 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
 
         {editMode && (
           <button onClick={() => onReset(tier)}
-            className="mt-2 flex items-center gap-1 text-xs text-[#94a3b8] hover:text-[#ef4444] transition-colors">
+            className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
             <RotateCcw size={11} /> Reset to original
           </button>
         )}
@@ -197,16 +197,16 @@ export default function PricingPlansPage({ onNavigate }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="pricing-plans" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-[#e2e8f0] dark:bg-[#334155]" />
-            <span className="text-sm text-[#64748b] dark:text-[#94a3b8]">Admin</span>
-            <ChevronRight size={14} className="text-[#94a3b8]" />
-            <span className="text-sm text-[#0f172a] dark:text-[#f1f5f9] font-medium">Pricing & Plans</span>
+            <div className="w-px h-6 bg-border dark:bg-border" />
+            <span className="text-sm text-muted-foreground dark:text-muted-foreground">Admin</span>
+            <ChevronRight size={14} className="text-muted-foreground" />
+            <span className="text-sm text-foreground dark:text-foreground font-medium">Pricing & Plans</span>
           </div>
         </AppHeader>
 
@@ -214,24 +214,24 @@ export default function PricingPlansPage({ onNavigate }) {
           {/* Header */}
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold text-[#0f172a] dark:text-[#f1f5f9] tracking-tight">Pricing & Plans</h1>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5">
+              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Pricing & Plans</h1>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">
                 Default tier configurations. Changes apply to new tenants — existing tenants retain their current pricing.
               </p>
             </div>
             {!editMode ? (
               <button onClick={() => setEditMode(true)}
-                className="flex items-center gap-2 h-9 px-4 rounded-[8px] border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#475569] dark:text-[#94a3b8] hover:bg-[#f8fafc] dark:hover:bg-[#0f172a] transition-colors">
+                className="flex items-center gap-2 h-9 px-4 rounded-[8px] border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
                 <Pencil size={14} /> Edit Defaults
               </button>
             ) : (
               <div className="flex items-center gap-2">
                 <button onClick={cancelEdit}
-                  className="h-9 px-4 rounded-[8px] border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#475569] hover:bg-[#f8fafc] transition-colors">
+                  className="h-9 px-4 rounded-[8px] border border-border dark:border-border text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">
                   Cancel
                 </button>
                 <button onClick={saveChanges}
-                  className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-[#2563eb] text-white text-sm font-medium hover:bg-[#1d4ed8] transition-colors">
+                  className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-primary text-white text-sm font-medium hover:bg-primary transition-colors">
                   <Save size={14} /> Save Changes
                 </button>
               </div>
@@ -239,9 +239,9 @@ export default function PricingPlansPage({ onNavigate }) {
           </div>
 
           {/* Info banner */}
-          <div className="flex items-start gap-3 bg-[#eff6ff] dark:bg-[#1e3a8a]/30 border border-[#bfdbfe] dark:border-[#1e3a8a] rounded-xl px-4 py-3">
-            <Info size={15} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-[#1e40af] dark:text-[#93c5fd] leading-5">
+          <div className="flex items-start gap-3 bg-primary/10 dark:bg-primary/20/30 border border-primary/30 dark:border-primary/20 rounded-xl px-4 py-3">
+            <Info size={15} className="text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-primary dark:text-primary leading-5">
               <strong>No feature-enablement fees.</strong> All platform capabilities are available within each tier's capacity limits.
               Custom development for bespoke integrations is scoped separately. Tenant-level overrides take precedence over these defaults.
             </p>
@@ -259,8 +259,8 @@ export default function PricingPlansPage({ onNavigate }) {
           </div>
 
           {/* Custom development note */}
-          <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9] mb-3">Custom Development (scoped separately)</h3>
+          <div className="bg-card dark:bg-card border border-border dark:border-border rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-foreground dark:text-foreground mb-3">Custom Development (scoped separately)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { type: "Standard MCP Tool",       desc: "Single-system integration",        price: "From $5,000/tool" },
@@ -268,10 +268,10 @@ export default function PricingPlansPage({ onNavigate }) {
                 { type: "Private VPC MCP Deployment",  desc: "Deploy connectors in your cloud account", price: "Included / SOW"  },
                 { type: "Ongoing Maintenance",     desc: "Post-delivery support, versioning", price: "Optional retainer" },
               ].map(({ type, desc, price }) => (
-                <div key={type} className="bg-[#f8fafc] dark:bg-[#0f172a] rounded-lg p-3 flex flex-col gap-1">
-                  <p className="text-xs font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{type}</p>
-                  <p className="text-xs text-[#64748b] dark:text-[#94a3b8]">{desc}</p>
-                  <p className="text-xs font-medium text-[#2563eb] mt-auto pt-1">{price}</p>
+                <div key={type} className="bg-background rounded-lg p-3 flex flex-col gap-1">
+                  <p className="text-xs font-semibold text-foreground dark:text-foreground">{type}</p>
+                  <p className="text-xs text-muted-foreground dark:text-muted-foreground">{desc}</p>
+                  <p className="text-xs font-medium text-primary mt-auto pt-1">{price}</p>
                 </div>
               ))}
             </div>

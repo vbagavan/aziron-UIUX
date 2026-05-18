@@ -70,10 +70,10 @@ const incidents = [
 ];
 
 const aiFeed = [
-  { icon: Timer, text: "Latency spike predicted in ~20 min on checkout-api (p99 trend +2.3σ).", tone: "text-amber-700" },
+  { icon: Timer, text: "Latency spike predicted in ~20 min on checkout-api (p99 trend +2.3σ).", tone: "text-warning" },
   { icon: Brain, text: "Anomaly: error rate vs. deploy — suggest canary rollback candidate.", tone: "text-violet-700" },
-  { icon: Activity, text: "SLO burn alert: payments availability budget 18% remaining this week.", tone: "text-red-700" },
-  { icon: Sparkles, text: "Playbook match: \"connection pool\" → auto-scale + pool size bump draft ready.", tone: "text-blue-700" },
+  { icon: Activity, text: "SLO burn alert: payments availability budget 18% remaining this week.", tone: "text-destructive" },
+  { icon: Sparkles, text: "Playbook match: \"connection pool\" → auto-scale + pool size bump draft ready.", tone: "text-primary" },
 ];
 
 const logLines = [
@@ -84,14 +84,14 @@ const logLines = [
 ];
 
 const autoActions = [
-  { label: "Restart checkout-api", icon: RefreshCw, style: "border-slate-200 bg-white hover:bg-slate-50" },
-  { label: "Rollback deploy v2.4.2", icon: RotateCcw, style: "border-amber-200 bg-amber-50 hover:bg-amber-100" },
-  { label: "Scale workers +2", icon: Server, style: "border-emerald-200 bg-emerald-50 hover:bg-emerald-100" },
+  { label: "Restart checkout-api", icon: RefreshCw, style: "border-slate-200 bg-card hover:bg-slate-50" },
+  { label: "Rollback deploy v2.4.2", icon: RotateCcw, style: "border-amber-200 bg-amber-50 hover:bg-warning/15" },
+  { label: "Scale workers +2", icon: Server, style: "border-emerald-200 bg-success/10 hover:bg-success/15" },
 ];
 
 function StatCard({ icon: Icon, label, value, sub, accent }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
       <div className="mb-2 flex items-center justify-between">
         <span className={`flex size-9 items-center justify-center rounded-lg ${accent}`}>
           <Icon className="size-4 text-white" />
@@ -118,7 +118,7 @@ export default function PulseDevOpsPreview({ compact = false }) {
               For DevOps / SRE teams to monitor, predict, and resolve incidents.
             </p>
           </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200">
+          <div className="rounded-lg border border-card/10 bg-card/5 px-3 py-2 text-xs text-slate-200">
             <span className="font-semibold text-emerald-400">Core value:</span> reactive monitoring →{" "}
             <span className="text-white">proactive AI-driven resolution</span>
           </div>
@@ -129,49 +129,49 @@ export default function PulseDevOpsPreview({ compact = false }) {
         {/* Live system health */}
         <div>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Gauge className="size-4 text-blue-600" />
+            <Gauge className="size-4 text-primary" />
             Live system health
           </h3>
           <div className={`mb-4 grid gap-3 ${compact ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
-            <StatCard icon={Cpu} label="CPU (avg)" value="61%" sub="Fleet · last 5m" accent="bg-blue-600" />
+            <StatCard icon={Cpu} label="CPU (avg)" value="61%" sub="Fleet · last 5m" accent="bg-primary" />
             <StatCard icon={HardDrive} label="Memory" value="72%" sub="Peak shard-b" accent="bg-violet-600" />
             <StatCard icon={Timer} label="Latency p99" value="340ms" sub="checkout-api" accent="bg-amber-500" />
-            <StatCard icon={AlertTriangle} label="Error rate" value="0.08%" sub="5xx + timeouts" accent="bg-red-500" />
+            <StatCard icon={AlertTriangle} label="Error rate" value="0.08%" sub="5xx + timeouts" accent="bg-destructive/100" />
           </div>
           <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
               <p className="mb-2 text-xs font-medium text-slate-600">CPU &amp; memory (24h)</p>
               <div className="h-48 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={healthSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="dopCpu" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563eb" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="t" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="t" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                     <YAxis hide domain={[0, 100]} />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke="#2563eb" fill="url(#dopCpu)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="mem" name="Mem %" stroke="#7c3aed" fill="transparent" strokeWidth={2} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke="var(--primary)" fill="url(#dopCpu)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="mem" name="Mem %" stroke="var(--chart-chart-4)" fill="transparent" strokeWidth={2} strokeDasharray="4 2" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
               <p className="mb-2 text-xs font-medium text-slate-600">Latency &amp; errors</p>
               <div className="h-48 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={healthSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="t" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="t" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                     <YAxis yAxisId="left" hide />
                     <YAxis yAxisId="right" orientation="right" hide />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    <Line yAxisId="left" type="monotone" dataKey="latency" name="p99 ms" stroke="#ea580c" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="errors" name="Err %" stroke="#dc2626" strokeWidth={2} dot={false} />
+                    <Line yAxisId="left" type="monotone" dataKey="latency" name="p99 ms" stroke="var(--warning)" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="errors" name="Err %" stroke="var(--destructive)" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -181,13 +181,13 @@ export default function PulseDevOpsPreview({ compact = false }) {
 
         <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
           {/* Active incidents */}
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <AlertTriangle className="size-4 text-red-500" />
+                <AlertTriangle className="size-4 text-destructive" />
                 Active incidents
               </h3>
-              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">3 open</span>
+              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">3 open</span>
             </div>
             <ul className="divide-y divide-slate-100">
               {incidents.map((inc) => (
@@ -204,7 +204,7 @@ export default function PulseDevOpsPreview({ compact = false }) {
           </div>
 
           {/* AI insights */}
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card shadow-sm">
             <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
               <Sparkles className="size-4 text-violet-600" />
               <h3 className="text-sm font-semibold text-slate-900">AI insights feed</h3>
@@ -249,7 +249,7 @@ export default function PulseDevOpsPreview({ compact = false }) {
 
         {/* Errors by service + auto actions */}
         <div className={`grid gap-4 ${compact ? "grid-cols-1" : "lg:grid-cols-2"}`}>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Layers className="size-4 text-slate-600" />
               Errors by service
@@ -257,20 +257,20 @@ export default function PulseDevOpsPreview({ compact = false }) {
             <div className="h-44 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={errorsByService} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="svc"
                     width={compact ? 72 : 100}
-                    tick={{ fontSize: 10, fill: "#64748b" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} fill="#64748b">
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} fill="var(--muted-foreground)">
                     {errorsByService.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? "#dc2626" : "#94a3b8"} />
+                      <Cell key={i} fill={i === 0 ? "var(--destructive)" : "var(--muted-foreground)"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -278,7 +278,7 @@ export default function PulseDevOpsPreview({ compact = false }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-card p-4 shadow-sm">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
               <Zap className="size-4 text-amber-500" />
               Auto actions

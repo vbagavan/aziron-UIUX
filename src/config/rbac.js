@@ -195,7 +195,7 @@ export const ROLE_SCOPE = {
 
 /** Dot colors matching roleBadgeStyles in Sidebar */
 export const SCOPE_COLORS = {
-  violet: { bg: "#ede9fe", border: "#c4b5fd", text: "#6d28d9", dot: "#7c3aed" },
-  blue:   { bg: "#dbeafe", border: "#93c5fd", text: "#1d4ed8", dot: "#2563eb" },
-  slate:  { bg: "#f1f5f9", border: "#cbd5e1", text: "#475569", dot: "#64748b" },
+  violet: { bg: "var(--accent)", border: "var(--chart-chart-4)", text: "var(--chart-chart-4)", dot: "var(--chart-chart-4)" },
+  blue:   { bg: "var(--primary)/10", border: "var(--chart-chart-2)", text: "var(--primary)", dot: "var(--primary)" },
+  slate:  { bg: "var(--muted)", border: "var(--border)", text: "var(--muted-foreground)", dot: "var(--muted-foreground)" },
 };

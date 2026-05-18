@@ -27,8 +27,8 @@ import { PERMISSIONS } from "@/config/rbac";
 import { getBaseTierPackage } from "@/data/packagesData";
 
 const AVATAR_GRAD = [
-  ["#1e3a8a", "#2563eb"], ["#0f766e", "#14b8a6"], ["#7c2d12", "#ea580c"],
-  ["#581c87", "#a855f7"], ["#0c4a6e", "#0284c7"],
+  ["var(--primary)", "var(--primary)"], ["var(--success)", "var(--success)"], ["var(--warning)", "var(--warning)"],
+  ["var(--chart-chart-4)", "var(--chart-chart-4)"], ["var(--info)", "var(--info)"],
 ];
 
 function initials(name) {

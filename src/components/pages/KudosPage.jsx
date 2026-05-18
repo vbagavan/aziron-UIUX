@@ -20,20 +20,20 @@ import {
 // ---------------------------------------------------------------------------
 
 const USERS = [
-  { id: 1, name: "Malik Boatwright", email: "boatwright@aziro.com", color: "#f59e0b" },
-  { id: 2, name: "Zoya Baum", email: "zbaum@aziro.com", color: "#3b82f6" },
-  { id: 3, name: "Kenton Rue", email: "rkenton@aziro.com", color: "#ef4444" },
-  { id: 4, name: "Zackary Turcotte", email: "zturcotte@aziro.com", color: "#8b5cf6" },
-  { id: 5, name: "Branson Crona", email: "rtranson@aziro.com", color: "#10b981" },
-  { id: 6, name: "Shea Trantow", email: "strantow@aziro.com", color: "#f97316" },
-  { id: 7, name: "Balachandra Husaine", email: "bhusaine@aziro.com", color: "#06b6d4" },
-  { id: 8, name: "Jayson Heaney", email: "jheaney@aziro.com", color: "#ec4899" },
-  { id: 9, name: "Crystel Bayer", email: "bcrystel@aziro.com", color: "#84cc16" },
+  { id: 1, name: "Malik Boatwright", email: "boatwright@aziro.com", color: "var(--warning)" },
+  { id: 2, name: "Zoya Baum", email: "zbaum@aziro.com", color: "var(--primary)" },
+  { id: 3, name: "Kenton Rue", email: "rkenton@aziro.com", color: "var(--destructive)" },
+  { id: 4, name: "Zackary Turcotte", email: "zturcotte@aziro.com", color: "var(--chart-chart-4)" },
+  { id: 5, name: "Branson Crona", email: "rtranson@aziro.com", color: "var(--success)" },
+  { id: 6, name: "Shea Trantow", email: "strantow@aziro.com", color: "var(--warning)" },
+  { id: 7, name: "Balachandra Husaine", email: "bhusaine@aziro.com", color: "var(--info)" },
+  { id: 8, name: "Jayson Heaney", email: "jheaney@aziro.com", color: "var(--destructive)" },
+  { id: 9, name: "Crystel Bayer", email: "bcrystel@aziro.com", color: "var(--success)" },
 ];
 
 const DEFAULT_RECIPIENTS = [
-  { name: "Balachandra Husaine", color: "#06b6d4" },
-  { name: "Sridhar", color: "#22c55e" },
+  { name: "Balachandra Husaine", color: "var(--info)" },
+  { name: "Sridhar", color: "var(--success)" },
 ];
 
 const TEMPLATES = [
@@ -75,7 +75,7 @@ function UserAvatar({ name, color, size = 32 }) {
         flexShrink: 0,
         fontSize: size * 0.35,
         fontWeight: 600,
-        color: "#fff",
+        color: "var(--primary-foreground)",
         userSelect: "none",
       }}
     >
@@ -96,9 +96,9 @@ function SparkLogo({ size = 18 }) {
       xmlns="http://www.w3.org/2000/svg"
       style={{ flexShrink: 0 }}
     >
-      <path d="M0 14L9 8.5V19.5L0 14Z" fill="#2563EB" />
-      <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="#2563EB" />
-      <path d="M13 15L22 9.5V20.5L13 15Z" fill="#60A5FA" />
+      <path d="M0 14L9 8.5V19.5L0 14Z" fill="var(--primary)" />
+      <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="var(--primary)" />
+      <path d="M13 15L22 9.5V20.5L13 15Z" fill="var(--chart-chart-2)" />
     </svg>
   );
 }
@@ -106,8 +106,8 @@ function SparkLogo({ size = 18 }) {
 /** Agent placeholder icon (bot icon in bordered box) */
 function AgentPlaceholder() {
   return (
-    <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-[4px] size-12 flex items-center justify-center flex-shrink-0">
-      <Bot size={24} className="text-[#64748b]" />
+    <div className="bg-muted border border-border rounded-[4px] size-12 flex items-center justify-center flex-shrink-0">
+      <Bot size={24} className="text-muted-foreground" />
     </div>
   );
 }
@@ -117,9 +117,9 @@ function AgentPlaceholder() {
 // ---------------------------------------------------------------------------
 
 function GoldClassicCard({ recipients }) {
-  const GOLD = "#c9a227";
-  const GOLD_LIGHT = "#e8c84a";
-  const DARK_BG = "#0d0d0d";
+  const GOLD = "var(--warning)";
+  const GOLD_LIGHT = "var(--warning)";
+  const DARK_BG = "var(--foreground)";
 
   // Use provided recipients or fallback defaults
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
@@ -129,7 +129,7 @@ function GoldClassicCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: `radial-gradient(ellipse at 30% 20%, #1a1500 0%, ${DARK_BG} 70%)`,
+        background: `radial-gradient(ellipse at 30% 20%, var(--foreground) 0%, ${DARK_BG} 70%)`,
         border: `2px solid ${GOLD}`,
         borderRadius: 12,
         position: "relative",
@@ -163,7 +163,7 @@ function GoldClassicCard({ recipients }) {
           right: 20,
           width: 36,
           height: 36,
-          backgroundColor: "#2563eb",
+          backgroundColor: "var(--primary)",
           borderRadius: "50%",
           display: "flex",
           alignItems: "center",
@@ -172,7 +172,7 @@ function GoldClassicCard({ recipients }) {
       >
         <span
           style={{
-            color: "#fff",
+            color: "var(--primary-foreground)",
             fontWeight: 800,
             fontSize: 18,
             fontFamily: "serif",
@@ -265,7 +265,7 @@ function GoldClassicCard({ recipients }) {
                   justifyContent: "center",
                   fontSize: 22,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: "var(--primary-foreground)",
                 }}
               >
                 {getInitials(person.name)}
@@ -312,7 +312,7 @@ function GoldClassicCard({ recipients }) {
       <div
         style={{
           marginTop: 36,
-          color: "#fff",
+          color: "var(--primary-foreground)",
           fontSize: 14,
           fontStyle: "italic",
           textAlign: "center",
@@ -361,9 +361,9 @@ function GoldClassicCard({ recipients }) {
 // ---------------------------------------------------------------------------
 
 function BlueMordernCard({ recipients }) {
-  const BLUE = "#2563eb";
-  const BLUE_LIGHT = "#eff6ff";
-  const BLUE_MID = "#bfdbfe";
+  const BLUE = "var(--primary)";
+  const BLUE_LIGHT = "var(--primary)/10";
+  const BLUE_MID = "var(--chart-chart-2)";
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
 
@@ -372,7 +372,7 @@ function BlueMordernCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: "#ffffff",
+        background: "var(--primary-foreground)",
         border: `1.5px solid ${BLUE_MID}`,
         borderRadius: 12,
         display: "flex",
@@ -432,12 +432,12 @@ function BlueMordernCard({ recipients }) {
             border: "1.5px solid rgba(255,255,255,0.35)",
           }}
         >
-          <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
+          <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
         </div>
 
         <h1
           style={{
-            color: "#ffffff",
+            color: "var(--primary-foreground)",
             fontSize: 38,
             fontWeight: 700,
             fontFamily: "system-ui, -apple-system, sans-serif",
@@ -487,7 +487,7 @@ function BlueMordernCard({ recipients }) {
                   border: `3px solid ${BLUE}`,
                   padding: 3,
                   boxSizing: "border-box",
-                  background: "#fff",
+                  background: "var(--primary-foreground)",
                 }}
               >
                 <div
@@ -501,7 +501,7 @@ function BlueMordernCard({ recipients }) {
                     justifyContent: "center",
                     fontSize: 22,
                     fontWeight: 700,
-                    color: "#fff",
+                    color: "var(--primary-foreground)",
                     fontFamily: "system-ui, sans-serif",
                   }}
                 >
@@ -511,7 +511,7 @@ function BlueMordernCard({ recipients }) {
               {/* Name chip */}
               <div
                 style={{
-                  background: "#fff",
+                  background: "var(--primary-foreground)",
                   border: `1.5px solid ${BLUE_MID}`,
                   borderRadius: 20,
                   padding: "4px 16px",
@@ -534,7 +534,7 @@ function BlueMordernCard({ recipients }) {
         {/* Message */}
         <p
           style={{
-            color: "#1e3a5f",
+            color: "var(--foreground)",
             fontSize: 14,
             textAlign: "center",
             lineHeight: 1.7,
@@ -554,7 +554,7 @@ function BlueMordernCard({ recipients }) {
             <span
               key={tag}
               style={{
-                background: "#fff",
+                background: "var(--primary-foreground)",
                 border: `1.5px solid ${BLUE_MID}`,
                 borderRadius: 20,
                 padding: "3px 12px",
@@ -578,10 +578,10 @@ function BlueMordernCard({ recipients }) {
 // ---------------------------------------------------------------------------
 
 function GreenCard({ recipients }) {
-  const GREEN = "#16a34a";
-  const GREEN_DARK = "#14532d";
-  const GREEN_LIGHT = "#dcfce7";
-  const GREEN_MID = "#86efac";
+  const GREEN = "var(--success)";
+  const GREEN_DARK = "var(--success)";
+  const GREEN_LIGHT = "var(--success)/10";
+  const GREEN_MID = "var(--success)";
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
 
@@ -590,7 +590,7 @@ function GreenCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: "#f0fdf4",
+        background: "var(--success)/10",
         border: `1.5px solid ${GREEN_MID}`,
         borderRadius: 12,
         display: "flex",
@@ -628,7 +628,7 @@ function GreenCard({ recipients }) {
           justifyContent: "center",
         }}
       >
-        <span style={{ color: "#fff", fontWeight: 800, fontSize: 17, fontFamily: "sans-serif" }}>A</span>
+        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 17, fontFamily: "sans-serif" }}>A</span>
       </div>
 
       {/* Content */}
@@ -688,7 +688,7 @@ function GreenCard({ recipients }) {
                   border: `3px solid ${GREEN}`,
                   padding: 3,
                   boxSizing: "border-box",
-                  background: "#fff",
+                  background: "var(--primary-foreground)",
                   boxShadow: "0 0 0 4px rgba(22,163,74,0.12)",
                 }}
               >
@@ -703,7 +703,7 @@ function GreenCard({ recipients }) {
                     justifyContent: "center",
                     fontSize: 22,
                     fontWeight: 700,
-                    color: "#fff",
+                    color: "var(--primary-foreground)",
                     fontFamily: "system-ui, sans-serif",
                   }}
                 >
@@ -739,7 +739,7 @@ function GreenCard({ recipients }) {
         {/* Message */}
         <p
           style={{
-            color: "#166534",
+            color: "var(--success)",
             fontSize: 14,
             textAlign: "center",
             lineHeight: 1.7,
@@ -774,10 +774,10 @@ function GreenCard({ recipients }) {
 // ---------------------------------------------------------------------------
 
 function PurpleElegantCard({ recipients }) {
-  const PURPLE = "#7c3aed";
-  const PURPLE_LIGHT = "#a78bfa";
-  const SILVER = "#e2e8f0";
-  const DARK = "#0f0a1a";
+  const PURPLE = "var(--chart-chart-4)";
+  const PURPLE_LIGHT = "var(--chart-chart-4)";
+  const SILVER = "var(--border)";
+  const DARK = "var(--foreground)";
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
 
@@ -839,7 +839,7 @@ function PurpleElegantCard({ recipients }) {
           boxShadow: `0 0 12px rgba(124,58,237,0.6)`,
         }}
       >
-        <span style={{ color: "#fff", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
+        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
       </div>
 
       {/* Crown icon */}
@@ -915,7 +915,7 @@ function PurpleElegantCard({ recipients }) {
                   justifyContent: "center",
                   fontSize: 22,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: "var(--primary-foreground)",
                   fontFamily: "system-ui, sans-serif",
                 }}
               >
@@ -1005,7 +1005,7 @@ function UserPickerDropdown({ query, onSelect }) {
 
   return (
     <div
-      className="bg-white border border-[#e2e8f0] rounded-[8px] shadow-[0px_4px_16px_0px_rgba(0,0,0,0.08)] overflow-y-auto"
+      className="bg-card border border-border rounded-[8px] shadow-[0px_4px_16px_0px_rgba(0,0,0,0.08)] overflow-y-auto"
       style={{ maxHeight: 260 }}
     >
       {filtered.map((user, idx) => (
@@ -1015,16 +1015,16 @@ function UserPickerDropdown({ query, onSelect }) {
             e.preventDefault();
             onSelect(user);
           }}
-          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#f8fafc] text-left transition-colors ${
-            idx !== 0 ? "border-t border-[#f1f5f9]" : ""
+          className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted text-left transition-colors ${
+            idx !== 0 ? "border-t border-border" : ""
           }`}
         >
           <UserAvatar name={user.name} color={user.color} size={30} />
           <div className="flex flex-col min-w-0 gap-0.5">
-            <span className="text-sm font-medium text-[#0f172a] leading-5 truncate">
+            <span className="text-sm font-medium text-foreground leading-5 truncate">
               {user.name}
             </span>
-            <span className="text-xs text-[#64748b] leading-4 truncate">{user.email}</span>
+            <span className="text-xs text-muted-foreground leading-4 truncate">{user.email}</span>
           </div>
         </button>
       ))}
@@ -1056,7 +1056,7 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
 
   return (
     <div
-      className="bg-[#f8fafc] rounded-[12px] w-full"
+      className="bg-muted rounded-[12px] w-full"
       style={{ boxShadow: "8px 6px 130px 0px rgba(37,99,235,0.16)" }}
     >
       {/* User picker appears ABOVE the box */}
@@ -1067,9 +1067,9 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
       )}
 
       {/* Input panel */}
-      <div className="border border-[#e2e8f0] rounded-t-[12px] flex items-start gap-2 min-h-[100px] p-4">
+      <div className="border border-border rounded-t-[12px] flex items-start gap-2 min-h-[100px] p-4">
         {/* Attachment button */}
-        <button className="flex items-center justify-center size-10 rounded-full text-[#64748b] hover:bg-[#f1f5f9] flex-shrink-0 mt-0.5">
+        <button className="flex items-center justify-center size-10 rounded-full text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5">
           <Paperclip size={16} />
         </button>
 
@@ -1081,53 +1081,53 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
           onKeyDown={handleKeyDown}
           placeholder="Describe your appreciation..."
           rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-[#0f172a] placeholder:text-[#94a3b8] outline-none leading-6 min-h-[40px] pt-1.5"
+          className="flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none leading-6 min-h-[40px] pt-1.5"
           style={{ overflow: "hidden" }}
         />
 
         {/* Send button */}
         <button
           onClick={onSend}
-          className="flex items-center justify-center size-10 rounded-full border border-[#cbd5e1] bg-white text-[#64748b] hover:bg-[#f1f5f9] flex-shrink-0 mt-0.5"
+          className="flex items-center justify-center size-10 rounded-full border border-border bg-card text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5"
         >
           <Send size={16} />
         </button>
       </div>
 
       {/* Control bar */}
-      <div className="border-b border-l border-r border-[#e2e8f0] rounded-b-[12px] h-9 flex items-center justify-between px-4">
+      <div className="border-b border-l border-r border-border rounded-b-[12px] h-9 flex items-center justify-between px-4">
         {/* Left controls */}
         <div className="flex items-center gap-0.5">
           {/* Tools button */}
           <button
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-muted-foreground hover:bg-muted transition-colors"
             style={{ boxShadow: "0 1px 3px 0 rgba(0,0,0,0.08)" }}
           >
             <Wrench size={14} />
-            <span className="text-xs text-[#64748b]">Tools</span>
+            <span className="text-xs text-muted-foreground">Tools</span>
           </button>
 
           {/* Divider */}
-          <div className="w-px h-4 bg-[#e2e8f0] mx-1" />
+          <div className="w-px h-4 bg-border mx-1" />
 
           {/* Knowledge icon */}
-          <button className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+          <button className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-muted transition-colors">
             <Database size={14} />
           </button>
 
           {/* Divider */}
-          <div className="w-px h-4 bg-[#e2e8f0] mx-1" />
+          <div className="w-px h-4 bg-border mx-1" />
 
           {/* Usage */}
           <div className="flex items-center gap-1.5 px-2">
             {/* Donut icon */}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="7" cy="7" r="5" stroke="#e2e8f0" strokeWidth="3" fill="none" />
+              <circle cx="7" cy="7" r="5" stroke="var(--border)" strokeWidth="3" fill="none" />
               <circle
                 cx="7"
                 cy="7"
                 r="5"
-                stroke="#2563eb"
+                stroke="var(--primary)"
                 strokeWidth="3"
                 fill="none"
                 strokeDasharray={`${0.65 * 2 * Math.PI * 5} ${2 * Math.PI * 5}`}
@@ -1135,14 +1135,14 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
                 strokeLinecap="round"
               />
             </svg>
-            <span className="text-xs text-[#64748b]">65% used</span>
+            <span className="text-xs text-muted-foreground">65% used</span>
           </div>
         </div>
 
         {/* Right: AI model selector */}
-        <button className="flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[#64748b] hover:bg-[#f1f5f9] transition-colors">
+        <button className="flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-muted-foreground hover:bg-muted transition-colors">
           <Cpu size={14} />
-          <span className="text-xs text-[#64748b]">Claude-sonnet</span>
+          <span className="text-xs text-muted-foreground">Claude-sonnet</span>
         </button>
       </div>
     </div>
@@ -1170,12 +1170,12 @@ function EmailTagInput({ tags, onAdd, onRemove, inputValue, onInputChange, place
       {tags.map((tag) => (
         <span
           key={tag}
-          className="flex items-center gap-1 bg-[#eff6ff] border border-[#bfdbfe] rounded-full px-2.5 py-0.5 text-xs text-[#2563eb] font-medium whitespace-nowrap"
+          className="flex items-center gap-1 bg-primary/10 border border-primary/30 rounded-full px-2.5 py-0.5 text-xs text-primary font-medium whitespace-nowrap"
         >
           {tag}
           <button
             onMouseDown={(e) => { e.preventDefault(); onRemove(tag); }}
-            className="text-[#93c5fd] hover:text-[#2563eb] transition-colors"
+            className="text-foreground hover:text-primary transition-colors"
           >
             <X size={10} />
           </button>
@@ -1186,7 +1186,7 @@ function EmailTagInput({ tags, onAdd, onRemove, inputValue, onInputChange, place
         onChange={(e) => onInputChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[140px] text-sm text-[#0f172a] outline-none bg-transparent placeholder:text-[#94a3b8]"
+        className="flex-1 min-w-[140px] text-sm text-foreground outline-none bg-transparent placeholder:text-muted-foreground"
       />
     </div>
   );
@@ -1199,11 +1199,11 @@ function EmailTagInput({ tags, onAdd, onRemove, inputValue, onInputChange, place
 function InlineEmailCard({ approval, onUpdate }) {
   if (approval.emailSent) {
     return (
-      <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-[10px] p-3 flex items-center gap-2.5">
-        <CheckCircle2 size={15} className="text-[#16a34a] flex-shrink-0" />
+      <div className="bg-success/10 border border-success-ring rounded-[10px] p-3 flex items-center gap-2.5">
+        <CheckCircle2 size={15} className="text-success flex-shrink-0" />
         <div className="flex flex-col gap-0.5">
-          <p className="text-xs font-semibold text-[#15803d]">Email Sent!</p>
-          <p className="text-xs text-[#64748b]">
+          <p className="text-xs font-semibold text-success">Email Sent!</p>
+          <p className="text-xs text-muted-foreground">
             Delivered to {approval.emailTo.length} recipient{approval.emailTo.length !== 1 ? "s" : ""}
             {approval.emailCc.length > 0 ? ` + ${approval.emailCc.length} CC` : ""}.
           </p>
@@ -1213,19 +1213,19 @@ function InlineEmailCard({ approval, onUpdate }) {
   }
 
   return (
-    <div className="bg-white border border-[#e2e8f0] rounded-[10px] overflow-hidden shadow-sm">
+    <div className="bg-card border border-border rounded-[10px] overflow-hidden shadow-sm">
       {/* Card header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-[#f1f5f9] bg-[#f8fafc]">
-        <Mail size={13} className="text-[#2563eb] flex-shrink-0" />
-        <span className="text-xs font-semibold text-[#0f172a] flex-1">Send Appreciation Email</span>
-        <span className="text-xs font-medium text-[#15803d] bg-[#dcfce7] border border-[#bbf7d0] rounded-full px-2 py-0.5">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted">
+        <Mail size={13} className="text-primary flex-shrink-0" />
+        <span className="text-xs font-semibold text-foreground flex-1">Send Appreciation Email</span>
+        <span className="text-xs font-medium text-success bg-success/10 border border-success-ring rounded-full px-2 py-0.5">
           Approved ✓
         </span>
       </div>
 
       {/* To: */}
-      <div className="flex items-start gap-2 px-3 py-2 border-b border-[#f1f5f9]">
-        <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">To</span>
+      <div className="flex items-start gap-2 px-3 py-2 border-b border-border">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">To</span>
         <div className="flex-1 min-w-0">
           <EmailTagInput
             tags={approval.emailTo}
@@ -1239,8 +1239,8 @@ function InlineEmailCard({ approval, onUpdate }) {
       </div>
 
       {/* CC: */}
-      <div className="flex items-start gap-2 px-3 py-2 border-b border-[#f1f5f9]">
-        <span className="text-xs font-semibold text-[#64748b] uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">CC</span>
+      <div className="flex items-start gap-2 px-3 py-2 border-b border-border">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide w-5 pt-1.5 flex-shrink-0">CC</span>
         <div className="flex-1 min-w-0">
           <EmailTagInput
             tags={approval.emailCc}
@@ -1258,12 +1258,12 @@ function InlineEmailCard({ approval, onUpdate }) {
         <button
           onClick={() => onUpdate(approval.id, { emailSent: true })}
           disabled={approval.emailTo.length === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-[#94a3b8] disabled:cursor-not-allowed text-white text-xs font-medium h-8 rounded-[6px] transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 bg-primary hover:bg-muted disabled:bg-muted-foreground disabled:cursor-not-allowed text-white text-xs font-medium h-8 rounded-[6px] transition-colors"
         >
           <Mail size={12} /> Send Email
         </button>
         {approval.emailTo.length === 0 && (
-          <p className="text-xs text-[#94a3b8] text-center mt-1">Add at least one recipient</p>
+          <p className="text-xs text-muted-foreground text-center mt-1">Add at least one recipient</p>
         )}
       </div>
     </div>
@@ -1286,23 +1286,23 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
 
   return (
     <div
-      className="flex flex-col border-l border-[#e2e8f0] bg-[#f1f2f6] flex-shrink-0"
+      className="flex flex-col border-l border-border bg-muted flex-shrink-0"
       style={{ width: 340 }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 h-16 px-4 border-b border-[#e2e8f0] flex-shrink-0 relative">
+      <div className="flex items-center gap-2 h-16 px-4 border-b border-border flex-shrink-0 relative">
         <AgentPlaceholder />
-        <span className="flex-1 text-base font-medium text-[#0f172a] leading-6 truncate">
+        <span className="flex-1 text-base font-medium text-foreground leading-6 truncate">
           Customer Appreciation
         </span>
 
 
-        <button className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] hover:bg-[#e2e8f0] transition-colors">
+        <button className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-border transition-colors">
           <Maximize2 size={16} />
         </button>
         <button
           onClick={onClose}
-          className="flex items-center justify-center size-7 rounded-[6px] text-[#64748b] hover:bg-[#e2e8f0] transition-colors"
+          className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-border transition-colors"
         >
           <X size={16} />
         </button>
@@ -1313,10 +1313,10 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
         {/* Stage 1: empty — centered welcome text */}
         {stage === "empty" && (
           <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center px-2">
-            <h2 className="text-3xl font-medium text-[#0f172a] leading-tight">
+            <h2 className="text-3xl font-medium text-foreground leading-tight">
               Hi! Let's create a customer appreciation.
             </h2>
-            <p className="text-sm text-[#4e4d4d] leading-5 max-w-[260px]">
+            <p className="text-sm text-foreground leading-5 max-w-[260px]">
               I'll help you generate a professional appreciation card and message. You'll be able
               to review, edit, and approve it before sending.
             </p>
@@ -1328,8 +1328,8 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
           <div className="flex flex-col gap-3">
             {/* User message (echoed) */}
             <div className="flex justify-end">
-              <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-[12px] rounded-tr-[4px] px-3 py-2 max-w-[85%]">
-                <p className="text-sm text-[#0f172a] leading-5">
+              <div className="bg-primary/10 border border-primary/30 rounded-[12px] rounded-tr-[4px] px-3 py-2 max-w-[85%]">
+                <p className="text-sm text-foreground leading-5">
                   /kudos @Balachandra Husaine @Sridhar — outstanding customer service this quarter!
                 </p>
               </div>
@@ -1338,12 +1338,12 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
             {/* Generating indicator with animated dots */}
             <div className="flex items-center gap-2">
               <SparkLogo size={18} />
-              <span className="text-sm text-[#0f172a]">Generating</span>
+              <span className="text-sm text-foreground">Generating</span>
               <span className="flex gap-0.5 items-center">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="size-1 rounded-full bg-[#2563eb] animate-bounce"
+                    className="size-1 rounded-full bg-primary animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s`, animationDuration: "0.8s" }}
                   />
                 ))}
@@ -1351,26 +1351,26 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
             </div>
 
             {/* AI response lines */}
-            <p className="text-sm text-[#4e4d4d] leading-5">
+            <p className="text-sm text-foreground leading-5">
               Designing KudosFlow template — selecting card style, parsing recipients, preparing
               approval flow
             </p>
-            <p className="text-sm text-[#4e4d4d] leading-5">
+            <p className="text-sm text-foreground leading-5">
               Applying {activeLabel} theme with personalized message and recipient avatars. Your
               appreciation card will be ready momentarily.
             </p>
 
             {/* Success alert card — shown only after preview is reached */}
             {stage === "preview" && (
-              <div className="bg-white border border-[#e2e8f0] rounded-md p-4 flex items-start gap-3">
-                <div className="flex items-center justify-center size-5 rounded-full bg-[#dcfce7] flex-shrink-0 mt-0.5">
-                  <Check size={12} className="text-[#16a34a]" />
+              <div className="bg-card border border-border rounded-md p-4 flex items-start gap-3">
+                <div className="flex items-center justify-center size-5 rounded-full bg-success/10 flex-shrink-0 mt-0.5">
+                  <Check size={12} className="text-success" />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-medium text-sm text-[#0f172a]">
+                  <span className="font-medium text-sm text-foreground">
                     Template has been generated
                   </span>
-                  <span className="text-sm text-[#64748b] leading-5">
+                  <span className="text-sm text-muted-foreground leading-5">
                     Your appreciation card is ready. Review the preview on the left, then use the prompt to request approval.
                   </span>
                 </div>
@@ -1382,8 +1382,8 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
               <div key={approval.id} className="flex flex-col gap-3">
                 {/* User bubble — echoes what they typed */}
                 <div className="flex justify-end">
-                  <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-[12px] rounded-tr-[4px] px-3 py-2 max-w-[85%]">
-                    <p className="text-sm text-[#0f172a] leading-5">{approval.userMessage}</p>
+                  <div className="bg-primary/10 border border-primary/30 rounded-[12px] rounded-tr-[4px] px-3 py-2 max-w-[85%]">
+                    <p className="text-sm text-foreground leading-5">{approval.userMessage}</p>
                   </div>
                 </div>
 
@@ -1393,24 +1393,24 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
                   <div className="flex flex-col gap-1 flex-1">
                     <div className={`rounded-[10px] px-3 py-2.5 border ${
                       approval.status === "approved"
-                        ? "bg-[#f0fdf4] border-[#bbf7d0]"
-                        : "bg-white border-[#e2e8f0]"
+                        ? "bg-success/10 border-success-ring"
+                        : "bg-card border-border"
                     }`}>
                       {approval.status === "approved" ? (
                         <>
-                          <p className="text-sm font-medium text-[#15803d] leading-5">
+                          <p className="text-sm font-medium text-success leading-5">
                             ✓ Card approved by manager
                           </p>
-                          <p className="text-xs text-[#64748b] leading-4 mt-0.5">
+                          <p className="text-xs text-muted-foreground leading-4 mt-0.5">
                             Configure the email recipients below and hit Send to deliver the appreciation card.
                           </p>
                         </>
                       ) : (
                         <>
-                          <p className="text-sm font-medium text-[#0f172a] leading-5">
+                          <p className="text-sm font-medium text-foreground leading-5">
                             Approval request sent ✓
                           </p>
-                          <p className="text-xs text-[#64748b] leading-4 mt-0.5">
+                          <p className="text-xs text-muted-foreground leading-4 mt-0.5">
                             Your manager has been notified. You'll receive a notification once the card is reviewed.
                           </p>
                         </>
@@ -1452,7 +1452,7 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
 
 function TemplateSelectorBar({ activeTemplate, onSelect }) {
   return (
-    <div className="flex items-center gap-3 px-6 py-3 border-t border-[#e2e8f0] flex-shrink-0 bg-white">
+    <div className="flex items-center gap-3 px-6 py-3 border-t border-border flex-shrink-0 bg-card">
       <span className="text-sm text-black font-medium flex-shrink-0">Templates:</span>
       <div className="flex items-center gap-2 flex-wrap">
         {TEMPLATES.map((tpl) => (
@@ -1461,8 +1461,8 @@ function TemplateSelectorBar({ activeTemplate, onSelect }) {
             onClick={() => onSelect(tpl.id)}
             className={`px-3 py-1.5 text-sm rounded-[6px] border transition-colors ${
               activeTemplate === tpl.id
-                ? "bg-[#f1f5f9] border-[#cbd5e1] text-[#0f172a] font-medium"
-                : "bg-white border-[#cbd5e1] text-[#64748b] hover:bg-[#f8fafc]"
+                ? "bg-muted border-border text-foreground font-medium"
+                : "bg-card border-border text-muted-foreground hover:bg-muted"
             }`}
           >
             {tpl.label}
@@ -1614,7 +1614,7 @@ export default function KudosPage({ agent, onNavigate
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       {/* Main content wrapper */}
@@ -1631,25 +1631,25 @@ export default function KudosPage({ agent, onNavigate
         <div className="flex flex-1 min-h-0">
 
           {/* Left panel */}
-          <div className="flex flex-col flex-1 min-w-0 bg-[#f8fafc]">
+          <div className="flex flex-col flex-1 min-w-0 bg-muted">
             {stage !== "preview" ? (
               // Empty / generating state: welcome placeholder with suggestions
               <div className="flex-1 flex flex-col items-center justify-center gap-8 px-12">
                 {/* Icon */}
-                <div className="flex items-center justify-center size-16 rounded-2xl bg-white border border-[#e2e8f0] shadow-sm">
+                <div className="flex items-center justify-center size-16 rounded-2xl bg-card border border-border shadow-sm">
                   <svg width="32" height="35" viewBox="0 0 22 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 14L9 8.5V19.5L0 14Z" fill="#2563EB" />
-                    <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="#2563EB" />
-                    <path d="M13 15L22 9.5V20.5L13 15Z" fill="#60A5FA" />
+                    <path d="M0 14L9 8.5V19.5L0 14Z" fill="var(--primary)" />
+                    <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="var(--primary)" />
+                    <path d="M13 15L22 9.5V20.5L13 15Z" fill="var(--chart-chart-2)" />
                   </svg>
                 </div>
 
                 {/* Heading */}
                 <div className="flex flex-col items-center gap-2 text-center max-w-md">
-                  <h2 className="text-2xl font-semibold text-[#0f172a] leading-tight tracking-[-0.4px]">
+                  <h2 className="text-2xl font-semibold text-foreground leading-tight tracking-[-0.4px]">
                     Customer Appreciation
                   </h2>
-                  <p className="text-sm text-[#64748b] leading-5">
+                  <p className="text-sm text-muted-foreground leading-5">
                     Use the prompt on the right to describe your appreciation. Try one of the suggestions below to get started.
                   </p>
                 </div>
@@ -1681,13 +1681,13 @@ export default function KudosPage({ agent, onNavigate
                     <button
                       key={s.title}
                       onClick={() => setInputValue(s.prompt)}
-                      className="group flex flex-col gap-2 bg-white border border-[#e2e8f0] rounded-[10px] p-4 text-left hover:border-[#2563eb] hover:shadow-md transition-all"
+                      className="group flex flex-col gap-2 bg-card border border-border rounded-[10px] p-4 text-left hover:border-border hover:shadow-md transition-all"
                     >
                       <span className="text-xl">{s.icon}</span>
-                      <span className="text-sm font-medium text-[#0f172a] leading-5 group-hover:text-[#2563eb] transition-colors">
+                      <span className="text-sm font-medium text-foreground leading-5 group-hover:text-primary transition-colors">
                         {s.title}
                       </span>
-                      <span className="text-xs text-[#94a3b8] leading-4 truncate">
+                      <span className="text-xs text-muted-foreground leading-4 truncate">
                         {s.prompt}
                       </span>
                     </button>
@@ -1695,19 +1695,19 @@ export default function KudosPage({ agent, onNavigate
                 </div>
 
                 {/* How it works */}
-                <div className="flex items-center gap-6 text-xs text-[#94a3b8]">
+                <div className="flex items-center gap-6 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">1</span>
-                    Type <code className="bg-[#f1f5f9] px-1 rounded text-[#475569]">/kudos @Name</code>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">1</span>
+                    Type <code className="bg-muted px-1 rounded text-muted-foreground">/kudos @Name</code>
                   </div>
-                  <div className="w-4 h-px bg-[#e2e8f0]" />
+                  <div className="w-4 h-px bg-border" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">2</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">2</span>
                     AI generates a card
                   </div>
-                  <div className="w-4 h-px bg-[#e2e8f0]" />
+                  <div className="w-4 h-px bg-border" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-[#2563eb] text-white font-bold text-xs">3</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">3</span>
                     Pick a template & send
                   </div>
                 </div>

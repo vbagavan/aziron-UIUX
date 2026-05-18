@@ -370,16 +370,16 @@ function getExecStatus(flowStatus, stepIdx, total) {
 }
 
 const STEP_EXEC = {
-  success: { color: "#22c55e", bg: "#dcfce7", ring: "#bbf7d0", Icon: CheckCircle2, label: "Success" },
-  error:   { color: "#ef4444", bg: "#fef2f2", ring: "#fecaca", Icon: AlertCircle,  label: "Error"   },
-  pending: { color: "#94a3b8", bg: "#f1f5f9", ring: "#e2e8f0", Icon: Circle,       label: "Pending" },
-  running: { color: "#3b82f6", bg: "#dbeafe", ring: "#bfdbfe", Icon: RefreshCw,    label: "Running" },
+  success: { color: "var(--success)", bg: "var(--success)/10", ring: "var(--success-ring)", Icon: CheckCircle2, label: "Success" },
+  error:   { color: "var(--destructive)", bg: "var(--destructive)/10", ring: "var(--destructive-ring)", Icon: AlertCircle,  label: "Error"   },
+  pending: { color: "var(--muted-foreground)", bg: "var(--muted)", ring: "var(--border)", Icon: Circle,       label: "Pending" },
+  running: { color: "var(--primary)", bg: "var(--primary)/10", ring: "var(--chart-chart-2)", Icon: RefreshCw,    label: "Running" },
 };
 
-const LOG_COLORS  = { INFO: "text-muted-foreground", SUCCESS: "text-[#16a34a]", ERROR: "text-[#dc2626]", WARN: "text-[#b45309]" };
-const LOG_BADGES  = { INFO: "bg-muted text-muted-foreground", SUCCESS: "bg-[#dcfce7] text-[#15803d]", ERROR: "bg-[#fef2f2] text-[#dc2626]", WARN: "bg-[#fef9c3] text-[#a16207]" };
+const LOG_COLORS  = { INFO: "text-muted-foreground", SUCCESS: "text-success", ERROR: "text-destructive", WARN: "text-warning" };
+const LOG_BADGES  = { INFO: "bg-muted text-muted-foreground", SUCCESS: "bg-success/10 text-success", ERROR: "bg-destructive/10 text-destructive", WARN: "bg-warning/20 text-warning" };
 /** Compact log row — level dot (INFO hidden from stream elsewhere) */
-const LOG_LEVEL_DOT = { SUCCESS: "#22c55e", ERROR: "#ef4444", WARN: "#ca8a04", INFO: "#94a3b8" };
+const LOG_LEVEL_DOT = { SUCCESS: "var(--success)", ERROR: "var(--destructive)", WARN: "var(--warning)", INFO: "var(--muted-foreground)" };
 
 function createExecutionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -450,9 +450,9 @@ function buildAIResponse(query, step, execKey) {
 
 // ─── Canvas node ───────────────────────────────────────────────────────────────
 const NODE_TOOLBAR_BTNS = [
-  { icon: Play,      label: "Play",   color: "#22c55e", hoverBg: "#f0fdf4" },
-  { icon: Activity,  label: "Logs",   color: "#7c3aed", hoverBg: "#f5f3ff" },
-  { icon: Trash2,    label: "Delete", color: "#ef4444", hoverBg: "#fef2f2" },
+  { icon: Play,      label: "Play",   color: "var(--success)", hoverBg: "var(--success)/10" },
+  { icon: Activity,  label: "Logs",   color: "var(--chart-chart-4)", hoverBg: "var(--accent)" },
+  { icon: Trash2,    label: "Delete", color: "var(--destructive)", hoverBg: "var(--destructive)/10" },
 ];
 const TB_BTN     = 26;
 const TB_GAP     = 3;
@@ -540,7 +540,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
       {/* Card */}
       <rect x={x+2} y={y+3} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.06)" />
       <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={10} fill="white"
-        stroke={isRunning ? "#3b82f6" : selected ? "#2563eb" : hovered ? "#94a3b8" : "#e2e8f0"}
+        stroke={isRunning ? "var(--primary)" : selected ? "var(--primary)" : hovered ? "var(--muted-foreground)" : "var(--border)"}
         strokeWidth={isRunning ? 2 : selected ? 2 : 1} />
 
       {isRunning && (
@@ -570,7 +570,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
       </foreignObject>
 
       {/* Label + type */}
-      <text x={x+62} y={y+28} fontSize={12} fontWeight={600} fill="#0f172a">{step.label}</text>
+      <text x={x+62} y={y+28} fontSize={12} fontWeight={600} fill="var(--foreground)">{step.label}</text>
       <rect x={x+62} y={y+36} width={72} height={15} rx={4} fill={`${step.color}15`} />
       <text x={x+98} y={y+47} textAnchor="middle" fontSize={9} fill={step.color} fontWeight={500}>
         {NODE_CONFIGS[step.icon]?.type ?? "Step"}
@@ -579,7 +579,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
       {/* Execution duration — done nodes */}
       {isDone && !isRunning && (
         <foreignObject x={x+62} y={y+NODE_H-20} width={90} height={16}>
-          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",fontSize:9,fontWeight:600,color:"#16a34a" }}>
+          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",fontSize:9,fontWeight:600,color:"var(--success)" }}>
             {`${230 + index * 80}ms`}
           </div>
         </foreignObject>
@@ -587,10 +587,10 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
       {/* Running indicator with per-node elapsed time */}
       {isRunning && (
         <foreignObject x={x+62} y={y+NODE_H-20} width={130} height={16}>
-          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:500,color:"#3b82f6" }}>
+          <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:500,color:"var(--primary)" }}>
             {nodeElapsedLabel && <span style={{ opacity:0.75, marginRight:2 }}>{nodeElapsedLabel}</span>}
             Running
-            {[0,1,2].map(i => <span key={i} style={{ display:"inline-block",width:3,height:3,borderRadius:"50%",background:"#3b82f6",animation:`nodeBounce 0.8s ease-in-out ${i*0.18}s infinite` }} />)}
+            {[0,1,2].map(i => <span key={i} style={{ display:"inline-block",width:3,height:3,borderRadius:"50%",background:"var(--primary)",animation:`nodeBounce 0.8s ease-in-out ${i*0.18}s infinite` }} />)}
           </div>
         </foreignObject>
       )}
@@ -602,9 +602,9 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
            onMouseLeave={(e) => { e.stopPropagation(); setEdgeHov(null); }} style={{ cursor:"pointer" }}>
           {/* Expanded hit area for better clickability */}
           <circle cx={rightEdge.cx} cy={rightEdge.cy} r={16} fill="transparent" />
-          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={EDGE_R} fill={edgeHov==="right"?"#2563eb":"white"} stroke={edgeHov==="right"?"#2563eb":"#94a3b8"} strokeWidth={1.5} />
-          <line x1={rightEdge.cx-4} y1={rightEdge.cy} x2={rightEdge.cx+4} y2={rightEdge.cy} stroke={edgeHov==="right"?"white":"#64748b"} strokeWidth={1.8} strokeLinecap="round" />
-          <line x1={rightEdge.cx} y1={rightEdge.cy-4} x2={rightEdge.cx} y2={rightEdge.cy+4} stroke={edgeHov==="right"?"white":"#64748b"} strokeWidth={1.8} strokeLinecap="round" />
+          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={EDGE_R} fill={edgeHov==="right"?"var(--primary)":"white"} stroke={edgeHov==="right"?"var(--primary)":"var(--muted-foreground)"} strokeWidth={1.5} />
+          <line x1={rightEdge.cx-4} y1={rightEdge.cy} x2={rightEdge.cx+4} y2={rightEdge.cy} stroke={edgeHov==="right"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={rightEdge.cx} y1={rightEdge.cy-4} x2={rightEdge.cx} y2={rightEdge.cy+4} stroke={edgeHov==="right"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
         </g>
       )}
       {!readOnly && hovered && (
@@ -613,15 +613,15 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
            onMouseLeave={(e) => { e.stopPropagation(); setEdgeHov(null); }} style={{ cursor:"pointer" }}>
           {/* Expanded hit area for better clickability */}
           <circle cx={leftEdge.cx} cy={leftEdge.cy} r={16} fill="transparent" />
-          <circle cx={leftEdge.cx} cy={leftEdge.cy} r={EDGE_R} fill={edgeHov==="left"?"#2563eb":"white"} stroke={edgeHov==="left"?"#2563eb":"#94a3b8"} strokeWidth={1.5} />
-          <line x1={leftEdge.cx-4} y1={leftEdge.cy} x2={leftEdge.cx+4} y2={leftEdge.cy} stroke={edgeHov==="left"?"white":"#64748b"} strokeWidth={1.8} strokeLinecap="round" />
-          <line x1={leftEdge.cx} y1={leftEdge.cy-4} x2={leftEdge.cx} y2={leftEdge.cy+4} stroke={edgeHov==="left"?"white":"#64748b"} strokeWidth={1.8} strokeLinecap="round" />
+          <circle cx={leftEdge.cx} cy={leftEdge.cy} r={EDGE_R} fill={edgeHov==="left"?"var(--primary)":"white"} stroke={edgeHov==="left"?"var(--primary)":"var(--muted-foreground)"} strokeWidth={1.5} />
+          <line x1={leftEdge.cx-4} y1={leftEdge.cy} x2={leftEdge.cx+4} y2={leftEdge.cy} stroke={edgeHov==="left"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={leftEdge.cx} y1={leftEdge.cy-4} x2={leftEdge.cx} y2={leftEdge.cy+4} stroke={edgeHov==="left"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
         </g>
       )}
       {!hovered && (
         <>
-          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={5} fill="white" stroke={selected?"#2563eb":"#cbd5e1"} strokeWidth={1.5} />
-          {index > 0 && <circle cx={leftEdge.cx} cy={leftEdge.cy} r={5} fill="white" stroke={selected?"#2563eb":"#cbd5e1"} strokeWidth={1.5} />}
+          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={5} fill="white" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />
+          {index > 0 && <circle cx={leftEdge.cx} cy={leftEdge.cy} r={5} fill="white" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />}
         </>
       )}
 
@@ -630,7 +630,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
         <g style={{ filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.10))" }} onMouseEnter={cancelHide} onMouseLeave={startHide}>
           {/* Expanded gap area for easier cursor transition from node to toolbar — extends to bottom of toolbar */}
           <rect x={tbX-8} y={y+NODE_H} width={TB_TOTAL_W+16} height={6+TB_TOTAL_H} fill="transparent" />
-          <rect x={tbX} y={tbY} width={TB_TOTAL_W} height={TB_TOTAL_H} rx={8} fill="white" stroke="#e2e8f0" strokeWidth={1} />
+          <rect x={tbX} y={tbY} width={TB_TOTAL_W} height={TB_TOTAL_H} rx={8} fill="white" stroke="var(--border)" strokeWidth={1} />
           {NODE_TOOLBAR_BTNS.map((btn, bi) => {
             const btnX = tbX + TB_PAD + bi * (TB_BTN + TB_GAP);
             const btnCX = btnX + TB_BTN / 2;
@@ -655,7 +655,7 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
                 {/* Icon — pointer-events none to maintain hover on rect */}
                 <foreignObject x={btnCX-8} y={btnCY-8} width={16} height={16} pointerEvents="none">
                   <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",justifyContent:"center",width:"100%",height:"100%",pointerEvents:"none" }}>
-                    <BtnIcon size={13} color={isHov?btn.color:"#94a3b8"} strokeWidth={isHov?2.2:1.8} />
+                    <BtnIcon size={13} color={isHov?btn.color:"var(--muted-foreground)"} strokeWidth={isHov?2.2:1.8} />
                   </div>
                 </foreignObject>
               </g>
@@ -678,21 +678,21 @@ function ConnectionWithAdd({ x1, y1, x2, y2, color, afterIndex, onOpenPicker, is
   return (
     <g onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
       <path d={d} fill="none" stroke="transparent" strokeWidth={22} />
-      <path d={d} fill="none" stroke={isDone?"#bbf7d0":"#e2e8f0"} strokeWidth={isDone?2.5:2} />
+      <path d={d} fill="none" stroke={isDone?"var(--success-ring)":"var(--border)"} strokeWidth={isDone?2.5:2} />
       {!isFlowing && !isDone && <path d={d} fill="none" stroke={color} strokeWidth={1.5} opacity={0.4} strokeDasharray="5 4" />}
-      {isDone && <path d={d} fill="none" stroke="#22c55e" strokeWidth={2} opacity={0.7} />}
+      {isDone && <path d={d} fill="none" stroke="var(--success)" strokeWidth={2} opacity={0.7} />}
       {isFlowing && (
         <>
-          <path d={d} fill="none" stroke="#bfdbfe" strokeWidth={3} />
-          <path d={d} fill="none" stroke="#3b82f6" strokeWidth={2.5} strokeDasharray="10 8" style={{ animation:"connFlow 0.45s linear infinite" }} />
+          <path d={d} fill="none" stroke="var(--chart-chart-2)" strokeWidth={3} />
+          <path d={d} fill="none" stroke="var(--primary)" strokeWidth={2.5} strokeDasharray="10 8" style={{ animation:"connFlow 0.45s linear infinite" }} />
         </>
       )}
       {!readOnly && hovered && (
         <g onClick={(e) => { e.stopPropagation(); onOpenPicker?.(afterIndex, mx, my); }} style={{ cursor:"pointer" }}>
-          <circle cx={mx} cy={my} r={R+4} fill="#2563eb" opacity={0.08} />
-          <circle cx={mx} cy={my} r={R} fill="white" stroke="#2563eb" strokeWidth={1.5} />
-          <line x1={mx-4} y1={my} x2={mx+4} y2={my} stroke="#2563eb" strokeWidth={1.8} strokeLinecap="round" />
-          <line x1={mx} y1={my-4} x2={mx} y2={my+4} stroke="#2563eb" strokeWidth={1.8} strokeLinecap="round" />
+          <circle cx={mx} cy={my} r={R+4} fill="var(--primary)" opacity={0.08} />
+          <circle cx={mx} cy={my} r={R} fill="white" stroke="var(--primary)" strokeWidth={1.5} />
+          <line x1={mx-4} y1={my} x2={mx+4} y2={my} stroke="var(--primary)" strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={mx} y1={my-4} x2={mx} y2={my+4} stroke="var(--primary)" strokeWidth={1.8} strokeLinecap="round" />
         </g>
       )}
     </g>
@@ -701,43 +701,43 @@ function ConnectionWithAdd({ x1, y1, x2, y2, color, afterIndex, onOpenPicker, is
 
 // ─── Add-node picker ──────────────────────────────────────────────────────────
 const PICKER_COLORS = {
-  Bot:"#7c3aed", Webhook:"#6366f1", Zap:"#f59e0b",
-  Globe:"#2563eb", Database:"#0891b2", Mail:"#06b6d4",
-  FileText:"#f59e0b", GitBranch:"#0284c7", GitMerge:"#0284c7",
-  Terminal:"#d97706", Cpu:"#d97706", Filter:"#16a34a", Code2:"#16a34a",
-  Network:"#7c3aed", Braces:"#16a34a", Bell:"#be185d", UserCheck:"#ea580c",
-  Shield:"#0369a1", Wrench:"#64748b", Brain:"#9333ea", MessageCircle:"#059669",
-  Upload:"#e11d48", HardDrive:"#d97706", Building2:"#3b82f6",
-  SplitSquareHorizontal:"#0284c7", Shuffle:"#0284c7",
-  Timer:"#64748b", Variable:"#64748b", BarChart3:"#16a34a",
-  ImageIcon:"#9333ea", Microscope:"#9333ea",
-  FolderInput:"#e11d48", Archive:"#d97706", Boxes:"#2563eb",
-  BotMessageSquare:"#059669", Plug:"#7c3aed", Layers:"#2563eb",
+  Bot:"var(--chart-chart-4)", Webhook:"var(--chart-chart-3)", Zap:"var(--warning)",
+  Globe:"var(--primary)", Database:"var(--info)", Mail:"var(--info)",
+  FileText:"var(--warning)", GitBranch:"var(--info)", GitMerge:"var(--info)",
+  Terminal:"var(--warning)", Cpu:"var(--warning)", Filter:"var(--success)", Code2:"var(--success)",
+  Network:"var(--chart-chart-4)", Braces:"var(--success)", Bell:"var(--destructive)", UserCheck:"var(--warning)",
+  Shield:"var(--info)", Wrench:"var(--muted-foreground)", Brain:"var(--chart-chart-4)", MessageCircle:"var(--success)",
+  Upload:"var(--destructive)", HardDrive:"var(--warning)", Building2:"var(--primary)",
+  SplitSquareHorizontal:"var(--info)", Shuffle:"var(--info)",
+  Timer:"var(--muted-foreground)", Variable:"var(--muted-foreground)", BarChart3:"var(--success)",
+  ImageIcon:"var(--chart-chart-4)", Microscope:"var(--chart-chart-4)",
+  FolderInput:"var(--destructive)", Archive:"var(--warning)", Boxes:"var(--primary)",
+  BotMessageSquare:"var(--success)", Plug:"var(--chart-chart-4)", Layers:"var(--primary)",
 };
 const PICKER_CATEGORIES = [
-  { icon:SplitSquareHorizontal, bg:"#eff6ff", iconColor:"#0284c7", label:"Control Flow",   desc:"Routing, branching, loops",    iconKey:"SplitSquareHorizontal" },
-  { icon:Terminal,              bg:"#fefce8", iconColor:"#d97706", label:"Execution",       desc:"Run code & AI agents",         iconKey:"Terminal"              },
-  { icon:Filter,                bg:"#f0fdf4", iconColor:"#16a34a", label:"Data",            desc:"Transform & process data",     iconKey:"Filter"                },
-  { icon:Plug,                  bg:"#f5f3ff", iconColor:"#7c3aed", label:"Integration",     desc:"External system calls",        iconKey:"Plug"                  },
-  { icon:Zap,                   bg:"#fef9c3", iconColor:"#ca8a04", label:"Trigger",         desc:"Start workflows",              iconKey:"Zap"                   },
-  { icon:Bell,                  bg:"#fdf2f8", iconColor:"#be185d", label:"Communication",   desc:"Notify & message users",       iconKey:"Bell"                  },
-  { icon:UserCheck,             bg:"#fff7ed", iconColor:"#ea580c", label:"Interactive",     desc:"Human-in-loop actions",        iconKey:"UserCheck"             },
-  { icon:Shield,                bg:"#f0f9ff", iconColor:"#0369a1", label:"Logic",           desc:"Validation & rules",           iconKey:"Shield"                },
-  { icon:Wrench,                bg:"#f8fafc", iconColor:"#64748b", label:"Utility",         desc:"Helpers & control",            iconKey:"Wrench"                },
-  { icon:Brain,                 bg:"#faf5ff", iconColor:"#9333ea", label:"Advanced Data",   desc:"AI + data intelligence",       iconKey:"Brain"                 },
-  { icon:MessageCircle,         bg:"#f0fdf4", iconColor:"#059669", label:"Conversational",  desc:"NLP-based routing",            iconKey:"MessageCircle"         },
-  { icon:FolderInput,           bg:"#fff1f2", iconColor:"#e11d48", label:"File Handling",   desc:"File processing",              iconKey:"FolderInput"           },
-  { icon:HardDrive,             bg:"#fef3c7", iconColor:"#d97706", label:"Storage",         desc:"Persist & retrieve data",      iconKey:"HardDrive"             },
-  { icon:Boxes,                 bg:"#eff6ff", iconColor:"#2563eb", label:"Concurrency",     desc:"Parallel execution",           iconKey:"Boxes"                 },
-  { icon:Building2,             bg:"#f0f4ff", iconColor:"#3b82f6", label:"Microsoft / Bot", desc:"Microsoft ecosystem",          iconKey:"Building2"             },
+  { icon:SplitSquareHorizontal, bg:"var(--primary)/10", iconColor:"var(--info)", label:"Control Flow",   desc:"Routing, branching, loops",    iconKey:"SplitSquareHorizontal" },
+  { icon:Terminal,              bg:"var(--warning)/10", iconColor:"var(--warning)", label:"Execution",       desc:"Run code & AI agents",         iconKey:"Terminal"              },
+  { icon:Filter,                bg:"var(--success)/10", iconColor:"var(--success)", label:"Data",            desc:"Transform & process data",     iconKey:"Filter"                },
+  { icon:Plug,                  bg:"var(--accent)", iconColor:"var(--chart-chart-4)", label:"Integration",     desc:"External system calls",        iconKey:"Plug"                  },
+  { icon:Zap,                   bg:"var(--warning)/20", iconColor:"var(--warning)", label:"Trigger",         desc:"Start workflows",              iconKey:"Zap"                   },
+  { icon:Bell,                  bg:"var(--destructive)/10", iconColor:"var(--destructive)", label:"Communication",   desc:"Notify & message users",       iconKey:"Bell"                  },
+  { icon:UserCheck,             bg:"var(--warning)/10", iconColor:"var(--warning)", label:"Interactive",     desc:"Human-in-loop actions",        iconKey:"UserCheck"             },
+  { icon:Shield,                bg:"var(--info)/10", iconColor:"var(--info)", label:"Logic",           desc:"Validation & rules",           iconKey:"Shield"                },
+  { icon:Wrench,                bg:"var(--background)", iconColor:"var(--muted-foreground)", label:"Utility",         desc:"Helpers & control",            iconKey:"Wrench"                },
+  { icon:Brain,                 bg:"var(--accent)", iconColor:"var(--chart-chart-4)", label:"Advanced Data",   desc:"AI + data intelligence",       iconKey:"Brain"                 },
+  { icon:MessageCircle,         bg:"var(--success)/10", iconColor:"var(--success)", label:"Conversational",  desc:"NLP-based routing",            iconKey:"MessageCircle"         },
+  { icon:FolderInput,           bg:"var(--destructive)/10", iconColor:"var(--destructive)", label:"File Handling",   desc:"File processing",              iconKey:"FolderInput"           },
+  { icon:HardDrive,             bg:"var(--warning)/20", iconColor:"var(--warning)", label:"Storage",         desc:"Persist & retrieve data",      iconKey:"HardDrive"             },
+  { icon:Boxes,                 bg:"var(--primary)/10", iconColor:"var(--primary)", label:"Concurrency",     desc:"Parallel execution",           iconKey:"Boxes"                 },
+  { icon:Building2,             bg:"var(--primary)/10", iconColor:"var(--primary)", label:"Microsoft / Bot", desc:"Microsoft ecosystem",          iconKey:"Building2"             },
 ];
 const PICKER_FREQUENT = [
-  { icon:Globe,         bg:"#eff6ff", iconColor:"#2563eb", label:"API Call",       desc:"Call external endpoints",      iconKey:"Globe"         },
-  { icon:Braces,        bg:"#f0fdf4", iconColor:"#16a34a", label:"Code Block",     desc:"Run inline code",              iconKey:"Braces"        },
-  { icon:MessageCircle, bg:"#f0fdf4", iconColor:"#059669", label:"Chat Trigger",   desc:"Start from a chat message",    iconKey:"MessageCircle" },
-  { icon:Filter,        bg:"#f0fdf4", iconColor:"#16a34a", label:"Transform",      desc:"Shape & map data",             iconKey:"Filter"        },
-  { icon:UserCheck,     bg:"#fff7ed", iconColor:"#ea580c", label:"Human Approval", desc:"Pause for human review",       iconKey:"UserCheck"     },
-  { icon:GitBranch,     bg:"#eff6ff", iconColor:"#0284c7", label:"If / Else",      desc:"Branch on a condition",        iconKey:"GitBranch"     },
+  { icon:Globe,         bg:"var(--primary)/10", iconColor:"var(--primary)", label:"API Call",       desc:"Call external endpoints",      iconKey:"Globe"         },
+  { icon:Braces,        bg:"var(--success)/10", iconColor:"var(--success)", label:"Code Block",     desc:"Run inline code",              iconKey:"Braces"        },
+  { icon:MessageCircle, bg:"var(--success)/10", iconColor:"var(--success)", label:"Chat Trigger",   desc:"Start from a chat message",    iconKey:"MessageCircle" },
+  { icon:Filter,        bg:"var(--success)/10", iconColor:"var(--success)", label:"Transform",      desc:"Shape & map data",             iconKey:"Filter"        },
+  { icon:UserCheck,     bg:"var(--warning)/10", iconColor:"var(--warning)", label:"Human Approval", desc:"Pause for human review",       iconKey:"UserCheck"     },
+  { icon:GitBranch,     bg:"var(--primary)/10", iconColor:"var(--info)", label:"If / Else",      desc:"Branch on a condition",        iconKey:"GitBranch"     },
 ];
 
 // ─── Nodes grouped by category ─────────────────────────────────────────────────
@@ -855,7 +855,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
   const q = query.toLowerCase();
   const allNodes = Object.values(PICKER_NODES_BY_CATEGORY).flat();
   const filtered = q ? allNodes.filter(t => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) : null;
-  const pick = (tool) => { onAdd(afterIndex, { label:tool.label, icon:tool.iconKey, color:PICKER_COLORS[tool.iconKey]??"#64748b" }); onClose(); };
+  const pick = (tool) => { onAdd(afterIndex, { label:tool.label, icon:tool.iconKey, color:PICKER_COLORS[tool.iconKey]??"var(--muted-foreground)" }); onClose(); };
   const openCategory = (categoryLabel) => { setSelectedCategory(categoryLabel); setQuery(""); };
 
   const PW = 320, PH = 500;
@@ -912,7 +912,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
             {/* Show nodes in selected category */}
             {(PICKER_NODES_BY_CATEGORY[selectedCategory] || []).map(node => { const Icon = node.icon; return (
               <button key={node.label} onClick={()=>pick(node)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-background transition-colors text-left group">
-                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:PICKER_COLORS[node.iconKey]+"15",border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={18} style={{color:PICKER_COLORS[node.iconKey]||"#64748b"}}/></div>
+                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:PICKER_COLORS[node.iconKey]+"15",border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={18} style={{color:PICKER_COLORS[node.iconKey]||"var(--muted-foreground)"}}/></div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0"><span className="text-sm font-medium text-foreground">{node.label}</span><span className="text-xs text-muted-foreground line-clamp-1">{node.desc}</span></div>
               </button>
             ); })}
@@ -1277,7 +1277,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center gap-2 mb-0.5">
-              <div className="size-7 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center">
+              <div className="size-7 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center">
                 <Sparkles size={13} color="white" />
               </div>
               <span className="text-xs font-semibold text-foreground">AI Assistant</span>
@@ -1302,12 +1302,12 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
             ) : (
               <div className="w-full flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
-                  <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                  <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
                     <Sparkles size={10} color="white" />
                   </div>
                   <span className="text-xs font-semibold text-muted-foreground">AI Assistant</span>
                 </div>
-                <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-[#374151] leading-5">
+                <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-muted-foreground leading-5">
                   {msg.message.split("\n").map((line, li) => (
                     <p key={li} className={line===""?"h-2":""}>{line.replace(/\*\*(.*?)\*\*/g,"$1")}</p>
                   ))}
@@ -1316,7 +1316,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
                   <div className="flex flex-col gap-1">
                     {msg.suggestions.map((s, si) => (
                       <div key={si} className="flex items-start gap-2 text-xs text-muted-foreground">
-                        <span className="text-[#22c55e] font-bold flex-shrink-0 mt-px">→</span>
+                        <span className="text-foreground font-bold flex-shrink-0 mt-px">→</span>
                         <span>{s}</span>
                       </div>
                     ))}
@@ -1338,7 +1338,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
 
         {loading && (
           <div className="flex items-center gap-2">
-            <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+            <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
               <Sparkles size={10} color="white" />
             </div>
             <div className="flex gap-1 px-3 py-2 rounded-[10px] bg-background border border-border">
@@ -1451,7 +1451,7 @@ function ExecutionMode({ step, selectedIdx, flow, runState }) {
             {[["Input",io.input],["Output",io.output]].map(([lbl,data])=>(
               <div key={lbl}>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{lbl}</p>
-                <pre className="bg-background border border-border rounded-[8px] px-3 py-2.5 text-sm font-mono text-[#374151] overflow-x-auto whitespace-pre-wrap break-all">
+                <pre className="bg-background border border-border rounded-[8px] px-3 py-2.5 text-sm font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap break-all">
                   {JSON.stringify(data,null,2)}
                 </pre>
               </div>
@@ -1498,7 +1498,7 @@ function generateSparkline(seed, length, base, spread) {
   return data;
 }
 
-function Sparkline({ data, color = "#6366f1", height = 28, width = 64 }) {
+function Sparkline({ data, color = "var(--chart-chart-3)", height = 28, width = 64 }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -1522,11 +1522,11 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
   const [metaOpen, setMetaOpen] = useState(false);
 
   const STATUS_CFG = {
-    idle:       { label: "Idle",        dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "#94a3b8" },
-    inprogress: { label: "In Progress", dot: "bg-primary",          text: "text-primary",          accent: "#6366f1" },
-    completed:  { label: "Completed",   dot: "bg-success",          text: "text-success",          accent: "#22c55e" },
-    error:      { label: "Error",       dot: "bg-destructive",      text: "text-destructive",      accent: "#ef4444" },
-    draft:      { label: "Draft",       dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "#94a3b8" },
+    idle:       { label: "Idle",        dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "var(--muted-foreground)" },
+    inprogress: { label: "In Progress", dot: "bg-primary",          text: "text-primary",          accent: "var(--chart-chart-3)" },
+    completed:  { label: "Completed",   dot: "bg-success",          text: "text-success",          accent: "var(--success)" },
+    error:      { label: "Error",       dot: "bg-destructive",      text: "text-destructive",      accent: "var(--destructive)" },
+    draft:      { label: "Draft",       dot: "bg-muted-foreground", text: "text-muted-foreground", accent: "var(--muted-foreground)" },
   };
   const cfg = STATUS_CFG[flow.status] ?? STATUS_CFG.idle;
 
@@ -1588,7 +1588,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
                     <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground/60">{i + 1}</span>
                     <span
                       className="size-2 shrink-0 rounded-full"
-                      style={{ background: step.color ?? "#94a3b8" }}
+                      style={{ background: step.color ?? "var(--muted-foreground)" }}
                     />
                     <span className="min-w-0 flex-1 truncate text-[10px] text-foreground">{step.label}</span>
                     {(() => { const I = ICON_MAP[step.icon]; return I ? <I size={10} className="shrink-0 text-muted-foreground/40" aria-hidden /> : null; })()}
@@ -1640,7 +1640,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
   const successSpark  = generateSparkline(seed,       14, successRate, 4);
   const runsSpark     = generateSparkline(seed + 100, 14, avgPerDay,  Math.max(3, Math.round(avgPerDay * 0.4)));
 
-  const successColor  = successRate >= 95 ? "#22c55e" : successRate >= 80 ? "#f59e0b" : "#ef4444";
+  const successColor  = successRate >= 95 ? "var(--success)" : successRate >= 80 ? "var(--warning)" : "var(--destructive)";
   const successLabel  = successRate >= 95 ? "↑ Healthy"
                       : successRate >= 80 ? "↓ Below target"
                       : "↓ Needs attention";
@@ -1728,7 +1728,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               <span className="text-xl font-bold tabular-nums leading-none text-foreground">
                 {(flow.runs ?? 0).toLocaleString()}
               </span>
-              <Sparkline data={runsSpark} color="#6366f1" />
+              <Sparkline data={runsSpark} color="var(--chart-chart-3)" />
             </div>
             <span className="text-[10px] text-muted-foreground">~{avgPerDay}/day avg</span>
           </div>
@@ -1831,39 +1831,39 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
 // ─── Shared template definitions ──────────────────────────────────────────────
 const CREATION_TEMPLATES = [
   {
-    icon: Mail, color: "#06b6d4", label: "Email automation",
+    icon: Mail, color: "var(--info)", label: "Email automation",
     desc: "Trigger → Filter → Send",
     steps: [
-      { label: "Email Trigger", icon: "Webhook",   color: "#6366f1", status: "pending" },
-      { label: "Filter Rules",  icon: "GitBranch", color: "#f59e0b", status: "pending" },
-      { label: "Send Email",    icon: "Mail",      color: "#06b6d4", status: "pending" },
+      { label: "Email Trigger", icon: "Webhook",   color: "var(--chart-chart-3)", status: "pending" },
+      { label: "Filter Rules",  icon: "GitBranch", color: "var(--warning)", status: "pending" },
+      { label: "Send Email",    icon: "Mail",      color: "var(--info)", status: "pending" },
     ],
   },
   {
-    icon: Database, color: "#0891b2", label: "Data pipeline",
+    icon: Database, color: "var(--info)", label: "Data pipeline",
     desc: "Fetch → Validate → Store",
     steps: [
-      { label: "Fetch Data",    icon: "Globe",    color: "#2563eb", status: "pending" },
-      { label: "Validate",      icon: "Zap",      color: "#f59e0b", status: "pending" },
-      { label: "Store Results", icon: "Database", color: "#0891b2", status: "pending" },
+      { label: "Fetch Data",    icon: "Globe",    color: "var(--primary)", status: "pending" },
+      { label: "Validate",      icon: "Zap",      color: "var(--warning)", status: "pending" },
+      { label: "Store Results", icon: "Database", color: "var(--info)", status: "pending" },
     ],
   },
   {
-    icon: Bot, color: "#7c3aed", label: "Lead scoring",
+    icon: Bot, color: "var(--chart-chart-4)", label: "Lead scoring",
     desc: "CRM Trigger → Score → Update",
     steps: [
-      { label: "CRM Trigger",   icon: "Webhook",  color: "#6366f1", status: "pending" },
-      { label: "Score with AI", icon: "Bot",      color: "#7c3aed", status: "pending" },
-      { label: "Update CRM",    icon: "Database", color: "#0891b2", status: "pending" },
+      { label: "CRM Trigger",   icon: "Webhook",  color: "var(--chart-chart-3)", status: "pending" },
+      { label: "Score with AI", icon: "Bot",      color: "var(--chart-chart-4)", status: "pending" },
+      { label: "Update CRM",    icon: "Database", color: "var(--info)", status: "pending" },
     ],
   },
   {
-    icon: FileText, color: "#f59e0b", label: "Document processing",
+    icon: FileText, color: "var(--warning)", label: "Document processing",
     desc: "Upload → Extract → Save",
     steps: [
-      { label: "File Upload",   icon: "FileText", color: "#f59e0b", status: "pending" },
-      { label: "Smart Extract", icon: "Bot",      color: "#7c3aed", status: "pending" },
-      { label: "Save to DB",    icon: "Database", color: "#0891b2", status: "pending" },
+      { label: "File Upload",   icon: "FileText", color: "var(--warning)", status: "pending" },
+      { label: "Smart Extract", icon: "Bot",      color: "var(--chart-chart-4)", status: "pending" },
+      { label: "Save to DB",    icon: "Database", color: "var(--info)", status: "pending" },
     ],
   },
 ];
@@ -1961,7 +1961,7 @@ function FlowAIChat({ flow }) {
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center gap-2 mb-0.5">
-              <div className="size-7 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center">
+              <div className="size-7 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center">
                 <Sparkles size={13} color="white" />
               </div>
               <span className="text-xs font-semibold text-foreground">AI Assistant</span>
@@ -1988,7 +1988,7 @@ function FlowAIChat({ flow }) {
             ) : (
               <div className="w-full flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
-                  <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                  <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
                     <Sparkles size={10} color="white" />
                   </div>
                   <span className="text-xs font-semibold text-muted-foreground">AI Assistant</span>
@@ -2003,7 +2003,7 @@ function FlowAIChat({ flow }) {
 
         {loading && (
           <div className="flex items-center gap-1.5">
-            <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+            <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
               <Sparkles size={10} color="white" />
             </div>
             <div className="flex gap-1 px-3 py-2 bg-background border border-border rounded-[10px]">
@@ -2390,7 +2390,7 @@ function ExecutionLogPanel({
           onMouseDown={onMouseDownResize}
           className="group flex h-1.5 w-full flex-shrink-0 cursor-row-resize items-center justify-center"
         >
-          <div className="h-1 w-10 rounded-full bg-border transition-colors group-hover:bg-primary dark:bg-[#334155]" />
+          <div className="h-1 w-10 rounded-full bg-border transition-colors group-hover:bg-primary dark:bg-border" />
         </div>
       )}
       {!collapsed && onMouseDownResize && isRight && (
@@ -2398,7 +2398,7 @@ function ExecutionLogPanel({
           onMouseDown={onMouseDownResize}
           className="group flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center border-r border-border dark:border-border"
         >
-          <div className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-primary dark:bg-[#334155]" />
+          <div className="h-10 w-1 rounded-full bg-border transition-colors group-hover:bg-primary dark:bg-border" />
         </div>
       )}
 
@@ -2467,7 +2467,7 @@ function ExecutionLogPanel({
                   </span>
                 )}
                 {activeTab === "logs" && !isRunning && hasDone && (
-                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-[#dcfce7]/80 px-1.5 py-0.5 text-[10px] font-medium text-[#15803d]">
+                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-success/10/80 px-1.5 py-0.5 text-[10px] font-medium text-success">
                     Done{lastRunTotalLabel ? <span className="tabular-nums opacity-90">· {lastRunTotalLabel}</span> : null}
                   </span>
                 )}
@@ -2526,7 +2526,7 @@ function ExecutionLogPanel({
                         <div className={cn(
                           "sticky top-0 z-10 flex items-center justify-between border-b px-3 py-1.5",
                           hasResult && nError > 0
-                            ? "border-red-200/70 bg-red-50/40 dark:border-red-900/40 dark:bg-red-950/20"
+                            ? "border-red-200/70 bg-destructive/10/40 dark:border-red-900/40 dark:bg-red-950/20"
                             : hasResult
                               ? "border-green-200/70 bg-green-50/40 dark:border-green-900/40 dark:bg-green-950/20"
                               : "border-border bg-muted/30",
@@ -2534,7 +2534,7 @@ function ExecutionLogPanel({
                           <div className="flex items-center gap-2 min-w-0">
                             {hasResult ? (
                               nError > 0
-                                ? <AlertCircle size={10} className="text-red-500 flex-shrink-0" />
+                                ? <AlertCircle size={10} className="text-destructive flex-shrink-0" />
                                 : <CheckCircle2 size={10} className="text-green-600 flex-shrink-0" />
                             ) : (
                               <Terminal size={9} className="text-muted-foreground flex-shrink-0" />
@@ -2549,7 +2549,7 @@ function ExecutionLogPanel({
                             )}
                             {hasResult && (
                               <span className={cn("text-[10px] font-semibold flex-shrink-0",
-                                nError > 0 ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400")}>
+                                nError > 0 ? "text-destructive dark:text-red-400" : "text-green-700 dark:text-green-400")}>
                                 {nError > 0 ? "Finished with errors" : "Run complete"}
                               </span>
                             )}
@@ -2597,7 +2597,7 @@ function ExecutionLogPanel({
                             />
                             <span className="w-[76px] flex-shrink-0 tabular-nums text-muted-foreground">{entry.ts}</span>
                             <span className={cn("flex-1 min-w-0 truncate",
-                              isErr ? "text-red-600 dark:text-red-400 font-medium" : "text-foreground")}>
+                              isErr ? "text-destructive dark:text-red-400 font-medium" : "text-foreground")}>
                               {stepName ?? entry.msg}
                             </span>
                             <span className="w-[56px] flex-shrink-0 text-right tabular-nums text-muted-foreground">
@@ -2648,12 +2648,12 @@ function ExecutionLogPanel({
                           </td>
                           <td className="px-3 py-2">
                             {row.status === "success" ? (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-semibold text-[#15803d] dark:bg-[#14532d]/50 dark:text-[#4ade80]">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold text-success dark:bg-success/20/50 dark:text-success">
                                 <CheckCircle2 size={9} />
                                 Success
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-[#fee2e2] px-1.5 py-0.5 text-[10px] font-semibold text-[#dc2626] dark:bg-[#450a0a]/50 dark:text-[#f87171]">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-destructive dark:bg-card/50 dark:text-foreground">
                                 <AlertCircle size={9} />
                                 Error
                               </span>
@@ -2706,7 +2706,7 @@ function ExecutionTimeline({ flow, runState, logs, onHighlightNode, collapsed, o
             </button>
           ))}
           {execStatus!=="idle" && (
-            <span className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded-full ${execStatus==="running"?"bg-[#dbeafe] text-primary":"bg-[#dcfce7] text-[#15803d]"}`}>
+            <span className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded-full ${execStatus==="running"?"bg-primary/10 text-primary":"bg-success/10 text-success"}`}>
               {execStatus==="running"?"Running…":"Completed"}
             </span>
           )}
@@ -2821,7 +2821,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
       {(isActivelyRunning || hasDoneNodes) && (
         <div className={cn(
           "flex h-8 flex-shrink-0 items-center justify-between border-b border-border px-4 select-none",
-          isActivelyRunning ? "bg-blue-500/[0.04]" : "bg-green-500/[0.04]",
+          isActivelyRunning ? "bg-primary/[0.04]" : "bg-green-500/[0.04]",
         )}>
           <div className="flex items-center gap-2">
             {/* Dot — ripple when running, solid when done */}
@@ -2831,12 +2831,12 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
               )}
               <span className={cn(
                 "relative inline-flex size-1.5 rounded-full",
-                isActivelyRunning ? "bg-blue-500" : "bg-green-500",
+                isActivelyRunning ? "bg-primary" : "bg-green-500",
               )} />
             </span>
             {/* Step timer — shown on left when running */}
             {isActivelyRunning && runElapsedLabel && (
-              <span className="text-[11px] tabular-nums font-semibold text-blue-600 dark:text-blue-400">
+              <span className="text-[11px] tabular-nums font-semibold text-primary dark:text-blue-400">
                 {runElapsedLabel}
               </span>
             )}
@@ -2861,7 +2861,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
     <div
       ref={canvasScrollRef}
       className="relative flex-1 min-w-0 overflow-auto bg-background"
-      style={{ backgroundImage:"radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize:"24px 24px" }}
+      style={{ backgroundImage:"radial-gradient(circle, var(--border) 1px, transparent 1px)", backgroundSize:"24px 24px" }}
       onClick={() => { onSelectNode(null); setPicker(null); }}
     >
 
@@ -3101,9 +3101,9 @@ function OverviewCard({ flow }) {
 
 function RunStartMsg({ name }) {
   return (
-    <div className="flex items-center gap-2 py-2 px-3 bg-[#dbeafe] rounded-[8px] border border-[#bfdbfe]">
+    <div className="flex items-center gap-2 py-2 px-3 bg-primary/10 rounded-[8px] border border-primary/30">
       <RefreshCw size={11} className="text-primary animate-spin flex-shrink-0" />
-      <span className="text-xs font-medium text-[#1e40af]">Executing "{name}"…</span>
+      <span className="text-xs font-medium text-primary">Executing "{name}"…</span>
     </div>
   );
 }
@@ -3120,7 +3120,7 @@ function StepActiveMsg({ msg }) {
       </span>
       <div className="flex gap-0.5 flex-shrink-0">
         {[0,1,2].map(i => (
-          <span key={i} className="size-1 rounded-full bg-[#3b82f6]"
+          <span key={i} className="size-1 rounded-full bg-muted"
             style={{animation:`nodeBounce 0.8s ease-in-out ${i*0.2}s infinite`}} />
         ))}
       </div>
@@ -3131,7 +3131,7 @@ function StepActiveMsg({ msg }) {
 function StepDoneMsg({ msg }) {
   return (
     <div className="flex items-center gap-2 py-1 px-2.5">
-      <CheckCircle2 size={12} className="text-[#22c55e] flex-shrink-0" />
+      <CheckCircle2 size={12} className="text-foreground flex-shrink-0" />
       <span className="text-xs text-muted-foreground flex-1 truncate">{msg.label}</span>
       <span className="text-[10px] text-muted-foreground flex-shrink-0">{msg.duration}ms</span>
     </div>
@@ -3140,9 +3140,9 @@ function StepDoneMsg({ msg }) {
 
 function RunDoneMsg({ msg }) {
   return (
-    <div className="flex items-center gap-2 py-2 px-3 bg-[#dcfce7] rounded-[8px] border border-[#bbf7d0]">
-      <CheckCircle2 size={11} className="text-[#16a34a] flex-shrink-0" />
-      <span className="text-xs font-medium text-[#15803d]">
+    <div className="flex items-center gap-2 py-2 px-3 bg-success/10 rounded-[8px] border border-success-ring">
+      <CheckCircle2 size={11} className="text-success flex-shrink-0" />
+      <span className="text-xs font-medium text-success">
         Completed — {msg.total} step{msg.total !== 1 ? "s" : ""} · {(msg.duration / 1000).toFixed(1)}s
       </span>
     </div>
@@ -3231,7 +3231,7 @@ function ConversationPanel({
           {collapsed ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </button>
 
-        <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-[#6366f1]" : "bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]"}`}>
+        <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-chart-chart-3" : "bg-gradient-to-br from-chart-chart-3 to-chart-chart-4"}`}>
           <Sparkles size={10} color="white" />
         </div>
         <span className="text-sm font-semibold text-foreground">
@@ -3254,7 +3254,7 @@ function ConversationPanel({
                 <TabIcon size={11} />
                 {label}
                 {badge && !(activeTab === id && !collapsed) && (
-                  <span className="size-1.5 rounded-full bg-[#22c55e] absolute top-1 right-0.5" />
+                  <span className="size-1.5 rounded-full bg-success absolute top-1 right-0.5" />
                 )}
               </button>
             ))}
@@ -3270,7 +3270,7 @@ function ConversationPanel({
         )}
         {isRunning && (
           <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#dbeafe] text-primary flex items-center gap-1 flex-shrink-0"
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1 flex-shrink-0"
             title={runElapsedLabel ? `Elapsed: ${runElapsedLabel}` : undefined}
           >
             <RefreshCw size={9} className="animate-spin" /> Running
@@ -3393,12 +3393,12 @@ function ConversationPanel({
           if (msg.type === "ai") return (
             <div key={msg.id} className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
-                <div className="size-5 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
                   <Sparkles size={9} color="white" />
                 </div>
                 <span className="text-[11px] font-semibold text-muted-foreground">AI</span>
               </div>
-              <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-[#374151] leading-5">
+              <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-muted-foreground leading-5">
                 {msg.message.split("\n").map((line, li) => (
                   <p key={li} className={line === "" ? "h-2" : ""}>{line.replace(/\*\*(.*?)\*\*/g, "$1")}</p>
                 ))}
@@ -3419,12 +3419,12 @@ function ConversationPanel({
           if (msg.type === "ai") return (
             <div key={msg.id} className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
-                <div className="size-5 rounded-full bg-gradient-to-br from-[#2563eb] to-[#6366f1] flex items-center justify-center flex-shrink-0">
+                <div className="size-5 rounded-full bg-gradient-to-br from-[#2563eb] to-chart-chart-3 flex items-center justify-center flex-shrink-0">
                   <Sparkles size={9} color="white" />
                 </div>
                 <span className="text-[11px] font-semibold text-muted-foreground">AI</span>
               </div>
-              <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-[#374151] leading-5">
+              <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-muted-foreground leading-5">
                 {msg.message.split("\n").map((line, li) => (
                   <p key={li} className={line === "" ? "h-2" : ""}>{line.replace(/\*\*(.*?)\*\*/g, "$1")}</p>
                 ))}
@@ -3436,7 +3436,7 @@ function ConversationPanel({
 
         {aiLoading && (
           <div className="flex items-center gap-2">
-            <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-[#6366f1]" : "bg-gradient-to-br from-[#6366f1] to-[#8b5cf6]"}`}>
+            <div className={`size-5 rounded-full flex items-center justify-center flex-shrink-0 ${isNewFlow ? "bg-gradient-to-br from-[#2563eb] to-chart-chart-3" : "bg-gradient-to-br from-chart-chart-3 to-chart-chart-4"}`}>
               <Sparkles size={9} color="white" />
             </div>
             <div className="flex gap-1 px-3 py-2 rounded-[10px] bg-background border border-border">
@@ -3480,11 +3480,11 @@ function ConversationPanel({
 
 // ─── Top bar ───────────────────────────────────────────────────────────────────
 const STATUS_BADGE = {
-  idle:       { bg:"#f1f5f9", text:"#475569", dot:"#94a3b8", label:"Idle"        },
-  draft:      { bg:"#fffbeb", text:"#b45309", dot:"#f59e0b", label:"Draft"       },
-  inprogress: { bg:"#ede9fe", text:"#4f46e5", dot:"#6366f1", label:"In Progress" },
-  completed:  { bg:"#dcfce7", text:"#15803d", dot:"#22c55e", label:"Completed"   },
-  error:      { bg:"#fef2f2", text:"#dc2626", dot:"#ef4444", label:"Error"       },
+  idle:       { bg:"var(--muted)", text:"var(--muted-foreground)", dot:"var(--muted-foreground)", label:"Idle"        },
+  draft:      { bg:"var(--warning)/10", text:"var(--warning)", dot:"var(--warning)", label:"Draft"       },
+  inprogress: { bg:"var(--accent)", text:"var(--primary)", dot:"var(--chart-chart-3)", label:"In Progress" },
+  completed:  { bg:"var(--success)/10", text:"var(--success)", dot:"var(--success)", label:"Completed"   },
+  error:      { bg:"var(--destructive)/10", text:"var(--destructive)", dot:"var(--destructive)", label:"Error"       },
 };
 
 function TopBar({
@@ -3754,7 +3754,7 @@ function TopBar({
 
   return (
     <>
-      <div className="flex h-14 flex-shrink-0 items-center gap-2 border-b border-border bg-card px-4 dark:border-border dark:bg-[#111827]">
+      <div className="flex h-14 flex-shrink-0 items-center gap-2 border-b border-border bg-card px-4 dark:border-border dark:bg-card">
 
         {/* ── Left: Back + breadcrumb ── */}
         <button
@@ -3764,7 +3764,7 @@ function TopBar({
         >
           <ArrowLeft size={16} />
         </button>
-        <div className="h-5 w-px bg-border dark:bg-[#334155]" />
+        <div className="h-5 w-px bg-border dark:bg-border" />
         <div className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
           <button onClick={onBack} className="flex-shrink-0 transition-colors hover:text-foreground">Flows</button>
           <ChevronRight size={13} className="flex-shrink-0" />
@@ -3775,13 +3775,13 @@ function TopBar({
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commit}
               onKeyDown={onKeyDown}
-              className="h-7 max-w-[220px] rounded-[5px] border border-primary bg-card px-2 text-sm font-medium text-foreground outline-none ring-2 ring-primary/20 dark:bg-slate-950 dark:text-[#f8fafc]"
+              className="h-7 max-w-[220px] rounded-[5px] border border-primary bg-card px-2 text-sm font-medium text-foreground outline-none ring-2 ring-primary/20 dark:bg-slate-950 dark:text-foreground"
             />
           ) : (
             <span
               onClick={pageMode === "edit" ? startEdit : undefined}
               title={pageMode === "edit" ? "Click to rename" : flow.name}
-              className={`max-w-[180px] truncate rounded-[5px] px-1 py-0.5 font-medium text-foreground dark:text-[#f8fafc] ${
+              className={`max-w-[180px] truncate rounded-[5px] px-1 py-0.5 font-medium text-foreground dark:text-foreground ${
                 pageMode === "edit" ? "cursor-text transition-colors hover:bg-muted dark:hover:bg-slate-800" : "cursor-default"
               }`}
             >
@@ -3812,16 +3812,16 @@ function TopBar({
         {versionPanelOpen && (
           <div
             data-version-panel
-            className="fixed z-[9999] w-[min(92vw,340px)] overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:border-border dark:bg-[#111827]"
+            className="fixed z-[9999] w-[min(92vw,340px)] overflow-hidden rounded-xl border border-border bg-card shadow-xl dark:border-border dark:bg-card"
             style={{
               top: versionPanelPos.top,
               left: versionPanelPos.left,
               boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06)",
             }}
           >
-            <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 dark:border-[#334155]">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 dark:border-border">
               <History size={14} className="text-muted-foreground" aria-hidden />
-              <span className="text-xs font-semibold text-foreground dark:text-[#f8fafc]">Version history</span>
+              <span className="text-xs font-semibold text-foreground dark:text-foreground">Version history</span>
             </div>
             <div className="max-h-[min(50vh,280px)] overflow-y-auto p-2">
               {versionHistory.length === 0 ? (
@@ -3835,7 +3835,7 @@ function TopBar({
                       <div className="flex flex-col gap-1.5 rounded-lg border border-transparent px-2 py-2 hover:bg-muted/50 dark:hover:bg-slate-950/80">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold text-foreground dark:text-[#f8fafc]">{v.label}</p>
+                            <p className="text-xs font-semibold text-foreground dark:text-foreground">{v.label}</p>
                             <p className="text-[10px] text-muted-foreground">
                               {v.savedAt
                                 ? new Date(v.savedAt).toLocaleString(undefined, {
@@ -3848,7 +3848,7 @@ function TopBar({
                           </div>
                           <button
                             type="button"
-                            className="flex-shrink-0 rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc]"
+                            className="flex-shrink-0 rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground"
                             onClick={() => {
                               onRestoreVersion?.(v);
                               setVersionPanelOpen(false);
@@ -4001,7 +4001,7 @@ function TopBar({
           </button>
         </div>
 
-        <div className="h-5 w-px bg-border dark:bg-[#334155]" />
+        <div className="h-5 w-px bg-border dark:bg-border" />
 
         {/* ── More options ── */}
         <button
@@ -4025,7 +4025,7 @@ function TopBar({
                 type="button"
                 onClick={() => onSetPageMode?.("edit")}
                 title="Edit flow — change steps and configuration"
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc] dark:hover:bg-slate-950"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-slate-950"
               >
                 <Pencil size={13} strokeWidth={2} /> Edit
               </button>
@@ -4035,9 +4035,9 @@ function TopBar({
                 type="button"
                 title="Click to unpublish"
                 onClick={() => setUnpublishOpen(true)}
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-emerald-300 bg-emerald-50 px-3 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/80"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-emerald-300 bg-success/10 px-3 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-400 hover:bg-success/15 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/80"
               >
-                <Globe size={13} className="text-emerald-700 dark:text-emerald-400" />
+                <Globe size={13} className="text-success dark:text-emerald-400" />
                 Published
               </button>
             ) : (
@@ -4045,7 +4045,7 @@ function TopBar({
                 type="button"
                 title="Publish flow"
                 onClick={() => setPublishOpen(true)}
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-[#1e293b] dark:text-[#f8fafc] dark:hover:bg-slate-950"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-slate-950"
               >
                 <Globe size={13} /> Publish
               </button>
@@ -4075,7 +4075,7 @@ function TopBar({
       {menuOpen && (
         <div
           data-menu="true"
-          className="fixed z-[9999] w-[200px] overflow-hidden rounded-[10px] border border-border bg-card shadow-xl dark:border-border dark:bg-[#111827]"
+          className="fixed z-[9999] w-[200px] overflow-hidden rounded-[10px] border border-border bg-card shadow-xl dark:border-border dark:bg-card"
           style={{
             top: menuPos.top,
             left: menuPos.left,
@@ -4085,41 +4085,41 @@ function TopBar({
           {/* Group 1: Actions */}
           <button
             onClick={handleFork}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-[#f8fafc] dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
           >
             <GitFork size={14} className="text-muted-foreground dark:text-muted-foreground" /> Fork
           </button>
           <button
             onClick={handleExport}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-[#f8fafc] dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
           >
             <Download size={14} className="text-muted-foreground dark:text-muted-foreground" /> Export as JSON
           </button>
 
           {/* Divider */}
-          <div className="h-px bg-muted dark:bg-[#334155]" />
+          <div className="h-px bg-muted dark:bg-border" />
 
           {/* Group 3: Sharing & Info */}
           <button
             onClick={handleShare}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-[#f8fafc] dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
           >
             <Share2 size={14} className="text-muted-foreground dark:text-muted-foreground" /> Share
           </button>
 
           {/* Divider */}
-          <div className="h-px bg-muted dark:bg-[#334155]" />
+          <div className="h-px bg-muted dark:bg-border" />
 
           {/* Group 4: Settings & Danger */}
           <button
             onClick={handleSettings}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-[#f8fafc] dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
           >
             <Settings2 size={14} className="text-muted-foreground dark:text-muted-foreground" /> Settings
           </button>
           <button
             onClick={handleDeleteClick}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#ef4444] hover:bg-[#fef2f2] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors text-left"
           >
             <Trash2 size={14} /> Delete
           </button>
@@ -4132,7 +4132,7 @@ function TopBar({
           title={`Delete "${flow.name}"?`}
           message="This flow will be permanently deleted. This action cannot be undone."
           confirmLabel="Delete Flow"
-          confirmClass="flex-1 h-10 rounded-[8px] bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium transition-colors"
+          confirmClass="flex-1 h-10 rounded-[8px] bg-destructive hover:bg-muted text-white text-sm font-medium transition-colors"
           onConfirm={handleConfirmDelete}
           onCancel={() => setConfirmDelete(false)}
         />
@@ -4143,15 +4143,15 @@ function TopBar({
         <div className="fixed inset-0 z-[99999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setSettingsOpen(false)} />
           <div
-            className="relative w-[420px] overflow-hidden rounded-2xl bg-card dark:bg-[#111827]"
+            className="relative w-[420px] overflow-hidden rounded-2xl bg-card dark:bg-card"
             style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="h-1 w-full bg-gradient-to-r from-[#3b82f6] to-[#2563eb]" />
             <div className="px-6 pt-6 pb-6">
-              <h2 className="mb-5 text-lg font-semibold text-foreground dark:text-[#f8fafc]">Flow Settings</h2>
+              <h2 className="mb-5 text-lg font-semibold text-foreground dark:text-foreground">Flow Settings</h2>
               <div className="space-y-5">
                 <div>
-                  <label htmlFor="flow-settings-description" className="mb-2 block text-sm font-medium text-foreground dark:text-[#f8fafc]">
+                  <label htmlFor="flow-settings-description" className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">
                     Description
                   </label>
                   <textarea
@@ -4161,39 +4161,39 @@ function TopBar({
                     onChange={(e) => setSettingsDescDraft(e.target.value)}
                     maxLength={500}
                     placeholder="What this flow does (shown on the flow list and in the assistant overview)."
-                    className="w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-sm leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-[#f8fafc]"
+                    className="w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-sm leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
                   />
                   <p className="mt-1 text-[10px] text-muted-foreground">{settingsDescDraft.length}/500</p>
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-[#f8fafc]">Execution Timeout</label>
+                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">Execution Timeout</label>
                   <input
                     type="text"
                     defaultValue="30 seconds"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-[#f8fafc]"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-[#f8fafc]">Max Retries</label>
+                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">Max Retries</label>
                   <input
                     type="text"
                     defaultValue="3"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-[#f8fafc]"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-[#f8fafc]">Retry Delay</label>
+                  <label className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">Retry Delay</label>
                   <input
                     type="text"
                     defaultValue="1 second"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-[#f8fafc]"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
                   />
                 </div>
               </div>
               <div className="flex gap-2.5 mt-6">
                 <button
                   onClick={() => setSettingsOpen(false)}
-                  className="flex-1 h-10 rounded-[8px] border border-border bg-card text-sm font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-[#1e293b] dark:text-muted-foreground dark:hover:bg-slate-950"
+                  className="flex-1 h-10 rounded-[8px] border border-border bg-card text-sm font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-slate-950"
                 >
                   Cancel
                 </button>
@@ -4307,8 +4307,8 @@ function TopBar({
           className="flex max-h-[min(90vh,420px)] w-[calc(100vw-2rem)] max-w-sm flex-col gap-0 overflow-hidden p-0 sm:w-full"
         >
           <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4 pr-14">
-            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950">
-              <Globe className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden />
+            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-warning/15 dark:bg-amber-950">
+              <Globe className="h-6 w-6 text-warning dark:text-amber-400" aria-hidden />
             </div>
             <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug">
               Unpublish flow?

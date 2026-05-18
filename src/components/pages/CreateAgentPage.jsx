@@ -204,19 +204,19 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-        <DialogHeader className="gap-1 border-b border-[#e2e8f0] px-5 py-4 dark:border-[#334155]">
+        <DialogHeader className="gap-1 border-b border-border px-5 py-4 dark:border-border">
           <div className="flex items-start gap-2 pr-8">
-            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#ecfdf5] dark:bg-emerald-950/50">
-              <FolderOpen size={18} className="text-emerald-700 dark:text-emerald-400" />
+            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-success/10 dark:bg-emerald-950/50">
+              <FolderOpen size={18} className="text-success dark:text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
               <DialogTitle className="text-left text-base font-semibold leading-snug">
                 Files in this Knowledge Hub
               </DialogTitle>
-              <p className="truncate text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]">{hub.name}</p>
+              <p className="truncate text-sm font-medium text-foreground dark:text-foreground">{hub.name}</p>
               <DialogDescription className="text-left text-xs leading-relaxed">
-                <span className="flex items-start gap-1.5 text-[#64748b] dark:text-[#94a3b8]">
-                  <Lock size={12} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-500" />
+                <span className="flex items-start gap-1.5 text-muted-foreground dark:text-muted-foreground">
+                  <Lock size={12} className="mt-0.5 shrink-0 text-success dark:text-emerald-500" />
                   Access is limited to this hub. File names are not surfaced anywhere else in the app navigation.
                 </span>
               </DialogDescription>
@@ -226,7 +226,7 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
 
         <div className="flex flex-col gap-3 px-5 pt-4">
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -235,7 +235,7 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
               aria-label="Filter files"
             />
           </div>
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8]">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
             Showing {filtered.length} of {inventory.length} sample file{inventory.length === 1 ? "" : "s"}
             {hub.files > inventory.length ? ` (${hub.files} total in hub)` : ""}. Select rows to review inclusion for this agent.
           </p>
@@ -243,13 +243,13 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
           <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-[1] bg-[#f8fafc] dark:bg-[#0f172a]">
-              <tr className="border-b border-[#e2e8f0] text-left text-xs font-semibold uppercase tracking-wide text-[#64748b] dark:border-[#334155] dark:text-[#94a3b8]">
+            <thead className="sticky top-0 z-[1] bg-background">
+              <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:border-border dark:text-muted-foreground">
                 <th className="w-10 px-2 py-2">
                   <input
                     ref={selectAllRef}
                     type="checkbox"
-                    className="size-3.5 rounded border-[#cbd5e1] accent-emerald-600"
+                    className="size-3.5 rounded border-border accent-emerald-600"
                     checked={filtered.length > 0 && filtered.every(r => selected.has(r.id))}
                     onChange={toggleAllVisible}
                     aria-label="Select all visible files"
@@ -265,34 +265,34 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
               {filtered.map(row => (
                 <tr
                   key={row.id}
-                  className="border-b border-[#f1f5f9] transition-colors hover:bg-[#f8fafc] dark:border-[#1e293b] dark:hover:bg-[#1e293b]/80"
+                  className="border-b border-border transition-colors hover:bg-muted dark:border-border dark:hover:bg-muted/80"
                 >
                   <td className="px-2 py-2 align-middle">
                     <input
                       type="checkbox"
-                      className="size-3.5 rounded border-[#cbd5e1] accent-emerald-600"
+                      className="size-3.5 rounded border-border accent-emerald-600"
                       checked={selected.has(row.id)}
                       onChange={() => toggle(row.id)}
                       aria-label={`Select ${row.name}`}
                     />
                   </td>
-                  <td className="max-w-[200px] truncate px-2 py-2 font-mono text-[12px] text-[#0f172a] dark:text-[#e2e8f0] sm:max-w-none">
+                  <td className="max-w-[200px] truncate px-2 py-2 font-mono text-[12px] text-foreground dark:text-foreground sm:max-w-none">
                     {row.name}
                   </td>
-                  <td className="hidden px-2 py-2 text-[#64748b] sm:table-cell">{row.type}</td>
-                  <td className="hidden px-2 py-2 tabular-nums text-[#64748b] md:table-cell">{formatFileSizeKb(row.sizeKb)}</td>
-                  <td className="hidden px-2 py-2 text-[#64748b] lg:table-cell">{row.updated}</td>
+                  <td className="hidden px-2 py-2 text-muted-foreground sm:table-cell">{row.type}</td>
+                  <td className="hidden px-2 py-2 tabular-nums text-muted-foreground md:table-cell">{formatFileSizeKb(row.sizeKb)}</td>
+                  <td className="hidden px-2 py-2 text-muted-foreground lg:table-cell">{row.updated}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-[#94a3b8]">No files match your search.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No files match your search.</p>
           )}
         </div>
 
-        <DialogFooter className="mt-auto !mx-0 !mb-0 gap-2 border-t border-[#e2e8f0] bg-[#f8fafc]/90 px-5 py-3 dark:border-[#334155] dark:bg-[#0f172a]/90 sm:flex-row sm:justify-between">
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8]">
+        <DialogFooter className="mt-auto !mx-0 !mb-0 gap-2 border-t border-border bg-muted/90 px-5 py-3 dark:border-border dark:bg-background/90 sm:flex-row sm:justify-between">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
             {selected.size > 0 ? (
               <>{selected.size} file{selected.size === 1 ? "" : "s"} selected for review</>
             ) : (
@@ -382,8 +382,8 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
         showCloseButton
         className="flex max-h-[min(92vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[900px]"
       >
-        <DialogHeader className="shrink-0 space-y-0 border-b border-[#e5e7eb] px-6 py-4 dark:border-[#334155]">
-          <DialogTitle className="text-left text-xl font-bold text-[#0f172a] dark:text-[#fafafa]">
+        <DialogHeader className="shrink-0 space-y-0 border-b border-border px-6 py-4 dark:border-border">
+          <DialogTitle className="text-left text-xl font-bold text-foreground dark:text-background">
             {category}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -393,19 +393,19 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
 
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           {/* Left — tool checklist */}
-          <div className="flex min-h-[280px] min-w-0 flex-1 flex-col border-b border-[#e5e7eb] p-6 dark:border-[#334155] md:border-b-0 md:border-r">
-            <p className="mb-3 text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9]">Selected tools</p>
-            <div className="flex max-h-[min(52vh,420px)] flex-col overflow-hidden rounded-lg border border-[#e5e7eb] bg-white dark:border-[#475569] dark:bg-[#0f172a]">
-              <div className="flex items-center gap-3 border-b border-[#f3f4f6] px-3 py-2 dark:border-[#334155]">
+          <div className="flex min-h-[280px] min-w-0 flex-1 flex-col border-b border-border p-6 dark:border-border md:border-b-0 md:border-r">
+            <p className="mb-3 text-sm font-bold text-foreground dark:text-foreground">Selected tools</p>
+            <div className="flex max-h-[min(52vh,420px)] flex-col overflow-hidden rounded-lg border border-border bg-card dark:border-border dark:bg-background">
+              <div className="flex items-center gap-3 border-b border-border px-3 py-2 dark:border-border">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
-                  className="size-4 shrink-0 rounded border-[#2563eb] accent-[#2563eb]"
+                  className="size-4 shrink-0 rounded border-border accent-[#2563eb]"
                   checked={allPendingOn}
                   onChange={toggleAllVisible}
                   aria-label="Select all tools in category"
                 />
-                <span className="text-xs font-medium text-[#64748b]">Select all</span>
+                <span className="text-xs font-medium text-muted-foreground">Select all</span>
               </div>
               <div className="overflow-y-auto">
                 {list.map(tool => {
@@ -413,19 +413,19 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
                   return (
                     <label
                       key={tool.id}
-                      className={`flex cursor-pointer gap-3 border-b border-[#f3f4f6] px-3 py-3 last:border-b-0 dark:border-[#334155] ${
-                        checked ? "bg-[#f8fafc] dark:bg-[#1e293b]" : "hover:bg-[#fafafa] dark:hover:bg-[#1e293b]/80"
+                      className={`flex cursor-pointer gap-3 border-b border-border px-3 py-3 last:border-b-0 dark:border-border ${
+                        checked ? "bg-muted dark:bg-card" : "hover:bg-background dark:hover:bg-muted/80"
                       }`}
                     >
                       <input
                         type="checkbox"
-                        className="mt-0.5 size-4 shrink-0 rounded border-[#2563eb] accent-[#2563eb]"
+                        className="mt-0.5 size-4 shrink-0 rounded border-border accent-[#2563eb]"
                         checked={checked}
                         onChange={() => togglePending(tool.id)}
                       />
                       <span className="min-w-0">
-                        <span className="block text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9]">{tool.name}</span>
-                        <span className="mt-0.5 block text-xs leading-snug text-[#64748b] dark:text-[#94a3b8]">
+                        <span className="block text-sm font-bold text-foreground dark:text-foreground">{tool.name}</span>
+                        <span className="mt-0.5 block text-xs leading-snug text-muted-foreground dark:text-muted-foreground">
                           {tool.description}
                         </span>
                       </span>
@@ -437,9 +437,9 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
           </div>
 
           {/* Right — credentials */}
-          <div className="flex w-full shrink-0 flex-col justify-start border-[#e5e7eb] p-6 dark:border-[#334155] md:w-[300px] md:border-l md:border-t-0">
-            <label className="text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9]">
-              Access Token <span className="text-[#ef4444]">*</span>
+          <div className="flex w-full shrink-0 flex-col justify-start border-border p-6 dark:border-border md:w-[300px] md:border-l md:border-t-0">
+            <label className="text-sm font-bold text-foreground dark:text-foreground">
+              Access Token <span className="text-destructive">*</span>
             </label>
             <Input
               type="password"
@@ -450,20 +450,20 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
                 setTokenError(false);
               }}
               placeholder="Paste token"
-              className={`mt-2 h-10 ${tokenError ? "border-[#ef4444] ring-1 ring-[#ef4444]/30" : ""}`}
+              className={`mt-2 h-10 ${tokenError ? "border-border ring-1 ring-[#ef4444]/30" : ""}`}
             />
-            <p className="mt-2 text-xs text-[#64748b] dark:text-[#94a3b8]">OAuth 2.0 access token</p>
+            <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">OAuth 2.0 access token</p>
             {tokenError && (
-              <p className="mt-2 text-xs text-[#ef4444]">Access token is required when at least one tool is selected.</p>
+              <p className="mt-2 text-xs text-destructive">Access token is required when at least one tool is selected.</p>
             )}
           </div>
         </div>
 
-        <div className="flex shrink-0 justify-end gap-2 border-t border-[#e5e7eb] px-6 py-4 dark:border-[#334155]">
-          <Button type="button" variant="ghost" className="text-[#52525b]" onClick={() => onOpenChange(false)}>
+        <div className="flex shrink-0 justify-end gap-2 border-t border-border px-6 py-4 dark:border-border">
+          <Button type="button" variant="ghost" className="text-foreground" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" className="bg-[#2563eb] px-5 hover:bg-[#1d4ed8]" onClick={handleSave}>
+          <Button type="button" className="bg-primary px-5 hover:bg-primary" onClick={handleSave}>
             Save configuration
           </Button>
         </div>
@@ -505,28 +505,28 @@ function StepBar({ current }) {
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1 flex-shrink-0">
               <div className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                state === "done"   ? "bg-[#2563eb] text-white" :
-                state === "active" ? "bg-[#2563eb] text-white ring-4 ring-[#2563eb]/20" :
-                                     "bg-[#e2e8f0] dark:bg-[#334155] text-[#94a3b8]"
+                state === "done"   ? "bg-primary text-white" :
+                state === "active" ? "bg-primary text-white ring-4 ring-[#2563eb]/20" :
+                                     "bg-border dark:bg-border text-muted-foreground"
               }`}>
                 {state === "done" ? <Check size={13} /> : step.id}
               </div>
               <span className={`text-[10px] font-semibold whitespace-nowrap tracking-wide ${
-                state === "done"   ? "text-[#2563eb]" :
-                state === "active" ? "text-[#2563eb]" :
-                                     "text-[#94a3b8] dark:text-[#64748b]"
+                state === "done"   ? "text-primary" :
+                state === "active" ? "text-primary" :
+                                     "text-muted-foreground dark:text-muted-foreground"
               }`}>
                 Step {step.id}
               </span>
               <span className={`text-[10px] whitespace-nowrap -mt-0.5 ${
-                state === "active" ? "text-[#2563eb] font-medium" : "text-[#94a3b8] dark:text-[#64748b]"
+                state === "active" ? "text-primary font-medium" : "text-muted-foreground dark:text-muted-foreground"
               }`}>
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={`flex-1 h-px mx-3 mb-5 transition-colors ${
-                step.id < current ? "bg-[#2563eb]" : "bg-[#e2e8f0] dark:bg-[#334155]"
+                step.id < current ? "bg-primary" : "bg-border dark:bg-border"
               }`} />
             )}
           </div>
@@ -542,15 +542,15 @@ function Field({ label, required, hint, error, children }) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db]">
+        <label className="text-sm font-medium text-muted-foreground dark:text-foreground">
           {label}
-          {required && <span className="text-[#ef4444] ml-0.5">*</span>}
+          {required && <span className="text-destructive ml-0.5">*</span>}
         </label>
       )}
       {children}
-      {hint && !error && <p className="text-xs text-[#94a3b8]">{hint}</p>}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p className="flex items-center gap-1 text-xs text-[#ef4444]">
+        <p className="flex items-center gap-1 text-xs text-destructive">
           <AlertCircle size={11} />{error}
         </p>
       )}
@@ -562,17 +562,17 @@ function Field({ label, required, hint, error, children }) {
 
 function SectionCard({ title, subtitle, optional, children }) {
   return (
-    <div className="bg-white dark:bg-[#1e293b] rounded-2xl border border-[#e2e8f0] dark:border-[#334155] p-6 flex flex-col gap-5">
+    <div className="bg-card dark:bg-card rounded-2xl border border-border dark:border-border p-6 flex flex-col gap-5">
       <div>
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-[#0f172a] dark:text-[#f1f5f9]">{title}</h3>
+          <h3 className="text-base font-bold text-foreground dark:text-foreground">{title}</h3>
           {optional && (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#f1f5f9] dark:bg-[#334155] text-[#64748b] dark:text-[#94a3b8] border border-[#e2e8f0] dark:border-[#475569]">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground border border-border dark:border-border">
               Optional
             </span>
           )}
         </div>
-        {subtitle && <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -585,16 +585,16 @@ function ToggleCard({ icon: Icon, iconColor, title, description, checked, onChan
   return (
     <div className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
       checked
-        ? "border-[#bfdbfe] bg-[#eff6ff] dark:bg-[#1e3a8a]/20 dark:border-[#3b82f6]/40"
-        : "border-[#e2e8f0] dark:border-[#334155] bg-[#f8fafc] dark:bg-[#0f172a]/40"
+        ? "border-primary/30 bg-primary/10 dark:bg-primary/20/20 dark:border-border/40"
+        : "border-border dark:border-border bg-background/40"
     }`}>
       <div className="flex items-center gap-3">
         <div className="size-8 rounded-lg flex items-center justify-center" style={{ background: `${iconColor}18` }}>
           <Icon size={15} style={{ color: iconColor }} />
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{title}</p>
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8]">{description}</p>
+          <p className="text-sm font-semibold text-foreground dark:text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">{description}</p>
         </div>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
@@ -668,23 +668,23 @@ function Step1({ form, setForm, errors }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* LLM provider */}
           <div ref={provRef} className="relative">
-            <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db] block mb-1.5">LLM provider</label>
+            <label className="text-sm font-medium text-muted-foreground dark:text-foreground block mb-1.5">LLM provider</label>
             <button
               type="button"
               onClick={() => setProviderOpen(o => !o)}
-              className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-[#f8fafc] dark:bg-[#0f172a]/50 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:border-[#93c5fd] transition-colors ${
-                providerOpen ? "border-[#2563eb] ring-2 ring-[#2563eb]/15" : "border-[#e2e8f0] dark:border-[#334155]"
+              className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-background/50 text-sm text-foreground dark:text-foreground hover:border-info-ring transition-colors ${
+                providerOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
               }`}
             >
               <span className="font-mono text-[13px] flex-1 text-left truncate">{selectedProvider.displayId}</span>
-              <ChevronDown size={13} className={`text-[#94a3b8] flex-shrink-0 transition-transform ${providerOpen ? "rotate-180" : ""}`} />
+              <ChevronDown size={13} className={`text-muted-foreground flex-shrink-0 transition-transform ${providerOpen ? "rotate-180" : ""}`} />
             </button>
             <AnimatePresence>
               {providerOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl shadow-xl overflow-hidden"
+                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-card dark:bg-card border border-border dark:border-border rounded-xl shadow-xl overflow-hidden"
                 >
                   {PROVIDERS.map(p => (
                     <button
@@ -700,12 +700,12 @@ function Step1({ form, setForm, errors }) {
                         }));
                         setProviderOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors ${
-                        form.provider === p.id ? "bg-[#eff6ff] dark:bg-[#1e3a8a]/20 text-[#2563eb]" : "text-[#0f172a] dark:text-[#f1f5f9]"
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted dark:hover:bg-muted transition-colors ${
+                        form.provider === p.id ? "bg-primary/10 dark:bg-primary/20/20 text-primary" : "text-foreground dark:text-foreground"
                       }`}
                     >
                       <span className="font-mono text-[13px]">{p.displayId}</span>
-                      <span className="text-[11px] text-[#94a3b8] ml-auto">{p.name}</span>
+                      <span className="text-[11px] text-muted-foreground ml-auto">{p.name}</span>
                     </button>
                   ))}
                 </motion.div>
@@ -715,35 +715,35 @@ function Step1({ form, setForm, errors }) {
 
           {/* LLM model */}
           <div ref={modRef} className="relative">
-            <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db] block mb-1.5">LLM model</label>
+            <label className="text-sm font-medium text-muted-foreground dark:text-foreground block mb-1.5">LLM model</label>
             <button
               type="button"
               onClick={() => setModelOpen(o => !o)}
-              className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-[#f8fafc] dark:bg-[#0f172a]/50 text-sm text-[#0f172a] dark:text-[#f1f5f9] hover:border-[#93c5fd] transition-colors ${
-                modelOpen ? "border-[#2563eb] ring-2 ring-[#2563eb]/15" : "border-[#e2e8f0] dark:border-[#334155]"
+              className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-background/50 text-sm text-foreground dark:text-foreground hover:border-info-ring transition-colors ${
+                modelOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
               }`}
             >
-              <Bot size={13} className="text-[#94a3b8] flex-shrink-0" />
+              <Bot size={13} className="text-muted-foreground flex-shrink-0" />
               <span className="flex-1 text-left truncate font-mono text-[13px]">{form.model || selectedProvider.models[0]}</span>
-              <ChevronDown size={13} className={`text-[#94a3b8] flex-shrink-0 transition-transform ${modelOpen ? "rotate-180" : ""}`} />
+              <ChevronDown size={13} className={`text-muted-foreground flex-shrink-0 transition-transform ${modelOpen ? "rotate-180" : ""}`} />
             </button>
             <AnimatePresence>
               {modelOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
+                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-card dark:bg-card border border-border dark:border-border rounded-xl shadow-xl overflow-hidden max-h-56 overflow-y-auto"
                 >
                   {selectedProvider.models.map(m => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => { setForm(f => ({ ...f, model: m })); setModelOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors ${
-                        (form.model || selectedProvider.models[0]) === m ? "bg-[#eff6ff] dark:bg-[#1e3a8a]/20 text-[#2563eb] font-medium" : "text-[#0f172a] dark:text-[#f1f5f9]"
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted dark:hover:bg-muted transition-colors ${
+                        (form.model || selectedProvider.models[0]) === m ? "bg-primary/10 dark:bg-primary/20/20 text-primary font-medium" : "text-foreground dark:text-foreground"
                       }`}
                     >
-                      {(form.model || selectedProvider.models[0]) === m && <Check size={12} className="text-[#2563eb] flex-shrink-0" />}
+                      {(form.model || selectedProvider.models[0]) === m && <Check size={12} className="text-primary flex-shrink-0" />}
                       <span className="font-mono text-[13px] text-left">{m}</span>
                     </button>
                   ))}
@@ -754,25 +754,25 @@ function Step1({ form, setForm, errors }) {
 
           {/* API token */}
           <div ref={tokenRef} className="relative">
-            <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db] block mb-1.5">API token</label>
+            <label className="text-sm font-medium text-muted-foreground dark:text-foreground block mb-1.5">API token</label>
             <button
               type="button"
               onClick={() => setTokenOpen(o => !o)}
-              className={`w-full flex flex-col items-stretch gap-0.5 min-h-9 px-3 py-1.5 rounded-lg border bg-[#f8fafc] dark:bg-[#0f172a]/50 text-sm text-left hover:border-[#93c5fd] transition-colors ${
-                tokenOpen ? "border-[#2563eb] ring-2 ring-[#2563eb]/15" : "border-[#e2e8f0] dark:border-[#334155]"
+              className={`w-full flex flex-col items-stretch gap-0.5 min-h-9 px-3 py-1.5 rounded-lg border bg-background/50 text-sm text-left hover:border-info-ring transition-colors ${
+                tokenOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
               }`}
             >
               <div className="flex items-center gap-2 w-full">
-                <Key size={13} className="text-[#94a3b8] flex-shrink-0 mt-0.5" />
+                <Key size={13} className="text-muted-foreground flex-shrink-0 mt-0.5" />
                 {selectedToken ? (
                   <span className="flex-1 min-w-0">
-                    <span className="block font-semibold text-[#0f172a] dark:text-[#f1f5f9] text-[13px] leading-tight truncate">{selectedToken.label}</span>
-                    <span className="block font-mono text-[11px] text-[#64748b] dark:text-[#94a3b8] truncate">{selectedToken.masked}</span>
+                    <span className="block font-semibold text-foreground dark:text-foreground text-[13px] leading-tight truncate">{selectedToken.label}</span>
+                    <span className="block font-mono text-[11px] text-muted-foreground dark:text-muted-foreground truncate">{selectedToken.masked}</span>
                   </span>
                 ) : (
-                  <span className="flex-1 text-[#94a3b8] text-[13px]">Select API token</span>
+                  <span className="flex-1 text-muted-foreground text-[13px]">Select API token</span>
                 )}
-                <ChevronDown size={13} className={`text-[#94a3b8] flex-shrink-0 transition-transform ${tokenOpen ? "rotate-180" : ""}`} />
+                <ChevronDown size={13} className={`text-muted-foreground flex-shrink-0 transition-transform ${tokenOpen ? "rotate-180" : ""}`} />
               </div>
             </button>
             <AnimatePresence>
@@ -780,20 +780,20 @@ function Step1({ form, setForm, errors }) {
                 <motion.div
                   initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl shadow-xl overflow-hidden"
+                  className="absolute top-full left-0 right-0 mt-1 z-50 bg-card dark:bg-card border border-border dark:border-border rounded-xl shadow-xl overflow-hidden"
                 >
-                  <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">API Tokens</p>
+                  <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">API Tokens</p>
                   {apiTokens.map(t => (
                     <button
                       key={t.id}
                       type="button"
                       onClick={() => { setForm(f => ({ ...f, apiTokenId: t.id })); setTokenOpen(false); }}
-                      className={`w-full flex flex-col items-start gap-0.5 px-3 py-2.5 text-left hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors border-t border-[#f1f5f9] dark:border-[#334155] first:border-t-0 ${
-                        form.apiTokenId === t.id ? "bg-[#eff6ff] dark:bg-[#1e3a8a]/20" : ""
+                      className={`w-full flex flex-col items-start gap-0.5 px-3 py-2.5 text-left hover:bg-muted dark:hover:bg-muted transition-colors border-t border-border dark:border-border first:border-t-0 ${
+                        form.apiTokenId === t.id ? "bg-primary/10 dark:bg-primary/20/20" : ""
                       }`}
                     >
-                      <span className={`text-sm font-semibold ${form.apiTokenId === t.id ? "text-[#2563eb]" : "text-[#0f172a] dark:text-[#f1f5f9]"}`}>{t.label}</span>
-                      <span className="font-mono text-[11px] text-[#64748b] dark:text-[#94a3b8]">{t.masked}</span>
+                      <span className={`text-sm font-semibold ${form.apiTokenId === t.id ? "text-primary" : "text-foreground dark:text-foreground"}`}>{t.label}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground dark:text-muted-foreground">{t.masked}</span>
                     </button>
                   ))}
                 </motion.div>
@@ -810,20 +810,20 @@ function Step1({ form, setForm, errors }) {
             <Input
               value={form.category ?? ""}
               onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="bg-[#f1f5f9] dark:bg-[#334155]/50 border-[#e2e8f0] dark:border-[#475569] text-[#475569] dark:text-[#cbd5e1] font-mono text-[13px]"
+              className="bg-muted dark:bg-border/50 border-border dark:border-border text-muted-foreground dark:text-muted-foreground font-mono text-[13px]"
             />
           </Field>
           <Field label="Use Case">
             <Input
               value={form.useCase ?? ""}
               onChange={e => setForm(f => ({ ...f, useCase: e.target.value }))}
-              className="bg-[#f1f5f9] dark:bg-[#334155]/50 border-[#e2e8f0] dark:border-[#475569] text-[#475569] dark:text-[#cbd5e1] font-mono text-[13px]"
+              className="bg-muted dark:bg-border/50 border-border dark:border-border text-muted-foreground dark:text-muted-foreground font-mono text-[13px]"
             />
           </Field>
         </div>
         <ToggleCard
           icon={Database}
-          iconColor="#6366f1"
+          iconColor="var(--chart-chart-3)"
           title="Vector Search"
           description="Enable semantic similarity search over attached knowledge bases."
           checked={form.vectorSearch ?? false}
@@ -831,7 +831,7 @@ function Step1({ form, setForm, errors }) {
         />
         <ToggleCard
           icon={FileText}
-          iconColor="#0ea5e9"
+          iconColor="var(--info)"
           title="RAG Mode"
           description="Retrieve and augment responses with context from the knowledge hub."
           checked={form.ragMode ?? false}
@@ -856,7 +856,7 @@ function Step1({ form, setForm, errors }) {
             <button
               type="button"
               onClick={() => setForm(f => ({ ...f, quickPrompts: quickPrompts.filter((_, j) => j !== i) }))}
-              className="size-8 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-[#fee2e2] text-[#94a3b8] hover:text-[#dc2626] transition-colors"
+              className="size-8 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
             >
               <X size={14} />
             </button>
@@ -865,7 +865,7 @@ function Step1({ form, setForm, errors }) {
         <button
           type="button"
           onClick={() => setForm(f => ({ ...f, quickPrompts: [...(f.quickPrompts ?? []), ""] }))}
-          className="flex items-center gap-2 px-4 h-9 rounded-lg border border-dashed border-[#93c5fd] text-[#2563eb] text-sm font-medium hover:bg-[#eff6ff] transition-colors self-start"
+          className="flex items-center gap-2 px-4 h-9 rounded-lg border border-dashed border-info-ring text-primary text-sm font-medium hover:bg-primary/10 transition-colors self-start"
         >
           <Plus size={14} />
           Add Quick Prompt
@@ -892,14 +892,14 @@ function KnowledgeCard({ hub, selected, onToggle }) {
       onClick={() => onToggle(hub.id)}
       className={`relative flex flex-col gap-3 overflow-hidden rounded-xl border cursor-pointer transition-all p-4 ${
         selected
-          ? "border-[#6ee7b7] bg-[#f0fdf4] dark:border-emerald-700 dark:bg-emerald-950/35"
-          : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:border-[#a7f3d0] dark:hover:border-emerald-800 hover:shadow-sm"
+          ? "border-border bg-success/10 dark:border-emerald-700 dark:bg-emerald-950/35"
+          : "border-border dark:border-border bg-card dark:bg-card hover:border-border dark:hover:border-emerald-800 hover:shadow-sm"
       }`}
     >
       {/* Selected: top-left corner check */}
       {selected && (
         <div
-          className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-emerald-500 shadow-sm"
+          className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-success/100 shadow-sm"
           aria-hidden
         >
           <Check size={14} className="text-white" strokeWidth={2.75} />
@@ -913,8 +913,8 @@ function KnowledgeCard({ hub, selected, onToggle }) {
           onClick={() => setMenuOpen(o => !o)}
           className={`size-7 flex items-center justify-center rounded-lg transition-colors ${
             selected
-              ? "hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 text-[#64748b] dark:text-[#94a3b8]"
-              : "hover:bg-[#f1f5f9] dark:hover:bg-[#334155] text-[#94a3b8]"
+              ? "hover:bg-success/15/80 dark:hover:bg-emerald-900/40 text-muted-foreground dark:text-muted-foreground"
+              : "hover:bg-muted dark:hover:bg-muted text-muted-foreground"
           }`}
         >
           <MoreVertical size={14} />
@@ -926,27 +926,27 @@ function KnowledgeCard({ hub, selected, onToggle }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.1 }}
-              className="absolute right-0 top-8 z-50 min-w-[200px] bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl shadow-xl overflow-hidden"
+              className="absolute right-0 top-8 z-50 min-w-[200px] bg-card dark:bg-card border border-border dark:border-border rounded-xl shadow-xl overflow-hidden"
             >
               <button
                 type="button"
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-[#374151] hover:bg-[#f8fafc] dark:text-[#d1d5db] dark:hover:bg-[#334155] transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors"
                 onClick={() => {
                   setFilesModalOpen(true);
                   setMenuOpen(false);
                 }}
               >
-                <FolderOpen size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <FolderOpen size={13} className="shrink-0 text-success dark:text-emerald-400" />
                 View files in hub
               </button>
-              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#374151] hover:bg-[#f8fafc] dark:text-[#d1d5db] dark:hover:bg-[#334155] transition-colors">
-                <Pencil size={13} className="text-[#94a3b8]" />Edit hub
+              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors">
+                <Pencil size={13} className="text-muted-foreground" />Edit hub
               </button>
-              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#374151] hover:bg-[#f8fafc] dark:text-[#d1d5db] dark:hover:bg-[#334155] transition-colors">
-                <Link2 size={13} className="text-[#94a3b8]" />View linked agents
+              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors">
+                <Link2 size={13} className="text-muted-foreground" />View linked agents
               </button>
-              <div className="h-px bg-[#f1f5f9] dark:bg-[#334155] mx-2" />
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#dc2626] hover:bg-[#fef2f2] transition-colors">
+              <div className="h-px bg-muted dark:bg-border mx-2" />
+              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
                 <Trash2 size={13} />Delete
               </button>
             </motion.div>
@@ -959,41 +959,41 @@ function KnowledgeCard({ hub, selected, onToggle }) {
         <div
           className={`size-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
             selected
-              ? "bg-[#e5e7eb] dark:bg-[#374151]"
-              : "bg-[#dbeafe] dark:bg-[#1e3a8a]/40"
+              ? "bg-muted dark:bg-muted-foreground"
+              : "bg-primary/10 dark:bg-primary/20/40"
           }`}
         >
           <Database
             size={16}
-            className={selected ? "text-[#171717] dark:text-neutral-200" : "text-[#2563eb]"}
+            className={selected ? "text-foreground dark:text-neutral-200" : "text-primary"}
           />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-sm font-semibold text-[#0f172a] dark:text-[#f1f5f9]">{hub.name}</p>
-          <p className="text-xs text-[#64748b] dark:text-[#94a3b8] mt-0.5 leading-4">{hub.description}</p>
+          <p className="text-sm font-semibold text-foreground dark:text-foreground">{hub.name}</p>
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-0.5 leading-4">{hub.description}</p>
         </div>
       </div>
 
       {/* Divider — full width inside padded card */}
       <div
         className={`-mx-4 h-px shrink-0 ${
-          selected ? "bg-[#d1fae5]/90 dark:bg-emerald-800/50" : "bg-[#f1f5f9] dark:bg-[#334155]"
+          selected ? "bg-muted/90 dark:bg-emerald-800/50" : "bg-muted dark:bg-border"
         }`}
       />
 
       {/* Footer — usage meta + file count */}
-      <div className="flex flex-col gap-2 text-xs text-[#64748b] dark:text-[#94a3b8] sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+      <div className="flex flex-col gap-2 text-xs text-muted-foreground dark:text-muted-foreground sm:flex-row sm:items-end sm:justify-between sm:gap-3">
         <div className="flex flex-wrap gap-x-3 gap-y-1 min-w-0 leading-snug">
           <span>Updated {hub.updated}</span>
           <span>
             Used by{" "}
-            <span className="font-semibold text-[#475569] dark:text-[#cbd5e1]">{hub.usedBy}</span>{" "}
+            <span className="font-semibold text-muted-foreground dark:text-muted-foreground">{hub.usedBy}</span>{" "}
             {hub.usedBy === 1 ? "Agent" : "Agents"}
           </span>
         </div>
         <div className="flex justify-end shrink-0 tabular-nums">
           <span>
-            <span className="font-semibold text-[#475569] dark:text-[#cbd5e1]">{hub.files}</span>{" "}
+            <span className="font-semibold text-muted-foreground dark:text-muted-foreground">{hub.files}</span>{" "}
             {hub.files === 1 ? "File" : "Files"}
           </span>
         </div>
@@ -1015,22 +1015,22 @@ function Step2({ form, setForm }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">
+        <h2 className="text-xl font-bold text-foreground dark:text-foreground">
           Attach Knowledge Hub
-          <span className="ml-2 text-sm font-normal text-[#64748b] dark:text-[#94a3b8]">
+          <span className="ml-2 text-sm font-normal text-muted-foreground dark:text-muted-foreground">
             ({ragRequired ? "Required" : "Optional"})
           </span>
         </h2>
-        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">
           Connect knowledge bases to let your agent retrieve relevant context.
         </p>
       </div>
 
       {/* RAG required banner */}
       {ragRequired && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-[#eff6ff] dark:bg-[#1e3a8a]/20 border border-[#bfdbfe] dark:border-[#3b82f6]/40">
-          <AlertCircle size={15} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-[#1e40af] dark:text-[#93c5fd]">
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary/20/20 border border-primary/30 dark:border-border/40">
+          <AlertCircle size={15} className="text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-primary dark:text-primary">
             <span className="font-semibold">Retrieval mode is enabled.</span> Attach at least one knowledge base to enable retrieval-based responses.
           </p>
         </div>
@@ -1039,15 +1039,15 @@ function Step2({ form, setForm }) {
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search knowledge hubs…"
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm text-[#0f172a] dark:text-[#f1f5f9] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#93c5fd] focus:ring-2 focus:ring-[#2563eb]/10 transition-colors"
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm text-foreground dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-info-ring focus:ring-2 focus:ring-[#2563eb]/10 transition-colors"
           />
         </div>
-        <button className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] text-sm font-medium text-[#374151] dark:text-[#d1d5db] hover:border-[#93c5fd] hover:bg-[#f8fafc] transition-colors flex-shrink-0">
+        <button className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-foreground hover:border-info-ring hover:bg-muted transition-colors flex-shrink-0">
           <Plus size={14} />
           Add Knowledge Hub
         </button>
@@ -1071,7 +1071,7 @@ function Step2({ form, setForm }) {
           />
         ))}
         {filtered.length === 0 && (
-          <div className="col-span-2 text-center py-10 text-[#94a3b8] text-sm">
+          <div className="col-span-2 text-center py-10 text-muted-foreground text-sm">
             No knowledge hubs match your search.
           </div>
         )}
@@ -1080,7 +1080,7 @@ function Step2({ form, setForm }) {
       {selected.length > 0 && (
         <motion.p
           initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-          className="text-sm font-semibold text-[#2563eb]"
+          className="text-sm font-semibold text-primary"
         >
           {selected.length} knowledge hub{selected.length !== 1 ? "s" : ""} selected
         </motion.p>
@@ -1121,11 +1121,11 @@ function Step3({ form, setForm }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Tools Configuration</h2>
-        <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a3b8]">
+        <h2 className="text-xl font-bold text-foreground dark:text-foreground">Tools Configuration</h2>
+        <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
           Use + (or the pencil when attached) to configure tools and credentials. Enabled tools are indicated on each category card.
         </p>
-        <p className="mt-2 text-xs text-[#94a3b8] dark:text-[#64748b]">
+        <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">
           Catalog: {TOOLS.length} of {AGENT_TOOLS_METADATA.total_tools} integrations in library ·{" "}
           {AGENT_TOOLS_METADATA.categories.length} category lanes (data, filesystem, communication, …)
         </p>
@@ -1135,18 +1135,18 @@ function Step3({ form, setForm }) {
         <motion.div
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 rounded-xl border border-[#e5e7eb] bg-[#f4f4f5] px-4 py-2.5 dark:border-[#475569] dark:bg-[#1e293b]/80"
+          className="flex items-center gap-2 rounded-xl border border-border bg-muted px-4 py-2.5 dark:border-border dark:bg-card/80"
         >
-          <Wrench size={14} className="text-[#52525b] dark:text-[#a1a1aa]" />
-          <p className="text-sm text-[#52525b] dark:text-[#d4d4d8]">
-            <span className="font-semibold text-[#18181b] dark:text-[#f4f4f5]">{enabledTools.length}</span>
+          <Wrench size={14} className="text-foreground dark:text-foreground" />
+          <p className="text-sm text-foreground dark:text-foreground">
+            <span className="font-semibold text-foreground dark:text-foreground">{enabledTools.length}</span>
             {" "}tool{enabledTools.length !== 1 ? "s" : ""} attached
           </p>
         </motion.div>
       )}
 
       <div>
-        <h3 className="mb-3 text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9]">Tool library</h3>
+        <h3 className="mb-3 text-sm font-bold text-foreground dark:text-foreground">Tool library</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sortedCategories.map(([category, tools]) => {
             const count = tools.length;
@@ -1159,13 +1159,13 @@ function Step3({ form, setForm }) {
                 key={category}
                 className={`relative flex min-h-[72px] items-center gap-2 overflow-hidden rounded-xl border px-3 py-3.5 transition-colors ${
                   hasSome
-                    ? "border-[#6ee7b7] bg-[#f0fdf4] dark:border-emerald-700 dark:bg-emerald-950/35"
-                    : "border-[#e5e7eb] bg-white dark:border-[#334155] dark:bg-[#1e293b]"
+                    ? "border-border bg-success/10 dark:border-emerald-700 dark:bg-emerald-950/35"
+                    : "border-border bg-card dark:border-border dark:bg-card"
                 }`}
               >
                 {hasSome && (
                   <div
-                    className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-emerald-500 shadow-sm"
+                    className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-success/100 shadow-sm"
                     aria-hidden
                   >
                     <Check size={14} className="text-white" strokeWidth={2.75} />
@@ -1176,15 +1176,15 @@ function Step3({ form, setForm }) {
                   <div
                     className={`flex size-10 shrink-0 items-center justify-center rounded-lg text-[15px] font-bold tabular-nums ${
                       hasSome
-                        ? "bg-[#e5e7eb] text-[#171717] dark:bg-[#374151] dark:text-neutral-200"
-                        : "bg-[#f4f4f5] text-[#18181b] dark:bg-[#3f3f46] dark:text-[#fafafa]"
+                        ? "bg-muted text-foreground dark:bg-muted-foreground dark:text-neutral-200"
+                        : "bg-muted text-foreground dark:bg-card dark:text-background"
                     }`}
                   >
                     {letter}
                   </div>
                   <div className="min-w-0 flex-1 pr-1">
-                    <p className="text-[15px] font-bold leading-tight text-[#0f172a] dark:text-[#fafafa]">{category}</p>
-                    <p className="mt-0.5 text-sm text-[#6b7280] dark:text-[#9ca3af]">
+                    <p className="text-[15px] font-bold leading-tight text-foreground dark:text-background">{category}</p>
+                    <p className="mt-0.5 text-sm text-foreground dark:text-foreground">
                       {count} tool{count === 1 ? "" : "s"}
                       {hasSome ? ` · ${enabledInCategory} attached` : ""}
                     </p>
@@ -1197,7 +1197,7 @@ function Step3({ form, setForm }) {
                       <button
                         type="button"
                         onClick={() => setOpenCategory(category)}
-                        className="rounded-lg p-2 text-[#64748b] transition-colors hover:bg-emerald-100/80 dark:text-[#94a3b8] dark:hover:bg-emerald-900/30"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-success/15/80 dark:text-muted-foreground dark:hover:bg-emerald-900/30"
                         aria-label={`Edit ${category} tools`}
                       >
                         <Pencil size={16} />
@@ -1205,17 +1205,17 @@ function Step3({ form, setForm }) {
                       <button
                         type="button"
                         onClick={() => clearCategory(category)}
-                        className="rounded-lg p-2 text-[#94a3b8] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626] dark:hover:bg-red-950/40"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive dark:hover:bg-red-950/40"
                         aria-label={`Remove all ${category} tools`}
                       >
-                        <X size={16} className="text-[#ef4444]" />
+                        <X size={16} className="text-destructive" />
                       </button>
                     </>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setOpenCategory(category)}
-                      className="rounded-lg p-2 text-[#a1a1aa] transition-colors hover:bg-[#f4f4f5] dark:text-[#71717a] dark:hover:bg-[#334155]"
+                      className="rounded-lg p-2 text-foreground transition-colors hover:bg-muted dark:text-foreground dark:hover:bg-muted"
                       aria-label={`Add tools from ${category}`}
                     >
                       <Plus strokeWidth={1.75} size={20} />
@@ -1247,10 +1247,10 @@ function Step3({ form, setForm }) {
 function SummaryRow({ label, children }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="shrink-0 text-xs font-semibold uppercase tracking-wide text-[#94a3b8] dark:text-[#64748b] sm:w-40">
+      <dt className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:text-muted-foreground sm:w-40">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-sm text-[#0f172a] dark:text-[#f1f5f9]">{children}</dd>
+      <dd className="min-w-0 flex-1 text-sm text-foreground dark:text-foreground">{children}</dd>
     </div>
   );
 }
@@ -1285,9 +1285,9 @@ function StepSummary({ form }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-4">
       <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Summary</h2>
-        <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a3b8]">
-          Review everything below. When you are ready, choose <span className="font-semibold text-[#0f172a] dark:text-[#e2e8f0]">Create Agent</span> to deploy.
+        <h2 className="text-xl font-bold text-foreground dark:text-foreground">Summary</h2>
+        <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
+          Review everything below. When you are ready, choose <span className="font-semibold text-foreground dark:text-foreground">Create Agent</span> to deploy.
         </p>
       </div>
 
@@ -1301,8 +1301,8 @@ function StepSummary({ form }) {
       </SectionCard>
 
       <SectionCard title="Core Behaviour" subtitle="System prompt used at runtime.">
-        <div className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-4 dark:border-[#334155] dark:bg-[#0f172a]/50">
-          <p className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-[#374151] dark:text-[#d1d5db]">
+        <div className="rounded-xl border border-border bg-muted p-4 dark:border-border dark:bg-background/50">
+          <p className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-muted-foreground dark:text-foreground">
             {form.systemPrompt?.trim() || "—"}
           </p>
         </div>
@@ -1327,7 +1327,7 @@ function StepSummary({ form }) {
 
       {prompts.length > 0 && (
         <SectionCard title="Quick Prompts" optional subtitle="Starter prompts shown to users.">
-          <ul className="list-inside list-disc space-y-1 text-sm text-[#374151] dark:text-[#d1d5db]">
+          <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground dark:text-foreground">
             {prompts.map((q, i) => (
               <li key={i}>{q}</li>
             ))}
@@ -1341,32 +1341,32 @@ function StepSummary({ form }) {
             {hubNames.map(name => (
               <li
                 key={name}
-                className="flex items-center gap-2 text-sm font-medium text-[#0f172a] dark:text-[#f1f5f9]"
+                className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-foreground"
               >
-                <Database size={14} className="shrink-0 text-[#2563eb]" />
+                <Database size={14} className="shrink-0 text-primary" />
                 {name}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-[#94a3b8]">None attached.</p>
+          <p className="text-sm text-muted-foreground">None attached.</p>
         )}
       </SectionCard>
 
       <SectionCard title="Tools" subtitle="Enabled integrations and saved credentials.">
         {enabledIds.length === 0 ? (
-          <p className="text-sm text-[#94a3b8]">No tools enabled.</p>
+          <p className="text-sm text-muted-foreground">No tools enabled.</p>
         ) : (
           <div className="flex flex-col gap-4">
             {Object.entries(toolsGrouped)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([cat, names]) => (
                 <div key={cat}>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#64748b]">{cat}</p>
-                  <ul className="space-y-1 text-sm text-[#0f172a] dark:text-[#f1f5f9]">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">{cat}</p>
+                  <ul className="space-y-1 text-sm text-foreground dark:text-foreground">
                     {names.sort().map(n => (
                       <li key={n} className="flex items-center gap-2">
-                        <Wrench size={13} className="text-[#94a3b8]" />
+                        <Wrench size={13} className="text-muted-foreground" />
                         {n}
                       </li>
                     ))}
@@ -1374,12 +1374,12 @@ function StepSummary({ form }) {
                 </div>
               ))}
             {categoriesWithSecrets.length > 0 && (
-              <div className="border-t border-[#e2e8f0] pt-4 dark:border-[#334155]">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#64748b]">Credentials saved</p>
-                <ul className="space-y-1 text-xs text-[#64748b]">
+              <div className="border-t border-border pt-4 dark:border-border">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Credentials saved</p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
                   {categoriesWithSecrets.map(([cat]) => (
                     <li key={cat}>
-                      {cat}: <span className="font-mono text-[#94a3b8]">••••••••</span>
+                      {cat}: <span className="font-mono text-muted-foreground">••••••••</span>
                     </li>
                   ))}
                 </ul>
@@ -1398,31 +1398,31 @@ function RobotIllustration() {
   return (
     <svg viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-28 h-28">
       {/* Body */}
-      <rect x="25" y="55" width="70" height="60" rx="12" fill="#dbeafe" stroke="#93c5fd" strokeWidth="2" />
+      <rect x="25" y="55" width="70" height="60" rx="12" fill="var(--primary)/10" stroke="var(--chart-chart-2)" strokeWidth="2" />
       {/* Head */}
-      <rect x="30" y="20" width="60" height="45" rx="10" fill="#eff6ff" stroke="#93c5fd" strokeWidth="2" />
+      <rect x="30" y="20" width="60" height="45" rx="10" fill="var(--primary)/10" stroke="var(--chart-chart-2)" strokeWidth="2" />
       {/* Antenna */}
-      <line x1="60" y1="20" x2="60" y2="8" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="60" cy="6" r="4" fill="#2563eb" />
+      <line x1="60" y1="20" x2="60" y2="8" stroke="var(--chart-chart-2)" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="60" cy="6" r="4" fill="var(--primary)" />
       {/* Eyes */}
-      <circle cx="46" cy="38" r="7" fill="white" stroke="#93c5fd" strokeWidth="1.5" />
-      <circle cx="74" cy="38" r="7" fill="white" stroke="#93c5fd" strokeWidth="1.5" />
-      <circle cx="46" cy="38" r="3.5" fill="#2563eb" />
-      <circle cx="74" cy="38" r="3.5" fill="#2563eb" />
+      <circle cx="46" cy="38" r="7" fill="white" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
+      <circle cx="74" cy="38" r="7" fill="white" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
+      <circle cx="46" cy="38" r="3.5" fill="var(--primary)" />
+      <circle cx="74" cy="38" r="3.5" fill="var(--primary)" />
       <circle cx="47.5" cy="36.5" r="1.5" fill="white" />
       <circle cx="75.5" cy="36.5" r="1.5" fill="white" />
       {/* Mouth */}
-      <rect x="44" y="50" width="32" height="5" rx="2.5" fill="#93c5fd" />
+      <rect x="44" y="50" width="32" height="5" rx="2.5" fill="var(--chart-chart-2)" />
       {/* Chest panel */}
-      <rect x="37" y="68" width="46" height="28" rx="7" fill="#bfdbfe" />
-      <circle cx="51" cy="82" r="5" fill="#2563eb" />
-      <circle cx="69" cy="82" r="5" fill="#2563eb" />
+      <rect x="37" y="68" width="46" height="28" rx="7" fill="var(--chart-chart-2)" />
+      <circle cx="51" cy="82" r="5" fill="var(--primary)" />
+      <circle cx="69" cy="82" r="5" fill="var(--primary)" />
       {/* Arms */}
-      <rect x="5" y="58" width="18" height="38" rx="9" fill="#dbeafe" stroke="#93c5fd" strokeWidth="2" />
-      <rect x="97" y="58" width="18" height="38" rx="9" fill="#dbeafe" stroke="#93c5fd" strokeWidth="2" />
+      <rect x="5" y="58" width="18" height="38" rx="9" fill="var(--primary)/10" stroke="var(--chart-chart-2)" strokeWidth="2" />
+      <rect x="97" y="58" width="18" height="38" rx="9" fill="var(--primary)/10" stroke="var(--chart-chart-2)" strokeWidth="2" />
       {/* Legs */}
-      <rect x="34" y="112" width="20" height="22" rx="8" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="2" />
-      <rect x="66" y="112" width="20" height="22" rx="8" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="2" />
+      <rect x="34" y="112" width="20" height="22" rx="8" fill="var(--chart-chart-2)" stroke="var(--chart-chart-2)" strokeWidth="2" />
+      <rect x="66" y="112" width="20" height="22" rx="8" fill="var(--chart-chart-2)" stroke="var(--chart-chart-2)" strokeWidth="2" />
     </svg>
   );
 }
@@ -1471,10 +1471,10 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 py-10 px-4">
-      <div className="w-full max-w-2xl bg-white dark:bg-[#1e293b] rounded-3xl border border-[#e2e8f0] dark:border-[#334155] shadow-xl overflow-hidden">
+      <div className="w-full max-w-2xl bg-card dark:bg-card rounded-3xl border border-border dark:border-border shadow-xl overflow-hidden">
         <div className="flex flex-col md:flex-row items-stretch">
           {/* Left – illustration */}
-          <div className="flex flex-col items-center justify-center bg-[#f0f9ff] dark:bg-[#0f172a] p-10 md:w-56 flex-shrink-0">
+          <div className="flex flex-col items-center justify-center bg-muted dark:bg-background p-10 md:w-56 flex-shrink-0">
             <motion.div
               animate={!done ? { y: [0, -6, 0] } : {}}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
@@ -1489,25 +1489,25 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
               <AnimatePresence mode="wait">
                 {!done ? (
                   <motion.h2 key="creating" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                    className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">
+                    className="text-xl font-bold text-foreground dark:text-foreground">
                     {creatingTitle}
                   </motion.h2>
                 ) : (
                   <motion.h2 key="done" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">
+                    className="text-xl font-bold text-foreground dark:text-foreground">
                     {doneTitle}
                   </motion.h2>
                 )}
               </AnimatePresence>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">
                 {!done ? subtitleBusy : subtitleDone}
               </p>
             </div>
 
             {/* Progress bar */}
-            <div className="h-2.5 rounded-full bg-[#e2e8f0] dark:bg-[#334155] overflow-hidden">
+            <div className="h-2.5 rounded-full bg-border dark:bg-border overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-[#2563eb]"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${progress}%` }}
                 transition={{ ease: "linear" }}
               />
@@ -1525,20 +1525,20 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
                         <motion.div
                           initial={{ scale: 0 }} animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          className="size-5 rounded-full bg-[#2563eb] flex items-center justify-center"
+                          className="size-5 rounded-full bg-primary flex items-center justify-center"
                         >
                           <Check size={11} className="text-white" />
                         </motion.div>
                       ) : isRunning ? (
-                        <Loader2 size={16} className="text-[#2563eb] animate-spin" />
+                        <Loader2 size={16} className="text-primary animate-spin" />
                       ) : (
-                        <div className="size-5 rounded-full border-2 border-[#e2e8f0] dark:border-[#334155]" />
+                        <div className="size-5 rounded-full border-2 border-border dark:border-border" />
                       )}
                     </div>
                     <span className={`text-sm transition-colors ${
-                      isComplete ? "text-[#374151] dark:text-[#d1d5db] font-medium"
-                      : isRunning  ? "text-[#2563eb] font-semibold"
-                      :              "text-[#94a3b8]"
+                      isComplete ? "text-muted-foreground dark:text-foreground font-medium"
+                      : isRunning  ? "text-primary font-semibold"
+                      :              "text-muted-foreground"
                     }`}>
                       {task}
                     </span>
@@ -1548,7 +1548,7 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
             </div>
 
             {!done && (
-              <p className="text-xs text-[#94a3b8]">Estimated time remaining: ~{Math.max(1, Math.ceil((tasks.length - completedTasks.length) * 0.45))} seconds</p>
+              <p className="text-xs text-muted-foreground">Estimated time remaining: ~{Math.max(1, Math.ceil((tasks.length - completedTasks.length) * 0.45))} seconds</p>
             )}
 
             {/* CTA buttons (success only) */}
@@ -1561,7 +1561,7 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
                   <button
                     type="button"
                     onClick={onGoToAgents}
-                    className="flex items-center gap-2 h-9 px-5 rounded-lg border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#d1d5db] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors"
+                    className="flex items-center gap-2 h-9 px-5 rounded-lg border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
                   >
                     {variant === "edit" ? "Done" : "Go to Agents"}
                   </button>
@@ -1569,7 +1569,7 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
                     <button
                       type="button"
                       onClick={onGoToAgents}
-                      className="flex items-center gap-2 h-9 px-5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium transition-colors"
+                      className="flex items-center gap-2 h-9 px-5 rounded-lg bg-primary hover:bg-primary text-white text-sm font-medium transition-colors"
                     >
                       <Bot size={15} />
                       Try Agent
@@ -1590,23 +1590,23 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
 function FooterNav({ step, onBack, onNext, onCancel, nextLabel, nextDisabled, showFooter, hideBack }) {
   if (!showFooter) return null;
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-30 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur border-t border-[#e2e8f0] dark:border-[#334155]">
+    <div className="sticky bottom-0 left-0 right-0 z-30 bg-card/80 dark:bg-background/80 backdrop-blur border-t border-border dark:border-border">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Left: selection count or placeholder */}
-        <div className="w-48 text-sm text-[#64748b] dark:text-[#94a3b8]" />
+        <div className="w-48 text-sm text-muted-foreground dark:text-muted-foreground" />
 
         {/* Right: actions */}
         <div className="flex items-center gap-3">
           <button
             onClick={onCancel}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#d1d5db] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
           >
             <X size={14} />Cancel
           </button>
           {step > 1 && !hideBack && (
             <button
               onClick={onBack}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-[#e2e8f0] dark:border-[#334155] text-sm font-medium text-[#374151] dark:text-[#d1d5db] hover:bg-[#f8fafc] dark:hover:bg-[#334155] transition-colors"
+              className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border dark:border-border text-sm font-medium text-muted-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
             >
               <ChevronLeft size={14} />Back
             </button>
@@ -1614,7 +1614,7 @@ function FooterNav({ step, onBack, onNext, onCancel, nextLabel, nextDisabled, sh
           <button
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex items-center gap-1.5 h-9 px-5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-1.5 h-9 px-5 rounded-lg bg-primary hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
           >
             {nextLabel}
             <ArrowRight size={14} />
@@ -1712,7 +1712,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent 
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar onNavigate={onNavigate} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onNavigate={onNavigate} title={isEdit ? "Edit Agent" : "Create Agent"} />
@@ -1722,7 +1722,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent 
           <div className={`flex flex-col min-h-full ${isCreatingStep ? "" : "pb-20"}`}>
             {/* Header section */}
             {!isCreatingStep && (
-              <div className="sticky top-0 z-20 bg-[#f8fafc]/95 dark:bg-[#0f172a]/95 backdrop-blur border-b border-[#e2e8f0] dark:border-[#334155]">
+              <div className="sticky top-0 z-20 bg-muted/95 dark:bg-background/95 backdrop-blur border-b border-border dark:border-border">
                 <div className="max-w-5xl mx-auto px-6 py-5">
                   <StepBar current={step} />
                 </div>

@@ -32,7 +32,7 @@ const PLAN_OPTIONS = [
     value: "trial",
     icon: Sparkles,
     title: "Trial",
-    color: "#f59e0b",
+    color: "var(--warning)",
     desc: "30-day free trial. No billing until converted. Limited to 50 users.",
     features: ["30-day period", "No credit card", "Up to 50 users", "All core features"],
   },
@@ -40,7 +40,7 @@ const PLAN_OPTIONS = [
     value: "standard",
     icon: Building2,
     title: "Standard",
-    color: "#0ea5e9",
+    color: "var(--info)",
     desc: "Ideal for small teams getting started with AI automation.",
     features: ["Up to 100 users", "5 agents / 2 workflows", "Email support", "99.9% uptime SLA"],
   },
@@ -48,7 +48,7 @@ const PLAN_OPTIONS = [
     value: "professional",
     icon: Rocket,
     title: "Professional",
-    color: "#8b5cf6",
+    color: "var(--chart-chart-4)",
     desc: "For growing teams that need more capacity and priority support.",
     features: ["Up to 500 users", "10 agents / 10 workflows", "Priority support", "Audit logs"],
   },
@@ -56,7 +56,7 @@ const PLAN_OPTIONS = [
     value: "enterprise",
     icon: Crown,
     title: "Enterprise",
-    color: "#2563eb",
+    color: "var(--primary)",
     desc: "Unlimited scale with dedicated infrastructure and HIPAA compliance.",
     features: ["Unlimited users", "Unlimited agents", "Dedicated infra", "HIPAA + SSO"],
   },
@@ -74,15 +74,15 @@ function StepIndicator({ current }) {
         {STEPS.map((s, i) => (
           <StepperItem key={s.id} step={s.id} className="flex items-center">
             <StepperTrigger className="flex flex-col items-center gap-1.5">
-              <StepperIndicator className="size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all data-[step-state=completed]:bg-[#16a34a] data-[step-state=completed]:text-white data-[step-state=active]:bg-[#2563eb] data-[step-state=active]:text-white data-[step-state=active]:ring-4 data-[step-state=active]:ring-[#2563eb]/20 data-[step-state=inactive]:bg-[#f1f5f9] dark:data-[step-state=inactive]:bg-[#334155] data-[step-state=inactive]:text-[#94a3b8]">
+              <StepperIndicator className="size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all data-[step-state=completed]:bg-success/90 data-[step-state=completed]:text-white data-[step-state=active]:bg-primary data-[step-state=active]:text-white data-[step-state=active]:ring-4 data-[step-state=active]:ring-[#2563eb]/20 data-[step-state=inactive]:bg-muted dark:data-[step-state=inactive]:bg-muted data-[step-state=inactive]:text-muted-foreground">
                 {s.id}
               </StepperIndicator>
-              <StepperTitle className="text-[10px] font-medium whitespace-nowrap data-[step-state=active]:text-[#2563eb] data-[step-state=completed]:text-[#16a34a] data-[step-state=inactive]:text-[#94a3b8]">
+              <StepperTitle className="text-[10px] font-medium whitespace-nowrap data-[step-state=active]:text-primary data-[step-state=completed]:text-success data-[step-state=inactive]:text-muted-foreground">
                 {s.label}
               </StepperTitle>
             </StepperTrigger>
             {i < STEPS.length - 1 && (
-              <StepperSeparator className="h-px w-20 mb-4 mx-1 transition-all data-[step-state=completed]:bg-[#16a34a] data-[step-state=inactive]:bg-[#e2e8f0] dark:data-[step-state=inactive]:bg-[#334155]" />
+              <StepperSeparator className="h-px w-20 mb-4 mx-1 transition-all data-[step-state=completed]:bg-success/90 data-[step-state=inactive]:bg-border dark:data-[step-state=inactive]:bg-muted" />
             )}
           </StepperItem>
         ))}
@@ -95,13 +95,13 @@ function StepIndicator({ current }) {
 function Field({ label, required, error, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-[#374151] dark:text-[#d1d5db]">
-        {label}{required && <span className="text-[#ef4444] ml-0.5">*</span>}
+      <label className="text-sm font-medium text-muted-foreground dark:text-foreground">
+        {label}{required && <span className="text-destructive ml-0.5">*</span>}
       </label>
       {children}
-      {hint && !error && <p className="text-xs text-[#94a3b8]">{hint}</p>}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p className="flex items-center gap-1 text-xs text-[#ef4444]">
+        <p className="flex items-center gap-1 text-xs text-destructive">
           <AlertCircle size={11} />{error}
         </p>
       )}
@@ -124,13 +124,13 @@ function Step2({ form, setForm, errors }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Organisation Details</h2>
-        <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">Basic info and the plan for this tenant.</p>
+        <h2 className="text-xl font-bold text-foreground dark:text-foreground">Organisation Details</h2>
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">Basic info and the plan for this tenant.</p>
       </div>
 
       {/* Plan picker */}
       <div>
-        <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-3">Plan</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Plan</p>
         <div className="grid grid-cols-2 gap-3">
           {PLAN_OPTIONS.map(opt => {
             const Icon = opt.icon;
@@ -143,11 +143,11 @@ function Step2({ form, setForm, errors }) {
                 }}
                 className={`relative text-left p-4 rounded-xl border-2 transition-all ${
                   selected
-                    ? "border-[#2563eb] bg-[#eff6ff] dark:bg-[#1e3a8a]/20 shadow-sm shadow-blue-500/10"
-                    : "border-[#e2e8f0] dark:border-[#334155] bg-white dark:bg-[#1e293b] hover:border-[#93c5fd]"
+                    ? "border-border bg-primary/10 dark:bg-primary/20/20 shadow-sm shadow-blue-500/10"
+                    : "border-border dark:border-border bg-card dark:bg-card hover:border-info-ring"
                 }`}>
                 {selected && (
-                  <div className="absolute top-3 right-3 size-5 rounded-full bg-[#2563eb] flex items-center justify-center">
+                  <div className="absolute top-3 right-3 size-5 rounded-full bg-primary flex items-center justify-center">
                     <Check size={11} className="text-white" />
                   </div>
                 )}
@@ -155,12 +155,12 @@ function Step2({ form, setForm, errors }) {
                   style={{ background: `${opt.color}18` }}>
                   <Icon size={16} style={{ color: opt.color }} />
                 </div>
-                <p className="text-sm font-bold text-[#0f172a] dark:text-[#f1f5f9] mb-1">{opt.title}</p>
-                <p className="text-xs text-[#64748b] dark:text-[#94a3b8] leading-4 mb-2">{opt.desc}</p>
+                <p className="text-sm font-bold text-foreground dark:text-foreground mb-1">{opt.title}</p>
+                <p className="text-xs text-muted-foreground dark:text-muted-foreground leading-4 mb-2">{opt.desc}</p>
                 <div className="flex flex-col gap-1">
                   {opt.features.map(f => (
-                    <span key={f} className="flex items-center gap-1.5 text-[11px] text-[#475569] dark:text-[#94a3b8]">
-                      <Check size={10} className="text-[#16a34a] flex-shrink-0" />{f}
+                    <span key={f} className="flex items-center gap-1.5 text-[11px] text-muted-foreground dark:text-muted-foreground">
+                      <Check size={10} className="text-success flex-shrink-0" />{f}
                     </span>
                   ))}
                 </div>
@@ -169,7 +169,7 @@ function Step2({ form, setForm, errors }) {
           })}
         </div>
         {errors.plan && (
-          <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1.5">
+          <p className="flex items-center gap-1 text-xs text-destructive mt-1.5">
             <AlertCircle size={11} />{errors.plan}
           </p>
         )}
@@ -184,7 +184,7 @@ function Step2({ form, setForm, errors }) {
         <Field label="URL Slug" required error={errors.slug}
           hint="Unique identifier — lowercase letters, numbers, hyphens">
           <div className="relative">
-            <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <Link2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={form.slug}
               onChange={e => {
@@ -199,7 +199,7 @@ function Step2({ form, setForm, errors }) {
 
         <Field label="Domain" required error={errors.domain}>
           <div className="relative">
-            <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={form.domain} onChange={e => set("domain")(e.target.value)} placeholder="acme.com" className="pl-8" />
           </div>
         </Field>
@@ -213,13 +213,13 @@ function Step2({ form, setForm, errors }) {
         </Field>
         <Field label="Contact Name" required error={errors.contactName}>
           <div className="relative">
-            <UserCircle size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <UserCircle size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={form.contactName} onChange={e => set("contactName")(e.target.value)} placeholder="Jane Smith" className="pl-8" />
           </div>
         </Field>
         <Field label="Contact Email" required error={errors.contactEmail}>
           <div className="relative">
-            <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+            <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input type="email" value={form.contactEmail} onChange={e => set("contactEmail")(e.target.value)} placeholder="jane@acme.com" className="pl-8" />
           </div>
         </Field>
@@ -256,8 +256,8 @@ function Step3({ form, onEditDetails }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Review & Confirm</h2>
-          <p className="mt-1 text-sm text-[#64748b] dark:text-[#94a3b8]">
+          <h2 className="text-xl font-bold text-foreground dark:text-foreground">Review & Confirm</h2>
+          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
             Check the organisation details. You'll assign packages in the next step.
           </p>
         </div>
@@ -265,7 +265,7 @@ function Step3({ form, onEditDetails }) {
           <button
             type="button"
             onClick={onEditDetails}
-            className="shrink-0 text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] dark:text-[#60a5fa] dark:hover:text-[#93c5fd] underline-offset-2 hover:underline"
+            className="shrink-0 text-sm font-medium text-primary hover:text-primary dark:text-primary dark:hover:text-primary underline-offset-2 hover:underline"
           >
             Edit details
           </button>
@@ -273,20 +273,20 @@ function Step3({ form, onEditDetails }) {
       </div>
 
       {/* Summary card */}
-      <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 text-white bg-gradient-to-br from-[#2563eb] to-[#1d4ed8]">
+      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 text-white bg-gradient-to-br from-[#2563eb] to-primary">
           <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-0.5">
             SaaS Cloud
           </p>
           <h3 className="text-xl font-bold">{form.name || "New Tenant"}</h3>
           <p className="text-sm opacity-70">{form.domain}</p>
         </div>
-        <div className="divide-y divide-[#f1f5f9] dark:divide-[#334155]">
+        <div className="divide-y divide-muted dark:divide-[#334155]">
           {rows.map(({ label, value, mono }) => (
             <div key={label} className="flex items-center justify-between px-5 py-2.5">
-              <span className="text-xs text-[#94a3b8] font-medium">{label}</span>
+              <span className="text-xs text-muted-foreground font-medium">{label}</span>
               <span className={`text-sm font-medium ${mono ? "font-mono" : ""} ${
-                label === "Packages" ? "text-[#94a3b8] italic" : "text-[#0f172a] dark:text-[#f1f5f9]"
+                label === "Packages" ? "text-muted-foreground italic" : "text-foreground dark:text-foreground"
               }`}>{value}</span>
             </div>
           ))}
@@ -294,11 +294,11 @@ function Step3({ form, onEditDetails }) {
       </div>
 
       {/* Package assignment notice */}
-      <div className="flex items-start gap-3 p-4 bg-[#eff6ff] dark:bg-[#1e3a8a]/20 border border-[#bfdbfe] dark:border-[#1e3a8a] rounded-xl">
-        <Package size={16} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
+      <div className="flex items-start gap-3 p-4 bg-primary/10 dark:bg-primary/20/20 border border-primary/30 dark:border-primary/20 rounded-xl">
+        <Package size={16} className="text-primary mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-[#1e40af] dark:text-[#93c5fd]">Packages assigned separately</p>
-          <p className="text-xs text-[#1e40af] dark:text-[#93c5fd] mt-0.5 leading-4">
+          <p className="text-sm font-semibold text-primary dark:text-primary">Packages assigned separately</p>
+          <p className="text-xs text-primary dark:text-primary mt-0.5 leading-4">
             After creating the tenant, go to the <strong>Packages tab</strong> in Tenant Detail to assign a base tier
             and any add-on packages. Billing starts only when the first package is assigned.
           </p>
@@ -307,15 +307,15 @@ function Step3({ form, onEditDetails }) {
 
       {/* What happens next */}
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide">What happens next</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">What happens next</p>
         {[
           "Tenant record created and visible in the Tenants list",
           `Welcome email sent to ${form.contactEmail || "the contact"}`,
           "You'll be redirected to the Tenant Detail page",
           "Assign a base tier + optional add-ons from the Packages tab",
         ].map((item, i) => (
-          <div key={i} className="flex items-start gap-2 text-xs text-[#475569] dark:text-[#94a3b8]">
-            <ArrowRight size={12} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
+          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground dark:text-muted-foreground">
+            <ArrowRight size={12} className="text-primary mt-0.5 flex-shrink-0" />
             {item}
           </div>
         ))}
@@ -392,30 +392,30 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   // ── Success screen ──────────────────────────────────────────────────────────
   if (created) {
     return (
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="tenants" onNavigate={onNavigate} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-5 text-center max-w-sm">
-              <div className="size-16 rounded-full bg-[#f0fdf4] flex items-center justify-center">
-                <div className="size-11 rounded-full bg-[#dcfce7] flex items-center justify-center">
-                  <Check size={22} className="text-[#16a34a]" />
+              <div className="size-16 rounded-full bg-success/10 flex items-center justify-center">
+                <div className="size-11 rounded-full bg-success/10 flex items-center justify-center">
+                  <Check size={22} className="text-success" />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-[#0f172a] dark:text-[#f1f5f9]">Tenant Created!</h2>
-                <p className="text-sm text-[#64748b] dark:text-[#94a3b8] mt-1">
+                <h2 className="text-xl font-bold text-foreground dark:text-foreground">Tenant Created!</h2>
+                <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">
                   <strong>{created.name}</strong> has been added. Now assign a package to activate billing.
                 </p>
               </div>
 
               {/* Next-step callout */}
-              <div className="w-full flex items-start gap-3 p-4 bg-[#eff6ff] dark:bg-[#1e3a8a]/20 border border-[#bfdbfe] dark:border-[#1e3a8a] rounded-xl text-left">
-                <Package size={16} className="text-[#2563eb] mt-0.5 flex-shrink-0" />
+              <div className="w-full flex items-start gap-3 p-4 bg-primary/10 dark:bg-primary/20/20 border border-primary/30 dark:border-primary/20 rounded-xl text-left">
+                <Package size={16} className="text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-[#1e40af] dark:text-[#93c5fd]">Next: Assign a Package</p>
-                  <p className="text-xs text-[#1e40af] dark:text-[#93c5fd] mt-0.5 leading-4">
+                  <p className="text-sm font-semibold text-primary dark:text-primary">Next: Assign a Package</p>
+                  <p className="text-xs text-primary dark:text-primary mt-0.5 leading-4">
                     Open the <strong>Packages tab</strong> in Tenant Detail to assign a base tier and any add-ons.
                   </p>
                 </div>
@@ -426,7 +426,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
                   Back to Tenants
                 </Button>
                 <Button
-                  className="bg-[#2563eb] hover:bg-[#1d4ed8]"
+                  className="bg-primary hover:bg-primary"
                   onClick={() => onTenantCreated?.(created)}
                 >
                   Open Tenant <ChevronRight size={14} />
@@ -442,19 +442,19 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   const isLastStep = step === 2;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-[#e2e8f0] dark:bg-[#334155]" />
+            <div className="w-px h-6 bg-border dark:bg-border" />
             <button onClick={() => onNavigate?.("tenants")}
-              className="text-sm text-[#64748b] dark:text-[#94a3b8] hover:text-[#0f172a] dark:hover:text-[#f1f5f9] transition-colors">
+              className="text-sm text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground transition-colors">
               Tenants
             </button>
-            <ChevronRight size={14} className="text-[#94a3b8]" />
-            <span className="text-sm text-[#0f172a] dark:text-[#f1f5f9] font-medium">New Tenant</span>
+            <ChevronRight size={14} className="text-muted-foreground" />
+            <span className="text-sm text-foreground dark:text-foreground font-medium">New Tenant</span>
           </div>
         </AppHeader>
 
@@ -462,8 +462,8 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
           <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
 
             <div className="flex flex-col gap-2">
-              <h1 className="text-2xl font-bold text-[#0f172a] dark:text-[#f1f5f9] tracking-tight">Create New Tenant</h1>
-              <p className="text-sm text-[#64748b] dark:text-[#94a3b8]">
+              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Create New Tenant</h1>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                 Provision a new customer organisation. Packages are assigned after creation.
               </p>
               <div className="mt-3">
@@ -471,7 +471,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-[#1e293b] border border-[#e2e8f0] dark:border-[#334155] rounded-2xl p-6 shadow-sm">
+            <div className="bg-card dark:bg-card border border-border dark:border-border rounded-2xl p-6 shadow-sm">
               {step === 1 && <Step2 form={form} setForm={setForm} errors={errors} />}
               {step === 2 && <Step3 form={form} onEditDetails={() => setStep(1)} />}
             </div>
@@ -486,7 +486,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
                 {isLastStep ? (
                   <Button onClick={handleCreate} disabled={creating} className="bg-green-600 hover:bg-green-700 disabled:opacity-60">
                     {creating ? (
-                      <><div className="size-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Creating…</>
+                      <><div className="size-4 border-2 border-card/40 border-t-white rounded-full animate-spin" /> Creating…</>
                     ) : (
                       <><Check size={15} /> Create Tenant</>
                     )}

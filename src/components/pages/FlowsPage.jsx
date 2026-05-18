@@ -487,12 +487,12 @@ function ImportPreviewDialog({ open, onOpenChange, preview, onConfirm, importing
 
         {warnings.length > 0 && (
           <div className="mx-5 mb-1 flex flex-col gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2.5">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-warning dark:text-amber-400">
               <Info className="size-3.5 shrink-0" aria-hidden /> Notes
             </p>
             <ul className="ml-5 list-disc space-y-0.5">
               {warnings.map((w, i) => (
-                <li key={i} className="text-xs text-amber-700 dark:text-amber-300">{w}</li>
+                <li key={i} className="text-xs text-warning dark:text-amber-300">{w}</li>
               ))}
             </ul>
           </div>

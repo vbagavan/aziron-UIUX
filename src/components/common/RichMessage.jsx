@@ -9,7 +9,7 @@ import {
 export function ThinkingBlock({ duration }) {
   return (
     <div className="flex items-center gap-2 px-2 py-2">
-      <Brain size={16} className="text-[#6366f1] flex-shrink-0" style={{ animation: "rmPulse 1.5s ease-in-out infinite" }} />
+      <Brain size={16} className="text-chart-chart-3 flex-shrink-0" style={{ animation: "rmPulse 1.5s ease-in-out infinite" }} />
       <span className="text-base font-medium text-foreground">
         Thinking<span className="text-muted-foreground">...</span>
       </span>
@@ -74,8 +74,8 @@ export function CodeBlock({ language, content }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <div className="my-2 overflow-hidden rounded-2xl border border-[#1f2937]">
-      <div className="flex items-center justify-between bg-[#111827] px-4 py-2.5">
+    <div className="my-2 overflow-hidden rounded-2xl border border-border">
+      <div className="flex items-center justify-between bg-muted px-4 py-2.5">
         <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
           {language || "code"}
         </span>
@@ -85,7 +85,7 @@ export function CodeBlock({ language, content }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto bg-[#020617] px-4 py-3 text-xs leading-5 whitespace-pre text-[#e2e8f0]">
+      <pre className="overflow-x-auto bg-muted px-4 py-3 text-xs leading-5 whitespace-pre text-foreground">
         {content}
       </pre>
     </div>
@@ -161,35 +161,35 @@ export function StepsBlock({ items }) {
 
 /* ── Terminal Logs ────────────────────────────────────────────── */
 const LOG_COLORS = {
-  INFO:  "text-[#60a5fa]",
-  WARN:  "text-[#fbbf24]",
-  ERROR: "text-[#f87171]",
-  READY: "text-[#34d399]",
-  DEBUG: "text-[#a78bfa]",
+  INFO:  "text-foreground",
+  WARN:  "text-foreground",
+  ERROR: "text-foreground",
+  READY: "text-foreground",
+  DEBUG: "text-foreground",
 };
 export function TerminalBlock({ logs }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="my-1 rounded-[10px] border border-[#334155] dark:border-[#1e293b] overflow-hidden">
+    <div className="my-1 rounded-[10px] border border-border dark:border-border overflow-hidden">
       <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-[#1e293b] dark:bg-[#0f172a] hover:bg-[#273548] dark:hover:bg-[#1e293b] transition-colors">
-        <Terminal size={13} className="text-[#94a3b8]" />
-        <span className="text-xs font-mono text-[#94a3b8]">Terminal Logs</span>
-        <span className="ml-auto text-[#94a3b8]">
+        className="w-full flex items-center gap-2 px-3 py-2 bg-card dark:bg-background hover:bg-muted dark:hover:bg-muted transition-colors">
+        <Terminal size={13} className="text-muted-foreground" />
+        <span className="text-xs font-mono text-muted-foreground">Terminal Logs</span>
+        <span className="ml-auto text-muted-foreground">
           {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </span>
       </button>
       {open && (
-        <div className="bg-[#0f172a] dark:bg-[#0a0f1a] px-4 py-3 max-h-48 overflow-y-auto">
+        <div className="bg-muted dark:bg-card px-4 py-3 max-h-48 overflow-y-auto">
           {logs.map((log, i) => (
             <div key={i} className="flex gap-2 text-[11px] font-mono leading-5">
               {log.timestamp && (
-                <span className="text-[#475569] dark:text-[#94a3b8] flex-shrink-0">{log.timestamp}</span>
+                <span className="text-muted-foreground dark:text-muted-foreground flex-shrink-0">{log.timestamp}</span>
               )}
-              <span className={`flex-shrink-0 font-bold ${LOG_COLORS[log.level] || "text-[#94a3b8]"}`}>
+              <span className={`flex-shrink-0 font-bold ${LOG_COLORS[log.level] || "text-muted-foreground"}`}>
                 [{log.level}]
               </span>
-              <span className="text-[#cbd5e1]">{log.message}</span>
+              <span className="text-foreground">{log.message}</span>
             </div>
           ))}
         </div>
@@ -201,16 +201,16 @@ export function TerminalBlock({ logs }) {
 /* ── Alert ────────────────────────────────────────────────────── */
 const ALERT_STYLES = {
   error: {
-    wrap:  "text-[#dc2626] dark:text-[#fca5a5]",
-    icon:  <AlertCircle size={15} className="text-[#ef4444]" />,
-    title: "text-[#b91c1c] dark:text-[#fca5a5]",
-    desc:  "text-[#dc2626] dark:text-[#fca5a5]",
+    wrap:  "text-destructive dark:text-destructive",
+    icon:  <AlertCircle size={15} className="text-destructive" />,
+    title: "text-destructive dark:text-destructive",
+    desc:  "text-destructive dark:text-destructive",
   },
   success: {
-    wrap:  "text-[#15803d] dark:text-[#86efac]",
-    icon:  <CheckCircle2 size={15} className="text-[#16a34a]" />,
-    title: "text-[#15803d] dark:text-[#86efac]",
-    desc:  "text-[#16a34a] dark:text-[#86efac]",
+    wrap:  "text-success dark:text-success",
+    icon:  <CheckCircle2 size={15} className="text-success" />,
+    title: "text-success dark:text-success",
+    desc:  "text-success dark:text-success",
   },
 };
 export function AlertBlock({ variant, title, description }) {
@@ -228,23 +228,23 @@ export function AlertBlock({ variant, title, description }) {
 
 /* ── Files ────────────────────────────────────────────────────── */
 const FILE_META = {
-  pdf:  { Icon: FileText,       color: "text-[#ef4444]", bg: "bg-[#fef2f2] dark:bg-[#7f1d1d]" },
-  docx: { Icon: FileText,       color: "text-[#2563eb] dark:text-[#60a5fa]", bg: "bg-[#eff6ff] dark:bg-[#1e3a8a]" },
-  xls:  { Icon: FileSpreadsheet,color: "text-[#16a34a]", bg: "bg-[#f0fdf4] dark:bg-[#14532d]" },
-  xlsx: { Icon: FileSpreadsheet,color: "text-[#16a34a]", bg: "bg-[#f0fdf4] dark:bg-[#14532d]" },
-  pptx: { Icon: Presentation,   color: "text-[#ea580c]", bg: "bg-[#fff7ed] dark:bg-[#78350f]" },
-  png:  { Icon: Image,          color: "text-[#7c3aed]", bg: "bg-[#f5f3ff] dark:bg-[#2e1065]" },
-  jpg:  { Icon: Image,          color: "text-[#7c3aed]", bg: "bg-[#f5f3ff] dark:bg-[#2e1065]" },
+  pdf:  { Icon: FileText,       color: "text-destructive", bg: "bg-destructive/10 dark:hover:bg-destructive/20" },
+  docx: { Icon: FileText,       color: "text-primary dark:text-primary", bg: "bg-primary/10 dark:bg-primary/20" },
+  xls:  { Icon: FileSpreadsheet,color: "text-success", bg: "bg-success/10 dark:bg-success/20" },
+  xlsx: { Icon: FileSpreadsheet,color: "text-success", bg: "bg-success/10 dark:bg-success/20" },
+  pptx: { Icon: Presentation,   color: "text-warning", bg: "bg-warning/10 dark:bg-card" },
+  png:  { Icon: Image,          color: "text-primary", bg: "bg-accent dark:bg-card" },
+  jpg:  { Icon: Image,          color: "text-primary", bg: "bg-accent dark:bg-card" },
 };
 export function FilesBlock({ items }) {
   return (
-    <div className="my-2 overflow-hidden rounded-2xl border border-[#dbe4f0] dark:border-[#2b374c]">
+    <div className="my-2 overflow-hidden rounded-2xl border border-border dark:border-border">
       {items.map((file, i) => {
         const ext = file.name.split(".").pop().toLowerCase();
-        const { Icon, color, bg } = FILE_META[ext] || { Icon: File, color: "text-[#64748b] dark:text-[#94a3b8]", bg: "bg-[#f8fafc] dark:bg-[#1e293b]" };
+        const { Icon, color, bg } = FILE_META[ext] || { Icon: File, color: "text-muted-foreground dark:text-muted-foreground", bg: "bg-muted dark:bg-card" };
         return (
           <div key={i}
-            className={`flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[#f8fbff] dark:hover:bg-white/[0.03] ${i > 0 ? "border-t border-[#eef2f7] dark:border-[#162033]" : ""}`}>
+            className={`flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted dark:hover:bg-card/[0.03] ${i > 0 ? "border-t border-border dark:border-border" : ""}`}>
             <div className={`size-8 rounded-[6px] flex items-center justify-center flex-shrink-0 ${bg}`}>
               <Icon size={15} className={color} />
             </div>
@@ -365,7 +365,7 @@ export function AgentTimelineBlock({ steps, duration }) {
         className="flex items-center gap-2 py-2 px-2 mb-1 rounded-md w-full text-left
           cursor-pointer group hover:bg-muted/50 transition-colors"
       >
-        <Brain size={16} className="text-[#6366f1] flex-shrink-0"
+        <Brain size={16} className="text-chart-chart-3 flex-shrink-0"
           style={{ animation: "rmPulse 1.5s ease-in-out infinite" }} />
         <span className="text-base font-medium text-foreground">
           Thinking<span className="tl-dots text-muted-foreground">...</span>

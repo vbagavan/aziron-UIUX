@@ -17,7 +17,7 @@ export default function ProviderLogo({
 
   if (!markup) {
     return (
-      <div className={cn("flex items-center justify-center rounded bg-[#e0e7ff] text-[#4f46e5]", fallbackClassName, className)}>
+      <div className={cn("flex items-center justify-center rounded bg-muted text-foreground", fallbackClassName, className)}>
         <span className="text-xs font-bold">{provider?.[0] ?? "?"}</span>
       </div>
     );
@@ -28,7 +28,7 @@ export default function ProviderLogo({
       aria-label={provider}
       role="img"
       className={cn(
-        "inline-flex shrink-0 items-center justify-center text-[#0f172a] dark:text-[#f8fafc] [&_svg]:h-full [&_svg]:w-full",
+        "inline-flex shrink-0 items-center justify-center text-foreground dark:text-foreground [&_svg]:h-full [&_svg]:w-full",
         className,
       )}
       dangerouslySetInnerHTML={{ __html: markup }}

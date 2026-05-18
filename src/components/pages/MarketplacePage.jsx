@@ -119,8 +119,8 @@ function matchesTextSearch(item, q) {
 }
 
 const BADGE_STYLES = {
-  Popular:  "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-  New:      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  Popular:  "bg-amber-500/10 text-warning dark:text-amber-400 border-amber-500/20",
+  New:      "bg-success/100/10 text-success dark:text-emerald-400 border-emerald-500/20",
   Featured: "bg-primary/10 text-primary border-primary/20",
   Yours:    "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20",
 };

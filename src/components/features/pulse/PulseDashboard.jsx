@@ -25,22 +25,22 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
   const artifactToDelete = pendingDelete != null ? artifacts.find((a) => a.id === pendingDelete) : null;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f8fafc] dark:bg-[#0f172a]">
+    <div className="h-full overflow-y-auto bg-background">
       <div className="flex flex-col gap-4 px-6 py-4">
         {/* Page title + primary action — matches Flows / Usage list pages */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <h1 className="text-2xl font-semibold leading-8 tracking-[-0.6px] text-[#0f172a] dark:text-[#f1f5f9]">
+            <h1 className="text-2xl font-semibold leading-8 tracking-[-0.6px] text-foreground dark:text-foreground">
               Pulse
             </h1>
-            <p className="text-sm leading-5 text-[#64748b] dark:text-[#94a3b8]">
+            <p className="text-sm leading-5 text-muted-foreground dark:text-muted-foreground">
               Generate, iterate, and manage UI designs with AI — sits alongside agents, flows, and chat in this workspace.
             </p>
           </div>
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] bg-[#2563eb] px-4 text-sm font-medium text-white transition-colors hover:bg-[#1d4ed8]"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary"
           >
             <Plus className="size-4 shrink-0" aria-hidden />
             Create New
@@ -51,19 +51,19 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
         {artifacts.length === 0 ? (
           <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-center">
-              <div className="size-16 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="size-16 rounded-lg bg-primary/15 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-primary dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7 20H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2h-2" />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-[#0f172a] dark:text-[#f1f5f9]">No UIs created yet</h3>
-              <p className="mx-auto mb-6 max-w-sm text-sm leading-relaxed text-[#64748b] dark:text-[#94a3b8]">
+              <h3 className="mb-2 text-lg font-semibold text-foreground dark:text-foreground">No UIs created yet</h3>
+              <p className="mx-auto mb-6 max-w-sm text-sm leading-relaxed text-muted-foreground dark:text-muted-foreground">
                 Start with a description or a curated template. Previews are saved as prompts plus layout type so you can reopen them from this list.
               </p>
               <button
                 type="button"
                 onClick={onCreateNew}
-                className="flex h-9 items-center gap-1.5 rounded-[6px] bg-[#2563eb] px-4 text-sm font-medium text-white transition-colors hover:bg-[#1d4ed8]"
+                className="flex h-9 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary"
               >
                 <Plus className="size-4 shrink-0" aria-hidden />
                 Create your first UI
@@ -78,7 +78,7 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
                 <article
                   key={artifact.id}
                   aria-labelledby={titleId}
-                  className="group relative flex flex-col overflow-hidden rounded-[8px] border border-[#e2e8f0] bg-white motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none hover:border-[#cbd5e1] hover:shadow-lg dark:border-[#334155] dark:bg-[#1e293b] dark:hover:border-[#475569]"
+                  className="group relative flex flex-col overflow-hidden rounded-[8px] border border-border bg-card motion-safe:transition-all motion-safe:duration-200 motion-reduce:transition-none hover:border-border hover:shadow-lg dark:border-border dark:bg-card dark:hover:border-border"
                 >
                   {/* Thumbnail — opens editor */}
                   <button
@@ -117,7 +117,7 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
                       <button
                         type="button"
                         onClick={() => onEdit(artifact.id)}
-                        className="w-full text-left font-semibold text-foreground line-clamp-2 rounded-sm outline-none hover:text-blue-600 dark:hover:text-blue-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+                        className="w-full text-left font-semibold text-foreground line-clamp-2 rounded-sm outline-none hover:text-primary dark:hover:text-blue-400 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
                       >
                         {artifact.title}
                       </button>

@@ -26,7 +26,14 @@
       "mcp__shadcn__get_project_registries",
       "mcp__shadcn__get_add_command_for_items",
       "Bash(npx shadcn@latest mcp init --client claude)",
-      "Bash(find /Users/vbagavan -type d -name *AIUX* -o -name *Aziron*)"
+      "Bash(find /Users/vbagavan -type d -name *AIUX* -o -name *Aziron*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(npx --yes @babel/parser)",
+      "Bash(node -e ':*)"
     ]
   }
 }

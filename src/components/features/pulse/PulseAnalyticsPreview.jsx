@@ -59,8 +59,8 @@ const activityByDay = [
 ];
 
 const segments = [
-  { label: "Retailers", count: 2884, pct: 59, color: "bg-blue-500" },
-  { label: "Distributors", count: 1432, pct: 29, color: "bg-emerald-500" },
+  { label: "Retailers", count: 2884, pct: 59, color: "bg-primary" },
+  { label: "Distributors", count: 1432, pct: 29, color: "bg-success/100" },
   { label: "Wholesalers", count: 562, pct: 12, color: "bg-amber-500" },
 ];
 
@@ -72,14 +72,14 @@ const products = [
 
 function KpiCard({ icon: Icon, label, value, delta, deltaPositive, sub }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-start justify-between">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-blue-50">
-          <Icon className="size-5 text-blue-600" />
+        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="size-5 text-primary" />
         </div>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            deltaPositive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"
+            deltaPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
           }`}
         >
           {delta}
@@ -97,9 +97,9 @@ function ProfitTooltip({ active, payload, label }) {
   const cur = payload.find((p) => p.dataKey === "current");
   const prev = payload.find((p) => p.dataKey === "previous");
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg">
+    <div className="rounded-lg border border-slate-200 bg-card px-3 py-2 text-xs shadow-lg">
       <p className="font-semibold text-slate-800">{label}</p>
-      <p className="mt-1 text-blue-600">${Number(cur?.value).toLocaleString()} this month</p>
+      <p className="mt-1 text-primary">${Number(cur?.value).toLocaleString()} this month</p>
       <p className="text-slate-500">${Number(prev?.value).toLocaleString()} last month</p>
     </div>
   );
@@ -109,8 +109,8 @@ function RepeatGauge({ value = 68 }) {
   const target = 80;
   const rest = Math.max(0, 100 - value);
   const gaugeData = [
-    { name: "rate", v: value, fill: "#3b82f6" },
-    { name: "rest", v: rest, fill: "#e2e8f0" },
+    { name: "rate", v: value, fill: "var(--primary)" },
+    { name: "rest", v: rest, fill: "var(--border)" },
   ];
   return (
     <div className="flex flex-col items-center py-1">
@@ -138,7 +138,7 @@ function RepeatGauge({ value = 68 }) {
           <span className="text-[11px] text-slate-500">On track for {target}% target</span>
         </div>
       </div>
-      <button type="button" className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-700">
+      <button type="button" className="mt-1 text-xs font-medium text-primary hover:text-primary">
         Show details
       </button>
     </div>
@@ -153,33 +153,33 @@ export default function PulseAnalyticsPreview({ compact = false }) {
       }`}
     >
       {/* Header */}
-      <header className="flex flex-col gap-4 border-b border-slate-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 border-b border-slate-200 bg-card px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-card px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
           >
             <Calendar className="size-3.5 text-slate-500" />
             Jan 1, 2025 – Feb 1, 2025
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-card px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
           >
             Last 30 days
             <ChevronDown className="size-3.5 text-slate-400" />
           </button>
           <button
             type="button"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 bg-card px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
           >
             <Plus className="mr-1 inline size-3.5" />
             Add widget
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary/90"
           >
             <Download className="size-3.5" />
             Export
@@ -228,13 +228,13 @@ export default function PulseAnalyticsPreview({ compact = false }) {
           {/* Left column */}
           <div className={`space-y-6 ${compact ? "" : "lg:col-span-2"}`}>
             {/* Total profit + area chart */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total profit</p>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-2xl font-bold text-slate-900">$446.7K</span>
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
                       +24.4%
                     </span>
                   </div>
@@ -245,18 +245,18 @@ export default function PulseAnalyticsPreview({ compact = false }) {
                   <AreaChart data={profitData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="pulseProfitFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.02} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                     <YAxis hide />
                     <Tooltip content={<ProfitTooltip />} />
                     <Area
                       type="monotone"
                       dataKey="previous"
-                      stroke="#cbd5e1"
+                      stroke="var(--border)"
                       strokeWidth={2}
                       fill="transparent"
                       dot={false}
@@ -264,10 +264,10 @@ export default function PulseAnalyticsPreview({ compact = false }) {
                     <Area
                       type="monotone"
                       dataKey="current"
-                      stroke="#3b82f6"
+                      stroke="var(--primary)"
                       strokeWidth={2}
                       fill="url(#pulseProfitFill)"
-                      dot={{ r: 3, fill: "#3b82f6", strokeWidth: 0 }}
+                      dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
                       activeDot={{ r: 5 }}
                     />
                   </AreaChart>
@@ -290,7 +290,7 @@ export default function PulseAnalyticsPreview({ compact = false }) {
             </div>
 
             {/* Best selling products */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-card shadow-sm">
               <div className="border-b border-slate-100 px-5 py-4">
                 <h3 className="text-sm font-semibold text-slate-900">Best selling products</h3>
               </div>
@@ -312,12 +312,12 @@ export default function PulseAnalyticsPreview({ compact = false }) {
                         <td className="max-w-[180px] truncate px-5 py-3 font-medium text-slate-800">{row.name}</td>
                         <td className="px-5 py-3 text-slate-600">{row.sold.toLocaleString()}</td>
                         <td className="px-5 py-3">
-                          <span className={row.revUp ? "font-semibold text-emerald-600" : "font-semibold text-red-600"}>
+                          <span className={row.revUp ? "font-semibold text-success" : "font-semibold text-destructive"}>
                             {row.revenue}
                           </span>
                         </td>
                         <td className="px-5 py-3">
-                          <span className="inline-flex items-center gap-1 font-medium text-amber-600">
+                          <span className="inline-flex items-center gap-1 font-medium text-warning">
                             <Star className="size-3.5 fill-amber-400 text-amber-400" />
                             {row.rating}
                           </span>
@@ -332,23 +332,23 @@ export default function PulseAnalyticsPreview({ compact = false }) {
 
           {/* Right column */}
           <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
               <h3 className="mb-4 text-sm font-semibold text-slate-900">Most day active</h3>
               <div className="h-52 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={activityByDay} margin={{ top: 24, right: 8, left: -16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                     <YAxis hide />
                     <Tooltip
                       cursor={{ fill: "rgba(59, 130, 246, 0.06)" }}
-                      contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                      contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12 }}
                     />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
                       {activityByDay.map((entry) => (
                         <Cell
                           key={entry.day}
-                          fill={entry.day === "Tue" ? "#3b82f6" : "#e2e8f0"}
+                          fill={entry.day === "Tue" ? "var(--primary)" : "var(--border)"}
                         />
                       ))}
                     </Bar>
@@ -356,41 +356,41 @@ export default function PulseAnalyticsPreview({ compact = false }) {
                 </ResponsiveContainer>
               </div>
               <p className="mt-2 text-center text-xs text-slate-500">
-                Peak <span className="font-semibold text-blue-600">Tue</span> ·{" "}
+                Peak <span className="font-semibold text-primary">Tue</span> ·{" "}
                 <span className="font-semibold text-slate-800">8,162</span> sessions
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
               <h3 className="mb-1 text-sm font-semibold text-slate-900">Repeat customer rate</h3>
               <RepeatGauge value={68} />
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-slate-200 bg-card p-5 shadow-sm">
               <h3 className="mb-0.5 text-sm font-semibold text-slate-900">Hourly sessions</h3>
               <p className="mb-3 text-xs text-slate-500">Storefront · last 24 hours</p>
               <div className="h-44 w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={sessionsByHour} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                     <XAxis
                       dataKey="hour"
-                      tick={{ fontSize: 10, fill: "#64748b" }}
+                      tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                       axisLine={false}
                       tickLine={false}
                       interval={0}
                     />
                     <YAxis hide domain={["dataMin - 80", "dataMax + 120"]} />
                     <Tooltip
-                      contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                      contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12 }}
                       formatter={(v) => [`${Number(v).toLocaleString()} sessions`, "Sessions"]}
                     />
                     <Line
                       type="monotone"
                       dataKey="sessions"
-                      stroke="#3b82f6"
+                      stroke="var(--primary)"
                       strokeWidth={2.5}
-                      dot={{ r: 3, fill: "#3b82f6", strokeWidth: 0 }}
+                      dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
                       activeDot={{ r: 5 }}
                     />
                   </LineChart>

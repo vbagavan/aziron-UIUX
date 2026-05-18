@@ -56,17 +56,17 @@ function roleBadgeClass(role) {
 }
 
 function statusBadgeClass(status) {
-  if (status === "Active") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200";
+  if (status === "Active") return "border-emerald-500/30 bg-success/100/10 text-emerald-800 dark:text-emerald-200";
   if (status === "Invited") return "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-100";
   return "border-border bg-muted/50 text-muted-foreground";
 }
 
 function avatarColor(name) {
   const colors = [
-    "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+    "bg-primary/15 text-primary dark:bg-blue-900/50 dark:text-blue-300",
     "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300",
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
-    "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+    "bg-success/15 text-success dark:bg-emerald-900/50 dark:text-emerald-300",
+    "bg-warning/15 text-warning dark:bg-amber-900/50 dark:text-amber-300",
     "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
     "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300",
     "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300",
@@ -289,11 +289,11 @@ function UserProfileDrawer({ user, onClose, onGrantAdmin, onSuspend }) {
               {statusLabel(user.status)}
             </Badge>
             {user.mfa ? (
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 font-medium text-emerald-800 dark:text-emerald-200">
+              <Badge variant="outline" className="border-emerald-500/30 bg-success/100/10 font-medium text-emerald-800 dark:text-emerald-200">
                 <ShieldCheck className="mr-1 size-3" />MFA on
               </Badge>
             ) : (
-              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 font-medium text-amber-800 dark:text-amber-200">
+              <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 font-medium text-warning-foreground dark:text-amber-200">
                 <ShieldOff className="mr-1 size-3" />No MFA
               </Badge>
             )}
@@ -791,7 +791,7 @@ export function MembersDirectory({ tenant, variant = "page" }) {
                             {u.mfa ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="flex w-fit items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                                  <span className="flex w-fit items-center gap-1 rounded-full bg-success/100/10 px-2 py-0.5 text-[11px] font-medium text-success dark:text-emerald-300">
                                     <Check className="size-3" />Enabled
                                   </span>
                                 </TooltipTrigger>

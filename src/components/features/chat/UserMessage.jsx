@@ -7,7 +7,7 @@ export default function UserMessage({ children, className, actions }) {
       role="user"
       actions={actions}
       contentClassName={cn(
-        "rounded-[18px] rounded-tr-md bg-[#edf4ff] px-3.5 py-2.5 text-[#10203b] ring-1 ring-[#dbe8ff] dark:bg-[#15233f] dark:text-[#e5eefc] dark:ring-[#22314d]",
+        "rounded-[18px] rounded-tr-md bg-muted px-3.5 py-2.5 text-foreground ring-1 ring-[#dbe8ff] dark:bg-card dark:text-foreground dark:ring-[#22314d]",
         className,
       )}
     >

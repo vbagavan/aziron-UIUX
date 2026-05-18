@@ -65,9 +65,9 @@ export default function ChatInput({
 
   /* Figma: rounded-[12px], border-2 border-primary on focus */
   const shellClass = useMemo(() => cn(
-    "rounded-[12px] border bg-white transition-all duration-150",
+    "rounded-[12px] border bg-card transition-all duration-150",
     "shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.08)]",
-    "dark:bg-[#111827]",
+    "dark:bg-card",
     focused
       ? "border-primary border-2 shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-primary)_8%,transparent)]"
       : "border-border",
@@ -85,7 +85,7 @@ export default function ChatInput({
               variant="outline"
               size="xs"
               onClick={() => onSuggestionSelect?.(s)}
-              className="rounded-full border border-border bg-white px-3 py-1.5 text-xs
+              className="rounded-full border border-border bg-card px-3 py-1.5 text-xs
                 font-medium text-muted-foreground transition-colors
                 hover:border-primary/40 hover:text-primary dark:bg-muted/20"
             >
@@ -106,7 +106,7 @@ export default function ChatInput({
             variant="outline"
             size="icon-sm"
             className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border
-              bg-white text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary
+              bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary
               dark:bg-muted/20"
             aria-label="Attach file"
             onClick={onAttach}
@@ -138,7 +138,7 @@ export default function ChatInput({
               aria-label="Start voice input"
               onClick={onVoice}
               className="flex size-8 items-center justify-center rounded-full border border-border
-                bg-white text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary
+                bg-card text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary
                 dark:bg-muted/20"
             >
               <Mic size={14} />
@@ -153,7 +153,7 @@ export default function ChatInput({
               className={cn(
                 "flex size-8 items-center justify-center rounded-full border transition-colors",
                 disabled
-                  ? "border-border bg-white text-muted-foreground/40 cursor-not-allowed dark:bg-muted/20"
+                  ? "border-border bg-card text-muted-foreground/40 cursor-not-allowed dark:bg-muted/20"
                   : "border-primary bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_color-mix(in_oklch,var(--color-primary)_60%,transparent)] hover:opacity-90",
               )}
             >

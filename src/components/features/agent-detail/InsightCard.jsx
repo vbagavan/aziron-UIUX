@@ -22,33 +22,33 @@ function Sparkline({ points, stroke }) {
 }
 
 const STATUS_STYLE = {
-  improving: { text: "Improving", tone: "text-[#15803d] dark:text-[#86efac]", icon: ArrowUpRight },
-  stable: { text: "Stable", tone: "text-[#0369a1] dark:text-[#7dd3fc]", icon: Minus },
-  dropping: { text: "Dropping", tone: "text-[#b91c1c] dark:text-[#fca5a5]", icon: ArrowDownRight },
-  good: { text: "Good", tone: "text-[#15803d] dark:text-[#86efac]", icon: Activity },
-  warning: { text: "Warning", tone: "text-[#a16207] dark:text-[#fde68a]", icon: AlertTriangle },
-  critical: { text: "Critical", tone: "text-[#b91c1c] dark:text-[#fecaca]", icon: AlertTriangle },
+  improving: { text: "Improving", tone: "text-success dark:text-success", icon: ArrowUpRight },
+  stable: { text: "Stable", tone: "text-info dark:text-info", icon: Minus },
+  dropping: { text: "Dropping", tone: "text-destructive dark:text-destructive", icon: ArrowDownRight },
+  good: { text: "Good", tone: "text-success dark:text-success", icon: Activity },
+  warning: { text: "Warning", tone: "text-warning dark:text-warning", icon: AlertTriangle },
+  critical: { text: "Critical", tone: "text-destructive dark:text-destructive", icon: AlertTriangle },
 };
 
 export default function InsightCard({ label, value, comparison, trendPercent, points, status, accent, metric }) {
   const trendUp = trendPercent > 0;
   const tone = trendPercent === 0
-    ? "text-[#64748b] dark:text-[#94a3b8]"
+    ? "text-muted-foreground dark:text-muted-foreground"
     : trendUp
-    ? "text-[#15803d] dark:text-[#86efac]"
-    : "text-[#b91c1c] dark:text-[#fecaca]";
+    ? "text-success dark:text-success"
+    : "text-destructive dark:text-destructive";
 
   const statusStyle = STATUS_STYLE[status];
   const StatusIcon = statusStyle?.icon || Timer;
 
   return (
-    <div className="group rounded-2xl border border-[#e2e8f0] bg-white px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] transition-transform duration-200 hover:-translate-y-0.5 dark:border-[#334155] dark:bg-[#111827]">
+    <div className="group rounded-2xl border border-border bg-card px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] transition-transform duration-200 hover:-translate-y-0.5 dark:border-border dark:bg-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#94a3b8] dark:text-[#64748b]">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#0f172a] dark:text-[#f8fafc]">{value}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">{label}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-foreground dark:text-foreground">{value}</p>
         </div>
-        <div className="rounded-full bg-[#f8fafc] px-2.5 py-1 text-[11px] font-medium text-[#475569] dark:bg-[#0f172a] dark:text-[#cbd5e1]">
+        <div className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground dark:bg-background dark:text-muted-foreground">
           {metric}
         </div>
       </div>
@@ -63,10 +63,10 @@ export default function InsightCard({ label, value, comparison, trendPercent, po
             {trendPercent === 0 ? <Minus size={13} /> : trendUp ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
             {Math.abs(trendPercent)}%
           </div>
-          <p className="mt-1 text-xs text-[#64748b] dark:text-[#94a3b8]">{comparison}</p>
+          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{comparison}</p>
         </div>
 
-        <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle?.tone || "text-[#64748b]"}`}>
+        <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle?.tone || "text-muted-foreground"}`}>
           <StatusIcon size={13} />
           {statusStyle?.text}
         </div>
