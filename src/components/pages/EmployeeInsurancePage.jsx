@@ -3355,7 +3355,7 @@ function SubmittedDashboardView({ firstName, submission, onUpdateSubmission, onP
         { label: "Submitted", value: formatEnrollmentSubmittedAt(submission?.submittedAt) },
       ];
 
-  const previewToggle = import.meta.env.DEV && (onUpdateSubmission || onPreviewEnrollment) ? (
+  const previewToggle = onUpdateSubmission || onPreviewEnrollment ? (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/5 px-3 py-2.5">
       <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">Preview</span>
       {onUpdateSubmission && (
