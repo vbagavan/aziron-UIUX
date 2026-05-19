@@ -27,6 +27,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Pagination, PaginationContent, PaginationEllipsis,
+  PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
+} from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 
 /** Semantic tokens for Recharts (SVG resolves CSS variables). */
@@ -1123,6 +1127,35 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
     ? OVERVIEW_STATUS_META[statusFilter]?.label ?? statusFilter
     : null;
 
+  // ── Dependents table: search + pagination ────────────────────────────────
+  const DEP_TABLE_PAGE_SIZE = 5;
+  const [depSearch, setDepSearch] = useState("");
+  const [depPage, setDepPage]     = useState(1);
+
+  // Reset search and page when upstream filters change
+  useEffect(() => {
+    setDepSearch("");
+    setDepPage(1);
+  }, [filterMode, activeBatch, fromDate, toDate, statusFilter]);
+
+  const depSearchedEmps = useMemo(() => {
+    const q = depSearch.trim().toLowerCase();
+    if (!q) return tableEmps;
+    return tableEmps.filter(e =>
+      e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q),
+    );
+  }, [tableEmps, depSearch]);
+
+  const depTotalPages = Math.max(1, Math.ceil(depSearchedEmps.length / DEP_TABLE_PAGE_SIZE));
+
+  // Clamp page if total pages shrank
+  const depCurrentPage = Math.min(depPage, depTotalPages);
+
+  const depPagedEmps = useMemo(() => {
+    const start = (depCurrentPage - 1) * DEP_TABLE_PAGE_SIZE;
+    return depSearchedEmps.slice(start, start + DEP_TABLE_PAGE_SIZE);
+  }, [depSearchedEmps, depCurrentPage]);
+
   const depChartData = useMemo(() => {
     const agg = { spouse: 0, father: 0, mother: 0, children: 0 };
     filteredEmps.forEach(emp => {
@@ -1190,7 +1223,7 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
           )}>
             <MetricCard
               icon={Users}
-              label="All employees"
+              label="Total employees"
               value={metrics.total}
               variant="primary"
               active={statusFilter === null}
@@ -1236,18 +1269,31 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
                   {statusFilterLabel ? ` · Filter: ${statusFilterLabel}` : ""}
                 </p>
               </div>
-              {statusFilterLabel && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setStatusFilter(null)}
-                  className="h-7 shrink-0 gap-1 bg-primary/10 text-[11px] text-primary hover:bg-primary/15"
-                >
-                  Clear filter
-                  <X size={12} />
-                </Button>
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Search */}
+                <div className="relative">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    placeholder="Search employees…"
+                    value={depSearch}
+                    onChange={e => { setDepSearch(e.target.value); setDepPage(1); }}
+                    className="h-8 w-48 pl-8 text-xs"
+                  />
+                </div>
+                {statusFilterLabel && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setStatusFilter(null)}
+                    className="h-8 gap-1 bg-primary/10 text-[11px] text-primary hover:bg-primary/15"
+                  >
+                    Clear filter
+                    <X size={12} />
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <Table>
               <TableHeader>
@@ -1267,19 +1313,21 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                  {tableEmps.length === 0 ? (
+                  {depPagedEmps.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                        {filteredEmps.length === 0
-                          ? `No employees match this ${filterMode === "batch" ? "batch" : "date range"}.`
-                          : statusFilter === "pending"
-                            ? `No pending employees in this ${filterMode === "batch" ? "batch" : "period"}.`
-                            : statusFilter === "completed"
-                              ? `No enrolled employees in this ${filterMode === "batch" ? "batch" : "period"}.`
-                              : `No employees who did not enroll in this ${filterMode === "batch" ? "batch" : "period"}.`}
+                        {depSearch.trim()
+                          ? `No employees match "${depSearch.trim()}".`
+                          : filteredEmps.length === 0
+                            ? `No employees match this ${filterMode === "batch" ? "batch" : "date range"}.`
+                            : statusFilter === "pending"
+                              ? `No pending employees in this ${filterMode === "batch" ? "batch" : "period"}.`
+                              : statusFilter === "completed"
+                                ? `No enrolled employees in this ${filterMode === "batch" ? "batch" : "period"}.`
+                                : `No employees who did not enroll in this ${filterMode === "batch" ? "batch" : "period"}.`}
                       </TableCell>
                     </TableRow>
-                  ) : tableEmps.map(emp => {
+                  ) : depPagedEmps.map(emp => {
                     const d   = EMPLOYEE_DEPENDENTS[emp.id] ?? { spouse: 0, father: 0, mother: 0, children: 0 };
                     const tot = d.spouse + d.father + d.mother + d.children;
                     const enrollmentClosed = filterMode === "batch"
@@ -1318,6 +1366,45 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
                   })}
               </TableBody>
             </Table>
+            {/* Pagination footer */}
+            {depTotalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-border px-4 py-2.5">
+                <p className="text-[11px] text-muted-foreground">
+                  {depSearchedEmps.length} employee{depSearchedEmps.length !== 1 ? "s" : ""} · page {depCurrentPage} of {depTotalPages}
+                </p>
+                <Pagination className="w-auto mx-0">
+                  <PaginationContent className="gap-0.5">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={e => { e.preventDefault(); setDepPage(p => Math.max(1, p - 1)); }}
+                        className={cn("h-7 text-xs cursor-pointer", depCurrentPage === 1 && "pointer-events-none opacity-40")}
+                        aria-disabled={depCurrentPage === 1}
+                        text="Prev"
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: depTotalPages }, (_, i) => i + 1).map(pg => (
+                      <PaginationItem key={pg}>
+                        <PaginationLink
+                          isActive={pg === depCurrentPage}
+                          onClick={e => { e.preventDefault(); setDepPage(pg); }}
+                          className="h-7 w-7 text-xs cursor-pointer"
+                        >
+                          {pg}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={e => { e.preventDefault(); setDepPage(p => Math.min(depTotalPages, p + 1)); }}
+                        className={cn("h-7 text-xs cursor-pointer", depCurrentPage === depTotalPages && "pointer-events-none opacity-40")}
+                        aria-disabled={depCurrentPage === depTotalPages}
+                        text="Next"
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </Card>
 
           {/* Dependent distribution donut */}

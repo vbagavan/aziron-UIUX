@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   ChevronRight, Settings, Building2, FileText, Upload, Clock,
   Plus, Trash2, Edit2, Check, X, Save, AlertCircle, CheckCircle2,
-  FileBadge, FileImage, FileSpreadsheet, Paperclip, ArrowLeft,
+  FileBadge, FileImage, FileSpreadsheet, Paperclip, ArrowLeft, ShieldCheck,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -190,6 +190,86 @@ function InsurerSection() {
         );
       })()}
     </SectionCard>
+  );
+}
+
+// ─── Section: Default Coverage (auto-applied on missed deadline) ────────────
+
+const DEFAULT_FALLBACK_COVERAGE = { sumInsured: 200000 };
+
+function DefaultCoverageSection() {
+  const [data, setData] = useState(DEFAULT_FALLBACK_COVERAGE);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(data);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setData(draft);
+    setEditing(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 p-5 rounded-2xl bg-card border border-border">
+      {/* Left: icon + title + description */}
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck size={18} className="text-primary" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">Default coverage for missed enrollments</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Auto-applied when an employee doesn&apos;t enroll before the window plus grace period closes. Individual coverage, employer-paid.
+          </p>
+        </div>
+      </div>
+
+      {/* Right: input + actions */}
+      <div className="flex items-center gap-2 flex-shrink-0 md:w-[360px]">
+        <div className="flex-1">
+          <label className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Sum insured (₹)</label>
+          <TextInput
+            value={editing ? draft.sumInsured : data.sumInsured}
+            onChange={v => setDraft(d => ({ ...d, sumInsured: v === "" ? "" : Number(v) }))}
+            disabled={!editing}
+            type="number"
+            placeholder="200000"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 self-end">
+          {editing ? (
+            <>
+              <button
+                onClick={() => { setEditing(false); setDraft(data); }}
+                aria-label="Cancel"
+                className="size-9 rounded-xl text-muted-foreground border border-border hover:bg-muted transition-colors flex items-center justify-center"
+              >
+                <X size={14} />
+              </button>
+              <button
+                onClick={handleSave}
+                aria-label="Save"
+                className="size-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center"
+              >
+                <Save size={14} />
+              </button>
+            </>
+          ) : (
+            <>
+              {saved && <CheckCircle2 size={14} className="text-success mr-1" aria-label="Saved" />}
+              <button
+                onClick={() => { setEditing(true); setDraft(data); }}
+                aria-label="Edit default coverage"
+                className="size-9 rounded-xl text-muted-foreground border border-border hover:bg-muted transition-colors flex items-center justify-center"
+              >
+                <Edit2 size={14} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -520,8 +600,6 @@ function BatchDurationSection() {
               onChange={v => setDraft(d => ({ ...d, cycleType: v }))}
               options={[
                 { value: "bimonthly", label: "Twice per month" },
-                { value: "monthly",   label: "Once per month"     },
-                { value: "custom",    label: "Custom schedule"    },
               ]}
             />
           </FormField>
@@ -634,6 +712,7 @@ export default function InsuranceConfigPage({ onNavigate }) {
                 <DocumentsSection />
                 <BatchDurationSection />
               </div>
+              <DefaultCoverageSection />
             </div>
 
           </div>
