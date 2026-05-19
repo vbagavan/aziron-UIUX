@@ -459,7 +459,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview }) {
       : { label: "Clone", action: () => onFork?.(agent), color: "text-primary hover:bg-primary/10" };
 
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-transparent bg-card shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/50 transition-transform duration-200 group-hover:scale-x-100" />
 
       <button
@@ -539,7 +539,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview }) {
 
 function FlowCard({ flow, onUseTemplate, onPreview }) {
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-transparent bg-card shadow-sm transition-all duration-200 hover:border-cyan-500/35 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-cyan-500/35 hover:shadow-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-primary/60 via-cyan-500/50 to-primary/40 transition-transform duration-200 group-hover:scale-x-100" />
 
       <button
@@ -612,7 +612,7 @@ function FlowCard({ flow, onUseTemplate, onPreview }) {
 
 function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-violet-500/20 bg-card shadow-sm transition-all duration-200 hover:border-violet-500/50 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-violet-500/30 bg-card shadow-sm transition-all duration-200 hover:border-violet-500/50 hover:shadow-md">
       {/* Left accent bar — marks this as your card */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-violet-500/60" aria-hidden />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-violet-500 to-violet-400/50 transition-transform duration-200 group-hover:scale-x-100" />

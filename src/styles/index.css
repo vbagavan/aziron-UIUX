@@ -211,6 +211,12 @@
 
 .dark.theme-blue {
   /* L lowered 0.623 → 0.55 for WCAG 1.4.3 AA on text-white. */
+  --card: oklch(0.23 0.032 260);
+  --card-foreground: oklch(0.984 0.003 248);
+  --popover: oklch(0.23 0.032 260);
+  --popover-foreground: oklch(0.984 0.003 248);
+  --accent: oklch(0.424 0.181 266);
+  --accent-foreground: oklch(0.882 0.057 254);
   --primary: oklch(0.55 0.20 254);
   --primary-foreground: oklch(0.984 0.003 248);
   --ring: oklch(0.714 0.143 254);
