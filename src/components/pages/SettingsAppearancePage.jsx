@@ -26,16 +26,11 @@ const SETTINGS_NAV = [
 
 // ─── Appearance assets ────────────────────────────────────────────────────────
 
-const imgThemeBlueActive = "https://www.figma.com/api/mcp/asset/b286a75a-1bfc-4079-a8c0-cc107db1c040";
-const imgThemeGreen      = "https://www.figma.com/api/mcp/asset/7970b3d4-28e9-4404-b71c-c61ad17dc708";
-const imgThemeOrange     = "https://www.figma.com/api/mcp/asset/e26076c8-e8a3-4882-8f83-3912232e487b";
-const imgThemePurple     = "https://www.figma.com/api/mcp/asset/9cfb15c9-c14a-4f58-9eaf-67c7c9312b1a";
-
 const themeColors = [
-  { id:"blue",   label:"Blue theme",   img:imgThemeBlueActive },
-  { id:"green",  label:"Green theme",  img:imgThemeGreen      },
-  { id:"orange", label:"Orange theme", img:imgThemeOrange     },
-  { id:"purple", label:"Purple theme", img:imgThemePurple     },
+  { id:"blue",   label:"Blue theme",   gradient:"linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)" },
+  { id:"green",  label:"Green theme",  gradient:"linear-gradient(135deg,#22c55e 0%,#15803d 100%)" },
+  { id:"orange", label:"Orange theme", gradient:"linear-gradient(135deg,#f97316 0%,#c2410c 100%)" },
+  { id:"purple", label:"Purple theme", gradient:"linear-gradient(135deg,#a855f7 0%,#7e22ce 100%)" },
 ];
 
 function LightPreview(){
@@ -85,10 +80,15 @@ function AppearancePanel(){
       <div className="flex flex-col gap-4">
         <p className="text-base font-semibold text-foreground dark:text-foreground leading-6">Theme Color</p>
         <div className="flex items-center gap-4">
-          {themeColors.map(({id,label,img})=>(
+          {themeColors.map(({id,label,gradient})=>(
             <button key={id} onClick={()=>setThemeColor(id)} aria-label={label} title={label}
-              className={`relative size-8 rounded-full overflow-hidden flex-shrink-0 transition-all ${themeColor===id?"ring-2 ring-offset-2 ring-[#2563eb]":"hover:scale-110"}`}>
-              <img src={img} alt="" className="absolute inset-0 size-full object-cover"/>
+              className={`relative size-8 rounded-full flex-shrink-0 transition-all ${themeColor===id?"ring-2 ring-offset-2 ring-foreground scale-110":"hover:scale-110"}`}
+              style={{ background: gradient }}>
+              {themeColor===id && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <Check size={13} className="text-white drop-shadow" />
+                </span>
+              )}
             </button>
           ))}
         </div>

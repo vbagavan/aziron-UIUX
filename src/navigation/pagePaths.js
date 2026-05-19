@@ -26,7 +26,9 @@ export const PAGE_PATH = {
   "pricing-plans": "/pricing-plans",
   "tenant-users": "/tenant-users",
   "insurance-management": "/insurance-management",
+  "insurance-config":     "/insurance-config",
   "employee-insurance":   "/employee-insurance",
+  "my-profile":           "/my-profile",
 };
 
 /**
@@ -55,7 +57,9 @@ export function pathToActivePage(pathname) {
   if (pathname.startsWith("/tenants")) return "tenants";
   if (pathname.startsWith("/pricing-plans")) return "pricing-plans";
   if (pathname.startsWith("/tenant-users")) return "tenant-users";
+  if (pathname.startsWith("/insurance-config"))     return "insurance-config";
   if (pathname.startsWith("/insurance-management")) return "insurance-management";
   if (pathname.startsWith("/employee-insurance"))   return "employee-insurance";
+  if (pathname.startsWith("/my-profile"))           return "my-profile";
   return "new-chat";
 }

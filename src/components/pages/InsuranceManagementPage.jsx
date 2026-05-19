@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -6,14 +6,27 @@ import {
 import {
   ClipboardList, Users, FileText, CheckCircle2,
   Search, Download, Send, ChevronDown,
-  MoreVertical, Eye, EyeOff, Mail, Clock, Calendar, Building2, X,
+  MoreVertical, Eye, EyeOff, Clock, Calendar, Building2, X,
   TrendingUp, TrendingDown, RefreshCw, ChevronLeft, ChevronRight,
-  DollarSign, BarChart2, FileSpreadsheet, Filter, Zap,
-  ArrowRight, FileDown, Play, UserPlus,
+  DollarSign, BarChart2, FileSpreadsheet, Filter,
+  ArrowRight, FileDown, UserPlus,
   Activity,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 /** Semantic tokens for Recharts (SVG resolves CSS variables). */
@@ -52,27 +65,42 @@ const AVATAR_STYLES = [
 const DEPARTMENTS = ["Engineering", "Marketing", "Finance", "HR", "Operations", "Sales", "Legal", "Product"];
 
 const EMPLOYEES = [
-  { id: 1,  name: "Alice Monroe",    dept: "Engineering", status: "approved",            submitted: "2026-05-01", deadline: "2026-05-15", email: "alice@meridian.com",  cycle: 1, plan: "Family",     cost: 820 },
-  { id: 2,  name: "Brian Kwon",      dept: "Marketing",   status: "pending",             submitted: null,         deadline: "2026-05-15", email: "brian@meridian.com",  cycle: 1, plan: "Individual",  cost: 0   },
-  { id: 3,  name: "Carla Ruiz",      dept: "Finance",     status: "under_clarification", submitted: "2026-05-03", deadline: "2026-05-15", email: "carla@meridian.com",  cycle: 1, plan: "Couple",      cost: 610 },
-  { id: 4,  name: "David Chen",      dept: "HR",          status: "submitted",           submitted: "2026-05-07", deadline: "2026-05-15", email: "david@meridian.com",  cycle: 1, plan: "Individual",  cost: 340 },
-  { id: 5,  name: "Eva Larsson",     dept: "Operations",  status: "approved",            submitted: "2026-04-29", deadline: "2026-05-15", email: "eva@meridian.com",    cycle: 1, plan: "Family",      cost: 820 },
-  { id: 6,  name: "Frank Osei",      dept: "Sales",       status: "draft",               submitted: null,         deadline: "2026-05-15", email: "frank@meridian.com",  cycle: 1, plan: "—",           cost: 0   },
-  { id: 7,  name: "Grace Tanner",    dept: "Legal",       status: "pending",             submitted: null,         deadline: "2026-04-30", email: "grace@meridian.com",  cycle: 2, plan: "—",           cost: 0   },
-  { id: 8,  name: "Henry Park",      dept: "Product",     status: "approved",            submitted: "2026-04-28", deadline: "2026-05-15", email: "henry@meridian.com",  cycle: 1, plan: "Couple",      cost: 610 },
-  { id: 9,  name: "Iris Nakamura",   dept: "Engineering", status: "submitted",           submitted: "2026-05-10", deadline: "2026-05-15", email: "iris@meridian.com",   cycle: 1, plan: "Individual",  cost: 340 },
-  { id: 10, name: "James Okafor",    dept: "Marketing",   status: "not_accessed",        submitted: null,         deadline: "2026-05-15", email: "james@meridian.com",  cycle: 1, plan: "—",           cost: 0   },
-  { id: 11, name: "Kira Patel",      dept: "Finance",     status: "approved",            submitted: "2026-05-02", deadline: "2026-05-15", email: "kira@meridian.com",   cycle: 1, plan: "Family",      cost: 820 },
-  { id: 12, name: "Leo Fernandez",   dept: "HR",          status: "closed",              submitted: "2026-04-20", deadline: "2026-05-01", email: "leo@meridian.com",    cycle: 2, plan: "Individual",  cost: 340 },
-  { id: 13, name: "Maya Johansson",  dept: "Operations",  status: "pending",             submitted: null,         deadline: "2026-05-15", email: "maya@meridian.com",   cycle: 1, plan: "—",           cost: 0   },
-  { id: 14, name: "Nathan Torres",   dept: "Sales",       status: "under_clarification", submitted: "2026-05-05", deadline: "2026-05-15", email: "nathan@meridian.com", cycle: 1, plan: "Couple",      cost: 610 },
-  { id: 15, name: "Olivia Nguyen",   dept: "Legal",       status: "submitted",           submitted: "2026-05-09", deadline: "2026-05-15", email: "olivia@meridian.com", cycle: 1, plan: "Individual",  cost: 340 },
-  { id: 16, name: "Peter Walsh",     dept: "Product",     status: "not_accessed",        submitted: null,         deadline: "2026-05-15", email: "peter@meridian.com",  cycle: 1, plan: "—",           cost: 0   },
-  { id: 17, name: "Quinn Adeyemi",   dept: "Engineering", status: "approved",            submitted: "2026-04-27", deadline: "2026-05-15", email: "quinn@meridian.com",  cycle: 1, plan: "Family",      cost: 820 },
-  { id: 18, name: "Rosa Kim",        dept: "Marketing",   status: "draft",               submitted: null,         deadline: "2026-05-15", email: "rosa@meridian.com",   cycle: 1, plan: "—",           cost: 0   },
-  { id: 19, name: "Sam Eriksson",    dept: "Finance",     status: "submitted",           submitted: "2026-04-28", deadline: "2026-04-30", email: "sam@meridian.com",    cycle: 2, plan: "—",           cost: 0   },
-  { id: 20, name: "Tara Mitchell",   dept: "HR",          status: "closed",              submitted: "2026-04-18", deadline: "2026-05-01", email: "tara@meridian.com",   cycle: 2, plan: "Couple",      cost: 610 },
+  // ── Batch 1: Apr 1–15 (Completed) ──────────────────────────────────────────
+  { id: 1,  name: "Alice Monroe",    dept: "Engineering", location: "Bangalore",  status: "approved",  submitted: "2026-04-05", deadline: "2026-04-15", email: "alice@meridian.com",  batch: 1, plan: "Family",    cost: 82000 },
+  { id: 2,  name: "Brian Kwon",      dept: "Marketing",   location: "Chennai",    status: "closed",    submitted: null,         deadline: "2026-04-15", email: "brian@meridian.com",  batch: 1, plan: "—",          cost: 0     },
+  { id: 3,  name: "Carla Ruiz",      dept: "Finance",     location: "Hyderabad",  status: "approved",  submitted: "2026-04-03", deadline: "2026-04-15", email: "carla@meridian.com",  batch: 1, plan: "Couple",    cost: 61000 },
+  { id: 4,  name: "David Chen",      dept: "HR",          location: "Noida",      status: "approved",  submitted: "2026-04-07", deadline: "2026-04-15", email: "david@meridian.com",  batch: 1, plan: "Individual", cost: 34000 },
+  { id: 5,  name: "Eva Larsson",     dept: "Operations",  location: "Kolkata",    status: "approved",  submitted: "2026-04-02", deadline: "2026-04-15", email: "eva@meridian.com",    batch: 1, plan: "Family",    cost: 82000 },
+  { id: 6,  name: "Frank Osei",      dept: "Sales",       location: "Bangalore",  status: "closed",    submitted: null,         deadline: "2026-04-15", email: "frank@meridian.com",  batch: 1, plan: "—",          cost: 0     },
+  { id: 7,  name: "Grace Tanner",    dept: "Legal",       location: "Chennai",    status: "approved",  submitted: "2026-04-12", deadline: "2026-04-15", email: "grace@meridian.com",  batch: 1, plan: "Individual", cost: 34000 },
+  // ── Batch 2: Apr 16–30 (Completed) ─────────────────────────────────────────
+  { id: 8,  name: "Henry Park",      dept: "Product",     location: "Hyderabad",  status: "approved",  submitted: "2026-04-18", deadline: "2026-04-30", email: "henry@meridian.com",  batch: 2, plan: "Couple",    cost: 61000 },
+  { id: 9,  name: "Iris Nakamura",   dept: "Engineering", location: "Bangalore",  status: "approved",  submitted: "2026-04-22", deadline: "2026-04-30", email: "iris@meridian.com",   batch: 2, plan: "Individual", cost: 34000 },
+  { id: 10, name: "James Okafor",    dept: "Marketing",   location: "Noida",      status: "closed",    submitted: null,         deadline: "2026-04-30", email: "james@meridian.com",  batch: 2, plan: "—",          cost: 0     },
+  { id: 11, name: "Kira Patel",      dept: "Finance",     location: "Kolkata",    status: "approved",  submitted: "2026-04-20", deadline: "2026-04-30", email: "kira@meridian.com",   batch: 2, plan: "Family",    cost: 82000 },
+  { id: 12, name: "Leo Fernandez",   dept: "HR",          location: "Chennai",    status: "approved",  submitted: "2026-04-25", deadline: "2026-04-30", email: "leo@meridian.com",    batch: 2, plan: "Individual", cost: 34000 },
+  { id: 13, name: "Maya Johansson",  dept: "Operations",  location: "Hyderabad",  status: "closed",    submitted: null,         deadline: "2026-04-30", email: "maya@meridian.com",   batch: 2, plan: "—",          cost: 0     },
+  // ── Batch 3: May 1–15 (Completed) ─────────────────────────────────────────────
+  { id: 14, name: "Nathan Torres",   dept: "Sales",       location: "Bangalore",  status: "approved",            submitted: "2026-05-05", deadline: "2026-05-15", email: "nathan@meridian.com", batch: 3, plan: "Couple",    cost: 61000 },
+  { id: 15, name: "Olivia Nguyen",   dept: "Legal",       location: "Chennai",    status: "approved",            submitted: "2026-05-09", deadline: "2026-05-15", email: "olivia@meridian.com", batch: 3, plan: "Individual", cost: 34000 },
+  { id: 16, name: "Peter Walsh",     dept: "Product",     location: "Noida",      status: "closed",              submitted: null,         deadline: "2026-05-15", email: "peter@meridian.com",  batch: 3, plan: "—",          cost: 0     },
+  { id: 17, name: "Quinn Adeyemi",   dept: "Engineering", location: "Hyderabad",  status: "approved",            submitted: "2026-05-03", deadline: "2026-05-15", email: "quinn@meridian.com",  batch: 3, plan: "Family",    cost: 82000 },
+  { id: 18, name: "Rosa Kim",        dept: "Marketing",   location: "Kolkata",    status: "closed",              submitted: null,         deadline: "2026-05-15", email: "rosa@meridian.com",   batch: 3, plan: "—",          cost: 0     },
+  { id: 19, name: "Sam Eriksson",    dept: "Finance",     location: "Bangalore",  status: "closed",              submitted: null,         deadline: "2026-05-15", email: "sam@meridian.com",    batch: 3, plan: "—",          cost: 0     },
+  { id: 20, name: "Tara Mitchell",   dept: "HR",          location: "Chennai",    status: "approved",            submitted: "2026-05-07", deadline: "2026-05-15", email: "tara@meridian.com",   batch: 3, plan: "Couple",    cost: 61000 },
+  // ── Batch 4: May 16–31 (Active — current period) ───────────────────────────────
+  { id: 21, name: "Uma Reddy",       dept: "Engineering", location: "Bangalore",  status: "submitted",           submitted: "2026-05-17", deadline: "2026-05-31", email: "uma@meridian.com",    batch: 4, plan: "Couple",    cost: 61000 },
+  { id: 22, name: "Victor Hahn",     dept: "Marketing",   location: "Chennai",    status: "pending",             submitted: null,         deadline: "2026-05-31", email: "victor@meridian.com", batch: 4, plan: "—",          cost: 0     },
+  { id: 23, name: "Willa Cho",       dept: "Finance",     location: "Hyderabad",  status: "approved",            submitted: "2026-05-16", deadline: "2026-05-31", email: "willa@meridian.com",  batch: 4, plan: "Individual", cost: 34000 },
+  { id: 24, name: "Xavier Brooks",   dept: "Product",     location: "Noida",      status: "not_accessed",        submitted: null,         deadline: "2026-05-31", email: "xavier@meridian.com", batch: 4, plan: "—",          cost: 0     },
+  { id: 25, name: "Yara Singh",      dept: "Sales",       location: "Kolkata",    status: "draft",               submitted: null,         deadline: "2026-05-31", email: "yara@meridian.com",   batch: 4, plan: "—",          cost: 0     },
+  { id: 26, name: "Zack Miller",     dept: "Operations",  location: "Bangalore",  status: "under_clarification", submitted: "2026-05-18", deadline: "2026-05-31", email: "zack@meridian.com",   batch: 4, plan: "Family",    cost: 82000 },
+  { id: 27, name: "Amy Foster",      dept: "Legal",       location: "Chennai",    status: "approved",            submitted: "2026-05-17", deadline: "2026-05-31", email: "amy@meridian.com",    batch: 4, plan: "Couple",    cost: 61000 },
 ];
+
+const LOCATION_SHORT = Object.fromEntries(
+  [["Bangalore", "BLR"], ["Chennai", "MAA"], ["Hyderabad", "HYD"], ["Noida", "NOI"], ["Kolkata", "CCU"]],
+);
 
 const LOCATION_COST = [
   { location: "Bangalore",  short: "BLR", employees: 72, enrolled: 61, cost: 412000, prev: 387000 },
@@ -82,76 +110,236 @@ const LOCATION_COST = [
   { location: "Kolkata",    short: "CCU", employees: 34, enrolled: 25, cost: 151000, prev: 143000 },
 ];
 
-/** Sync strip only (replace with live fetch). */
-const DASHBOARD_SUMMARY = {
-  last_sync_timestamp: "2026-05-15T08:00:00Z",
-  last_sync_status: "SUCCESS",
-  emails_sent_last_sync: 18,
-};
-
 const BATCH_TREND = [
-  { label: "Feb B1", cost: 1120, submissions: 98  },
-  { label: "Feb B2", cost: 1145, submissions: 112 },
-  { label: "Mar B1", cost: 1180, submissions: 119 },
-  { label: "Mar B2", cost: 1156, submissions: 107 },
-  { label: "Apr B1", cost: 1210, submissions: 124 },
-  { label: "Apr B2", cost: 1228, submissions: 131 },
-  { label: "May B1", cost: 1241, submissions: 127 },
+  { label: "Feb B1", cost: 2480, submissions: 98  },
+  { label: "Feb B2", cost: 2310, submissions: 112 },
+  { label: "Mar B1", cost: 2650, submissions: 119 },
+  { label: "Mar B2", cost: 2540, submissions: 107 },
+  { label: "Apr B1", cost: 2930, submissions: 124 },
+  { label: "Apr B2", cost: 2110, submissions: 131 },
+  { label: "May B1", cost: 2380, submissions: 127 },
+  { label: "May B2", cost: 2150, submissions: 118 },
 ];
 
-const BATCH_DATA = {
-  b1: {
-    id: "b1", label: "Batch 1–15", range: "May 1–15, 2026", status: "active",
-    totalEmployees: 148, enrollmentStarted: 148, completed: 97, pending: 24, missedDeadline: 27,
-    totalPremium: 312500, autoAssigned: 15, companyContribution: 218750, employeeContribution: 93750,
-    dependents: {
-      Self:     { completed: 97,  pending: 24, missed: 27, coverage: 500000, premiumTotal: 97000, companyShare: 67900, empShare: 29100 },
-      Spouse:   { completed: 58,  pending: 16, missed: 14, coverage: 400000, premiumTotal: 74000, companyShare: 51800, empShare: 22200 },
-      Father:   { completed: 41,  pending: 12, missed: 10, coverage: 300000, premiumTotal: 52000, companyShare: 36400, empShare: 15600 },
-      Mother:   { completed: 45,  pending: 14, missed: 11, coverage: 300000, premiumTotal: 54000, companyShare: 37800, empShare: 16200 },
-      Children: { completed: 44,  pending: 13, missed: 9,  coverage: 200000, premiumTotal: 35500, companyShare: 24850, empShare: 10650 },
-    },
-  },
-  b2: {
-    id: "b2", label: "Batch 16–30", range: "May 16–30, 2026", status: "upcoming",
-    totalEmployees: 134, enrollmentStarted: 134, completed: 82, pending: 28, missedDeadline: 24,
-    totalPremium: 282500, autoAssigned: 12, companyContribution: 197750, employeeContribution: 84750,
-    dependents: {
-      Self:     { completed: 82,  pending: 28, missed: 24, coverage: 500000, premiumTotal: 86000, companyShare: 60200, empShare: 25800 },
-      Spouse:   { completed: 50,  pending: 20, missed: 15, coverage: 400000, premiumTotal: 68000, companyShare: 47600, empShare: 20400 },
-      Father:   { completed: 35,  pending: 14, missed: 10, coverage: 300000, premiumTotal: 48000, companyShare: 33600, empShare: 14400 },
-      Mother:   { completed: 38,  pending: 16, missed: 11, coverage: 300000, premiumTotal: 50000, companyShare: 35000, empShare: 15000 },
-      Children: { completed: 39,  pending: 15, missed: 9,  coverage: 200000, premiumTotal: 30500, companyShare: 21350, empShare: 9150  },
-    },
-  },
-};
-
-const MISSED_EMPLOYEES_DATA = [
-  { id: "EMP0042", name: "Brian Kwon",   dept: "Marketing",   batch: "b1", missedDays: 14, autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "auto_assigned"  },
-  { id: "EMP0061", name: "Frank Osei",   dept: "Sales",       batch: "b1", missedDays: 9,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
-  { id: "EMP0100", name: "James Okafor", dept: "Marketing",   batch: "b1", missedDays: 11, autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
-  { id: "EMP0161", name: "Rosa Kim",     dept: "Marketing",   batch: "b1", missedDays: 8,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
-  { id: "EMP0073", name: "Grace Tanner", dept: "Legal",       batch: "b1", missedDays: 3,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
-  { id: "EMP0201", name: "Tom Bradley",  dept: "Engineering", batch: "b2", missedDays: 5,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
-  { id: "EMP0218", name: "Nina Patel",   dept: "Finance",     batch: "b2", missedDays: 3,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
-  { id: "EMP0234", name: "Marcus Webb",  dept: "HR",          batch: "b2", missedDays: 7,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "auto_assigned"  },
-  { id: "EMP0249", name: "Priya Sharma", dept: "Operations",  batch: "b2", missedDays: 2,  autoPolicy: "Essential Shield", minCoverage: 250000, monthlyPremium: 290, payrollDeduction: 232, companyShare: 58, status: "auto_assigned"  },
-  { id: "EMP0267", name: "Ali Hassan",   dept: "Product",     batch: "b2", missedDays: 4,  autoPolicy: "Basic Health",     minCoverage: 300000, monthlyPremium: 340, payrollDeduction: 272, companyShare: 68, status: "pending_review" },
+const BATCH_CONFIGS = [
+  { id: 1, label: "Batch 1", dateRange: "Apr 1 – 15, 2026",  startDate: "2026-04-01", endDate: "2026-04-15", status: "completed", totalPremium: 293000 },
+  { id: 2, label: "Batch 2", dateRange: "Apr 16 – 30, 2026", startDate: "2026-04-16", endDate: "2026-04-30", status: "completed", totalPremium: 211000 },
+  { id: 3, label: "Batch 3", dateRange: "May 1 – 15, 2026",  startDate: "2026-05-01", endDate: "2026-05-15", status: "completed", totalPremium: 238000 },
+  { id: 4, label: "Batch 4", dateRange: "May 16 – 31, 2026", startDate: "2026-05-16", endDate: "2026-05-31", status: "active",    totalPremium: 215000 },
 ];
 
-const DEP_NAMES = ["Self", "Spouse", "Father", "Mother", "Children"];
+function getDefaultActiveBatchId() {
+  return BATCH_CONFIGS.find(b => b.status === "active")?.id ?? BATCH_CONFIGS[BATCH_CONFIGS.length - 1].id;
+}
 
-const STATUS_META = {
-  approved:            { label: "Approved",            pill: "bg-success/10 text-success border-success-ring",             dot: "bg-success" },
-  submitted:           { label: "Submitted",           pill: "bg-info/10 text-info border-info-ring",                     dot: "bg-info" },
-  under_clarification: { label: "Under Clarification", pill: "bg-warning/10 text-warning border-warning-ring",           dot: "bg-warning" },
-  pending:             { label: "Pending",             pill: "bg-warning/10 text-warning-foreground border-warning-ring", dot: "bg-warning" },
-  closed:              { label: "Closed",              pill: "bg-muted text-muted-foreground border-border",             dot: "bg-muted-foreground" },
-  draft:               { label: "Draft",               pill: "bg-accent text-accent-foreground border-border",           dot: "bg-primary" },
-  not_accessed:        { label: "Not Accessed",        pill: "bg-warning/10 text-warning border-warning-ring",           dot: "bg-warning" },
-  expired:             { label: "Expired",             pill: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive" },
-  rejected:            { label: "Rejected",            pill: "bg-destructive/10 text-destructive border-destructive/30", dot: "bg-destructive" },
+function getBatchTriplet(activeBatchId) {
+  const index = BATCH_CONFIGS.findIndex(b => b.id === activeBatchId);
+  const safeIndex = index >= 0 ? index : BATCH_CONFIGS.length - 1;
+  return {
+    index: safeIndex,
+    previous: safeIndex > 0 ? BATCH_CONFIGS[safeIndex - 1] : null,
+    current: BATCH_CONFIGS[safeIndex],
+    next: safeIndex < BATCH_CONFIGS.length - 1 ? BATCH_CONFIGS[safeIndex + 1] : null,
+  };
+}
+
+/** Per-employee dependent breakdown: spouse / father / mother / children */
+const EMPLOYEE_DEPENDENTS = {
+  // Batch 1 (Apr 1–15)
+  1:  { spouse: 1, father: 0, mother: 1, children: 2 },  // Alice  — Family
+  2:  { spouse: 0, father: 0, mother: 0, children: 0 },  // Brian  — closed
+  3:  { spouse: 1, father: 0, mother: 0, children: 0 },  // Carla  — Couple
+  4:  { spouse: 0, father: 0, mother: 0, children: 0 },  // David  — Individual
+  5:  { spouse: 1, father: 1, mother: 1, children: 1 },  // Eva    — Family
+  6:  { spouse: 0, father: 0, mother: 0, children: 0 },  // Frank  — closed
+  7:  { spouse: 0, father: 0, mother: 0, children: 0 },  // Grace  — Individual
+  // Batch 2 (Apr 16–30)
+  8:  { spouse: 1, father: 0, mother: 0, children: 0 },  // Henry  — Couple
+  9:  { spouse: 0, father: 0, mother: 0, children: 0 },  // Iris   — Individual
+  10: { spouse: 0, father: 0, mother: 0, children: 0 },  // James  — closed
+  11: { spouse: 1, father: 1, mother: 0, children: 2 },  // Kira   — Family
+  12: { spouse: 0, father: 0, mother: 0, children: 0 },  // Leo    — Individual
+  13: { spouse: 0, father: 0, mother: 0, children: 0 },  // Maya   — closed
+  // Batch 3 (May 1–15)
+  14: { spouse: 1, father: 0, mother: 0, children: 0 },  // Nathan — Couple
+  15: { spouse: 0, father: 0, mother: 0, children: 0 },  // Olivia — Individual
+  16: { spouse: 0, father: 0, mother: 0, children: 0 },  // Peter  — not_accessed
+  17: { spouse: 1, father: 1, mother: 1, children: 1 },  // Quinn  — Family
+  18: { spouse: 0, father: 0, mother: 0, children: 0 },  // Rosa   — draft
+  19: { spouse: 0, father: 0, mother: 0, children: 0 },  // Sam    — pending
+  20: { spouse: 1, father: 0, mother: 0, children: 0 },  // Tara   — Couple
+  // Batch 4 (May 16–31)
+  21: { spouse: 1, father: 0, mother: 0, children: 0 },  // Uma    — Couple
+  22: { spouse: 0, father: 0, mother: 0, children: 0 },  // Victor — pending
+  23: { spouse: 0, father: 0, mother: 0, children: 0 },  // Willa  — Individual
+  24: { spouse: 0, father: 0, mother: 0, children: 0 },  // Xavier — not_accessed
+  25: { spouse: 0, father: 0, mother: 0, children: 0 },  // Yara   — draft
+  26: { spouse: 1, father: 1, mother: 0, children: 1 },  // Zack   — Family
+  27: { spouse: 1, father: 0, mother: 0, children: 0 },  // Amy    — Couple
 };
+
+/** Overview tab: collapse granular statuses into Pending / Completed / Missed. */
+const OVERVIEW_STATUS_META = {
+  pending:   { label: "Pending",         badge: "border-warning-ring bg-warning/10 text-warning",           dot: "bg-warning" },
+  completed: { label: "Enrolled",        badge: "border-success-ring bg-success/10 text-success",         dot: "bg-success" },
+  missed:    { label: "Did not enroll",  badge: "border-destructive/30 bg-destructive/10 text-destructive", dot: "bg-destructive" },
+};
+
+/** True once the enrollment window has ended (batch cutoff or employee deadline passed). */
+function isPastEnrollmentDeadline(dateStr) {
+  if (!dateStr) return false;
+  const end = new Date(dateStr);
+  end.setHours(23, 59, 59, 999);
+  return Date.now() > end.getTime();
+}
+
+function isEnrollmentClosed(emp, batch) {
+  if (batch) {
+    if (batch.status === "completed") return true;
+    return isPastEnrollmentDeadline(batch.endDate);
+  }
+  return isPastEnrollmentDeadline(emp.deadline);
+}
+
+/**
+ * Overview rollup: Pending / Completed / Missed.
+ * Missed is only knowable after enrollment closes — not_accessed/closed
+ * count as missed only when the batch (or employee deadline) has passed.
+ */
+function getOverviewStatus(status, enrollmentClosed) {
+  if (status === "approved") return "completed";
+  if (enrollmentClosed && (status === "not_accessed" || status === "closed")) return "missed";
+  return "pending";
+}
+
+const STATUS_STACK = {
+  completed: { label: "Enrolled",       fill: "var(--success)" },
+  pending:   { label: "Pending",        fill: "var(--warning)" },
+  missed:    { label: "Did not enroll", fill: "var(--destructive)" },
+};
+
+function buildLocationOverviewData(employees, { batch: selectedBatch, filterMode }) {
+  const byLoc = {};
+  employees.forEach(emp => {
+    const loc = emp.location ?? "Unknown";
+    if (!byLoc[loc]) {
+      byLoc[loc] = {
+        location: loc,
+        short: LOCATION_SHORT[loc] ?? loc.slice(0, 3).toUpperCase(),
+        completed: 0,
+        pending: 0,
+        missed: 0,
+        cost: 0,
+        total: 0,
+      };
+    }
+    const empBatch = BATCH_CONFIGS.find(b => b.id === emp.batch);
+    const enrollmentClosed = filterMode === "batch"
+      ? isEnrollmentClosed(emp, selectedBatch)
+      : isEnrollmentClosed(emp, null);
+    byLoc[loc].total += 1;
+    byLoc[loc][getOverviewStatus(emp.status, enrollmentClosed)] += 1;
+    if (emp.status === "approved") byLoc[loc].cost += emp.cost;
+  });
+  return Object.values(byLoc).sort((a, b) => b.total - a.total);
+}
+
+function LocationStatusTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  return (
+    <div
+      className="rounded-xl border border-border bg-card px-3 py-2.5 text-xs shadow-lg"
+      style={{ borderColor: CHART.tooltipBorder }}
+    >
+      <p className="font-semibold text-foreground mb-1.5">{row.location}</p>
+      {(["completed", "pending", "missed"]).map(key => row[key] > 0 && (
+        <div key={key} className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">{STATUS_STACK[key].label}</span>
+          <span className="font-semibold text-foreground">{row[key]}</span>
+        </div>
+      ))}
+      <div className="mt-1.5 pt-1.5 border-t border-border flex items-center justify-between gap-4">
+        <span className="text-muted-foreground">Estimated premium</span>
+        <span className="font-semibold text-foreground">{fmtCurrency(row.cost)}</span>
+      </div>
+    </div>
+  );
+}
+
+function LocationOverviewPanel({ data, subtitle }) {
+  if (data.length === 0) {
+    return (
+      <Card className="p-5 shadow-none">
+        <p className="text-[11px] font-semibold tracking-wide text-muted-foreground mb-1">
+          Location overview
+        </p>
+        <p className="text-xs text-muted-foreground mb-4">{subtitle}</p>
+        <p className="text-xs text-muted-foreground text-center py-6">No employees match this filter.</p>
+      </Card>
+    );
+  }
+
+  const chartHeight = Math.max(140, data.length * 44);
+
+  return (
+    <Card className="p-5 shadow-none">
+      <div className="mb-4">
+        <p className="text-[11px] font-semibold tracking-wide text-muted-foreground">
+          Location overview
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+      </div>
+
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 0, right: 4, left: 0, bottom: 0 }}
+          barSize={18}
+        >
+          <XAxis type="number" hide domain={[0, "dataMax"]} />
+          <YAxis
+            type="category"
+            dataKey="short"
+            width={34}
+            tick={{ fontSize: 10, fill: CHART.tick }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip content={<LocationStatusTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.4 }} />
+          <Bar dataKey="completed" stackId="status" fill={STATUS_STACK.completed.fill} radius={[0, 0, 0, 0]} />
+          <Bar dataKey="pending" stackId="status" fill={STATUS_STACK.pending.fill} />
+          <Bar dataKey="missed" stackId="status" fill={STATUS_STACK.missed.fill} radius={[0, 4, 4, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+
+      <div className="flex flex-wrap gap-3 mt-3 mb-4">
+        {Object.entries(STATUS_STACK).map(([key, { label, fill }]) => (
+          <div key={key} className="flex items-center gap-1.5">
+            <span className="size-2 rounded-sm flex-shrink-0" style={{ backgroundColor: fill }} />
+            <span className="text-[10px] text-muted-foreground">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2 border-t border-border pt-3">
+        {data.map(row => (
+          <div key={row.location} className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[9px] font-bold text-primary">
+                {row.short}
+              </span>
+              <span className="text-xs font-medium text-foreground truncate">{row.location}</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground shrink-0">{fmtCurrency(row.cost)}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 /** True if the employee has opened the invitation link (demo: everyone except `not_accessed`). */
 function invitationOpened(emp) {
@@ -214,47 +402,46 @@ function EmployeeAvatar({ id, name, className }) {
   );
 }
 function fmtCurrency(n) {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(2)}M`;
-  if (n >= 1000)    return `$${(n / 1000).toFixed(0)}k`;
-  return `$${n}`;
+  if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)}Cr`;
+  if (n >= 100000)   return `₹${(n / 100000).toFixed(2)}L`;
+  if (n >= 1000)     return `₹${(n / 1000).toFixed(0)}k`;
+  return `₹${n}`;
 }
 function fmtCurrencyFull(n) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 }
-function fmtSyncTimestamp(iso) {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-function StatusPill({ status }) {
-  const m = STATUS_META[status] ?? STATUS_META.pending;
+function OverviewStatusPill({ status, enrollmentClosed }) {
+  const key = getOverviewStatus(status, enrollmentClosed);
+  const m = OVERVIEW_STATUS_META[key];
   return (
-    <span className={cn(
-      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold leading-none whitespace-nowrap border",
-      m.pill,
-    )}>
-      <span className={cn("size-1.5 rounded-full flex-shrink-0", m.dot)} />
+    <Badge
+      variant="outline"
+      className={cn(
+        "h-auto gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none",
+        m.badge,
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full flex-shrink-0", m.dot)} aria-hidden />
       {m.label}
-    </span>
+    </Badge>
   );
 }
 
 function MetricCard({ icon: Icon, label, value, sub, variant = "primary", trend, onClick, active }) {
   const v = METRIC_VARIANT[variant] ?? METRIC_VARIANT.primary;
+  const interactive = Boolean(onClick);
   return (
-    <div
+    <Card
       onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={interactive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } } : undefined}
       className={cn(
-        "flex items-start gap-3 rounded-2xl p-4 flex-1 min-w-0 relative overflow-hidden transition-all cursor-default border bg-card",
-        active ? "ring-2 ring-ring border-primary/30 bg-primary/5" : "border-border",
+        "flex items-start gap-3 p-4 flex-1 min-w-0 relative overflow-hidden transition-all shadow-none",
+        interactive ? "cursor-pointer hover:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-ring/50" : "cursor-default",
+        active ? "ring-2 ring-ring border-primary/30 bg-primary/5" : "",
       )}
     >
       <div className={cn("size-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5", v.iconBg)}>
@@ -274,244 +461,208 @@ function MetricCard({ icon: Icon, label, value, sub, variant = "primary", trend,
           {Math.abs(trend)}%
         </div>
       )}
-      <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl opacity-20", v.bar)} />
+      <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 rounded-b-xl opacity-20", v.bar)} />
+    </Card>
+  );
+}
+
+// ─── Dependent donut chart (SVG) ─────────────────────────────────────────────
+
+const DEP_COLORS = {
+  employee: "var(--chart-chart-2)",
+  spouse:   "var(--primary)",
+  father:   "var(--warning)",
+  mother:   "var(--chart-chart-4)",
+  children: "var(--success)",
+};
+
+const DEPENDENT_COST_TYPES = [
+  { key: "employee", label: "Employee (Self)" },
+  { key: "spouse",   label: "Spouse" },
+  { key: "father",   label: "Father" },
+  { key: "mother",   label: "Mother" },
+  { key: "children", label: "Children" },
+];
+
+/** Premium allocated by dependent slot (proportional to enrolled employee cost). */
+function buildDependentCostDistribution(employees) {
+  const agg = Object.fromEntries(
+    DEPENDENT_COST_TYPES.map(({ key, label }) => [key, { type: label, key, count: 0, premium: 0 }]),
+  );
+
+  employees.filter(e => e.cost > 0).forEach(emp => {
+    const d = EMPLOYEE_DEPENDENTS[emp.id] ?? { spouse: 0, father: 0, mother: 0, children: 0 };
+    const slots = {
+      employee: 1,
+      spouse: d.spouse,
+      father: d.father,
+      mother: d.mother,
+      children: d.children,
+    };
+    const totalSlots = Object.values(slots).reduce((s, n) => s + n, 0);
+    if (totalSlots === 0) return;
+
+    DEPENDENT_COST_TYPES.forEach(({ key }) => {
+      if (slots[key] > 0) {
+        agg[key].count += slots[key];
+        agg[key].premium += (emp.cost / totalSlots) * slots[key];
+      }
+    });
+  });
+
+  const rows = DEPENDENT_COST_TYPES.map(({ key }) => ({
+    ...agg[key],
+    premium: Math.round(agg[key].premium),
+  }));
+
+  const totals = {
+    type: "Total",
+    key: "total",
+    count: rows.reduce((s, r) => s + r.count, 0),
+    premium: rows.reduce((s, r) => s + r.premium, 0),
+  };
+
+  return { rows, totals };
+}
+
+function DependentDonutChart({ data }) {
+  const size   = 160;
+  const strokeW = 28;
+  const r      = (size / 2) - strokeW / 2 - 2;
+  const cx     = size / 2;
+  const cy     = size / 2;
+  const circ   = 2 * Math.PI * r;
+  const total  = data.reduce((s, d) => s + d.value, 0);
+
+  if (total === 0) {
+    return (
+      <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+        <svg width={size} height={size}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--muted)" strokeWidth={strokeW} />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="text-lg font-bold" style={{ color: "var(--muted-foreground)" }}>0</p>
+          <p className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>total dependents</p>
+        </div>
+      </div>
+    );
+  }
+
+  let cumArc = 0;
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--muted)" strokeWidth={strokeW} />
+        {data.map(d => {
+          const arc    = (d.value / total) * circ;
+          const offset = circ / 4 - cumArc;
+          cumArc += arc;
+          return (
+            <circle
+              key={d.name}
+              cx={cx} cy={cy} r={r}
+              fill="none"
+              stroke={d.color}
+              strokeWidth={strokeW}
+              strokeDasharray={`${arc} ${circ}`}
+              strokeDashoffset={offset}
+              strokeLinecap="butt"
+            />
+          );
+        })}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <p className="text-2xl font-bold leading-none" style={{ color: "var(--foreground)" }}>{total}</p>
+          <p className="text-[10px] mt-1" style={{ color: "var(--muted-foreground)" }}>total dependents</p>
+      </div>
     </div>
   );
 }
 
-function SyncStatusBar({ summary }) {
-  const success = summary.last_sync_status === "SUCCESS";
+// ─── Shared enrollment filter (page-level) ────────────────────────────────────
+
+function getFilteredEmployees({ filterMode, activeBatch, fromDate, toDate }) {
+  if (filterMode === "batch") return EMPLOYEES.filter(e => e.batch === activeBatch);
+  return EMPLOYEES.filter(e => e.deadline >= fromDate && e.deadline <= toDate);
+}
+
+function buildLocationCostFromEmployees(employees) {
+  const map = {};
+  employees.forEach(emp => {
+    const loc = emp.location ?? "Unknown";
+    if (!map[loc]) {
+      map[loc] = { location: loc, short: LOCATION_SHORT[loc] ?? loc.slice(0, 3).toUpperCase(), employees: 0, enrolled: 0, cost: 0, prev: 0 };
+    }
+    map[loc].employees += 1;
+    if (emp.status === "approved") {
+      map[loc].enrolled += 1;
+      map[loc].cost += emp.cost;
+    }
+  });
+  return Object.values(map)
+    .map(row => {
+      const base = LOCATION_COST.find(l => l.location === row.location);
+      return { ...row, prev: base?.prev ?? (Math.round(row.cost * 0.95) || 0) };
+    })
+    .sort((a, b) => b.cost - a.cost);
+}
+
+function BatchSlotCard({ batch, isSelected, onSelect }) {
+  if (!batch) {
+    return (
+      <div
+        className="flex flex-1 min-w-0 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 opacity-60 min-h-[38px]"
+        aria-hidden
+      >
+        <span className="text-xs text-muted-foreground">—</span>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-border bg-card px-4 py-3 mb-5"
-      role="status"
-      aria-label="Last sync status"
+    <Button
+      type="button"
+      variant={isSelected ? "default" : "outline"}
+      onClick={onSelect}
+      aria-label={`${batch.label}, ${batch.dateRange}`}
+      aria-pressed={isSelected}
+      className={cn(
+        "flex h-auto flex-1 min-w-0 flex-col items-start gap-1 rounded-lg px-3 py-2 text-left",
+        !isSelected && "bg-muted text-muted-foreground hover:text-foreground",
+      )}
     >
       <div className="flex items-center gap-2 min-w-0">
-        <RefreshCw size={14} className="text-muted-foreground flex-shrink-0" aria-hidden />
-        <span className="text-xs text-muted-foreground">Last sync</span>
-        <span className="text-xs font-semibold text-foreground">{fmtSyncTimestamp(summary.last_sync_timestamp)}</span>
-      </div>
-      <div className="h-4 w-px bg-border hidden sm:block" aria-hidden />
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Status</span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border",
-            success
-              ? "bg-success/10 text-success border-success-ring"
-              : "bg-destructive/10 text-destructive border-destructive/30",
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", success ? "bg-success" : "bg-destructive")} />
-          {summary.last_sync_status}
-        </span>
-      </div>
-      <div className="h-4 w-px bg-border hidden sm:block" aria-hidden />
-      <div className="flex items-center gap-1.5">
-        <Mail size={13} className="text-muted-foreground" aria-hidden />
-        <span className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{summary.emails_sent_last_sync}</span>
-          {" "}emails sent on last sync
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Tab: Overview ────────────────────────────────────────────────────────────
-
-function OverviewTab() {
-  const [search, setSearch]           = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [deptFilter, setDeptFilter]   = useState("all");
-  const [page, setPage]               = useState(1);
-  const PER_PAGE = 8;
-
-  const metrics = useMemo(() => computeEnrollmentDashboardMetrics(EMPLOYEES), []);
-
-  const filtered = EMPLOYEES.filter(e => {
-    const q = search.toLowerCase();
-    const matchQ = !q || e.name.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q) || e.email.toLowerCase().includes(q);
-    const matchS = statusFilter === "all" || e.status === statusFilter;
-    const matchD = deptFilter   === "all" || e.dept   === deptFilter;
-    return matchQ && matchS && matchD;
-  });
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  const completionPct = metrics.total > 0 ? Math.round((metrics.completed / metrics.total) * 100) : 0;
-
-  return (
-    <div className="space-y-5">
-      {/* Primary stats: invitations + funnel */}
-      <div>
-        <SectionHeading icon={Send} label="Invitation overview" />
-        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 mb-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total invitations sent</p>
-          <p className="mt-1 text-3xl sm:text-4xl font-bold tabular-nums text-foreground">{metrics.total}</p>
-          <p className="mt-1 text-sm text-muted-foreground">All employees included in this open enrollment cycle.</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <MetricCard icon={Eye} label="Opened invitation link" value={metrics.opened} sub="At least one visit recorded" variant="primary" />
-          <MetricCard icon={EyeOff} label="Not yet opened" value={metrics.notOpened} sub="No recorded visit" variant="muted" />
-          <MetricCard icon={Clock} label="Pending" value={metrics.pending} sub="Awaiting employee action" variant="warning" />
-          <MetricCard icon={FileText} label="Draft saved" value={metrics.draft} sub="In progress, not submitted" variant="info" />
-          <MetricCard icon={CheckCircle2} label="Completed" value={metrics.completed} sub="Approved or closed" variant="success" />
-        </div>
-      </div>
-
-      <SyncStatusBar summary={DASHBOARD_SUMMARY} />
-
-      {/* Processing Metrics */}
-      <div>
-        <SectionHeading icon={ClipboardList} label="Processing metrics" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
-          <MetricCard icon={Activity} label="Under processing" value={metrics.underProcessing} sub="Clarification or data follow-up" variant="warning" />
-          <MetricCard icon={FileText} label="Under review" value={metrics.underReview} sub="Submitted, awaiting review" variant="primary" />
-        </div>
-      </div>
-
-      {/* Progress bar — partitions match invitation / workflow stages above */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Overall enrollment progress</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Open Enrollment 2026 · Deadline May 15, 2026</p>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-bold text-foreground">{completionPct}%</span>
-            <p className="text-xs text-muted-foreground">Completed</p>
-          </div>
-        </div>
-        <div className="flex gap-0.5 h-3 rounded-full overflow-hidden w-full">
-          {metrics.progressSegments.map(({ key, count, className }) =>
-            count > 0 ? (
-              <div
-                key={key}
-                className={cn("h-full", className)}
-                style={{ width: `${(count / metrics.partitionSum) * 100}%` }}
-                title={`${key}: ${count}`}
-              />
-            ) : null,
-          )}
-        </div>
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mt-3">
-          {metrics.progressSegments.map(({ key, label, count, className }) => (
-            <div key={key} className="flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full", className)} />
-              <span className="text-xs text-muted-foreground">{label}</span>
-              <span className="text-xs font-semibold text-foreground">{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Enrollment table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">Enrollment Records</span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground">{filtered.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Search employees…"
-                className="h-8 pl-7 pr-3 rounded-xl text-xs bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-44" />
-            </div>
-            <div className="relative">
-              <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                className="h-8 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-                <option value="all">All Statuses</option>
-                {Object.entries(STATUS_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select value={deptFilter} onChange={e => { setDeptFilter(e.target.value); setPage(1); }}
-                className="h-8 pl-3 pr-7 rounded-xl text-xs bg-muted border border-border text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer">
-                <option value="all">All Depts</option>
-                {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            </div>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {["Employee ID", "Employee", "Department", "Status", "Deadline", "Actions"].map(h => (
-                  <th key={h} className={`px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap ${h === "Actions" ? "text-right" : ""}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr><td colSpan={6} className="px-5 py-12 text-center text-sm text-muted-foreground">No records match your filters.</td></tr>
-              ) : paginated.map(emp => (
-                <tr key={emp.id} className="border-b border-border hover:bg-muted transition-colors">
-                  <td className="px-5 py-3">
-                    <span className="font-mono text-xs font-medium tabular-nums text-muted-foreground">{String(emp.id).padStart(4, "0")}</span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <EmployeeAvatar id={emp.id} name={emp.name} />
-                      <div>
-                        <p className="text-[13px] font-semibold text-foreground leading-none">{emp.name}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{emp.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3"><span className="text-xs text-muted-foreground flex items-center gap-1.5"><Building2 size={11} className="text-muted-foreground" />{emp.dept}</span></td>
-                  <td className="px-5 py-3"><StatusPill status={emp.status} /></td>
-                  <td className="px-5 py-3">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Calendar size={11} className="text-muted-foreground" />
-                      {new Date(emp.deadline + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"><Eye size={13} /></button>
-                      <button className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-success hover:bg-success/10 transition-colors"><Mail size={13} /></button>
-                      <button className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"><MoreVertical size={13} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-            <p className="text-xs text-muted-foreground">Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}</p>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed">
-                <ChevronLeft size={13} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)}
-                  className={`size-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${n === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>
-                  {n}
-                </button>
-              ))}
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed">
-                <ChevronRight size={13} />
-              </button>
-            </div>
-          </div>
+        <span className="text-sm font-semibold truncate">{batch.label}</span>
+        {batch.status === "active" && (
+          <span className="size-1.5 rounded-full flex-shrink-0 bg-success" />
+        )}
+        {batch.status === "completed" && (
+          <span className={cn(
+            "size-1.5 rounded-full flex-shrink-0",
+            isSelected ? "bg-primary-foreground/40" : "bg-muted-foreground/50",
+          )} />
         )}
       </div>
-    </div>
+      <span className={cn(
+        "text-xs truncate",
+        isSelected ? "text-primary-foreground/70" : "text-muted-foreground",
+      )}>
+        {batch.dateRange}
+      </span>
+    </Button>
   );
 }
 
-// ─── Batch Processing Dashboard ──────────────────────────────────────────────
+function EnrollmentFilterBar({
+  filterMode, setFilterMode,
+  activeBatch, setActiveBatch,
+  fromDate, setFromDate,
+  toDate, setToDate,
+  employeeCount,
+}) {
+  const { index, previous, current, next } = getBatchTriplet(activeBatch);
+  const canGoPrev = index > 0;
+  const canGoNext = index < BATCH_CONFIGS.length - 1;
 
 function CompletionDonut({ batch }) {
   const data = [
@@ -521,21 +672,687 @@ function CompletionDonut({ batch }) {
   ];
   const pct = Math.round((batch.completed / batch.totalEmployees) * 100);
   return (
-    <div className="relative flex-shrink-0" style={{ width: 140, height: 140 }}>
-      <ResponsiveContainer width={140} height={140}>
-        <PieChart>
-          <Pie data={data} cx="50%" cy="50%" innerRadius={46} outerRadius={62}
-            paddingAngle={3} dataKey="value" startAngle={90} endAngle={-270}>
-            {data.map((entry, i) => <Cell key={i} fill={entry.fill} stroke="transparent" />)}
-          </Pie>
-          <Tooltip formatter={(v, n) => [v, n]}
-            contentStyle={{ borderRadius: 10, fontSize: 11, border: "1px solid var(--border)", padding: "4px 8px" }} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-xl font-bold text-foreground leading-none">{pct}%</span>
-        <span className="text-[10px] text-muted-foreground mt-0.5">Complete</span>
+    <Card className="mb-6 flex flex-wrap items-center gap-3 p-3 shadow-none">
+      <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-muted p-1">
+        {[["batch", "By batch"], ["range", "By date range"]].map(([mode, label]) => (
+          <Button
+            key={mode}
+            type="button"
+            variant={filterMode === mode ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setFilterMode(mode)}
+            className={cn(
+              "h-7 rounded-md px-3 text-xs font-semibold",
+              filterMode === mode && "bg-card text-foreground shadow-sm",
+            )}
+          >
+            {label}
+          </Button>
+        ))}
       </div>
+
+      <div className="hidden sm:block w-px h-6 bg-border flex-shrink-0" />
+
+      {filterMode === "batch" ? (
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => canGoPrev && setActiveBatch(BATCH_CONFIGS[index - 1].id)}
+            disabled={!canGoPrev}
+            aria-label="Previous batch"
+            className="flex-shrink-0"
+          ><ChevronLeft size={15} /></Button>
+
+          <div className="grid flex-1 min-w-0 grid-cols-3 gap-2">
+            <BatchSlotCard
+              batch={previous}
+              isSelected={false}
+              onSelect={() => previous && setActiveBatch(previous.id)}
+            />
+            <BatchSlotCard
+              batch={current}
+              isSelected
+              onSelect={() => current && setActiveBatch(current.id)}
+            />
+            <BatchSlotCard
+              batch={next}
+              isSelected={false}
+              onSelect={() => next && setActiveBatch(next.id)}
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => canGoNext && setActiveBatch(BATCH_CONFIGS[index + 1].id)}
+            disabled={!canGoNext}
+            aria-label="Next batch"
+            className="flex-shrink-0"
+          ><ChevronRight size={15} /></Button>
+        </>
+      ) : (
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="enrollment-from" className="whitespace-nowrap text-xs font-medium text-muted-foreground">From</label>
+            <Input
+              id="enrollment-from"
+              type="date"
+              value={fromDate}
+              max={toDate}
+              onChange={e => setFromDate(e.target.value)}
+              className="h-8 w-auto cursor-pointer text-xs"
+            />
+          </div>
+          <ArrowRight size={13} className="flex-shrink-0 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <label htmlFor="enrollment-to" className="whitespace-nowrap text-xs font-medium text-muted-foreground">To</label>
+            <Input
+              id="enrollment-to"
+              type="date"
+              value={toDate}
+              min={fromDate}
+              onChange={e => setToDate(e.target.value)}
+              className="h-8 w-auto cursor-pointer text-xs"
+            />
+          </div>
+        </div>
+      )}
+
+      {employeeCount > 0 && (
+        <Badge className="ml-auto flex-shrink-0 bg-primary/10 text-primary hover:bg-primary/10">
+          {employeeCount} employee{employeeCount !== 1 ? "s" : ""} in view
+        </Badge>
+      )}
+    </Card>
+  );
+}
+
+// ─── Report downloads (right rail) ─────────────────────────────────────────────
+
+const REPORT_DEFS = {
+  batch: {
+    title: "Batch report",
+    description: "Enrollment, dependents, status, and premium for the selected batch.",
+    icon: FileSpreadsheet,
+    includes: [
+      "Employee and dependent breakdown",
+      "Status summary (pending, enrolled, did not enroll)",
+      "Premium by employee",
+      "Premium by location",
+    ],
+  },
+  consolidated: {
+    title: "Consolidated report",
+    description: "Enrollment and premium totals across batches in the open enrollment window.",
+    icon: FileDown,
+    includes: [
+      "All batches in enrollment window",
+      "Batch comparison and premium trend",
+      "Organization-wide enrollment rate",
+      "Premium by dependent type",
+    ],
+  },
+};
+
+function buildReportScope(reportId, { filterMode, batch, activeBatch, fromDate, toDate, filteredCount }) {
+  if (reportId === "batch") {
+    if (filterMode === "batch" && batch) {
+      return {
+        subtitle: `${batch.label} · ${batch.dateRange}`,
+        employees: filteredCount,
+        filename: `insurance-${batch.label.toLowerCase().replace(/\s+/g, "-")}`,
+      };
+    }
+    return {
+      subtitle: `${fromDate} – ${toDate}`,
+      employees: filteredCount,
+      filename: `insurance-range-${fromDate}-${toDate}`,
+    };
+  }
+  const batchCount = filterMode === "batch"
+    ? BATCH_CONFIGS.filter(b => b.id <= activeBatch).length
+    : BATCH_CONFIGS.length;
+  return {
+    subtitle: filterMode === "batch"
+      ? `Batches 1 – ${activeBatch} · Open Enrollment 2026`
+      : `${fromDate} – ${toDate}`,
+    employees: EMPLOYEES.length,
+    batches: batchCount,
+    filename: "insurance-consolidated-2026",
+  };
+}
+
+function ReportDownloadsPanel({ filterMode, activeBatch, fromDate, toDate, layout = "sidebar" }) {
+  const isHorizontal = layout === "horizontal";
+  const [format, setFormat] = useState("xlsx");
+  const [busyId, setBusyId] = useState(null);
+  const [readyId, setReadyId] = useState(null);
+
+  const batch = BATCH_CONFIGS.find(b => b.id === activeBatch);
+  const filteredEmps = useMemo(
+    () => getFilteredEmployees({ filterMode, activeBatch, fromDate, toDate }),
+    [filterMode, activeBatch, fromDate, toDate],
+  );
+
+  useEffect(() => {
+    setFormat("xlsx");
+    setBusyId(null);
+    setReadyId(null);
+  }, [filterMode, activeBatch, fromDate, toDate]);
+
+  useEffect(() => {
+    if (!readyId) return undefined;
+    const t = window.setTimeout(() => setReadyId(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [readyId]);
+
+  const filterContext = useMemo(() => {
+    if (filterMode === "batch" && batch) return `${batch.label} · ${batch.dateRange}`;
+    return `${fromDate} – ${toDate}`;
+  }, [filterMode, batch, fromDate, toDate]);
+
+  const handleDownload = (reportId) => {
+    setBusyId(reportId);
+    setReadyId(null);
+    window.setTimeout(() => {
+      setBusyId(null);
+      setReadyId(reportId);
+    }, 900);
+  };
+
+  const ext = format === "xlsx" ? "xlsx" : "pdf";
+  const formatLabel = format === "xlsx" ? "Excel" : "PDF";
+
+  return (
+    <Card className="overflow-hidden p-0 shadow-none">
+      <CardHeader className="border-b border-border">
+        <div className={cn(
+          "flex flex-col gap-3",
+          isHorizontal && "sm:flex-row sm:items-center sm:justify-between",
+        )}>
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Download size={15} className="text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">Export reports</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                Includes: {filterContext}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">Format</span>
+            <div className="inline-flex rounded-lg bg-muted p-0.5" role="group" aria-label="Export format">
+              {[["xlsx", "Excel", FileSpreadsheet], ["pdf", "PDF", FileText]].map(([id, label, Icon]) => (
+                <Button
+                  key={id}
+                  type="button"
+                  variant={format === id ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFormat(id)}
+                  disabled={busyId != null}
+                  className={cn(
+                    "h-7 gap-1.5 rounded-md px-2.5 text-xs font-semibold",
+                    format === id && "bg-card text-foreground shadow-sm",
+                  )}
+                >
+                  <Icon size={14} />
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4">
+        <div className={cn("grid gap-3", isHorizontal ? "sm:grid-cols-2" : "grid-cols-1")}>
+          {Object.entries(REPORT_DEFS).map(([id, def]) => {
+            const scope = buildReportScope(id, {
+              filterMode,
+              batch,
+              activeBatch,
+              fromDate,
+              toDate,
+              filteredCount: filteredEmps.length,
+            });
+            const Icon = def.icon;
+            const isBusy = busyId === id;
+            const isReady = readyId === id;
+            const isDisabled = busyId != null && !isBusy;
+            const filename = `${scope.filename}.${ext}`;
+
+            return (
+              <div
+                key={id}
+                className={cn(
+                  "flex flex-col rounded-xl border border-border bg-muted/20 p-4 transition-colors",
+                  isReady && "border-success-ring bg-success/5",
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon size={16} className="text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">{def.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{def.description}</p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">{scope.subtitle}</span>
+                  {" · "}
+                  {scope.employees} employee{scope.employees !== 1 ? "s" : ""}
+                  {scope.batches != null && (
+                    <> · {scope.batches} batch{scope.batches !== 1 ? "es" : ""}</>
+                  )}
+                </p>
+
+                <ul className="mt-2 space-y-1">
+                  {def.includes.slice(0, 3).map(item => (
+                    <li key={item} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <CheckCircle2 size={11} className="shrink-0 text-success" aria-hidden />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
+                {isReady && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-success" role="status" aria-live="polite">
+                    <CheckCircle2 size={14} className="shrink-0" aria-hidden />
+                    <span className="truncate">Ready to download · {filename}</span>
+                  </p>
+                )}
+
+                <Button
+                  type="button"
+                  variant={isReady ? "outline" : "default"}
+                  className="mt-3 w-full gap-2"
+                  onClick={() => handleDownload(id)}
+                  disabled={isDisabled}
+                  aria-busy={isBusy}
+                >
+                  {isBusy ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" aria-hidden />
+                      Building your {formatLabel} file…
+                    </>
+                  ) : isReady ? (
+                    <>
+                      <Download size={14} aria-hidden />
+                      Download again
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} aria-hidden />
+                      Download as {formatLabel}
+                    </>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
+  const batch      = BATCH_CONFIGS.find(b => b.id === activeBatch);
+
+  /** Metric card filter: null = all, or pending / completed / missed */
+  const [statusFilter, setStatusFilter] = useState(null);
+
+  useEffect(() => {
+    setStatusFilter(null);
+  }, [filterMode, activeBatch, fromDate, toDate]);
+
+  const toggleStatusFilter = (key) => {
+    setStatusFilter(prev => (prev === key ? null : key));
+  };
+
+  const filteredEmps = useMemo(
+    () => getFilteredEmployees({ filterMode, activeBatch, fromDate, toDate }),
+    [filterMode, activeBatch, fromDate, toDate],
+  );
+
+  const batchEnrollmentClosed = batch
+    && (batch.status === "completed" || isPastEnrollmentDeadline(batch.endDate));
+
+  const metrics = useMemo(() => {
+    const total = filteredEmps.length;
+    let completed = 0;
+    let missed = 0;
+    let pending = 0;
+    filteredEmps.forEach(e => {
+      const enrollmentClosed = filterMode === "batch"
+        ? batchEnrollmentClosed
+        : isEnrollmentClosed(e, null);
+      const rollup = getOverviewStatus(e.status, enrollmentClosed);
+      if (rollup === "completed") completed += 1;
+      else if (rollup === "missed") missed += 1;
+      else pending += 1;
+    });
+    return { total, completed, pending, missed };
+  }, [filteredEmps, filterMode, batchEnrollmentClosed]);
+
+  const tableEmps = useMemo(() => {
+    if (!statusFilter) return filteredEmps;
+    return filteredEmps.filter(e => {
+      const enrollmentClosed = filterMode === "batch"
+        ? batchEnrollmentClosed
+        : isEnrollmentClosed(e, null);
+      return getOverviewStatus(e.status, enrollmentClosed) === statusFilter;
+    });
+  }, [filteredEmps, statusFilter, filterMode, batchEnrollmentClosed]);
+
+  const statusFilterLabel = statusFilter
+    ? OVERVIEW_STATUS_META[statusFilter]?.label ?? statusFilter
+    : null;
+
+  const depChartData = useMemo(() => {
+    const agg = { spouse: 0, father: 0, mother: 0, children: 0 };
+    filteredEmps.forEach(emp => {
+      const d = EMPLOYEE_DEPENDENTS[emp.id];
+      if (!d) return;
+      agg.spouse   += d.spouse;
+      agg.father   += d.father;
+      agg.mother   += d.mother;
+      agg.children += d.children;
+    });
+    return [
+      { name: "Spouse",   value: agg.spouse,   color: DEP_COLORS.spouse   },
+      { name: "Father",   value: agg.father,   color: DEP_COLORS.father   },
+      { name: "Mother",   value: agg.mother,   color: DEP_COLORS.mother   },
+      { name: "Children", value: agg.children, color: DEP_COLORS.children },
+    ].filter(d => d.value > 0);
+  }, [filteredEmps]);
+
+  // Premium for date-range mode (sum of approved employee costs)
+  const rangePremium = useMemo(
+    () => filteredEmps.filter(e => e.status === "approved").reduce((s, e) => s + e.cost, 0),
+    [filteredEmps],
+  );
+
+  const locationOverview = useMemo(
+    () => buildLocationOverviewData(filteredEmps, { batch, filterMode }),
+    [filteredEmps, batch, filterMode],
+  );
+
+  const locationSubtitle = filterMode === "batch"
+    ? `Enrollment status and premium by location · ${batch?.label ?? "Batch"}`
+    : `Enrollment status and premium by location · ${fromDate} – ${toDate}`;
+
+  const perfPct = metrics.total > 0 ? Math.round((metrics.completed / metrics.total) * 100) : 0;
+
+  /** Pending only applies while a batch is open or employees are still in flight. */
+  const showPendingMetric =
+    filterMode === "range"
+      ? metrics.pending > 0
+      : batch?.status === "active" || metrics.pending > 0;
+
+  /** Missed is only meaningful after enrollment has closed. */
+  const showMissedMetric =
+    filterMode === "range"
+      ? metrics.missed > 0
+      : Boolean(batchEnrollmentClosed);
+
+  const metricColCount = 1 + (showPendingMetric ? 1 : 0) + 1 + (showMissedMetric ? 1 : 0);
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Main 2-column layout ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+
+        {/* ── Left (2/3) ── */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Metric cards — hide Pending on closed batches with nothing in flight */}
+          <div className={cn(
+            "grid gap-3",
+            metricColCount >= 4 ? "grid-cols-2 sm:grid-cols-4"
+              : metricColCount === 3 ? "grid-cols-3"
+              : "grid-cols-2",
+          )}>
+            <MetricCard
+              icon={Users}
+              label="All employees"
+              value={metrics.total}
+              variant="primary"
+              active={statusFilter === null}
+              onClick={() => setStatusFilter(null)}
+            />
+            {showPendingMetric && (
+              <MetricCard
+                icon={Clock}
+                label="Pending"
+                value={metrics.pending}
+                variant="warning"
+                active={statusFilter === "pending"}
+                onClick={() => toggleStatusFilter("pending")}
+              />
+            )}
+            <MetricCard
+              icon={CheckCircle2}
+              label="Enrolled"
+              value={metrics.completed}
+              variant="success"
+              active={statusFilter === "completed"}
+              onClick={() => toggleStatusFilter("completed")}
+            />
+            {showMissedMetric && (
+              <MetricCard
+                icon={X}
+                label="Did not enroll"
+                value={metrics.missed}
+                variant="destructive"
+                active={statusFilter === "missed"}
+                onClick={() => toggleStatusFilter("missed")}
+              />
+            )}
+          </div>
+
+          {/* Employee breakdown table */}
+          <Card className="overflow-hidden p-0 shadow-none">
+            <CardHeader className="flex-row items-start justify-between gap-3 space-y-0 border-b border-border">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Dependents by employee</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {filterMode === "batch" ? `${batch.label} · ${batch.dateRange}` : `${fromDate} – ${toDate}`}
+                  {statusFilterLabel ? ` · Filter: ${statusFilterLabel}` : ""}
+                </p>
+              </div>
+              {statusFilterLabel && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setStatusFilter(null)}
+                  className="h-7 shrink-0 gap-1 bg-primary/10 text-[11px] text-primary hover:bg-primary/15"
+                >
+                  Clear filter
+                  <X size={12} />
+                </Button>
+              )}
+            </CardHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  {["Employee", "Status", "Spouse", "Father", "Mother", "Children", "Total dependents", "Premium"].map(h => (
+                    <TableHead
+                      key={h}
+                      scope="col"
+                      className={cn(
+                        "py-2.5 text-[11px] normal-case tracking-normal",
+                        h === "Premium" ? "pr-5 text-right" : h === "Total dependents" ? "text-right" : "text-left",
+                      )}
+                    >
+                      {h}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {tableEmps.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
+                        {filteredEmps.length === 0
+                          ? `No employees match this ${filterMode === "batch" ? "batch" : "date range"}.`
+                          : statusFilter === "pending"
+                            ? `No pending employees in this ${filterMode === "batch" ? "batch" : "period"}.`
+                            : statusFilter === "completed"
+                              ? `No enrolled employees in this ${filterMode === "batch" ? "batch" : "period"}.`
+                              : `No employees who did not enroll in this ${filterMode === "batch" ? "batch" : "period"}.`}
+                      </TableCell>
+                    </TableRow>
+                  ) : tableEmps.map(emp => {
+                    const d   = EMPLOYEE_DEPENDENTS[emp.id] ?? { spouse: 0, father: 0, mother: 0, children: 0 };
+                    const tot = d.spouse + d.father + d.mother + d.children;
+                    const enrollmentClosed = filterMode === "batch"
+                      ? batchEnrollmentClosed
+                      : isEnrollmentClosed(emp, null);
+                    return (
+                      <TableRow key={emp.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <EmployeeAvatar id={emp.id} name={emp.name} />
+                            <div>
+                              <p className="text-xs font-semibold text-foreground leading-none">{emp.name}</p>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">{emp.dept}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <OverviewStatusPill status={emp.status} enrollmentClosed={enrollmentClosed} />
+                        </TableCell>
+                        <TableCell className="text-center">{d.spouse   ? <span className="text-xs font-semibold" style={{ color: DEP_COLORS.spouse   }}>{d.spouse}</span>   : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-center">{d.father   ? <span className="text-xs font-semibold" style={{ color: DEP_COLORS.father   }}>{d.father}</span>   : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-center">{d.mother   ? <span className="text-xs font-semibold" style={{ color: DEP_COLORS.mother   }}>{d.mother}</span>   : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-center">{d.children ? <span className="text-xs font-semibold" style={{ color: DEP_COLORS.children }}>{d.children}</span> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={cn("text-sm font-bold", tot > 0 ? "text-primary" : "text-muted-foreground")}>{tot}</span>
+                        </TableCell>
+                        <TableCell className="pr-5 text-right">
+                          {emp.cost > 0 ? (
+                            <span className="text-xs font-semibold text-foreground tabular-nums">{fmtCurrencyFull(emp.cost)}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Dependent distribution donut */}
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="mb-5">
+              <p className="text-sm font-semibold text-foreground">Dependents by type</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Enrolled only · {filterMode === "batch"
+                  ? `${batch.label} · ${batch.dateRange}`
+                  : `${fromDate} – ${toDate}`}
+              </p>
+            </div>
+            <div className="flex items-center gap-8">
+              <DependentDonutChart data={depChartData} />
+              {depChartData.length > 0 ? (
+                <div className="flex-1 space-y-3">
+                  {depChartData.map(d => {
+                    const tot = depChartData.reduce((s, x) => s + x.value, 0);
+                    return (
+                      <div key={d.name} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="size-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                            <span className="text-xs font-medium text-foreground">{d.name}</span>
+                          </div>
+                          <span className="text-sm font-bold" style={{ color: d.color }}>{d.value}</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(d.value / tot) * 100}%`, backgroundColor: d.color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No enrolled dependents in this {filterMode === "batch" ? "batch" : "period"}.</p>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Right sidebar (1/3) ── */}
+        <div className="space-y-4 lg:sticky lg:top-6 self-start">
+          {/* Insights panel — adapts to batch vs range mode */}
+          <Card className="border-0 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-5 text-primary-foreground shadow-none">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary-muted-foreground">
+                {filterMode === "batch" ? "Batch summary" : "Date range summary"}
+              </p>
+              {filterMode === "batch" ? (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "h-auto rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
+                    batch.status === "active" && "border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground",
+                    batch.status === "completed" && "border-primary-foreground/25 bg-primary-foreground/15 text-primary-foreground/90",
+                    batch.status !== "active" && batch.status !== "completed" && "border-primary-foreground/20 bg-primary-foreground/10 text-primary-muted-foreground",
+                  )}
+                >
+                  {batch.status === "active" ? "Active" : batch.status === "completed" ? "Completed" : "Upcoming"}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="h-auto rounded-full border-primary-foreground/30 bg-primary-foreground/15 px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                  Custom range
+                </Badge>
+              )}
+            </div>
+            <h3 className="mt-1 mb-0.5 text-base font-bold">
+              {filterMode === "batch" ? batch.label : "Custom date range"}
+            </h3>
+            <p className="mb-5 text-xs text-primary-muted-foreground">
+              {filterMode === "batch" ? batch.dateRange : `${fromDate} – ${toDate}`}
+            </p>
+
+            <div className="space-y-3">
+              <div className="rounded-xl bg-primary-foreground/10 p-4">
+                <p className="mb-1 text-[10px] text-primary-muted-foreground">Total Premium</p>
+                <p className="text-2xl font-bold">
+                  {fmtCurrency(filterMode === "batch" ? batch.totalPremium : rangePremium)}
+                </p>
+              </div>
+
+
+              <div className="rounded-xl bg-primary-foreground/10 p-3.5">
+                <div className="mb-2.5 flex items-center justify-between">
+                  <p className="text-[10px] text-primary-muted-foreground">
+                    Enrollment completion
+                  </p>
+                  <p className="text-sm font-bold">{perfPct}% complete</p>
+                </div>
+                <div className="h-2 rounded-full bg-primary-foreground/20">
+                  <div className="h-full rounded-full bg-primary-foreground transition-all duration-700" style={{ width: `${perfPct}%` }} />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <LocationOverviewPanel data={locationOverview} subtitle={locationSubtitle} />
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -1012,121 +1829,165 @@ function BatchTab() {
 
 // ─── Tab: Financial Insights ──────────────────────────────────────────────────
 
-function FinancialTab() {
-  const totalLiability  = LOCATION_COST.reduce((s, d) => s + d.cost, 0);
-  const prevLiability   = LOCATION_COST.reduce((s, d) => s + d.prev, 0);
-  const totalEmployees  = LOCATION_COST.reduce((s, d) => s + d.employees, 0);
-  const totalEnrolled   = LOCATION_COST.reduce((s, d) => s + d.enrolled, 0);
-  const avgCostPerEmp   = Math.round(totalLiability / totalEnrolled);
-  const utilizationPct  = Math.round(totalEnrolled / totalEmployees * 100);
+function FinancialTab({ filterMode, activeBatch, fromDate, toDate }) {
+  const filteredEmps = useMemo(
+    () => getFilteredEmployees({ filterMode, activeBatch, fromDate, toDate }),
+    [filterMode, activeBatch, fromDate, toDate],
+  );
 
-  const chartData = LOCATION_COST.map(d => ({
-    name: d.short,
-    Current: Math.round(d.cost / 1000),
-    Previous: Math.round(d.prev / 1000),
-  }));
+  const selectedBatch = filterMode === "batch" ? BATCH_CONFIGS.find(b => b.id === activeBatch) : null;
+  const locationData  = buildLocationCostFromEmployees(filteredEmps);
+  const locationRows  = locationData.length > 0 ? locationData : LOCATION_COST;
+
+  const totalPremium = filterMode === "batch" && selectedBatch
+    ? selectedBatch.totalPremium
+    : filteredEmps.filter(e => e.status === "approved").reduce((s, e) => s + e.cost, 0);
+  const totalEmployees  = locationRows.reduce((s, d) => s + d.employees, 0);
+  const totalEnrolled   = locationRows.reduce((s, d) => s + d.enrolled, 0);
+  const avgCostPerEmp   = totalEnrolled > 0 ? Math.round(totalPremium / totalEnrolled) : 0;
+  const utilizationPct  = totalEmployees > 0 ? Math.round(totalEnrolled / totalEmployees * 100) : 0;
+
+  const dependentCostDist = useMemo(
+    () => buildDependentCostDistribution(filteredEmps),
+    [filteredEmps],
+  );
+
+  const dependentTableSubtitle = filterMode === "batch" && selectedBatch
+    ? `${selectedBatch.label} · ${selectedBatch.dateRange}`
+    : `${fromDate} – ${toDate}`;
 
   return (
     <div className="space-y-5">
+      <div className="space-y-5 min-w-0">
       {/* Key financial stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-card border border-border rounded-2xl p-5 flex items-start gap-3">
+        <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-3">
           <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0"><DollarSign size={18} className="text-primary" /></div>
           <div>
-            <p className="text-xs text-muted-foreground font-medium mb-1">Total Estimated Liability</p>
-            <p className="text-2xl font-bold text-foreground">{fmtCurrency(totalLiability)}</p>
-            <div className="flex items-center gap-1 mt-1 text-[11px]">
-              {totalLiability > prevLiability
-                ? <><TrendingUp size={11} className="text-success" /><span className="text-success font-semibold">+{Math.round((totalLiability - prevLiability) / prevLiability * 100)}%</span></>
-                : <><TrendingDown size={11} className="text-destructive" /><span className="text-destructive font-semibold">{Math.round((totalLiability - prevLiability) / prevLiability * 100)}%</span></>
-              }
-              <span className="text-muted-foreground">vs prev cycle</span>
-            </div>
+            <p className="text-xs text-muted-foreground font-medium mb-1">Total Premium</p>
+            <p className="text-2xl font-bold text-foreground">{fmtCurrency(totalPremium)}</p>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-5 flex items-start gap-3">
+        <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-3">
           <div className="size-10 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0"><Users size={18} className="text-success" /></div>
           <div>
-            <p className="text-xs text-muted-foreground font-medium mb-1">Avg Cost per Employee</p>
+            <p className="text-xs text-muted-foreground font-medium mb-1">Average premium per enrolled employee</p>
             <p className="text-2xl font-bold text-foreground">{fmtCurrency(avgCostPerEmp)}</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{totalEnrolled} enrolled of {totalEmployees} total</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{totalEnrolled} of {totalEmployees} employees enrolled</p>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-5 flex items-start gap-3">
+        <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-3">
           <div className="size-10 rounded-xl bg-accent flex items-center justify-center flex-shrink-0"><BarChart2 size={18} className="text-primary" /></div>
           <div>
-            <p className="text-xs text-muted-foreground font-medium mb-1">Insurance Utilization</p>
+            <p className="text-xs text-muted-foreground font-medium mb-1">Enrollment rate</p>
             <p className="text-2xl font-bold text-foreground">{utilizationPct}%</p>
-            <p className="text-[11px] text-muted-foreground mt-1">{totalEnrolled} out of {totalEmployees} employees</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{totalEnrolled} of {totalEmployees} employees enrolled</p>
           </div>
         </div>
-      </div>
-
-      {/* Dept cost chart */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Location-wise Cost Analysis</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Current vs previous cycle · in ₹k</p>
-          </div>
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-primary" />Current</div>
-            <div className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-primary/30" />Previous</div>
-          </div>
-        </div>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartData} barGap={4} barCategoryGap="30%">
-            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v}k`} />
-            <Tooltip
-              contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.tooltipBorder}`, fontSize: 12 }}
-              formatter={(v, name) => [`₹${v}k`, name]}
-            />
-            <Bar dataKey="Current"  fill={CHART.primary} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Previous" fill={CHART.primaryMuted} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
       </div>
 
       {/* Cost trend */}
-      <div className="bg-card border border-border rounded-2xl p-5">
+      <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-semibold text-foreground">Insurance Cost Trend (7 Batches)</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Total estimated liability per batch · in $k</p>
+            <p className="text-sm font-semibold text-foreground">Premium trend by batch</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Last 7 batches · amounts in ₹ thousands</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={BATCH_TREND}>
             <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} domain={["auto", "auto"]} tickFormatter={v => `$${v}k`} />
+            <YAxis tick={{ fontSize: 11, fill: CHART.tick }} axisLine={false} tickLine={false} domain={["auto", "auto"]} tickFormatter={v => `₹${v}k`} />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.tooltipBorder}`, fontSize: 12 }}
-              formatter={(v) => [`$${v}k`, "Est. Cost"]}
+              formatter={(v) => [`₹${v}k`, "Estimated premium"]}
             />
             <Line type="monotone" dataKey="cost" stroke={CHART.primary} strokeWidth={2.5} dot={{ r: 4, fill: CHART.primary }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Dept breakdown table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* Cost distribution by dependents */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <p className="text-sm font-semibold text-foreground">Location Cost Breakdown</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Employee count vs insurance cost per location</p>
+          <p className="text-sm font-semibold text-foreground">Premium by dependent type</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {dependentTableSubtitle} · Split across enrolled employees
+          </p>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/30">
+              {["Dependent type", "Count", "Premium"].map((h, i) => (
+                <th
+                  key={h}
+                  className={cn(
+                    "px-5 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap",
+                    i > 0 ? "text-right" : "text-left",
+                  )}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dependentCostDist.rows.map(row => (
+              <tr key={row.key} className="border-b border-border hover:bg-muted/30 transition-colors">
+                <td className="px-5 py-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="size-2 rounded-sm flex-shrink-0"
+                      style={{ backgroundColor: DEP_COLORS[row.key] ?? "var(--muted-foreground)" }}
+                    />
+                    <span className="text-[13px] font-semibold text-foreground">{row.type}</span>
+                  </div>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <span className="text-xs font-semibold text-foreground tabular-nums">{row.count}</span>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <span className="text-xs font-semibold text-foreground tabular-nums">
+                    {row.premium > 0 ? fmtCurrencyFull(row.premium) : "—"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            <tr className="bg-muted/20">
+              <td className="px-5 py-3 text-[13px] font-semibold text-foreground">{dependentCostDist.totals.type}</td>
+              <td className="px-5 py-3 text-right text-xs font-semibold text-foreground tabular-nums">
+                {dependentCostDist.totals.count}
+              </td>
+              <td className="px-5 py-3 text-right text-xs font-semibold text-foreground tabular-nums">
+                {dependentCostDist.totals.premium > 0
+                  ? fmtCurrencyFull(dependentCostDist.totals.premium)
+                  : "—"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Location breakdown table */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <p className="text-sm font-semibold text-foreground">Premium by location</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Headcount, enrollment, and premium</p>
+          {locationData.length === 0 && (
+            <p className="text-[11px] text-warning mt-1">No employees match your filter. Showing company-wide baseline data.</p>
+          )}
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
-              {["Location", "Total Employees", "Enrolled", "Utilization", "Est. Cost (Current)", "vs Previous", "Avg/Employee"].map(h => (
+              {["Location", "Employees", "Enrolled", "Enrollment rate", "Premium", "Change vs prior period", "Avg premium per enrolled"].map(h => (
                 <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {LOCATION_COST.map(d => {
+            {locationRows.map(d => {
               const delta = d.cost - d.prev;
               const deltaPct = Math.round(delta / d.prev * 100);
               return (
@@ -1161,18 +2022,15 @@ function FinancialTab() {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
+      </div>
 
-
-// ─── Section heading helper ───────────────────────────────────────────────────
-
-function SectionHeading({ icon: Icon, label }) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <Icon size={13} className="text-muted-foreground" />
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</h2>
+      <ReportDownloadsPanel
+        layout="horizontal"
+        filterMode={filterMode}
+        activeBatch={activeBatch}
+        fromDate={fromDate}
+        toDate={toDate}
+      />
     </div>
   );
 }
@@ -1180,13 +2038,29 @@ function SectionHeading({ icon: Icon, label }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "overview",   label: "Overview"          },
-  { id: "batch",      label: "Batch Processing"  },
-  { id: "financial",  label: "Financial Insights"},
+  { id: "overview",   label: "Overview"           },
+  { id: "financial",  label: "Financials" },
 ];
 
 export default function InsuranceManagementPage({ onNavigate }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [filterMode, setFilterMode] = useState("batch");
+  const [activeBatch, setActiveBatch] = useState(() => getDefaultActiveBatchId());
+  const [fromDate, setFromDate] = useState("2026-04-01");
+  const [toDate, setToDate] = useState("2026-05-18");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const filteredEmployeeCount = useMemo(
+    () => getFilteredEmployees({ filterMode, activeBatch, fromDate, toDate }).length,
+    [filterMode, activeBatch, fromDate, toDate],
+  );
+
+  const filterProps = { filterMode, activeBatch, fromDate, toDate };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    window.setTimeout(() => setIsRefreshing(false), 1200);
+  };
 
   return (
     <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
@@ -1208,41 +2082,50 @@ export default function InsuranceManagementPage({ onNavigate }) {
             {/* Page header */}
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-foreground">Insurance Management</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Batch 1 · May 1–15</span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Benefits enrollment oversight · Super Admin</p>
+                <h1 className="text-xl font-bold text-foreground">Insurance Management</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Track enrollment and premium across batches</p>
               </div>
-              <button
+              <Button
                 type="button"
-                className="flex flex-shrink-0 items-center gap-1.5 h-9 px-3.5 rounded-xl text-sm font-medium text-muted-foreground bg-card border border-border hover:bg-muted transition-colors"
+                variant="outline"
+                size="lg"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-busy={isRefreshing}
+                className="flex-shrink-0"
               >
-                <RefreshCw size={13} /> Sync
-              </button>
+                <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+                {isRefreshing ? "Refreshing…" : "Refresh"}
+              </Button>
             </div>
 
-            {/* Tab nav */}
-            <div className="flex items-center gap-0.5 bg-muted rounded-2xl p-1 mb-6 w-fit">
-              {TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`h-8 px-4 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <EnrollmentFilterBar
+              filterMode={filterMode}
+              setFilterMode={setFilterMode}
+              activeBatch={activeBatch}
+              setActiveBatch={setActiveBatch}
+              fromDate={fromDate}
+              setFromDate={setFromDate}
+              toDate={toDate}
+              setToDate={setToDate}
+              employeeCount={filteredEmployeeCount}
+            />
 
-            {/* Tab content */}
-            {activeTab === "overview"  && <OverviewTab />}
-            {activeTab === "batch"     && <BatchTab />}
-            {activeTab === "financial" && <FinancialTab />}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+              <TabsList className="mb-0">
+                {TABS.map(tab => (
+                  <TabsTrigger key={tab.id} value={tab.id}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <TabsContent value="overview" className="mt-5">
+                <OverviewTab {...filterProps} />
+              </TabsContent>
+              <TabsContent value="financial" className="mt-5">
+                <FinancialTab {...filterProps} />
+              </TabsContent>
+            </Tabs>
 
           </div>
         </div>

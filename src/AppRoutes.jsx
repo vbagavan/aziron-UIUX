@@ -36,7 +36,9 @@ import PricingPlansPage from "@/components/pages/PricingPlansPage";
 import TenantUsersPage from "@/components/pages/TenantUsersPage";
 import PulsePage from "@/components/pages/PulsePage";
 import InsuranceManagementPage from "@/components/pages/InsuranceManagementPage";
+import InsuranceConfigPage     from "@/components/pages/InsuranceConfigPage";
 import EmployeeInsurancePage from "@/components/pages/EmployeeInsurancePage";
+import MyProfilePage from "@/components/pages/MyProfilePage";
 
 const FlowViewPage = lazy(() => import("@/components/pages/FlowViewPage"));
 
@@ -304,8 +306,11 @@ export default function AppRoutes() {
       />
       <Route path="/pricing-plans" element={<PricingPlansPage onNavigate={onNavigate} />} />
       <Route path="/insurance-management" element={<InsuranceManagementPage onNavigate={onNavigate} />} />
+      <Route path="/insurance-config"     element={<InsuranceConfigPage     onNavigate={onNavigate} />} />
       <Route path="/employee-insurance"   element={<EmployeeInsurancePage   onNavigate={onNavigate} />} />
       <Route path="/tenant-users" element={<TenantUsersPage onNavigate={onNavigate} />} />
+
+      <Route path="/my-profile" element={<MyProfilePage onNavigate={onNavigate} />} />
 
       <Route path="*" element={<NotFoundPage onNavigate={onNavigate} />} />
     </Routes>

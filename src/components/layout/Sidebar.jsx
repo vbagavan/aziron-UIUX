@@ -68,7 +68,7 @@ const navGroups = [
           { icon: ShieldCheck, label: "Roles",       page: "users-roles"  },
         ],
       },
-      { icon: Shield,           label: "Employee Insurance", page: "employee-insurance", roles: ["tenantuser", "tenantadmin"] },
+      { icon: Shield,           label: "Employee Insurance", page: "employee-insurance", roles: ["tenantuser", "tenantadmin"], hidden: true },
       { icon: BarChart2,        label: "Usage",   page: "usage",   roles: ["superadmin", "tenantadmin"] },
       { icon: LayoutDashboard,  label: "Pulse",   page: "pulse",   roles: ["superadmin", "tenantadmin"] },
       {
@@ -92,7 +92,14 @@ const navGroups = [
     items: [
       { icon: Building2,     label: "Tenants",              page: "tenants",              activeFor: ["tenant-detail", "tenant-create"], roles: ["superadmin", "tenantadmin"] },
       { icon: Tag,           label: "Pricing & Plans",      page: "pricing-plans",        roles: ["superadmin"] },
-      { icon: ClipboardList, label: "Insurance Management", page: "insurance-management", roles: ["superadmin"] },
+      {
+        icon: ClipboardList, label: "Insurance Management",
+        roles: ["superadmin"],
+        subItems: [
+          { icon: LayoutDashboard, label: "Enrollment Dashboard", page: "insurance-management" },
+          { icon: Settings,        label: "Configuration",        page: "insurance-config"     },
+        ],
+      },
     ],
   },
 ];
@@ -318,6 +325,10 @@ function UserFooter({ onNavigate }) {
 
           {/* Settings & Logout */}
           <div className="pb-1.5">
+            <button onClick={() => { setOpen(false); onNavigate?.("my-profile"); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <UserCircle size={14} /> My Profile
+            </button>
             <button onClick={() => { setOpen(false); onNavigate?.("settings"); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
               <Settings size={14} /> Settings
@@ -650,13 +661,16 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
           tooltip={displayLabel}
           isActive={active}
           onClick={() => onNavigate?.(item.page)}
-          className="relative"
+          className={cn(
+            "relative rounded-lg transition-all duration-200",
+            active && "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15",
+          )}
         >
           <span
             className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-primary transition-all duration-300"
-            style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
+            style={{ height: active ? 20 : 0, opacity: active ? 1 : 0 }}
           />
-          <span className={`truncate ${active ? "font-medium" : ""}`}>{displayLabel}</span>
+          <span className={cn("truncate", active && "font-semibold")}>{displayLabel}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -668,25 +682,24 @@ function NavItem({ item, activePage, onNavigate, role = "superadmin" }) {
         tooltip={displayLabel}
         isActive={active}
         onClick={() => onNavigate?.(item.page)}
-        className="relative"
+        className={cn(
+          "relative rounded-lg transition-all duration-200",
+          active && "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15",
+        )}
       >
         <span
           className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-full bg-primary transition-all duration-300"
-          style={{ height: active ? 18 : 0, opacity: active ? 1 : 0 }}
+          style={{ height: active ? 20 : 0, opacity: active ? 1 : 0 }}
         />
         <item.icon
-          style={{ transform: active ? "scale(1.15)" : "scale(1)", transition: "transform 0.2s" }}
           className={cn(
-            "transition-opacity duration-150",
-            isParentActive
-              ? "text-blue-900 dark:text-blue-400 opacity-100"
-              : "opacity-50 group-hover/menu-button:opacity-100"
+            "transition-all duration-200",
+            active ? "text-primary scale-110" : "text-muted-foreground group-hover/menu-button:text-foreground",
           )}
         />
-        <span className={cn(
-          "transition-opacity duration-150",
-          active ? "font-medium opacity-100" : "opacity-70 group-hover/menu-button:opacity-100"
-        )}>{displayLabel}</span>
+        <span className={cn("transition-colors duration-200", active ? "font-semibold" : "font-medium")}>
+          {displayLabel}
+        </span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -699,7 +712,7 @@ function NavGroup({ group, activePage, onNavigate, role }) {
 
   // Filter items by role
   const visibleItems = group.items.filter(item =>
-    !item.roles || item.roles.includes(role)
+    !item.hidden && (!item.roles || item.roles.includes(role))
   );
 
   // Check if any item in this group is active (for auto-expand behavior)
