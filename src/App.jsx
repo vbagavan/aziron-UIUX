@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { FlowCatalogProvider } from "@/context/FlowCatalogContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import LoginPage from "@/components/pages/LoginPage";
 import AppRoutes from "@/AppRoutes";
 
@@ -45,10 +46,12 @@ function AppInner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppInner />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppInner />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

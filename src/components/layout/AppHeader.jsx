@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, ChevronDown, Check, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useTheme } from "@/context/ThemeContext";
 import NotificationPanel from "@/components/layout/NotificationPanel";
 
 // ─── Language data ─────────────────────────────────────────────────────────────
@@ -18,42 +19,31 @@ const LANGUAGES = [
 
 // ─── Theme toggle ──────────────────────────────────────────────────────────────
 function ThemeToggle() {
-  const [dark, setDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const saved = localStorage.getItem("theme");
-    if (saved) return saved === "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
+  const { mode, setThemeMode } = useTheme();
+  const isDark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (dark) {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [dark]);
+  const handleToggle = () => {
+    setThemeMode(isDark ? "light" : "dark");
+  };
 
   return (
     <button
-      onClick={() => setDark((v) => !v)}
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={handleToggle}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="relative flex items-center justify-center size-8 rounded-full text-muted-foreground transition-colors hover:bg-muted overflow-hidden"
     >
       <Sun
         size={15}
         className={cn(
           "absolute transition-all duration-300",
-          dark ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100",
+          isDark ? "opacity-0 rotate-90 scale-50" : "opacity-100 rotate-0 scale-100",
         )}
       />
       <Moon
         size={15}
         className={cn(
           "absolute transition-all duration-300",
-          dark ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50",
+          isDark ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-50",
         )}
       />
     </button>

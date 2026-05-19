@@ -8,6 +8,7 @@ import {
   Mail, PhoneCall,
 } from "lucide-react";
 import { TENANTS, SAAS_TIERS, getLimits } from "@/data/adminData";
+import { useTheme } from "@/context/ThemeContext";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 
@@ -72,8 +73,7 @@ function SystemPreview(){
 // ─── Appearance panel ─────────────────────────────────────────────────────────
 
 function AppearancePanel(){
-  const [themeColor, setThemeColor] = useState("blue");
-  const [themeMode,  setThemeMode]  = useState("dark");
+  const { color: themeColor, mode: themeMode, setThemeColor, setThemeMode } = useTheme();
   return(
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
