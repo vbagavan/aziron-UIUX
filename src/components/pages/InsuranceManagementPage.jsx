@@ -10,7 +10,7 @@ import {
   TrendingUp, TrendingDown, RefreshCw, ChevronLeft, ChevronRight,
   DollarSign, BarChart2, FileSpreadsheet, Filter,
   ArrowRight, FileDown, UserPlus,
-  Activity,
+  Activity, Settings,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -411,27 +411,6 @@ function LocationOverviewPanel({ data, subtitle }) {
         ))}
       </div>
 
-      <div className="space-y-2 border-t border-border pt-3">
-        {data.map(row => (
-          <div key={row.location} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[9px] font-bold text-primary">
-                {row.short}
-              </span>
-              <div className="min-w-0">
-                <span className="text-xs font-medium text-foreground truncate block">{row.location}</span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">
-                  {row.completed} enrolled · {row.pending} pending · {row.missed} missed
-                </span>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-xs font-semibold text-foreground tabular-nums block">{row.total}</span>
-              <span className="text-[10px] text-muted-foreground">{fmtCurrency(row.cost)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
     </Card>
   );
 }
@@ -1702,18 +1681,28 @@ export default function InsuranceManagementPage({ onNavigate }) {
                 <h1 className="text-xl font-bold text-foreground">Insurance Management</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Track enrollment and premium across batches</p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                aria-busy={isRefreshing}
-                className="flex-shrink-0"
-              >
-                <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-                {isRefreshing ? "Refreshing…" : "Refresh"}
-              </Button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  aria-busy={isRefreshing}
+                >
+                  <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+                  {isRefreshing ? "Refreshing…" : "Refresh"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => onNavigate?.("insurance-config")}
+                >
+                  <Settings size={13} />
+                  Configuration
+                </Button>
+              </div>
             </div>
 
             <EnrollmentFilterBar

@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   ChevronRight, Settings, Building2, FileText, Upload, Clock,
   Plus, Trash2, Edit2, Check, X, Save, AlertCircle, CheckCircle2,
-  FileBadge, FileImage, FileSpreadsheet, Paperclip,
+  FileBadge, FileImage, FileSpreadsheet, Paperclip, ArrowLeft,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -609,7 +609,15 @@ export default function InsuranceConfigPage({ onNavigate }) {
 
             {/* Page header */}
             <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.("insurance-management")}
+                  className="flex items-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft size={13} />
+                  Back to dashboard
+                </button>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold text-foreground">Insurance setup</h1>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Open enrollment · 2026</span>

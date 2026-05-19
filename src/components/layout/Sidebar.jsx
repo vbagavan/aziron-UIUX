@@ -93,12 +93,11 @@ const navGroups = [
       { icon: Building2,     label: "Tenants",              page: "tenants",              activeFor: ["tenant-detail", "tenant-create"], roles: ["superadmin", "tenantadmin"] },
       { icon: Tag,           label: "Pricing & Plans",      page: "pricing-plans",        roles: ["superadmin"] },
       {
-        icon: ClipboardList, label: "Insurance Management",
+        icon: ClipboardList,
+        label: "Insurance Management",
+        page: "insurance-management",
+        activeFor: ["insurance-config"],
         roles: ["superadmin"],
-        subItems: [
-          { icon: LayoutDashboard, label: "Enrollment Dashboard", page: "insurance-management" },
-          { icon: Settings,        label: "Configuration",        page: "insurance-config"     },
-        ],
       },
     ],
   },
