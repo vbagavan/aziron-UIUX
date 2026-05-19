@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  Tooltip, ResponsiveContainer, LabelList,
 } from "recharts";
 import {
   ClipboardList, Users, FileText, CheckCircle2,
@@ -36,6 +36,13 @@ const CHART = {
   primary: "var(--primary)",
   primaryMuted: "var(--chart-chart-2)",
   tooltipBorder: "var(--border)",
+};
+
+/** Explicit fills for Recharts SVG — CSS variables often do not apply to Bar fill. */
+const CHART_STATUS_COLORS = {
+  completed: "#22c55e",
+  pending: "#f59e0b",
+  missed: "#ef4444",
 };
 
 const METRIC_VARIANT = {
@@ -213,9 +220,9 @@ function getOverviewStatus(status, enrollmentClosed) {
 }
 
 const STATUS_STACK = {
-  completed: { label: "Enrolled",       fill: "var(--success)" },
-  pending:   { label: "Pending",        fill: "var(--warning)" },
-  missed:    { label: "Did not enroll", fill: "var(--destructive)" },
+  completed: { label: "Enrolled", fill: CHART_STATUS_COLORS.completed },
+  pending:   { label: "Pending", fill: CHART_STATUS_COLORS.pending },
+  missed:    { label: "Did not enroll", fill: CHART_STATUS_COLORS.missed },
 };
 
 function buildLocationOverviewData(employees, { batch: selectedBatch, filterMode }) {
@@ -244,25 +251,78 @@ function buildLocationOverviewData(employees, { batch: selectedBatch, filterMode
   return Object.values(byLoc).sort((a, b) => b.total - a.total);
 }
 
-function LocationStatusTooltip({ active, payload, label }) {
+function LocationBarTotalLabel({ x, y, width, height, value }) {
+  const total = Number(value);
+  if (!total) return null;
+  return (
+    <text
+      x={(x ?? 0) + (width ?? 0) + 8}
+      y={(y ?? 0) + (height ?? 0) / 2}
+      fill="var(--foreground)"
+      fontSize={11}
+      fontWeight={600}
+      dominantBaseline="middle"
+    >
+      {total}
+    </text>
+  );
+}
+
+function LocationSegmentLabel({ x, y, width, height, value, dataKey }) {
+  const count = Number(value);
+  if (!count || count < 2 || (width ?? 0) < 22) return null;
+  const fill = dataKey === "pending" ? "#422006" : "#ffffff";
+  return (
+    <text
+      x={(x ?? 0) + (width ?? 0) / 2}
+      y={(y ?? 0) + (height ?? 0) / 2}
+      fill={fill}
+      fontSize={9}
+      fontWeight={600}
+      textAnchor="middle"
+      dominantBaseline="middle"
+    >
+      {count}
+    </text>
+  );
+}
+
+function LocationStatusTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
   if (!row) return null;
+  const total = row.total || 1;
+  const enrolledPct = Math.round((row.completed / total) * 100);
   return (
     <div
-      className="rounded-xl border border-border bg-card px-3 py-2.5 text-xs shadow-lg"
+      className="rounded-xl border border-border bg-card px-3 py-2.5 text-xs shadow-lg min-w-[168px]"
       style={{ borderColor: CHART.tooltipBorder }}
     >
-      <p className="font-semibold text-foreground mb-1.5">{row.location}</p>
-      {(["completed", "pending", "missed"]).map(key => row[key] > 0 && (
-        <div key={key} className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">{STATUS_STACK[key].label}</span>
-          <span className="font-semibold text-foreground">{row[key]}</span>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="font-semibold text-foreground">{row.location}</p>
+        <span className="text-[10px] font-bold text-muted-foreground tabular-nums">{row.total} total</span>
+      </div>
+      {(["completed", "pending", "missed"]).map(key => {
+        if (!row[key]) return null;
+        const pct = Math.round((row[key] / total) * 100);
+        return (
+          <div key={key} className="flex items-center gap-2 mb-1">
+            <span className="size-2 rounded-sm shrink-0" style={{ backgroundColor: STATUS_STACK[key].fill }} />
+            <span className="flex-1 text-muted-foreground">{STATUS_STACK[key].label}</span>
+            <span className="font-semibold text-foreground tabular-nums">{row[key]}</span>
+            <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
+          </div>
+        );
+      })}
+      <div className="mt-2 pt-2 border-t border-border space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Enrollment rate</span>
+          <span className="font-semibold text-success">{enrolledPct}%</span>
         </div>
-      ))}
-      <div className="mt-1.5 pt-1.5 border-t border-border flex items-center justify-between gap-4">
-        <span className="text-muted-foreground">Estimated premium</span>
-        <span className="font-semibold text-foreground">{fmtCurrency(row.cost)}</span>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Estimated premium</span>
+          <span className="font-semibold text-foreground">{fmtCurrency(row.cost)}</span>
+        </div>
       </div>
     </div>
   );
@@ -281,7 +341,9 @@ function LocationOverviewPanel({ data, subtitle }) {
     );
   }
 
-  const chartHeight = Math.max(140, data.length * 44);
+  const chartHeight = Math.max(160, data.length * 48);
+  const maxTotal = Math.max(...data.map(d => d.total), 1);
+  const chartData = data.map(d => ({ ...d, _trackTrail: Math.max(0, maxTotal - d.total) }));
 
   return (
     <Card className="p-5 shadow-none">
@@ -294,24 +356,49 @@ function LocationOverviewPanel({ data, subtitle }) {
 
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart
-          data={data}
+          data={chartData}
           layout="vertical"
-          margin={{ top: 0, right: 4, left: 0, bottom: 0 }}
-          barSize={18}
+          margin={{ top: 4, right: 40, left: 0, bottom: 4 }}
+          barSize={22}
+          barCategoryGap="32%"
         >
-          <XAxis type="number" hide domain={[0, "dataMax"]} />
+          <XAxis
+            type="number"
+            domain={[0, Math.ceil(maxTotal * 1.1)]}
+            hide
+          />
           <YAxis
             type="category"
             dataKey="short"
-            width={34}
-            tick={{ fontSize: 10, fill: CHART.tick }}
+            width={38}
+            tick={{ fontSize: 10, fill: CHART.tick, fontWeight: 600 }}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<LocationStatusTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.4 }} />
-          <Bar dataKey="completed" stackId="status" fill={STATUS_STACK.completed.fill} radius={[0, 0, 0, 0]} />
-          <Bar dataKey="pending" stackId="status" fill={STATUS_STACK.pending.fill} />
-          <Bar dataKey="missed" stackId="status" fill={STATUS_STACK.missed.fill} radius={[0, 4, 4, 0]} />
+          <Tooltip content={<LocationStatusTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.35 }} />
+          <Bar
+            dataKey="completed"
+            stackId="status"
+            fill={STATUS_STACK.completed.fill}
+            radius={[4, 0, 0, 4]}
+            background={{ fill: "var(--muted)", radius: 4 }}
+          >
+            <LabelList dataKey="completed" content={<LocationSegmentLabel />} />
+          </Bar>
+          <Bar dataKey="pending" stackId="status" fill={STATUS_STACK.pending.fill}>
+            <LabelList dataKey="pending" content={<LocationSegmentLabel />} />
+          </Bar>
+          <Bar dataKey="missed" stackId="status" fill={STATUS_STACK.missed.fill} radius={[0, 4, 4, 0]}>
+            <LabelList dataKey="missed" content={<LocationSegmentLabel />} />
+          </Bar>
+          <Bar
+            dataKey="_trackTrail"
+            stackId="status"
+            fill="transparent"
+            isAnimationActive={false}
+          >
+            <LabelList dataKey="total" content={<LocationBarTotalLabel />} />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
 
@@ -331,9 +418,17 @@ function LocationOverviewPanel({ data, subtitle }) {
               <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-[9px] font-bold text-primary">
                 {row.short}
               </span>
-              <span className="text-xs font-medium text-foreground truncate">{row.location}</span>
+              <div className="min-w-0">
+                <span className="text-xs font-medium text-foreground truncate block">{row.location}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {row.completed} enrolled · {row.pending} pending · {row.missed} missed
+                </span>
+              </div>
             </div>
-            <span className="text-xs font-semibold text-foreground shrink-0">{fmtCurrency(row.cost)}</span>
+            <div className="text-right shrink-0">
+              <span className="text-xs font-semibold text-foreground tabular-nums block">{row.total}</span>
+              <span className="text-[10px] text-muted-foreground">{fmtCurrency(row.cost)}</span>
+            </div>
           </div>
         ))}
       </div>
