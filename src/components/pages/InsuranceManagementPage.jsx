@@ -1289,54 +1289,53 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
         {/* ── Right sidebar (1/3) ── */}
         <div className="space-y-4 lg:sticky lg:top-6 self-start">
           {/* Insights panel — adapts to batch vs range mode */}
-          <Card className="border-0 bg-gradient-to-br from-primary to-primary/80 rounded-xl p-5 text-primary-foreground shadow-none">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-primary-muted-foreground">
+          <Card className="rounded-xl border border-border border-l-4 border-l-primary bg-card p-5 shadow-sm">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {filterMode === "batch" ? "Batch summary" : "Date range summary"}
               </p>
               {filterMode === "batch" ? (
                 <Badge
                   variant="outline"
                   className={cn(
-                    "h-auto rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
-                    batch.status === "active" && "border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground",
-                    batch.status === "completed" && "border-primary-foreground/25 bg-primary-foreground/15 text-primary-foreground/90",
-                    batch.status !== "active" && batch.status !== "completed" && "border-primary-foreground/20 bg-primary-foreground/10 text-primary-muted-foreground",
+                    "h-auto shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase",
+                    batch.status === "active" && "border-primary/30 bg-primary/10 text-primary",
+                    batch.status === "completed" && "border-border bg-muted text-muted-foreground",
+                    batch.status !== "active" && batch.status !== "completed" && "border-border bg-muted text-muted-foreground",
                   )}
                 >
                   {batch.status === "active" ? "Active" : batch.status === "completed" ? "Completed" : "Upcoming"}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="h-auto rounded-full border-primary-foreground/30 bg-primary-foreground/15 px-2 py-0.5 text-[9px] font-bold uppercase text-primary-foreground">
+                <Badge variant="outline" className="h-auto shrink-0 rounded-full border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase text-primary">
                   Custom range
                 </Badge>
               )}
             </div>
-            <h3 className="mt-1 mb-0.5 text-base font-bold">
+            <h3 className="mt-1 mb-0.5 text-base font-bold text-foreground">
               {filterMode === "batch" ? batch.label : "Custom date range"}
             </h3>
-            <p className="mb-5 text-xs text-primary-muted-foreground">
+            <p className="mb-5 text-xs text-muted-foreground">
               {filterMode === "batch" ? batch.dateRange : `${fromDate} – ${toDate}`}
             </p>
 
             <div className="space-y-3">
-              <div className="rounded-xl bg-primary-foreground/10 p-4">
-                <p className="mb-1 text-[10px] text-primary-muted-foreground">Total Premium</p>
-                <p className="text-2xl font-bold">
+              <div className="rounded-xl bg-muted/50 p-4">
+                <p className="mb-1 text-[10px] font-medium text-muted-foreground">Total premium</p>
+                <p className="text-2xl font-bold text-primary">
                   {fmtCurrency(filterMode === "batch" ? batch.totalPremium : rangePremium)}
                 </p>
               </div>
 
-
-              <div className="rounded-xl bg-primary-foreground/10 p-3.5">
+              <div className="rounded-xl bg-muted/50 p-3.5">
                 <div className="mb-2.5 flex items-center justify-between">
-                  <p className="text-[10px] text-primary-muted-foreground">
+                  <p className="text-[10px] font-medium text-muted-foreground">
                     Enrollment completion
                   </p>
-                  <p className="text-sm font-bold">{perfPct}% complete</p>
+                  <p className="text-sm font-bold text-foreground">{perfPct}% complete</p>
                 </div>
-                <div className="h-2 rounded-full bg-primary-foreground/20">
-                  <div className="h-full rounded-full bg-primary-foreground transition-all duration-700" style={{ width: `${perfPct}%` }} />
+                <div className="h-2 rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${perfPct}%` }} />
                 </div>
               </div>
             </div>

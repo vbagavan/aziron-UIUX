@@ -19,11 +19,11 @@ function SectionCard({ icon: Icon, title, subtitle, children, action }) {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
             <Icon size={16} className="text-primary" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">{title}</p>
             {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
@@ -120,7 +120,7 @@ function InsurerSection() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            {saved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 size={13} /> Saved</span>}
+            {saved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 size={13} /> Changes saved</span>}
             <button onClick={() => { setEditing(true); setDraft(data); }} className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-muted-foreground border border-border hover:bg-muted transition-colors"><Edit2 size={13} /> Edit</button>
           </div>
         )
@@ -146,7 +146,7 @@ function InsurerSection() {
           />
         </FormField>
         <FormField label="Contact Person">
-          <TextInput {...field("contactPerson")} placeholder="Relationship Manager name" />
+          <TextInput {...field("contactPerson")} placeholder="e.g. Ramesh Subramaniam" />
         </FormField>
         <FormField label="Contact Email">
           <TextInput {...field("contactEmail")} type="email" placeholder="rm@insurer.com" />
@@ -160,29 +160,35 @@ function InsurerSection() {
         <FormField label="Policy Expiry Date" required>
           <TextInput {...field("expiryDate")} type="date" />
         </FormField>
-        <FormField label="Max Coverage per Employee (₹)" hint="Applicable per insured member per year">
+        <FormField label="Sum insured per member (₹/year)">
           <TextInput {...field("maxCoverage")} type="number" placeholder="500000" />
         </FormField>
-        <FormField label="TPA Name">
-          <TextInput {...field("tpaName")} placeholder="Third-party administrator" />
+        <FormField label="TPA name" hint="TPA (third-party administrator) handles claims">
+          <TextInput {...field("tpaName")} placeholder="e.g. Medi Assist" />
         </FormField>
         <FormField label="Network Hospitals">
           <TextInput {...field("networkHospitals")} placeholder="e.g. 8,200+" />
         </FormField>
       </div>
-      {!editing && (
-        <div className="mt-5 flex flex-wrap gap-3">
-          {[
-            { label: "Policy active", ok: true },
-            { label: `Expires ${new Date(data.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`, ok: new Date(data.expiryDate) > new Date() },
-            { label: data.tpaName || "No TPA assigned", ok: !!data.tpaName },
-          ].map(({ label, ok }) => (
-            <span key={label} className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border", ok ? "bg-success/10 text-success border-success/25" : "bg-warning/10 text-warning border-warning/25")}>
-              {ok ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />} {label}
-            </span>
-          ))}
-        </div>
-      )}
+      {!editing && (() => {
+        const expiryDate = new Date(data.expiryDate);
+        const expiryOk = expiryDate > new Date();
+        const expiryFormatted = expiryDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        const chips = [
+          { id: "policy", label: "Policy in force", ok: true },
+          { id: "expiry", label: expiryOk ? `Renews ${expiryFormatted}` : `Expired ${expiryFormatted}`, ok: expiryOk },
+          { id: "tpa", label: data.tpaName ? `TPA: ${data.tpaName}` : "No TPA on file", ok: !!data.tpaName },
+        ];
+        return (
+          <div className="mt-5 flex flex-wrap gap-3">
+            {chips.map(({ id, label, ok }) => (
+              <span key={id} className={cn("flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border", ok ? "bg-success/10 text-success border-success/25" : "bg-warning/10 text-warning border-warning/25")}>
+                {ok ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />} {label}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
     </SectionCard>
   );
 }
@@ -190,23 +196,40 @@ function InsurerSection() {
 // ─── Section 2: Age-wise Premium Slabs ───────────────────────────────────────
 
 const DEFAULT_SLABS = [
-  { id: 1, ageFrom: 18, ageTo: 25, individual: 12000, couple: 22000, family: 34000 },
-  { id: 2, ageFrom: 26, ageTo: 35, individual: 18000, couple: 32000, family: 48000 },
-  { id: 3, ageFrom: 36, ageTo: 45, individual: 26000, couple: 46000, family: 68000 },
-  { id: 4, ageFrom: 46, ageTo: 55, individual: 38000, couple: 66000, family: 94000 },
-  { id: 5, ageFrom: 56, ageTo: 65, individual: 54000, couple: 92000, family: 130000 },
-  { id: 6, ageFrom: 66, ageTo: 75, individual: 78000, couple: 132000, family: 180000 },
+  { id: 1, ageFrom: 18, ageTo: 25, premium: 12000 },
+  { id: 2, ageFrom: 26, ageTo: 35, premium: 18000 },
+  { id: 3, ageFrom: 36, ageTo: 45, premium: 26000 },
+  { id: 4, ageFrom: 46, ageTo: 55, premium: 38000 },
+  { id: 5, ageFrom: 56, ageTo: 65, premium: 54000 },
+  { id: 6, ageFrom: 66, ageTo: 75, premium: 78000 },
+  { id: 7, ageFrom: 76, ageTo: 99, premium: 112000 },
 ];
 
-const EMPTY_SLAB = { ageFrom: "", ageTo: "", individual: "", couple: "", family: "" };
+function defaultNewSlab(slabs) {
+  if (!slabs.length) {
+    return { ageFrom: "18", ageTo: "25", premium: "12000" };
+  }
+  const last = slabs.reduce((a, b) => (a.ageTo >= b.ageTo ? a : b));
+  const ageFrom = last.ageTo + 1;
+  const ageTo = Math.min(ageFrom + 9, 99);
+  if (ageFrom > ageTo) {
+    return { ageFrom: "18", ageTo: "25", premium: String(last.premium) };
+  }
+  const premium = Math.round(last.premium * 1.12);
+  return {
+    ageFrom: String(ageFrom),
+    ageTo: String(ageTo),
+    premium: String(premium),
+  };
+}
 
 function PremiumSlabsSection() {
   const [slabs, setSlabs] = useState(DEFAULT_SLABS);
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({});
   const [addMode, setAddMode] = useState(false);
-  const [newSlab, setNewSlab] = useState(EMPTY_SLAB);
-  const nextId = useRef(slabs.length + 1);
+  const [newSlab, setNewSlab] = useState(() => defaultNewSlab(DEFAULT_SLABS));
+  const nextId = useRef(DEFAULT_SLABS.length + 1);
 
   const startEdit = (slab) => { setEditingId(slab.id); setDraft({ ...slab }); };
   const cancelEdit = () => { setEditingId(null); setDraft({}); };
@@ -216,25 +239,38 @@ function PremiumSlabsSection() {
   };
   const deleteSlab = (id) => setSlabs(s => s.filter(r => r.id !== id));
   const addSlab = () => {
-    setSlabs(s => [...s, { ...newSlab, id: ++nextId.current, ageFrom: +newSlab.ageFrom, ageTo: +newSlab.ageTo, individual: +newSlab.individual, couple: +newSlab.couple, family: +newSlab.family }]);
-    setNewSlab(EMPTY_SLAB);
+    setSlabs(s => [...s, { ...newSlab, id: ++nextId.current, ageFrom: +newSlab.ageFrom, ageTo: +newSlab.ageTo, premium: +newSlab.premium }]);
+    setNewSlab(defaultNewSlab([...slabs, { ageFrom: +newSlab.ageFrom, ageTo: +newSlab.ageTo, premium: +newSlab.premium }]));
     setAddMode(false);
   };
 
-  const numInput = (val, onChange) => (
-    <input type="number" value={val} onChange={e => onChange(e.target.value)}
-      className="w-full h-8 px-2 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 text-right" />
+  const openAddSlab = () => {
+    setNewSlab(defaultNewSlab(slabs));
+    setAddMode(true);
+  };
+
+  const numInput = (val, onChange, { placeholder, align = "right" } = {}) => (
+    <input
+      type="number"
+      value={val}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cn(
+        "w-full h-8 px-2 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30",
+        align === "right" ? "text-right" : "text-left",
+      )}
+    />
   );
 
   return (
     <SectionCard
       icon={FileSpreadsheet}
-      title="Age-wise Premium Slabs"
-      subtitle="Annual premium (₹) by age bracket and coverage type · inclusive age ranges"
+      title="Premium by age"
+      subtitle="Annual employee premium (₹) for each age band. Ages at range ends are included."
       action={
-        <button onClick={() => setAddMode(true)} disabled={addMode}
+        <button onClick={openAddSlab} disabled={addMode}
           className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors disabled:opacity-40">
-          <Plus size={13} /> Add Slab
+          <Plus size={13} /> Add age band
         </button>
       }
     >
@@ -242,8 +278,10 @@ function PremiumSlabsSection() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              {["Age Range", "Individual (₹)", "Couple (₹)", "Family (₹)", "Actions"].map((h, i) => (
-                <th key={h} className={cn("px-4 py-2.5 text-[11px] font-semibold text-muted-foreground whitespace-nowrap", i === 4 ? "text-right pr-4" : i === 0 ? "text-left" : "text-right")}>{h}</th>
+              {["Age band", "Annual premium (₹)", ""].map((h, i) => (
+                <th key={i} scope="col" className={cn("px-4 py-2.5 text-[11px] font-semibold text-muted-foreground whitespace-nowrap", i === 2 ? "text-right pr-4" : i === 0 ? "text-left" : "text-right")}>
+                  {i === 2 ? <span className="sr-only">Actions</span> : h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -255,33 +293,31 @@ function PremiumSlabsSection() {
                   <td className="px-4 py-3">
                     {isEditing ? (
                       <div className="flex items-center gap-1.5">
-                        {numInput(draft.ageFrom, v => setDraft(d => ({ ...d, ageFrom: v })))}
+                        {numInput(draft.ageFrom, v => setDraft(d => ({ ...d, ageFrom: v })), { placeholder: "Min age", align: "left" })}
                         <span className="text-xs text-muted-foreground">–</span>
-                        {numInput(draft.ageTo, v => setDraft(d => ({ ...d, ageTo: v })))}
+                        {numInput(draft.ageTo, v => setDraft(d => ({ ...d, ageTo: v })), { placeholder: "Max age", align: "left" })}
                         <span className="text-xs text-muted-foreground">yrs</span>
                       </div>
                     ) : (
                       <span className="text-xs font-semibold text-foreground">{slab.ageFrom}–{slab.ageTo} yrs</span>
                     )}
                   </td>
-                  {[["individual", draft], ["couple", draft], ["family", draft]].map(([key, d]) => (
-                    <td key={key} className="px-4 py-3 text-right">
-                      {isEditing
-                        ? numInput(d[key], v => setDraft(prev => ({ ...prev, [key]: v })))
-                        : <span className="text-xs text-foreground">{fmtINR(slab[key])}</span>
-                      }
-                    </td>
-                  ))}
+                  <td className="px-4 py-3 text-right">
+                    {isEditing
+                      ? numInput(draft.premium, v => setDraft(d => ({ ...d, premium: v })), { placeholder: "Amount" })
+                      : <span className="text-xs text-foreground">{fmtINR(slab.premium)}</span>
+                    }
+                  </td>
                   <td className="px-4 py-3 text-right">
                     {isEditing ? (
                       <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={saveEdit} className="size-7 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
-                        <button onClick={cancelEdit} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
+                        <button type="button" onClick={saveEdit} aria-label="Save age band" className="size-7 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
+                        <button type="button" onClick={cancelEdit} aria-label="Cancel editing" className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
                       </div>
                     ) : (
                       <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => startEdit(slab)} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors"><Edit2 size={13} /></button>
-                        <button onClick={() => deleteSlab(slab.id)} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 size={13} /></button>
+                        <button type="button" onClick={() => startEdit(slab)} aria-label={`Edit age band ${slab.ageFrom}–${slab.ageTo}`} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors"><Edit2 size={13} /></button>
+                        <button type="button" onClick={() => deleteSlab(slab.id)} aria-label={`Delete age band ${slab.ageFrom}–${slab.ageTo}`} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 size={13} /></button>
                       </div>
                     )}
                   </td>
@@ -294,21 +330,19 @@ function PremiumSlabsSection() {
               <tr className="border-b border-primary/20 bg-primary/5">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    {numInput(newSlab.ageFrom, v => setNewSlab(d => ({ ...d, ageFrom: v })))}
+                    {numInput(newSlab.ageFrom, v => setNewSlab(d => ({ ...d, ageFrom: v })), { placeholder: "Min age", align: "left" })}
                     <span className="text-xs text-muted-foreground">–</span>
-                    {numInput(newSlab.ageTo, v => setNewSlab(d => ({ ...d, ageTo: v })))}
+                    {numInput(newSlab.ageTo, v => setNewSlab(d => ({ ...d, ageTo: v })), { placeholder: "Max age", align: "left" })}
                     <span className="text-xs text-muted-foreground">yrs</span>
                   </div>
                 </td>
-                {["individual", "couple", "family"].map(key => (
-                  <td key={key} className="px-4 py-3 text-right">
-                    {numInput(newSlab[key], v => setNewSlab(d => ({ ...d, [key]: v })))}
-                  </td>
-                ))}
+                <td className="px-4 py-3 text-right">
+                  {numInput(newSlab.premium, v => setNewSlab(d => ({ ...d, premium: v })), { placeholder: "e.g. 45000" })}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
-                    <button onClick={addSlab} className="size-7 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
-                    <button onClick={() => { setAddMode(false); setNewSlab(EMPTY_SLAB); }} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
+                    <button type="button" onClick={addSlab} aria-label="Save new age band" className="size-7 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
+                    <button type="button" onClick={() => { setAddMode(false); setNewSlab(defaultNewSlab(slabs)); }} aria-label="Cancel new age band" className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
                   </div>
                 </td>
               </tr>
@@ -316,7 +350,7 @@ function PremiumSlabsSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-muted-foreground mt-3">Premiums are annual figures in Indian Rupees (₹). Family plan covers spouse + up to 2 children + parents.</p>
+      <p className="text-[11px] text-muted-foreground mt-3">All amounts are annual premiums in Indian rupees (INR).</p>
     </SectionCard>
   );
 }
@@ -382,7 +416,7 @@ function DocumentsSection() {
         onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => fileRef.current?.click()}
         className={cn(
-          "relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 mb-5 cursor-pointer transition-all",
+          "relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-5 mb-4 cursor-pointer transition-all",
           dragging ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/50 hover:bg-muted/30",
         )}
       >
@@ -402,7 +436,6 @@ function DocumentsSection() {
         )}
       </div>
 
-      {/* Document list */}
       <div className="space-y-2">
         {docs.map(doc => {
           const Icon = DOC_ICONS[doc.type] ?? Paperclip;
@@ -426,9 +459,9 @@ function DocumentsSection() {
                   ? "bg-success/10 text-success border-success/25"
                   : "bg-warning/10 text-warning border-warning/25",
               )}>
-                {doc.status === "verified" ? "Verified" : "Pending"}
+                {doc.status === "verified" ? "Verified" : "Needs review"}
               </span>
-              <button onClick={() => removeDoc(doc.id)} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0">
+              <button type="button" onClick={() => removeDoc(doc.id)} aria-label={`Remove ${doc.name}`} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0">
                 <Trash2 size={13} />
               </button>
             </div>
@@ -448,27 +481,8 @@ const DEFAULT_BATCH_CFG = {
   autoReminders: true,
   reminderDaysBefore: 3,
   gracePeriodDays: 2,
-  notes: "Batches run twice a month — 1st–15th and 16th–last day. Late submissions after grace period are automatically closed.",
+  notes: "Two windows per month: 1–15 and 16–end of month. Enrollments close after the grace period.",
 };
-
-function batchPreview(cfg) {
-  const today = new Date("2026-05-18");
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const preview = [];
-  for (let m = month; m < month + 2; m++) {
-    const mn = months[m % 12];
-    const yr = year + Math.floor(m / 12);
-    if (cfg.cycleType === "bimonthly") {
-      preview.push({ label: `${mn} B1 ${yr}`, range: `${mn} 1 – 15, ${yr}`, status: m < month + 1 ? "active" : "upcoming" });
-      preview.push({ label: `${mn} B2 ${yr}`, range: `${mn} 16 – ${new Date(yr, (m % 12) + 1, 0).getDate()}, ${yr}`, status: "upcoming" });
-    } else {
-      preview.push({ label: `${mn} ${yr}`, range: `${mn} 1 – ${new Date(yr, (m % 12) + 1, 0).getDate()}, ${yr}`, status: m < month + 1 ? "active" : "upcoming" });
-    }
-  }
-  return preview.slice(0, 4);
-}
 
 function BatchDurationSection() {
   const [cfg, setCfg]     = useState(DEFAULT_BATCH_CFG);
@@ -479,13 +493,11 @@ function BatchDurationSection() {
   const handleSave = () => { setCfg(draft); setEditing(false); setSaved(true); setTimeout(() => setSaved(false), 2500); };
   const f = key => ({ value: editing ? draft[key] : cfg[key], onChange: v => setDraft(d => ({ ...d, [key]: v })), disabled: !editing });
 
-  const preview = batchPreview(cfg);
-
   return (
     <SectionCard
       icon={Clock}
-      title="Batch Duration & Schedule"
-      subtitle="Controls how enrollment windows are divided and how reminders are sent"
+      title="Enrollment windows"
+      subtitle="How long employees have to enroll each period, and when reminders go out"
       action={
         editing ? (
           <div className="flex items-center gap-2">
@@ -494,97 +506,75 @@ function BatchDurationSection() {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            {saved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 size={13} /> Saved</span>}
+            {saved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 size={13} /> Changes saved</span>}
             <button onClick={() => { setEditing(true); setDraft(cfg); }} className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-muted-foreground border border-border hover:bg-muted transition-colors"><Edit2 size={13} /> Edit</button>
           </div>
         )
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left: config fields */}
-        <div className="lg:col-span-3 space-y-5">
-          <div className="grid grid-cols-2 gap-5">
-            <FormField label="Batch Cycle" required>
-              <SelectInput
-                value={editing ? draft.cycleType : cfg.cycleType}
-                onChange={v => setDraft(d => ({ ...d, cycleType: v }))}
-                options={[
-                  { value: "bimonthly", label: "Bi-monthly (twice/month)" },
-                  { value: "monthly",   label: "Monthly (once/month)"     },
-                  { value: "custom",    label: "Custom duration"          },
-                ]}
-              />
-            </FormField>
-            <FormField label="Duration (days)" hint="Per enrollment window">
-              <TextInput {...f("durationDays")} type="number" placeholder="15" />
-            </FormField>
-            <FormField label="First Batch Starts (day of month)">
-              <TextInput {...f("firstBatchStart")} type="number" placeholder="1" />
-            </FormField>
-            <FormField label="Grace Period (days)" hint="Late submissions after deadline">
-              <TextInput {...f("gracePeriodDays")} type="number" placeholder="2" />
-            </FormField>
-          </div>
-
-          {/* Reminder toggle */}
-          <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-muted/20">
-            <div>
-              <p className="text-xs font-semibold text-foreground">Auto-send Reminders</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Email employees who haven't submitted before deadline</p>
-            </div>
-            <button
-              disabled={!editing}
-              onClick={() => setDraft(d => ({ ...d, autoReminders: !d.autoReminders }))}
-              className={cn(
-                "relative inline-flex h-5 w-9 items-center rounded-full border transition-colors flex-shrink-0 mt-0.5",
-                (editing ? draft : cfg).autoReminders ? "bg-primary border-primary" : "bg-muted border-border",
-                !editing && "opacity-60 cursor-not-allowed",
-              )}
-            >
-              <span className={cn("inline-block size-3.5 rounded-full bg-white shadow transition-transform", (editing ? draft : cfg).autoReminders ? "translate-x-[18px]" : "translate-x-[2px]")} />
-            </button>
-          </div>
-
-          {(editing ? draft : cfg).autoReminders && (
-            <FormField label="Reminder days before deadline" hint="Employees receive email reminder N days before batch closes">
-              <TextInput {...f("reminderDaysBefore")} type="number" placeholder="3" />
-            </FormField>
-          )}
-
-          <FormField label="Admin Notes">
-            <textarea
-              value={editing ? draft.notes : cfg.notes}
-              onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
-              disabled={!editing}
-              rows={3}
-              placeholder="Any operational notes about the batch schedule..."
-              className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Enrollment frequency" required>
+            <SelectInput
+              value={editing ? draft.cycleType : cfg.cycleType}
+              onChange={v => setDraft(d => ({ ...d, cycleType: v }))}
+              options={[
+                { value: "bimonthly", label: "Twice per month" },
+                { value: "monthly",   label: "Once per month"     },
+                { value: "custom",    label: "Custom schedule"    },
+              ]}
             />
+          </FormField>
+          <FormField label="Window length (days)" hint="How many days each enrollment period stays open">
+            <TextInput {...f("durationDays")} type="number" placeholder="15" />
+          </FormField>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="First window starts on day" hint="1 = 1st of the month">
+            <TextInput {...f("firstBatchStart")} type="number" placeholder="1" />
+          </FormField>
+          <FormField label="Grace period (days)" hint="Extra days you still accept late enrollments">
+            <TextInput {...f("gracePeriodDays")} type="number" placeholder="2" />
           </FormField>
         </div>
 
-        {/* Right: upcoming batch preview */}
-        <div className="lg:col-span-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming Batches</p>
-          <div className="space-y-2">
-            {preview.map((b, i) => (
-              <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", b.status === "active" ? "border-primary/30 bg-primary/5" : "border-border bg-card")}>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{b.label}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{b.range}</p>
-                </div>
-                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border",
-                  b.status === "active"
-                    ? "bg-success/10 text-success border-success/25"
-                    : "bg-muted text-muted-foreground border-border",
-                )}>
-                  {b.status === "active" ? "Active" : "Upcoming"}
-                </span>
-              </div>
-            ))}
+        {/* Reminder toggle */}
+        <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-muted/20">
+          <div>
+            <p className="text-xs font-semibold text-foreground">Send email reminders</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Remind employees who haven&apos;t enrolled before the window closes</p>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-3">Preview based on current configuration. Actual dates may vary.</p>
+          <button
+            type="button"
+            disabled={!editing}
+            aria-label={(editing ? draft : cfg).autoReminders ? "Turn off email reminders" : "Turn on email reminders"}
+            onClick={() => setDraft(d => ({ ...d, autoReminders: !d.autoReminders }))}
+            className={cn(
+              "relative inline-flex h-5 w-9 items-center rounded-full border transition-colors flex-shrink-0 mt-0.5",
+              (editing ? draft : cfg).autoReminders ? "bg-primary border-primary" : "bg-muted border-border",
+              !editing && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            <span className={cn("inline-block size-3.5 rounded-full bg-white shadow transition-transform", (editing ? draft : cfg).autoReminders ? "translate-x-[18px]" : "translate-x-[2px]")} />
+          </button>
         </div>
+
+        {(editing ? draft : cfg).autoReminders && (
+          <FormField label="Remind how many days before close?" hint="Employees receive an email this many days before the window closes">
+            <TextInput {...f("reminderDaysBefore")} type="number" placeholder="3" />
+          </FormField>
+        )}
+
+        <FormField label="Internal notes">
+          <textarea
+            value={editing ? draft.notes : cfg.notes}
+            onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
+            disabled={!editing}
+            rows={2}
+            placeholder="Notes for your team (not shown to employees)"
+              className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed resize-none"
+            />
+          </FormField>
       </div>
     </SectionCard>
   );
@@ -607,7 +597,7 @@ export default function InsuranceConfigPage({ onNavigate }) {
               onClick={() => onNavigate("insurance-management")}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Insurance Management
+              Insurance
             </button>
             <ChevronRight size={14} className="text-muted-foreground" />
             <span className="text-sm text-foreground font-medium">Configuration</span>
@@ -621,10 +611,10 @@ export default function InsuranceConfigPage({ onNavigate }) {
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-foreground">Insurance Configuration</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Open Enrollment 2026</span>
+                  <h1 className="text-xl font-bold text-foreground">Insurance setup</h1>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Open enrollment · 2026</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">Manage insurer details, premium slabs, documents, and batch schedule</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Set your insurer, age-based premiums, documents, and enrollment windows</p>
               </div>
             </div>
 
@@ -632,8 +622,10 @@ export default function InsuranceConfigPage({ onNavigate }) {
             <div className="space-y-5">
               <InsurerSection />
               <PremiumSlabsSection />
-              <DocumentsSection />
-              <BatchDurationSection />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start [&>*]:min-w-0">
+                <DocumentsSection />
+                <BatchDurationSection />
+              </div>
             </div>
 
           </div>

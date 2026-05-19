@@ -33,35 +33,54 @@ const themeColors = [
   { id:"purple", label:"Purple theme", gradient:"linear-gradient(135deg,#a855f7 0%,#7e22ce 100%)" },
 ];
 
-function LightPreview(){
-  return(
-    <div className="w-full flex-1 min-h-0 bg-muted rounded-[6px] border-2 border-border flex items-center justify-center p-2">
-      <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-muted rounded-full w-3/4"/>
-        <div className="h-2 bg-muted rounded-full w-1/2"/>
-      </div>
+function ModePreviewFrame({ selected, className = "", style, children }) {
+  return (
+    <div
+      className={`w-full flex-1 min-h-0 rounded-[6px] border-2 flex items-center justify-center p-2 relative ${selected ? "border-foreground" : "border-border"} ${className}`}
+      style={style}
+    >
+      {selected && (
+        <div className="absolute top-2 right-2 size-4 rounded-full bg-foreground flex items-center justify-center">
+          <Check size={10} className="text-background" strokeWidth={3} />
+        </div>
+      )}
+      {children}
     </div>
   );
 }
-function DarkPreview({ selected }){
-  return(
-    <div className={`w-full flex-1 min-h-0 bg-muted rounded-[6px] border-2 flex items-center justify-center p-2 relative ${selected?"border-foreground":"border-border"}`}>
-      {selected&&(<div className="absolute top-2 right-2 size-4 rounded-full bg-foreground flex items-center justify-center"><Check size={10} className="text-white"/></div>)}
+
+function LightPreview({ selected }) {
+  return (
+    <ModePreviewFrame selected={selected} className="bg-muted">
       <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-muted rounded-full w-3/4"/>
-        <div className="h-2 bg-muted rounded-full w-1/2"/>
+        <div className="h-2 bg-muted rounded-full w-3/4" />
+        <div className="h-2 bg-muted rounded-full w-1/2" />
       </div>
-    </div>
+    </ModePreviewFrame>
   );
 }
-function SystemPreview(){
-  return(
-    <div className="w-full flex-1 min-h-0 rounded-[6px] border-2 border-border overflow-hidden flex items-center justify-center p-2" style={{background:"linear-gradient(135deg,#f0f6fc 0%,#0d1117 100%)"}}>
+function DarkPreview({ selected }) {
+  return (
+    <ModePreviewFrame selected={selected} className="bg-muted">
       <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-3/4"/>
-        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-1/2"/>
+        <div className="h-2 bg-muted rounded-full w-3/4" />
+        <div className="h-2 bg-muted rounded-full w-1/2" />
       </div>
-    </div>
+    </ModePreviewFrame>
+  );
+}
+function SystemPreview({ selected }) {
+  return (
+    <ModePreviewFrame
+      selected={selected}
+      className="overflow-hidden"
+      style={{ background: "linear-gradient(135deg,#f0f6fc 0%,#0d1117 100%)" }}
+    >
+      <div className="w-full flex flex-col gap-2">
+        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-3/4" />
+        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-1/2" />
+      </div>
+    </ModePreviewFrame>
   );
 }
 
@@ -99,13 +118,13 @@ function AppearancePanel(){
         <p className="text-xl font-medium text-foreground dark:text-foreground leading-7 tracking-[-0.6px]">Theme Mode</p>
         <div className="flex gap-4">
           {[
-            {id:"light",  label:"Light",  Preview:()=><LightPreview/>},
-            {id:"dark",   label:"Dark",   Preview:()=><DarkPreview selected={themeMode==="dark"}/>},
-            {id:"system", label:"System", Preview:()=><SystemPreview/>},
+            {id:"light",  label:"Light",  Preview:LightPreview},
+            {id:"dark",   label:"Dark",   Preview:DarkPreview},
+            {id:"system", label:"System", Preview:SystemPreview},
           ].map(({id,label,Preview})=>(
             <button key={id} onClick={()=>setThemeMode(id)} aria-label={`${label} mode`}
               className="flex flex-col gap-2 items-center flex-1 min-w-[120px] max-w-[200px]">
-              <div className="w-full h-24 flex"><Preview/></div>
+              <div className="w-full h-24 flex"><Preview selected={themeMode===id}/></div>
               <span className={`text-sm font-medium leading-5 ${themeMode===id?"text-foreground dark:text-foreground":"text-muted-foreground dark:text-muted-foreground"}`}>{label}</span>
             </button>
           ))}
