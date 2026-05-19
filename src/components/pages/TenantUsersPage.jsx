@@ -9,7 +9,7 @@ export default function TenantUsersPage({ onNavigate }) {
   const tenant = MY_TENANT;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenant-users" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -19,6 +19,6 @@ export default function TenantUsersPage({ onNavigate }) {
           <MembersDirectory tenant={tenant} variant="page" onNavigate={onNavigate} />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

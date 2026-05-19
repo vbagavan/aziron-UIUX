@@ -2179,7 +2179,7 @@ function EnrollReviewPanel({ warnings, canSubmit, submit, status, rootId, blocke
           type="button"
           onClick={canSubmit ? submit : undefined}
           className={`flex items-center justify-center gap-2 h-11 px-7 rounded-xl text-sm font-semibold transition-all ${
-            canSubmit ? "bg-success hover:bg-success/90 text-white shadow-sm shadow-success/20 cursor-pointer" : "bg-border text-muted-foreground cursor-not-allowed"
+            canSubmit ? "bg-success hover:bg-success/90 text-success-foreground shadow-sm shadow-success/20 cursor-pointer" : "bg-border text-muted-foreground cursor-not-allowed"
           }`}
         >
           <CheckCircle2 size={14} />
@@ -2314,7 +2314,7 @@ function AddMemberMenu({ form, patch, setParentOpen, coverageScope, onOpenFamily
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? `${menuId}-panel` : undefined}
-        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={() => {
           if (open) {
             setOpen(false);
@@ -2469,7 +2469,7 @@ function EnrollFamilyMembersPanel({ form, patch, patchNested, errors, setErrors,
                 </button>
                 <button
                   type="button"
-                  className="h-8 rounded-lg bg-destructive px-3 text-xs font-semibold text-white hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
+                  className="h-8 rounded-lg bg-destructive px-3 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/50"
                   onClick={() => {
                     patch("includeParents", false);
                     setConfirmRemoveParents(false);
@@ -2670,7 +2670,7 @@ function SubmitConfirmModal({ open, onClose, onConfirm, form }) {
             type="button"
             disabled={!consentAcknowledged}
             onClick={onConfirm}
-            className="h-10 px-7 rounded-xl bg-success text-white text-sm font-semibold flex items-center gap-2 shadow-sm shadow-success/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 focus-visible:ring-offset-2 enabled:hover:bg-success/90 disabled:pointer-events-none disabled:opacity-40"
+            className="h-10 px-7 rounded-xl bg-success text-success-foreground text-sm font-semibold flex items-center gap-2 shadow-sm shadow-success/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 focus-visible:ring-offset-2 enabled:hover:bg-success/90 disabled:pointer-events-none disabled:opacity-40"
           >
             <CheckCircle2 size={14} />
             Confirm & Submit
@@ -3185,7 +3185,7 @@ function EnrollView({ auth, onSuccess }) {
                   disabled={!canSubmit}
                   className={`h-11 px-8 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm ${
                     canSubmit
-                      ? "bg-success hover:bg-success/90 text-white shadow-success/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 focus-visible:ring-offset-2"
+                      ? "bg-success hover:bg-success/90 text-success-foreground shadow-success/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 focus-visible:ring-offset-2"
                       : "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
                   }`}
                   aria-label={canSubmit ? "Review and confirm your enrollment" : "Complete all required sections to submit"}
@@ -3239,7 +3239,7 @@ function EnrollView({ auth, onSuccess }) {
         <button
           type="button"
           style={{ bottom: fabBottomPx }}
-          className="lg:hidden fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border/30 bg-foreground px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-foreground/25 transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="lg:hidden fixed left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-border/30 bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-lg shadow-foreground/25 transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           onClick={() => setSummaryOpen(true)}
         >
           <PanelRightOpen size={16} aria-hidden />
@@ -3281,7 +3281,7 @@ function SkippedState({ firstName, onReturn }) {
           </p>
         </div>
         <button onClick={onReturn}
-          className="flex items-center gap-2 h-10 px-6 rounded-2xl text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors mx-auto">
+          className="flex items-center gap-2 h-10 px-6 rounded-2xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors mx-auto">
           Return to Enrollment <ArrowRight size={14} />
         </button>
       </div>
@@ -3509,7 +3509,7 @@ export function InsuranceContent({ onNavigate: _onNavigate }) {
 
 export default function EmployeeInsurancePage({ onNavigate }) {
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="my-profile" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -3526,6 +3526,6 @@ export default function EmployeeInsurancePage({ onNavigate }) {
           <InsuranceContent onNavigate={onNavigate} />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

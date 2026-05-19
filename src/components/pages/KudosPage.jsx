@@ -1069,8 +1069,8 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
       {/* Input panel */}
       <div className="border border-border rounded-t-[12px] flex items-start gap-2 min-h-[100px] p-4">
         {/* Attachment button */}
-        <button className="flex items-center justify-center size-10 rounded-full text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5">
-          <Paperclip size={16} />
+        <button aria-label="Attach file" className="flex items-center justify-center size-10 rounded-full text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5">
+          <Paperclip size={16} aria-hidden />
         </button>
 
         {/* Textarea */}
@@ -1088,9 +1088,10 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
         {/* Send button */}
         <button
           onClick={onSend}
+          aria-label="Send kudos"
           className="flex items-center justify-center size-10 rounded-full border border-border bg-card text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5"
         >
-          <Send size={16} />
+          <Send size={16} aria-hidden />
         </button>
       </div>
 
@@ -1111,8 +1112,8 @@ function PromptBox({ value, onChange, onSend, showPicker, pickerQuery, onSelectU
           <div className="w-px h-4 bg-border mx-1" />
 
           {/* Knowledge icon */}
-          <button className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-muted transition-colors">
-            <Database size={14} />
+          <button aria-label="Browse knowledge hub" className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-muted transition-colors">
+            <Database size={14} aria-hidden />
           </button>
 
           {/* Divider */}
@@ -1175,9 +1176,10 @@ function EmailTagInput({ tags, onAdd, onRemove, inputValue, onInputChange, place
           {tag}
           <button
             onMouseDown={(e) => { e.preventDefault(); onRemove(tag); }}
+            aria-label={`Remove ${tag}`}
             className="text-foreground hover:text-primary transition-colors"
           >
-            <X size={10} />
+            <X size={10} aria-hidden />
           </button>
         </span>
       ))}
@@ -1258,7 +1260,7 @@ function InlineEmailCard({ approval, onUpdate }) {
         <button
           onClick={() => onUpdate(approval.id, { emailSent: true })}
           disabled={approval.emailTo.length === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-primary hover:bg-muted disabled:bg-muted-foreground disabled:cursor-not-allowed text-white text-xs font-medium h-8 rounded-[6px] transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-primary-foreground text-xs font-medium h-8 rounded-[6px] transition-colors"
         >
           <Mail size={12} /> Send Email
         </button>
@@ -1297,14 +1299,15 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
         </span>
 
 
-        <button className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-border transition-colors">
-          <Maximize2 size={16} />
+        <button aria-label="Expand conversation" className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-border transition-colors">
+          <Maximize2 size={16} aria-hidden />
         </button>
         <button
           onClick={onClose}
+          aria-label="Close conversation"
           className="flex items-center justify-center size-7 rounded-[6px] text-muted-foreground hover:bg-border transition-colors"
         >
-          <X size={16} />
+          <X size={16} aria-hidden />
         </button>
       </div>
 
@@ -1614,7 +1617,7 @@ export default function KudosPage({ agent, onNavigate
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       {/* Main content wrapper */}
@@ -1697,17 +1700,17 @@ export default function KudosPage({ agent, onNavigate
                 {/* How it works */}
                 <div className="flex items-center gap-6 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">1</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">1</span>
                     Type <code className="bg-muted px-1 rounded text-muted-foreground">/kudos @Name</code>
                   </div>
                   <div className="w-4 h-px bg-border" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">2</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">2</span>
                     AI generates a card
                   </div>
                   <div className="w-4 h-px bg-border" />
                   <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-white font-bold text-xs">3</span>
+                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">3</span>
                     Pick a template & send
                   </div>
                 </div>
@@ -1742,6 +1745,6 @@ export default function KudosPage({ agent, onNavigate
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

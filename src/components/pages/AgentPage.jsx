@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   PanelLeft,
   Sparkles,
@@ -104,6 +104,21 @@ function AgentPlaceholder() {
 function CreateKnowledgeHubModal({ onClose }) {
   const [checked, setChecked] = useState({});
   const [files, setFiles] = useState(hubFiles);
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
+    const handleKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", handleKey);
+    const focusable = dialogRef.current?.querySelector("button, [href], input, [tabindex]:not([tabindex='-1'])");
+    focusable?.focus();
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      const prev = previouslyFocusedRef.current;
+      if (prev && typeof prev.focus === "function") prev.focus();
+    };
+  }, [onClose]);
 
   const toggleAll = (e) => {
     if (e.target.checked) {
@@ -118,18 +133,24 @@ function CreateKnowledgeHubModal({ onClose }) {
   const deleteFile = (id) => setFiles((prev) => prev.filter((f) => f.id !== id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-card rounded-[12px] w-[640px] max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="khub-title"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-card rounded-[12px] w-[640px] max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
         <div className="border border-dashed border-chart-chart-3 rounded-t-[12px] p-6 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-foreground leading-6">Create Knowledge Hub</h2>
+              <h2 id="khub-title" className="text-lg font-semibold text-foreground leading-6">Create Knowledge Hub</h2>
               <p className="text-sm text-chart-chart-3 mt-1 leading-5">
                 Store the files and knowledge your AI agents will use for answering questions, reasoning, and workflows.
               </p>
             </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground ml-4 flex-shrink-0">
-              <X size={20} />
+            <button onClick={onClose} aria-label="Close create knowledge hub dialog" className="text-muted-foreground hover:text-foreground ml-4 flex-shrink-0">
+              <X size={20} aria-hidden />
             </button>
           </div>
         </div>
@@ -165,9 +186,10 @@ function CreateKnowledgeHubModal({ onClose }) {
                 <span className="w-32 text-sm text-foreground text-center">{file.date}</span>
                 <button
                   onClick={() => deleteFile(file.id)}
+                  aria-label={`Delete file ${file.name}`}
                   className="w-8 flex justify-center text-destructive hover:text-destructive"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden />
                 </button>
               </div>
             ))}
@@ -178,7 +200,7 @@ function CreateKnowledgeHubModal({ onClose }) {
           <button onClick={onClose} className="text-sm font-medium text-foreground hover:text-muted-foreground">
             Cancel
           </button>
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary text-white text-sm font-medium px-5 py-2 rounded-[8px] transition-colors">
+          <button className="flex items-center gap-2 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-5 py-2 rounded-[8px] transition-colors">
             Next <ArrowRight size={16} />
           </button>
         </div>
@@ -229,9 +251,12 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
               setOpenMenu(isMenuOpen ? null : menuId);
               setHubPickerFor(null);
             }}
-            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-0.5 rounded"
+            aria-label="More actions"
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            className="flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-0.5 rounded"
           >
-            <MoreHorizontal size={14} />
+            <MoreHorizontal size={14} aria-hidden />
           </button>
         )}
       </div>
@@ -383,7 +408,7 @@ export default function AgentPage({ agent, onNavigate
         <div className="fixed inset-0 z-20" onClick={closeAll} />
       )}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="chat" onNavigate={onNavigate} />
 
         {/* Main Content */}
@@ -656,7 +681,7 @@ export default function AgentPage({ agent, onNavigate
                             )}
 
                             {/* Hover overlay */}
-                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[8px]" />
+                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity rounded-[8px]" />
 
                             {/* Close button */}
                             <button
@@ -782,7 +807,7 @@ export default function AgentPage({ agent, onNavigate
                         aria-label="Send message"
                         className={`flex items-center justify-center size-10 rounded-full border flex-shrink-0 transition-colors ${
                           message.trim()
-                            ? "bg-primary border-border text-white hover:bg-primary"
+                            ? "bg-primary border-border text-primary-foreground hover:bg-primary"
                             : "bg-card border-border text-foreground cursor-not-allowed dark:bg-card dark:border-border dark:text-muted-foreground"
                         }`}
                       >
@@ -824,7 +849,7 @@ export default function AgentPage({ agent, onNavigate
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </>
   );
 }

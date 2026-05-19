@@ -76,11 +76,11 @@ export function CodeBlock({ language, content }) {
   return (
     <div className="my-2 overflow-hidden rounded-2xl border border-border">
       <div className="flex items-center justify-between bg-muted px-4 py-2.5">
-        <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
           {language || "code"}
         </span>
         <button onClick={copy}
-          className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 hover:text-white transition-colors">
+          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors">
           {copied ? <Check size={11} /> : <Copy size={11} />}
           {copied ? "Copied" : "Copy"}
         </button>

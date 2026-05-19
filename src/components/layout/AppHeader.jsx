@@ -161,9 +161,10 @@ export default function AppHeader({
 
           <button
             onClick={toggleNotifications}
+            aria-label="Open notifications"
             className="relative flex items-center justify-center size-8 rounded-full text-muted-foreground hover:bg-muted transition-colors"
           >
-            <Bell size={16} />
+            <Bell size={16} aria-hidden />
             <span className="absolute top-[7px] right-[7px] size-[7px] bg-destructive rounded-full border border-background" />
             {hasBadge && (
               <span className="absolute top-[5px] right-[5px] size-[11px] rounded-full bg-destructive/40 animate-ping" />

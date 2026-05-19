@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   X,
   CheckCheck,
@@ -154,7 +154,7 @@ const TYPE = {
 };
 
 const ACTION_STYLE = {
-  Approve: "bg-success text-white hover:bg-success/90",
+  Approve: "bg-success text-success-foreground hover:bg-success/90",
   Reject:  "border border-border text-destructive bg-card dark:bg-card hover:bg-destructive/10 dark:hover:bg-destructive/20",
   Review:  "border border-border text-primary dark:text-primary bg-card dark:bg-card hover:bg-primary/10 dark:hover:bg-primary/20",
 };
@@ -284,7 +284,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
 
       {/* Avatar + badge */}
       <div className="relative flex-shrink-0">
-        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold select-none">
+        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold select-none">
           KD
         </div>
         <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-card dark:border-border flex items-center justify-center bg-primary">
@@ -326,7 +326,7 @@ function KudosApprovalRow({ approval, onApprove, onReject }) {
           <div className="flex items-center gap-2 mt-3">
             <button
               onClick={(e) => { e.stopPropagation(); onApprove(approval.id); }}
-              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold bg-success text-white hover:bg-success/90 transition-colors"
+              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold bg-success text-success-foreground hover:bg-success/90 transition-colors"
             >
               <CheckCheck size={11} /> Approve
             </button>
@@ -363,6 +363,27 @@ function getFiltered(tab) {
 export default function NotificationPanel({ open, onClose, onNavigate, approvals: kudosApprovals, onApprove: onKudosApprove, onReject: onKudosReject }) {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
+  const panelRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
+  // WCAG 2.1.2 (No Keyboard Trap) + 2.4.3 (Focus Order): close on Escape,
+  // move focus into the panel on open, and restore focus on close.
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocusedRef.current = document.activeElement;
+    const handleKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", handleKey);
+    const node = panelRef.current;
+    if (node) {
+      const focusable = node.querySelector("button, [href], [tabindex]:not([tabindex='-1'])");
+      focusable?.focus();
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      const prev = previouslyFocusedRef.current;
+      if (prev && typeof prev.focus === "function") prev.focus();
+    };
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -375,9 +396,13 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
 
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Notifications"
         className="fixed z-50 bg-card dark:bg-card rounded-2xl border border-border dark:border-border overflow-hidden flex flex-col"
         style={{
           top: 56, right: 16, width: 460, maxHeight: 640,
@@ -391,7 +416,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
               Notifications
             </h2>
             {unreadCount > 0 && (
-              <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-white text-xs font-bold">
+              <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">
                 {unreadCount}
               </span>
             )}
@@ -402,9 +427,10 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
             </button>
             <button
               onClick={onClose}
+              aria-label="Close notifications panel"
               className="flex items-center justify-center size-8 rounded-full bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground hover:bg-border dark:hover:bg-accent transition-colors"
             >
-              <X size={15} />
+              <X size={15} aria-hidden />
             </button>
           </div>
         </div>
@@ -426,7 +452,7 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                 {cnt > 0 && (
                   <span
                     className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                      active ? "bg-primary text-white" : "bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"
+                      active ? "bg-primary text-primary-foreground" : "bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"
                     }`}
                   >
                     {cnt}

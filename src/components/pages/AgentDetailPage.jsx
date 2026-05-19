@@ -444,7 +444,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -564,10 +564,10 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
 
           <DialogFooter className="bg-transparent p-0 pt-2 sm:justify-end">
             <Button variant="outline" onClick={() => setTestConfigOpen(false)}>Close</Button>
-            <Button className="bg-primary text-white hover:bg-primary" onClick={() => setTestConfigOpen(false)}>Looks good</Button>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary" onClick={() => setTestConfigOpen(false)}>Looks good</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

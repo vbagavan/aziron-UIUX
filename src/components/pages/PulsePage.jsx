@@ -83,7 +83,7 @@ export default function PulsePage({ onNavigate }) {
   const currentArtifact = editingId ? artifacts.find(a => a.id === editingId) : null;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="pulse" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
@@ -116,6 +116,6 @@ export default function PulsePage({ onNavigate }) {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

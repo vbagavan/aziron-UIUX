@@ -38,7 +38,7 @@ export default function TestPromptPanel({ agentName }) {
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-3">
           <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-[136px] leading-6" />
-          <Button className="gap-1.5 bg-primary text-white hover:bg-primary" onClick={runPrompt}>
+          <Button className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary" onClick={runPrompt}>
             <Play size={14} />
             Run test prompt
           </Button>

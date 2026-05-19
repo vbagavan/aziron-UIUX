@@ -125,7 +125,7 @@ export default function ChatInput({
             rows={1}
             placeholder="Continue the conversation…"
             className="min-h-[44px] resize-none border-0 bg-transparent px-0 py-1.5
-              text-sm leading-6 shadow-none ring-0 placeholder:text-muted-foreground/60
+              text-sm leading-6 shadow-none ring-0 placeholder:text-muted-foreground
               focus-visible:border-0 focus-visible:ring-0 dark:bg-transparent"
           />
 

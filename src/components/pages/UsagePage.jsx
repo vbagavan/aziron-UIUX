@@ -112,7 +112,7 @@ export default function UsagePage({ onNavigate }) {
   const [period, setPeriod] = useState("apr-2025");
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="usage" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -250,6 +250,6 @@ export default function UsagePage({ onNavigate }) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

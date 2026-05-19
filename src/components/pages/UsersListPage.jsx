@@ -95,7 +95,7 @@ function Popover({ open, onClose, anchor, width="w-48", children }){
 function Toast({ message, onDone }){
   useEffect(()=>{ const t=setTimeout(onDone,2800); return()=>clearTimeout(t); },[onDone]);
   return(
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-muted dark:bg-muted text-white dark:text-foreground rounded-[8px] shadow-xl text-sm font-medium">
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-[8px] shadow-xl text-sm font-medium">
       <Check size={14} className="text-foreground flex-shrink-0" />{message}
     </div>
   );
@@ -293,7 +293,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={()=>{ setRowMenu(null); setRowSubMenu(null); }}/>}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
@@ -316,7 +316,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                   <h1 className="text-[22px] font-semibold text-foreground dark:text-foreground leading-8 tracking-[-0.4px]">Users</h1>
                   <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">Manage user accounts and their access permissions.</p>
                 </div>
-                <Button className="bg-primary hover:bg-primary text-white gap-1.5 h-9 px-4 text-sm font-medium rounded-[7px] shadow-sm">
+                <Button className="bg-primary hover:bg-primary text-primary-foreground gap-1.5 h-9 px-4 text-sm font-medium rounded-[7px] shadow-sm">
                   <Plus size={15}/> Invite User
                 </Button>
               </div>
@@ -612,8 +612,11 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                 setRowMenu(prev=>prev?.id===user.id?null:{id:user.id,top:rect.bottom+4,right:window.innerWidth-rect.right});
                                 setRowSubMenu(null);
                               }}
+                              aria-label={`Actions for ${user.name}`}
+                              aria-haspopup="menu"
+                              aria-expanded={rowMenu?.id===user.id}
                               className="flex items-center justify-center size-7 rounded-[5px] text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
-                              <MoreVertical size={14}/>
+                              <MoreVertical size={14} aria-hidden/>
                             </button>
 
                             {rowMenu?.id===user.id && (
@@ -762,7 +765,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {toast && <Toast message={toast} onDone={()=>setToast(null)}/>}
 
@@ -798,7 +801,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               <Button variant="outline" onClick={()=>setAddGroupModal(null)}>Cancel</Button>
               <Button onClick={confirmAddToGroup}
                 disabled={!Object.values(addGroupModal.groupChecks).some(Boolean)}
-                className="bg-primary hover:bg-primary text-white gap-1.5">
+                className="bg-primary hover:bg-primary text-primary-foreground gap-1.5">
                 <UserPlus size={14}/> Add to Group
               </Button>
             </DialogFooter>
@@ -832,7 +835,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setDeactivateModal(false)}>Cancel</Button>
-            <Button onClick={confirmDeactivate} className="bg-muted hover:bg-destructive text-white gap-1.5">
+            <Button onClick={confirmDeactivate} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5">
               <UserX size={14}/> Deactivate
             </Button>
           </DialogFooter>
@@ -863,7 +866,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setActivateModal(false)}>Cancel</Button>
-            <Button onClick={confirmActivate} className="bg-success/90 hover:bg-muted text-white gap-1.5">
+            <Button onClick={confirmActivate} className="bg-success hover:bg-success/90 text-success-foreground gap-1.5">
               <UserCheck size={14}/> Activate
             </Button>
           </DialogFooter>
@@ -886,7 +889,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setRemoveModal(null)}>Cancel</Button>
-            <Button onClick={()=>confirmRemove(removeModal.user.id)} className="bg-muted hover:bg-destructive text-white gap-1.5">
+            <Button onClick={()=>confirmRemove(removeModal.user.id)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5">
               <Trash2 size={14}/> Remove
             </Button>
           </DialogFooter>
@@ -934,7 +937,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
             <DialogFooter>
               <Button variant="outline" onClick={()=>setEditModal(null)}>Cancel</Button>
-              <Button onClick={saveEdit} className="bg-primary hover:bg-primary text-white">Save Changes</Button>
+              <Button onClick={saveEdit} className="bg-primary hover:bg-primary text-primary-foreground">Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         )}

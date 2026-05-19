@@ -181,7 +181,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFl
         {flow.description?.trim() ? (
           <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">{flow.description}</p>
         ) : (
-          <p className="line-clamp-2 text-xs leading-4 text-muted-foreground/70 italic">No description — add one in Flow Settings (⋯).</p>
+          <p className="line-clamp-2 text-xs leading-4 text-muted-foreground italic">No description — add one in Flow Settings (⋯).</p>
         )}
 
         <Separator />

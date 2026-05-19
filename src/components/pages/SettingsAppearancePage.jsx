@@ -27,21 +27,30 @@ const SETTINGS_NAV = [
 // ─── Appearance assets ────────────────────────────────────────────────────────
 
 const themeColors = [
-  { id:"blue",   label:"Blue theme",   gradient:"linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)" },
-  { id:"green",  label:"Green theme",  gradient:"linear-gradient(135deg,#22c55e 0%,#15803d 100%)" },
-  { id:"orange", label:"Orange theme", gradient:"linear-gradient(135deg,#f97316 0%,#c2410c 100%)" },
-  { id:"purple", label:"Purple theme", gradient:"linear-gradient(135deg,#a855f7 0%,#7e22ce 100%)" },
+  { id:"blue",          label:"Blue theme",          gradient:"linear-gradient(135deg,#5c70e8 0%,#2d3ec8 100%)" },
+  { id:"blaze-orange",  label:"Blaze Orange theme",  gradient:"linear-gradient(135deg,#fca83a 0%,#c86800 100%)" },
+  { id:"amethyst-haze", label:"Amethyst Haze theme", gradient:"linear-gradient(135deg,#b070d8 0%,#7030b0 100%)" },
+  { id:"graphite",      label:"Graphite theme",      gradient:"linear-gradient(135deg,#4a7898 0%,#1e4862 100%)" },
 ];
 
-function ModePreviewFrame({ selected, className = "", style, children }) {
+function ModePreviewFrame({
+  selected,
+  className = "",
+  style,
+  children,
+  selectedBorderClass = "border-foreground",
+  unselectedBorderClass = "border-border",
+  checkBgClass = "bg-foreground",
+  checkColorClass = "text-background",
+}) {
   return (
     <div
-      className={`w-full flex-1 min-h-0 rounded-[6px] border-2 flex items-center justify-center p-2 relative ${selected ? "border-foreground" : "border-border"} ${className}`}
+      className={`w-full flex-1 min-h-0 rounded-[6px] border-2 flex items-center justify-center p-2 relative ${selected ? selectedBorderClass : unselectedBorderClass} ${className}`}
       style={style}
     >
       {selected && (
-        <div className="absolute top-2 right-2 size-4 rounded-full bg-foreground flex items-center justify-center">
-          <Check size={10} className="text-background" strokeWidth={3} />
+        <div className={`absolute top-2 right-2 size-4 rounded-full ${checkBgClass} flex items-center justify-center`}>
+          <Check size={10} className={checkColorClass} strokeWidth={3} />
         </div>
       )}
       {children}
@@ -51,20 +60,34 @@ function ModePreviewFrame({ selected, className = "", style, children }) {
 
 function LightPreview({ selected }) {
   return (
-    <ModePreviewFrame selected={selected} className="bg-muted">
+    <ModePreviewFrame
+      selected={selected}
+      className="bg-white"
+      selectedBorderClass="border-slate-900"
+      unselectedBorderClass="border-slate-300"
+      checkBgClass="bg-slate-900"
+      checkColorClass="text-white"
+    >
       <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-muted rounded-full w-3/4" />
-        <div className="h-2 bg-muted rounded-full w-1/2" />
+        <div className="h-2 bg-slate-300 rounded-full w-3/4" />
+        <div className="h-2 bg-slate-300 rounded-full w-1/2" />
       </div>
     </ModePreviewFrame>
   );
 }
 function DarkPreview({ selected }) {
   return (
-    <ModePreviewFrame selected={selected} className="bg-muted">
+    <ModePreviewFrame
+      selected={selected}
+      className="bg-[#0d1117]"
+      selectedBorderClass="border-white"
+      unselectedBorderClass="border-[#3a3f52]"
+      checkBgClass="bg-white"
+      checkColorClass="text-slate-900"
+    >
       <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-muted rounded-full w-3/4" />
-        <div className="h-2 bg-muted rounded-full w-1/2" />
+        <div className="h-2 bg-[#3a3f52] rounded-full w-3/4" />
+        <div className="h-2 bg-[#3a3f52] rounded-full w-1/2" />
       </div>
     </ModePreviewFrame>
   );
@@ -75,10 +98,14 @@ function SystemPreview({ selected }) {
       selected={selected}
       className="overflow-hidden"
       style={{ background: "linear-gradient(135deg,#f0f6fc 0%,#0d1117 100%)" }}
+      selectedBorderClass="border-slate-900"
+      unselectedBorderClass="border-slate-500"
+      checkBgClass="bg-white"
+      checkColorClass="text-slate-900"
     >
       <div className="w-full flex flex-col gap-2">
-        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-3/4" />
-        <div className="h-2 bg-[rgba(153,161,175,0.5)] rounded-full w-1/2" />
+        <div className="h-2 bg-[rgba(153,161,175,0.7)] rounded-full w-3/4" />
+        <div className="h-2 bg-[rgba(153,161,175,0.7)] rounded-full w-1/2" />
       </div>
     </ModePreviewFrame>
   );
@@ -161,7 +188,7 @@ const TYPE_CFG = {
 };
 
 const ACTION_STYLE = {
-  Approve:"bg-success text-white hover:bg-muted",
+  Approve:"bg-success text-success-foreground hover:bg-success/90",
   Reject: "border border-border text-destructive bg-card dark:bg-card hover:bg-destructive/10",
   Review: "border border-border text-primary bg-card dark:bg-card hover:bg-primary/10",
 };
@@ -226,7 +253,7 @@ function NotifFilterPanel({filters,onChange,onClose,anchorRef}){
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={13} className="text-muted-foreground dark:text-muted-foreground"/>
           <span className="text-sm font-semibold text-foreground dark:text-foreground">Filters</span>
-          {hasAny&&<span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-xs font-bold">{countFilters(filters)}</span>}
+          {hasAny&&<span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">{countFilters(filters)}</span>}
         </div>
         {hasAny&&<button onClick={()=>onChange(EMPTY_FILTERS)} className="text-xs text-destructive font-medium hover:text-destructive">Clear all</button>}
       </div>
@@ -308,8 +335,9 @@ function NotificationRow({item,expanded,onToggle,onDismiss,onMarkRead}){
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <span className="text-xs text-muted-foreground whitespace-nowrap">{item.time}</span>
               <button onClick={e=>{e.stopPropagation();onDismiss(item.id);}}
-                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-5 rounded-full text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-all">
-                <X size={12}/>
+                aria-label="Dismiss notification"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 flex items-center justify-center size-5 rounded-full text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-all">
+                <X size={12} aria-hidden/>
               </button>
             </div>
           </div>
@@ -399,7 +427,7 @@ function NotificationsPanel(){
             <button ref={filterBtnRef} onClick={()=>setFilterOpen(v=>!v)}
               className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border text-sm font-medium transition-colors ${
                 filterOpen||activeFCount>0
-                  ?"bg-primary text-white border-border hover:bg-muted"
+                  ?"bg-primary text-primary-foreground border-border hover:bg-muted"
                   :"border-border dark:border-border text-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
               <Filter size={13}/> Filter
               {activeFCount>0&&<span className="flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-card text-primary text-xs font-bold">{activeFCount}</span>}
@@ -415,10 +443,11 @@ function NotificationsPanel(){
           const cnt=tabCount(key); const active=activeTab===key;
           return(
             <button key={key} onClick={()=>{setActiveTab(key);setExpandedId(null);}}
+              aria-pressed={active}
               className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                active?"border-border text-primary":"border-transparent text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-muted"}`}>
+                active?"border-primary text-primary font-semibold":"border-transparent text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-muted"}`}>
               {label}
-              {cnt>0&&<span className={`flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-xs font-bold ${active?"bg-primary text-white":"bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"}`}>{cnt}</span>}
+              {cnt>0&&<span className={`flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-xs font-bold ${active?"bg-primary text-primary-foreground":"bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"}`}>{cnt}</span>}
             </button>
           );
         })}
@@ -586,11 +615,11 @@ function SubscriptionPanel(){
       </div>
 
       {/* CTA */}
-      <div className="flex flex-col gap-2 p-4 bg-foreground dark:bg-card rounded-xl text-white">
+      <div className="flex flex-col gap-2 p-4 bg-foreground dark:bg-card rounded-xl text-background dark:text-foreground">
         <p className="text-sm font-semibold">Need to upgrade or change your plan?</p>
         <p className="text-xs text-muted-foreground leading-4">Billing is managed manually. Contact our sales team to upgrade tiers, adjust seat counts, or discuss enterprise agreements.</p>
         <a href="mailto:sales@aziro.com"
-          className="mt-1 inline-flex items-center gap-2 h-8 px-4 rounded-[8px] bg-primary hover:bg-muted text-white text-xs font-semibold w-fit transition-colors">
+          className="mt-1 inline-flex items-center gap-2 h-8 px-4 rounded-[8px] bg-primary hover:bg-muted text-primary-foreground text-xs font-semibold w-fit transition-colors">
           <Mail size={12} /> Contact Sales
         </a>
       </div>
@@ -618,7 +647,7 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
   const activeLabel = SETTINGS_NAV.find(n=>n.id===activeSection)?.label ?? activeSection;
 
   return(
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="settings" onNavigate={onNavigate}/>
 
       <div className="flex flex-col flex-1 min-w-0">
@@ -642,16 +671,19 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
           <div className="flex flex-1 gap-4 items-start min-h-0">
             {/* Left settings nav */}
             <div className="flex flex-col gap-1 w-[216px] flex-shrink-0">
-              {SETTINGS_NAV.map(({icon:Icon,label,id})=>(
-                <button key={id} onClick={()=>setActiveSection(id)} aria-current={activeSection===id?"page":undefined}
-                  className={`flex items-center gap-2 px-2 h-8 rounded-[6px] text-sm w-full text-left transition-colors ${
-                    activeSection===id
-                      ?"bg-muted/60 text-foreground font-medium"
-                      :"text-foreground hover:bg-muted/40"}`}>
-                  <Icon size={16} className="flex-shrink-0"/>
-                  <span className="truncate">{label}</span>
-                </button>
-              ))}
+              {SETTINGS_NAV.map(({icon:Icon,label,id})=>{
+                const isActive = activeSection===id;
+                return (
+                  <button key={id} onClick={()=>setActiveSection(id)} aria-current={isActive?"page":undefined}
+                    className={`flex items-center gap-2 pl-1.5 pr-2 h-8 rounded-[6px] text-sm w-full text-left transition-colors border-l-2 ${
+                      isActive
+                        ?"bg-primary/15 border-primary text-foreground font-medium"
+                        :"border-transparent text-foreground hover:bg-muted/40"}`}>
+                    <Icon size={16} className={`flex-shrink-0 ${isActive?"text-primary":""}`}/>
+                    <span className="truncate">{label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Right content card */}
@@ -664,6 +696,6 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

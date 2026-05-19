@@ -449,7 +449,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
               onClick={handleSave}
               size="sm"
               title="Saves title (from first message), prompt text, preview type (curated dashboard token or HTML stub), and mobile/desktop toggle. Reopen from Pulse list."
-              className="h-8 bg-primary text-xs text-white hover:bg-primary/90"
+              className="h-8 bg-primary text-xs text-primary-foreground hover:bg-primary/90"
             >
               Save UI
             </Button>
@@ -619,7 +619,7 @@ export default function PulseCreateFlow({ onBack, onSave, initialPrompt = "", in
                   {elementRefs.map((r) => (
                     <span
                       key={r.id}
-                      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-blue-700 py-0.5 pl-1.5 pr-0.5 text-[11px] font-medium text-white shadow-sm dark:bg-primary"
+                      className="inline-flex max-w-full items-center gap-1 rounded-lg bg-blue-700 py-0.5 pl-1.5 pr-0.5 text-[11px] font-medium text-primary-foreground shadow-sm dark:bg-primary"
                     >
                       <MousePointer2 className="size-3 shrink-0 opacity-90" aria-hidden />
                       <span className="truncate font-mono">{r.label}</span>

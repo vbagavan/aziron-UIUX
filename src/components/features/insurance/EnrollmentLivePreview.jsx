@@ -28,7 +28,7 @@ function PreviewRow({ label, value, empty = "Not added yet" }) {
   return (
     <div className="flex items-start justify-between gap-2 py-1.5 border-b border-border/60 last:border-0">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">{label}</span>
-      <span className={`text-xs text-right leading-snug ${show ? "text-foreground font-medium" : "text-muted-foreground/60 italic"}`}>
+      <span className={`text-xs text-right leading-snug ${show ? "text-foreground font-medium" : "text-muted-foreground italic"}`}>
         {show ? value : empty}
       </span>
     </div>

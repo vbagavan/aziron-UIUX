@@ -124,7 +124,7 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
               </button>
               <button
                 onClick={handleCreate}
-                className="flex-1 text-xs font-medium text-white bg-primary rounded-[6px] py-1.5 hover:bg-primary transition-colors"
+                className="flex-1 text-xs font-medium text-primary-foreground bg-primary rounded-[6px] py-1.5 hover:bg-primary transition-colors"
               >
                 Create &amp; select
               </button>

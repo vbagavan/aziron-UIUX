@@ -350,6 +350,9 @@ function UserFooter({ onNavigate }) {
 
       {collapsed ? (
         <button ref={triggerRef} onClick={handleToggle}
+          aria-label="Open user menu"
+          aria-haspopup="menu"
+          aria-expanded={open}
           className={`relative flex items-center justify-center w-full p-1 rounded-2xl transition-colors ${
             open ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"
           }`}>

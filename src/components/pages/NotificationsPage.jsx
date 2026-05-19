@@ -152,7 +152,7 @@ const TYPE_CONFIG = {
 };
 
 const ACTION_STYLE = {
-  Approve: "bg-success text-white hover:bg-success/90",
+  Approve: "bg-success text-success-foreground hover:bg-success/90",
   Reject:  "border border-border text-destructive bg-card dark:bg-card hover:bg-destructive/10 dark:hover:bg-muted",
   Review:  "border border-border text-primary bg-card dark:bg-card hover:bg-primary/10 dark:hover:bg-primary/20",
 };
@@ -251,7 +251,7 @@ function FilterPanel({ filters, onChange, onClose, anchorRef }) {
           <SlidersHorizontal size={14} className="text-muted-foreground dark:text-muted-foreground" />
           <span className="text-sm font-semibold text-foreground dark:text-foreground">Filters</span>
           {hasAny && (
-            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-white text-xs font-bold">
+            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
               {countActiveFilters(filters)}
             </span>
           )}
@@ -433,9 +433,10 @@ function NotificationRow({ item, expanded, onToggle, onDismiss, onMarkRead }) {
               <span className="text-xs text-muted-foreground dark:text-muted-foreground whitespace-nowrap">{item.time}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
-                className="opacity-0 group-hover:opacity-100 flex items-center justify-center size-6 rounded-full text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted hover:text-muted-foreground dark:hover:text-muted-foreground transition-all"
+                aria-label="Dismiss notification"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 flex items-center justify-center size-6 rounded-full text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted hover:text-muted-foreground dark:hover:text-muted-foreground transition-all"
               >
-                <X size={13} />
+                <X size={13} aria-hidden />
               </button>
             </div>
           </div>
@@ -562,7 +563,7 @@ export default function NotificationsPage({ onNavigate
   const tabCount = (key) => applyTab(items, key).filter((n) => n.unread).length;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="notifications" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0">
@@ -612,7 +613,7 @@ export default function NotificationsPage({ onNavigate
                     onClick={() => setFilterOpen((v) => !v)}
                     className={`inline-flex items-center gap-1.5 h-9 px-4 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${
                       filterOpen || activeFilterCount > 0
-                        ? "bg-primary text-white border-border hover:bg-primary"
+                        ? "bg-primary text-primary-foreground border-border hover:bg-primary"
                         : "border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"
                     }`}
                   >
@@ -646,16 +647,18 @@ export default function NotificationsPage({ onNavigate
                   <button
                     key={key}
                     onClick={() => { setActiveTab(key); setExpandedId(null); }}
+                    aria-current={active ? "page" : undefined}
+                    aria-pressed={active}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                       active
-                        ? "border-border text-primary"
+                        ? "border-primary text-primary font-semibold"
                         : "border-transparent text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground"
                     }`}
                   >
                     {label}
                     {cnt > 0 && (
                       <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold ${
-                        active ? "bg-primary text-white" : "bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"
+                        active ? "bg-primary text-primary-foreground" : "bg-muted dark:bg-border text-muted-foreground dark:text-muted-foreground"
                       }`}>
                         {cnt}
                       </span>
@@ -756,6 +759,6 @@ export default function NotificationsPage({ onNavigate
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

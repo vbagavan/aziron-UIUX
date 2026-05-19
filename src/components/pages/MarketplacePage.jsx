@@ -812,7 +812,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="marketplace" onNavigate={onNavigate} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -999,6 +999,6 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
       {toasts.map((t) => (
         <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
       ))}
-    </div>
+    </main>
   );
 }

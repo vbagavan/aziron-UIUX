@@ -280,7 +280,7 @@ function UserProfileDrawer({ user, onClose, onGrantAdmin, onSuspend }) {
         <div className="min-w-0 flex-1 flex flex-col gap-0.5">
           <p className="text-base font-semibold leading-snug text-foreground">{user.name}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
-          <p className="font-mono text-[10px] text-muted-foreground/70">{user.userUid}</p>
+          <p className="font-mono text-[10px] text-muted-foreground">{user.userUid}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant="outline" className={cn("font-medium", roleBadgeClass(user.role))}>
               <Shield className="mr-1 size-3" />{user.role}
@@ -700,7 +700,7 @@ export function MembersDirectory({ tenant, variant = "page" }) {
           {!selectedUser && users.length > 0 && (
             <div className="flex items-center justify-center gap-1.5 border-b border-border/60 bg-muted/20 px-4 py-1.5">
               <MousePointerClick className="size-3 text-muted-foreground/50" />
-              <span className="text-[11px] text-muted-foreground/50">Click a row to view member profile</span>
+              <span className="text-[11px] text-muted-foreground">Click a row to view member profile</span>
             </div>
           )}
 

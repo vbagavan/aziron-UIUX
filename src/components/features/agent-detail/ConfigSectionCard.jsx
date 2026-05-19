@@ -24,7 +24,7 @@ export default function ConfigSectionCard({ title, description, fields, onFieldC
               {field.label}
               <span className="group relative inline-flex">
                 <Info size={14} className="text-muted-foreground" />
-                <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-56 -translate-x-1/2 rounded-xl bg-muted px-3 py-2 text-xs leading-5 text-white shadow-xl group-hover:block">
+                <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden w-56 -translate-x-1/2 rounded-xl bg-foreground px-3 py-2 text-xs leading-5 text-background shadow-xl group-hover:block">
                   {field.tooltip}
                 </span>
               </span>

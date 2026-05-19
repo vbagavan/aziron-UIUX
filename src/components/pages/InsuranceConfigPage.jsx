@@ -541,7 +541,7 @@ function DocumentsSection() {
               )}>
                 {doc.status === "verified" ? "Verified" : "Needs review"}
               </span>
-              <button type="button" onClick={() => removeDoc(doc.id)} aria-label={`Remove ${doc.name}`} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0">
+              <button type="button" onClick={() => removeDoc(doc.id)} aria-label={`Remove ${doc.name}`} className="size-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0">
                 <Trash2 size={13} />
               </button>
             </div>
@@ -662,7 +662,7 @@ function BatchDurationSection() {
 
 export default function InsuranceConfigPage({ onNavigate }) {
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-config" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -718,6 +718,6 @@ export default function InsuranceConfigPage({ onNavigate }) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

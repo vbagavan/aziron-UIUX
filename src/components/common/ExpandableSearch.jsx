@@ -59,10 +59,11 @@ function Action({ className = "" }) {
       onClick={() => setOpen(true)}
       style={{ borderRadius: 6 }}
       className={`flex size-9 flex-shrink-0 items-center justify-center border border-border bg-card text-muted-foreground transition-colors hover:border-border hover:text-foreground dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-border dark:hover:text-foreground ${className}`}
+      aria-label="Search"
       title="Search"
     >
       <motion.span layoutId={`${layoutId}-icon`}>
-        <Search size={15} />
+        <Search size={15} aria-hidden />
       </motion.span>
     </motion.button>
   );
@@ -100,17 +101,19 @@ function Input({ placeholder = "Search…", className = "" }) {
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.12 }}
             onClick={() => onChange("")}
+            aria-label="Clear search"
             className="flex size-4 flex-shrink-0 items-center justify-center rounded-full bg-border text-muted-foreground hover:bg-muted dark:bg-border dark:text-muted-foreground dark:hover:bg-accent"
           >
-            <X size={10} />
+            <X size={10} aria-hidden />
           </motion.button>
         )}
       </AnimatePresence>
       <button
         onClick={close}
+        aria-label="Close search"
         className="ml-0.5 flex-shrink-0 text-muted-foreground transition-colors hover:text-muted-foreground dark:text-muted-foreground dark:hover:text-foreground"
       >
-        <X size={14} />
+        <X size={14} aria-hidden />
       </button>
     </motion.div>
   );

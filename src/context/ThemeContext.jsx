@@ -24,7 +24,7 @@ function applyTheme(mode, color) {
     }
 
     // Apply color theme class
-    ["blue", "green", "orange", "purple"].forEach((c) => {
+    ["blue", "green", "orange", "purple", "amethyst-haze", "blaze-orange", "graphite"].forEach((c) => {
       if (c === color) {
         root.classList.add(`theme-${c}`);
       } else {

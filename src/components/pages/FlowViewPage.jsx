@@ -332,18 +332,20 @@ function IOSection({ label, data, defaultOpen = true }) {
                 <button
                   type="button"
                   onClick={copyToClipboard}
+                  aria-label="Copy JSON"
                   title="Copy JSON"
                   className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <Copy size={11} />
+                  <Copy size={11} aria-hidden />
                 </button>
                 <button
                   type="button"
                   onClick={download}
+                  aria-label="Download JSON"
                   title="Download JSON"
                   className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <Download size={11} />
+                  <Download size={11} aria-hidden />
                 </button>
               </div>
             </div>
@@ -879,7 +881,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
         <div className="flex items-center gap-2.5 border border-border rounded-[10px] px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           <Search size={15} className="text-muted-foreground flex-shrink-0" />
           <input ref={inputRef} value={query} onChange={e=>setQuery(e.target.value)} placeholder={selectedCategory ? `Search ${selectedCategory}...` : "Search all nodes"} className="flex-1 text-sm text-foreground placeholder:text-muted-foreground outline-none bg-transparent" />
-          <button onClick={query?()=>setQuery(""):selectedCategory?()=>setSelectedCategory(null):onClose}><X size={13} className="text-muted-foreground hover:text-muted-foreground" /></button>
+          <button onClick={query?()=>setQuery(""):selectedCategory?()=>setSelectedCategory(null):onClose} aria-label={query?"Clear search":selectedCategory?"Back to all categories":"Close node picker"}><X size={13} className="text-muted-foreground hover:text-muted-foreground" aria-hidden /></button>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
@@ -1093,7 +1095,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
                         setAiSuggestion(null);
                         onUpdateStep?.({ scriptInput: inputJson, scriptCode: aiSuggestion, scriptOutput: outputJson });
                       }}
-                      className="rounded-[6px] bg-primary px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-[6px] bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Replace code
                     </button>
@@ -1197,8 +1199,8 @@ function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, onClose, readOnl
         </div>
         <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:execInfo.bg,color:execInfo.color}}>{execInfo.label}</span>
         {onClose && (
-          <button onClick={onClose} className="size-6 flex items-center justify-center rounded-[5px] text-muted-foreground hover:bg-muted transition-colors flex-shrink-0">
-            <X size={13} />
+          <button onClick={onClose} aria-label="Close node inspector" className="size-6 flex items-center justify-center rounded-[5px] text-muted-foreground hover:bg-muted transition-colors flex-shrink-0">
+            <X size={13} aria-hidden />
           </button>
         )}
       </div>
@@ -1367,7 +1369,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
             placeholder={readOnly ? "Edit flow to use chat…" : "Ask about this node…"}
             className="flex-1 text-xs text-foreground placeholder:text-muted-foreground outline-none bg-transparent" />
           <button type="button" onClick={()=>send(input)} disabled={readOnly || !input.trim()}
-            className="flex items-center justify-center size-6 rounded-[6px] bg-primary text-white disabled:opacity-40 hover:bg-primary transition-colors">
+            className="flex items-center justify-center size-6 rounded-[6px] bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary transition-colors">
             <Send size={11} />
           </button>
         </div>
@@ -1568,13 +1570,13 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               <button
                 type="button"
                 onClick={onRunFlow}
-                className="mt-1 flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-primary/90"
+                className="mt-1 flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 <Play size={11} fill="white" aria-hidden /> Run flow
               </button>
             )}
             {!hasSteps && (
-              <p className="text-[10px] text-muted-foreground/60 italic">Add steps to the canvas first.</p>
+              <p className="text-[10px] text-muted-foreground italic">Add steps to the canvas first.</p>
             )}
           </div>
 
@@ -1585,7 +1587,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               <div className="flex flex-col gap-1">
                 {flow.steps.map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground/60">{i + 1}</span>
+                    <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground">{i + 1}</span>
                     <span
                       className="size-2 shrink-0 rounded-full"
                       style={{ background: step.color ?? "var(--muted-foreground)" }}
@@ -2570,7 +2572,7 @@ function ExecutionLogPanel({
                     })()}
 
                     {/* ── Column headers ── */}
-                    <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 select-none">
+                    <div className="flex items-center gap-2 border-b border-border/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground select-none">
                       <span className="w-2 flex-shrink-0" />
                       <span className="w-[76px] flex-shrink-0">Time</span>
                       <span className="flex-1">Step</span>
@@ -3467,7 +3469,7 @@ function ConversationPanel({
             placeholder={isNewFlow ? "Describe your workflow…" : "Ask about this flow…"}
             className="flex-1 text-xs text-foreground placeholder:text-muted-foreground outline-none bg-transparent" />
           <button onClick={() => sendMessage(input)} disabled={!input.trim()}
-            className="flex items-center justify-center size-6 rounded-[6px] bg-primary text-white disabled:opacity-40 hover:bg-primary transition-colors">
+            className="flex items-center justify-center size-6 rounded-[6px] bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary transition-colors">
             <Send size={11} />
           </button>
         </div>
@@ -3598,6 +3600,13 @@ function TopBar({
   const [unpublishOpen, setUnpublishOpen] = useState(false);
   const [publishBusy, setPublishBusy] = useState(false);
   const [settingsDescDraft, setSettingsDescDraft] = useState(() => flow.description ?? "");
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handleKey = (e) => { if (e.key === "Escape") setSettingsOpen(false); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [settingsOpen]);
 
   useEffect(() => {
     if (settingsOpen) setSettingsDescDraft(flow.description ?? "");
@@ -3909,6 +3918,9 @@ function TopBar({
               type="button"
               disabled={!saveAllowed || saveStatus === "saving"}
               onClick={() => saveAllowed && setSaveMenuOpen((v) => !v)}
+              aria-label="Save options"
+              aria-haspopup="menu"
+              aria-expanded={saveMenuOpen}
               title="Save options"
               className={`flex h-8 w-4 items-center justify-center rounded-r-[6px] transition-colors ${
                 !saveAllowed || saveStatus === "saving"
@@ -4054,7 +4066,7 @@ function TopBar({
               onClick={onRunNow}
               disabled={!flow.steps?.length}
               title={!flow.steps?.length ? "Add steps before running" : "Run flow"}
-              className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-3.5 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-3.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <Play size={12} fill="white" /> Run
             </button>
@@ -4063,10 +4075,11 @@ function TopBar({
 
         {/* ── Bell ── */}
         <button
+          aria-label="Notifications"
           title="Notifications"
           className="relative flex size-8 flex-shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <Bell size={16} />
+          <Bell size={16} aria-hidden />
         </button>
 
       </div>
@@ -4132,7 +4145,7 @@ function TopBar({
           title={`Delete "${flow.name}"?`}
           message="This flow will be permanently deleted. This action cannot be undone."
           confirmLabel="Delete Flow"
-          confirmClass="flex-1 h-10 rounded-[8px] bg-destructive hover:bg-muted text-white text-sm font-medium transition-colors"
+          confirmClass="flex-1 h-10 rounded-[8px] bg-destructive hover:bg-muted text-destructive-foreground text-sm font-medium transition-colors"
           onConfirm={handleConfirmDelete}
           onCancel={() => setConfirmDelete(false)}
         />
@@ -4140,15 +4153,21 @@ function TopBar({
 
       {/* Settings Dialog */}
       {settingsOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setSettingsOpen(false)} />
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="flow-settings-title"
+          onKeyDown={(e) => { if (e.key === "Escape") setSettingsOpen(false); }}
+        >
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setSettingsOpen(false)} aria-hidden="true" />
           <div
             className="relative w-[420px] overflow-hidden rounded-2xl bg-card dark:bg-card"
             style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="h-1 w-full bg-gradient-to-r from-[#3b82f6] to-[#2563eb]" />
             <div className="px-6 pt-6 pb-6">
-              <h2 className="mb-5 text-lg font-semibold text-foreground dark:text-foreground">Flow Settings</h2>
+              <h2 id="flow-settings-title" className="mb-5 text-lg font-semibold text-foreground dark:text-foreground">Flow Settings</h2>
               <div className="space-y-5">
                 <div>
                   <label htmlFor="flow-settings-description" className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">
@@ -4885,7 +4904,7 @@ export default function FlowViewPage({
 
   return (
     <>
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="flows" onNavigate={guardedNavigate} />
       <div ref={fullscreenStageRef} className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
@@ -5026,7 +5045,7 @@ export default function FlowViewPage({
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     {pendingRestore && (
       <ConfirmDialog

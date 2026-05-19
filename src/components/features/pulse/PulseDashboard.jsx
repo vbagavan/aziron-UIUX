@@ -40,7 +40,7 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary"
           >
             <Plus className="size-4 shrink-0" aria-hidden />
             Create New
@@ -63,7 +63,7 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
               <button
                 type="button"
                 onClick={onCreateNew}
-                className="flex h-9 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary"
+                className="flex h-9 items-center gap-1.5 rounded-[6px] bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary"
               >
                 <Plus className="size-4 shrink-0" aria-hidden />
                 Create your first UI

@@ -74,7 +74,7 @@ function StepIndicator({ current }) {
         {STEPS.map((s, i) => (
           <StepperItem key={s.id} step={s.id} className="flex items-center">
             <StepperTrigger className="flex flex-col items-center gap-1.5">
-              <StepperIndicator className="size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all data-[step-state=completed]:bg-success/90 data-[step-state=completed]:text-white data-[step-state=active]:bg-primary data-[step-state=active]:text-white data-[step-state=active]:ring-4 data-[step-state=active]:ring-[#2563eb]/20 data-[step-state=inactive]:bg-muted dark:data-[step-state=inactive]:bg-muted data-[step-state=inactive]:text-muted-foreground">
+              <StepperIndicator className="size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all data-[step-state=completed]:bg-success data-[step-state=completed]:text-success-foreground data-[step-state=active]:bg-primary data-[step-state=active]:text-primary-foreground data-[step-state=active]:ring-4 data-[step-state=active]:ring-primary/30 data-[step-state=inactive]:bg-muted dark:data-[step-state=inactive]:bg-muted data-[step-state=inactive]:text-muted-foreground">
                 {s.id}
               </StepperIndicator>
               <StepperTitle className="text-[10px] font-medium whitespace-nowrap data-[step-state=active]:text-primary data-[step-state=completed]:text-success data-[step-state=inactive]:text-muted-foreground">
@@ -392,7 +392,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   // ── Success screen ──────────────────────────────────────────────────────────
   if (created) {
     return (
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="tenants" onNavigate={onNavigate} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
@@ -435,7 +435,7 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 

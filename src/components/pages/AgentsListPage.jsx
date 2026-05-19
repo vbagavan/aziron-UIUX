@@ -213,7 +213,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
     >
       {/* Status top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-[2.5px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-t-[8px]"
+        className="absolute top-0 left-0 right-0 h-[2.5px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 rounded-t-[8px]"
         style={{ background: `linear-gradient(90deg, ${statusCfg.dot}, ${statusCfg.dot}88)` }}
       />
 
@@ -241,7 +241,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
               aria-label="Agent options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-8 rounded-[6px] text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+              className="flex items-center justify-center size-8 rounded-[6px] text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             >
               <MoreVertical size={16} />
             </button>
@@ -668,7 +668,7 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
               aria-label="Send message"
               className={`flex items-center justify-center size-8 rounded-full border flex-shrink-0 transition-colors ${
                 input.trim() && !loading
-                  ? "bg-primary border-border text-white hover:bg-primary"
+                  ? "bg-primary border-border text-primary-foreground hover:bg-primary"
                   : "bg-card border-border text-foreground cursor-not-allowed"
               }`}
             >
@@ -830,7 +830,7 @@ export default function AgentsListPage({
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-muted">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
         <div className="flex flex-1 min-w-0 min-h-0">
@@ -885,7 +885,7 @@ export default function AgentsListPage({
                   {can("agents.create") && (
                     <button
                       onClick={() => navigate("/agents/create")}
-                      className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
+                      className="flex items-center gap-1.5 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
                     >
                       <Plus size={16} />
                       Create Agent
@@ -1012,7 +1012,7 @@ export default function AgentsListPage({
                 ) : (
                   <div className="bg-card border border-border rounded-[8px] overflow-hidden">
                     <table className="w-full border-collapse">
-                      <thead className="sticky top-0 z-10 border-b border-border" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(248,250,252,0.88)" }}>
+                      <thead className="sticky top-0 z-10 border-b border-border bg-card/85 backdrop-blur-md">
                         <tr>
                           <th className="px-4 py-3 w-[52px]" />
                           <ColHeader label="Agent"          sortKey="name"     sort={sort} onSort={handleSort} className="min-w-[180px]" />
@@ -1066,7 +1066,7 @@ export default function AgentsListPage({
                   </button>
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-white text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
                   >
                     <Plus size={16} /> Create your first agent
                   </button>
@@ -1089,7 +1089,7 @@ export default function AgentsListPage({
             )}
           </AnimatePresence>
         </div>{/* end flex row */}
-      </div>
+      </main>
       {agentPendingDelete && (
         <ConfirmDialog
           title={`Delete "${agentPendingDelete.name}"?`}

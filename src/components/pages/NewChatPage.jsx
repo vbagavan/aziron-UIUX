@@ -730,7 +730,7 @@ export default function NewChatPage({ onNavigate }) {
 
   return (
     <>
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="new-chat" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -830,7 +830,7 @@ export default function NewChatPage({ onNavigate }) {
           </div>
         )}
       </div>
-    </div>
+    </main>
 
   </>
   );

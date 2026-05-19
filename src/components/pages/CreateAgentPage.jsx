@@ -505,8 +505,8 @@ function StepBar({ current }) {
           <div key={step.id} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1 flex-shrink-0">
               <div className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                state === "done"   ? "bg-primary text-white" :
-                state === "active" ? "bg-primary text-white ring-4 ring-[#2563eb]/20" :
+                state === "done"   ? "bg-primary text-primary-foreground" :
+                state === "active" ? "bg-primary text-primary-foreground ring-4 ring-[#2563eb]/20" :
                                      "bg-border dark:bg-border text-muted-foreground"
               }`}>
                 {state === "done" ? <Check size={13} /> : step.id}
@@ -856,6 +856,7 @@ function Step1({ form, setForm, errors }) {
             <button
               type="button"
               onClick={() => setForm(f => ({ ...f, quickPrompts: quickPrompts.filter((_, j) => j !== i) }))}
+              aria-label={`Remove quick prompt ${i + 1}`}
               className="size-8 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
             >
               <X size={14} />
@@ -911,6 +912,9 @@ function KnowledgeCard({ hub, selected, onToggle }) {
         <button
           type="button"
           onClick={() => setMenuOpen(o => !o)}
+          aria-label="More actions"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
           className={`size-7 flex items-center justify-center rounded-lg transition-colors ${
             selected
               ? "hover:bg-success/15/80 dark:hover:bg-emerald-900/40 text-muted-foreground dark:text-muted-foreground"
@@ -1569,7 +1573,7 @@ function Step4({ form, onSuccess, onGoToAgents, tasks = CREATION_TASKS, variant 
                     <button
                       type="button"
                       onClick={onGoToAgents}
-                      className="flex items-center gap-2 h-9 px-5 rounded-lg bg-primary hover:bg-primary text-white text-sm font-medium transition-colors"
+                      className="flex items-center gap-2 h-9 px-5 rounded-lg bg-primary hover:bg-primary text-primary-foreground text-sm font-medium transition-colors"
                     >
                       <Bot size={15} />
                       Try Agent
@@ -1614,7 +1618,7 @@ function FooterNav({ step, onBack, onNext, onCancel, nextLabel, nextDisabled, sh
           <button
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex items-center gap-1.5 h-9 px-5 rounded-lg bg-primary hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+            className="flex items-center gap-1.5 h-9 px-5 rounded-lg bg-primary hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground text-sm font-semibold transition-colors"
           >
             {nextLabel}
             <ArrowRight size={14} />

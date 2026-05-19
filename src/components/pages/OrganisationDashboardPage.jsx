@@ -373,7 +373,7 @@ function StickyOrganisationHeader({
                 <button
                   type="button"
                   onClick={copySlug}
-                  className="group inline-flex items-center gap-1 rounded font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-foreground"
+                  className="group inline-flex items-center gap-1 rounded font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                   aria-label={copiedSlug ? "Slug copied" : `Copy slug: ${tenant.slug}`}
                 >
                   @{tenant.slug}
@@ -389,7 +389,7 @@ function StickyOrganisationHeader({
                 <button
                   type="button"
                   onClick={copyId}
-                  className="group inline-flex items-center gap-1 rounded font-mono text-[11px] text-muted-foreground/70 transition-colors hover:text-foreground"
+                  className="group inline-flex items-center gap-1 rounded font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
                   aria-label={copiedId ? "ID copied" : `Copy tenant ID: ${tenantIdFull}`}
                 >
                   #{tenantIdFull}
@@ -402,7 +402,7 @@ function StickyOrganisationHeader({
                 <span className="text-[10px] text-muted-foreground/30" aria-hidden>·</span>
 
                 {/* Created date — demoted to reference info */}
-                <span className="text-[11px] text-muted-foreground/60">
+                <span className="text-[11px] text-muted-foreground">
                   Created{" "}
                   <time dateTime={tenant.createdAt} className="tabular-nums">
                     {createdDate}
@@ -717,7 +717,7 @@ function BillingHealthPanel({ tenant, deployCfg, onNavigate, onGoToMembers, clas
         <div className="rounded-xl border border-border/70 bg-muted/20 p-3 dark:border-border/60 dark:bg-muted/10">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Entitlements</p>
-            <span className="font-mono text-[10px] text-muted-foreground/50">{licenseRef}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">{licenseRef}</span>
           </div>
           {/* Limits line */}
           <p className="mb-2.5 text-[11px] leading-relaxed text-foreground">

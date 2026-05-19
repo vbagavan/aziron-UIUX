@@ -197,7 +197,7 @@ export default function PricingPlansPage({ onNavigate }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="pricing-plans" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -231,7 +231,7 @@ export default function PricingPlansPage({ onNavigate }) {
                   Cancel
                 </button>
                 <button onClick={saveChanges}
-                  className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-primary text-white text-sm font-medium hover:bg-primary transition-colors">
+                  className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-primary text-primary-foreground text-sm font-medium hover:bg-primary transition-colors">
                   <Save size={14} /> Save Changes
                 </button>
               </div>
@@ -278,6 +278,6 @@ export default function PricingPlansPage({ onNavigate }) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

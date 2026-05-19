@@ -61,7 +61,7 @@ function Toast({ message, onDone }) {
   }, [message, onDone]);
 
   return (
-    <div className="fixed bottom-5 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-2 rounded-[8px] bg-muted px-4 py-2.5 text-sm font-medium text-white shadow-xl dark:bg-muted dark:text-foreground">
+    <div className="fixed bottom-5 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-2 rounded-[8px] bg-foreground px-4 py-2.5 text-sm font-medium text-background shadow-xl">
       <Check size={14} className="shrink-0 text-foreground" />
       {message}
     </div>
@@ -149,7 +149,7 @@ export default function UserGroupsPage({ onNavigate }) {
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={() => setRowMenu(null)} />}
 
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="user-groups" onNavigate={onNavigate} />
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -170,7 +170,7 @@ export default function UserGroupsPage({ onNavigate }) {
                   <h1 className="text-[22px] font-semibold leading-8 tracking-[-0.4px] text-foreground dark:text-foreground">User Groups</h1>
                   <p className="mt-0.5 text-sm text-muted-foreground dark:text-muted-foreground">Organize people into reusable teams and access cohorts.</p>
                 </div>
-                <Button className="h-9 gap-1.5 rounded-[7px] bg-primary px-4 text-sm font-medium text-white shadow-sm hover:bg-primary">
+                <Button className="h-9 gap-1.5 rounded-[7px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary">
                   <Plus size={15} /> Create Group
                 </Button>
               </div>
@@ -298,6 +298,9 @@ export default function UserGroupsPage({ onNavigate }) {
                                   const rect = e.currentTarget.getBoundingClientRect();
                                   setRowMenu((prev) => prev?.id === group.id ? null : { id: group.id, top: rect.bottom + 4, right: window.innerWidth - rect.right });
                                 }}
+                                aria-label={`Actions for ${group.name}`}
+                                aria-haspopup="menu"
+                                aria-expanded={rowMenu?.id === group.id}
                                 className="flex size-7 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:bg-muted dark:hover:bg-muted"
                               >
                                 <MoreVertical size={14} />
@@ -351,7 +354,7 @@ export default function UserGroupsPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
     </>

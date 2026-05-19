@@ -1746,7 +1746,7 @@ export default function InsuranceManagementPage({ onNavigate }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-management" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -1823,6 +1823,6 @@ export default function InsuranceManagementPage({ onNavigate }) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

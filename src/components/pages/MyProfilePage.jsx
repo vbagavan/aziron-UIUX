@@ -122,10 +122,10 @@ function InfoRow({ icon: Icon, label, value, copyable }) {
         </div>
       </div>
       {copyable && (
-        <button onClick={copy} className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={copy} aria-label={copied ? `Copied ${label}` : `Copy ${label}`} className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity">
           {copied
-            ? <CheckCircle2 size={12} className="text-success" />
-            : <Copy size={12} className="text-muted-foreground" />}
+            ? <CheckCircle2 size={12} className="text-success" aria-hidden />
+            : <Copy size={12} className="text-muted-foreground" aria-hidden />}
         </button>
       )}
     </div>
@@ -317,7 +317,7 @@ function LeftPanel({ profile }) {
                 <p className="text-xs font-semibold text-foreground truncate">{profile.reportingManager.name}</p>
                 <p className="text-[11px] text-muted-foreground truncate">{profile.reportingManager.role}</p>
               </div>
-              <ExternalLink size={12} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <ExternalLink size={12} className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0" />
             </div>
           </div>
           <div>
@@ -520,7 +520,7 @@ export default function MyProfilePage({ onNavigate }) {
   };
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="my-profile" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -574,6 +574,6 @@ export default function MyProfilePage({ onNavigate }) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -624,6 +624,13 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
   const [actionsMenuTenantId, setActionsMenuTenantId] = useState(null);
   const [deleteConfirmTenant, setDeleteConfirmTenant] = useState(null);
   const { toasts, showToast, dismissToast } = useToast();
+
+  useEffect(() => {
+    if (!deleteConfirmTenant) return;
+    const handleKey = (e) => { if (e.key === "Escape") setDeleteConfirmTenant(null); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [deleteConfirmTenant]);
   const PER_PAGE = 8;
 
   const hasListFilters = Boolean(
@@ -811,7 +818,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
   ];
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
@@ -834,7 +841,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
               </p>
             </div>
             <button onClick={() => onNavigate?.("tenant-create")}
-              className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-primary hover:bg-primary text-white text-sm font-semibold transition-colors flex-shrink-0">
+              className="flex items-center gap-2 h-9 px-4 rounded-[8px] bg-primary hover:bg-primary text-primary-foreground text-sm font-semibold transition-colors flex-shrink-0">
               <Plus size={15} /> Create Tenant
             </button>
           </div>
@@ -901,8 +908,8 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                   className="w-full pl-8 pr-8 h-9 text-sm rounded-[8px] border border-border dark:border-border bg-card dark:bg-card text-foreground dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
                 />
                 {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
-                    <X size={12} />
+                  <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
+                    <X size={12} aria-hidden />
                   </button>
                 )}
               </div>
@@ -916,7 +923,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                 }`}>
                 <Filter size={13} /> Filters
                 {hasListFilters && (
-                  <span className="size-4 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  <span className="size-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none">
                     {(filterPlan !== "all" ? 1 : 0) + (filterStatus !== "all" ? 1 : 0) + (search.trim() ? 1 : 0)}
                   </span>
                 )}
@@ -945,7 +952,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                         <button key={val} onClick={() => { set(val); setPage(1); }}
                           className={`h-6 px-2.5 rounded-full text-xs font-medium transition-colors ${
                             state === val
-                              ? "bg-primary text-white"
+                              ? "bg-primary text-primary-foreground"
                               : "bg-card dark:bg-card border border-border dark:border-border text-muted-foreground dark:text-muted-foreground hover:border-border"
                           }`}>{lbl}</button>
                       ))}
@@ -988,7 +995,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                           <button
                             type="button"
                             onClick={clearListFilters}
-                            className="mt-4 inline-flex h-9 items-center rounded-[8px] bg-primary px-4 text-sm font-semibold text-white hover:bg-primary transition-colors"
+                            className="mt-4 inline-flex h-9 items-center rounded-[8px] bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary transition-colors"
                           >
                             Clear filters
                           </button>
@@ -1097,7 +1104,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                   <button key={p} onClick={() => setPage(p)}
                     className={`size-7 flex items-center justify-center rounded-[6px] text-xs font-medium transition-colors ${
                       p === page
-                        ? "bg-primary text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted dark:hover:bg-muted"
                     }`}>{p}</button>
                 ))}
@@ -1116,6 +1123,8 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/45 px-4"
           role="presentation"
           onClick={() => setDeleteConfirmTenant(null)}
+          onKeyDown={(e) => { if (e.key === "Escape") setDeleteConfirmTenant(null); }}
+          tabIndex={-1}
         >
           <div
             role="alertdialog"
@@ -1142,7 +1151,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
               <button
                 type="button"
                 onClick={confirmDeleteTenant}
-                className="h-9 rounded-[8px] bg-muted px-4 text-sm font-semibold text-white hover:bg-destructive transition-colors"
+                className="h-9 rounded-[8px] bg-destructive px-4 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors"
               >
                 Delete
               </button>
@@ -1161,6 +1170,6 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
           onDismiss={() => dismissToast(t.id)}
         />
       ))}
-    </div>
+    </main>
   );
 }

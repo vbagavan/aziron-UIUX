@@ -473,7 +473,7 @@ function PolicyTimelineSection({ steps }) {
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-full",
                     step.done
-                      ? "bg-success text-white"
+                      ? "bg-success text-success-foreground"
                       : step.active
                         ? "bg-warning/15 text-warning ring-2 ring-warning/40"
                         : cn(step.iconBg, step.iconColor),

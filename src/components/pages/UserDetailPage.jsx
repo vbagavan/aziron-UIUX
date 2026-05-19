@@ -344,7 +344,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
 
   return(
     <>
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
@@ -411,8 +411,8 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
                       onClick={()=>setSuspendModal(true)}
                       className={`gap-1.5 h-9 text-sm font-medium ${
                         user.status==="Active"
-                          ?"bg-muted hover:bg-destructive text-white"
-                          :"bg-success/90 hover:bg-muted text-white"}`}>
+                          ?"bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                          :"bg-success hover:bg-success/90 text-success-foreground"}`}>
                       {user.status==="Active"
                         ?<><UserX size={13}/> Suspend Access</>
                         :<><UserCheck size={13}/> Restore Access</>}
@@ -425,9 +425,10 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
               <div className="flex items-center gap-1 border-b border-border dark:border-border -mb-1">
                 {TABS.map(t=>(
                   <button key={t.key} onClick={()=>setTab(t.key)}
+                    aria-pressed={tab===t.key}
                     className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                       tab===t.key
-                        ?"border-border text-primary"
+                        ?"border-primary text-primary font-semibold"
                         :"border-transparent text-muted-foreground dark:text-muted-foreground hover:text-foreground dark:hover:text-foreground"}`}>
                     <t.icon size={14}/>
                     {t.label}
@@ -444,11 +445,11 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* toast */}
       {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-muted dark:bg-muted text-white dark:text-foreground rounded-[8px] shadow-xl text-sm font-medium">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-[8px] shadow-xl text-sm font-medium">
           <Check size={14} className="text-foreground"/>{toast}
         </div>
       )}
@@ -475,8 +476,8 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
             <Button variant="outline" onClick={()=>setSuspendModal(false)}>Cancel</Button>
             <Button onClick={confirmSuspend}
               className={user.status==="Active"
-                ?"bg-muted hover:bg-destructive text-white gap-1.5"
-                :"bg-success/90 hover:bg-muted text-white gap-1.5"}>
+                ?"bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5"
+                :"bg-success hover:bg-success/90 text-success-foreground gap-1.5"}>
               {user.status==="Active"
                 ?<><UserX size={14}/> Suspend</>
                 :<><UserCheck size={14}/> Restore</>}
@@ -506,7 +507,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>setEditModal(null)}>Cancel</Button>
-              <Button onClick={saveEdit} className="bg-primary hover:bg-primary text-white">Save Changes</Button>
+              <Button onClick={saveEdit} className="bg-primary hover:bg-primary text-primary-foreground">Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         )}
