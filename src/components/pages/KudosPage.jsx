@@ -171,11 +171,11 @@ function GoldClassicCard({ recipients }) {
         }}
       >
         <span
+          className="font-serif"
           style={{
             color: "var(--primary-foreground)",
             fontWeight: 800,
             fontSize: 18,
-            fontFamily: "serif",
             lineHeight: 1,
           }}
         >
@@ -185,13 +185,13 @@ function GoldClassicCard({ recipients }) {
 
       {/* "Congratulations" italic script title */}
       <div
+        className="font-serif"
         style={{
           marginTop: 8,
           fontSize: 44,
           fontStyle: "italic",
           fontWeight: 700,
           color: GOLD,
-          fontFamily: "'Georgia', 'Times New Roman', serif",
           letterSpacing: 1,
           textShadow: `0 0 20px rgba(201,162,39,0.5)`,
           textAlign: "center",
@@ -432,15 +432,15 @@ function BlueMordernCard({ recipients }) {
             border: "1.5px solid rgba(255,255,255,0.35)",
           }}
         >
-          <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
+          <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18 }}>A</span>
         </div>
 
         <h1
+          className="font-sans"
           style={{
             color: "var(--primary-foreground)",
             fontSize: 38,
             fontWeight: 700,
-            fontFamily: "system-ui, -apple-system, sans-serif",
             letterSpacing: -0.5,
             margin: 0,
             textAlign: "center",
@@ -449,13 +449,13 @@ function BlueMordernCard({ recipients }) {
           Congratulations
         </h1>
         <p
+          className="font-sans"
           style={{
             color: "rgba(255,255,255,0.8)",
             fontSize: 13,
             marginTop: 8,
             letterSpacing: 1.5,
             textTransform: "uppercase",
-            fontFamily: "system-ui, sans-serif",
           }}
         >
           Customer Appreciation Award
@@ -491,6 +491,7 @@ function BlueMordernCard({ recipients }) {
                 }}
               >
                 <div
+                  className="font-sans"
                   style={{
                     width: "100%",
                     height: "100%",
@@ -502,7 +503,6 @@ function BlueMordernCard({ recipients }) {
                     fontSize: 22,
                     fontWeight: 700,
                     color: "var(--primary-foreground)",
-                    fontFamily: "system-ui, sans-serif",
                   }}
                 >
                   {getInitials(person.name)}
@@ -510,6 +510,7 @@ function BlueMordernCard({ recipients }) {
               </div>
               {/* Name chip */}
               <div
+                className="font-sans"
                 style={{
                   background: "var(--primary-foreground)",
                   border: `1.5px solid ${BLUE_MID}`,
@@ -519,7 +520,6 @@ function BlueMordernCard({ recipients }) {
                   fontSize: 12,
                   fontWeight: 600,
                   whiteSpace: "nowrap",
-                  fontFamily: "system-ui, sans-serif",
                 }}
               >
                 {person.name.split(" ")[0]}
@@ -533,13 +533,13 @@ function BlueMordernCard({ recipients }) {
 
         {/* Message */}
         <p
+          className="font-sans"
           style={{
             color: "var(--foreground)",
             fontSize: 14,
             textAlign: "center",
             lineHeight: 1.7,
             maxWidth: 520,
-            fontFamily: "system-ui, sans-serif",
             margin: 0,
           }}
         >
@@ -553,6 +553,7 @@ function BlueMordernCard({ recipients }) {
           {["Excellence", "Customer Focus", "Teamwork"].map((tag) => (
             <span
               key={tag}
+              className="font-sans"
               style={{
                 background: "var(--primary-foreground)",
                 border: `1.5px solid ${BLUE_MID}`,
@@ -561,7 +562,6 @@ function BlueMordernCard({ recipients }) {
                 color: BLUE,
                 fontSize: 11,
                 fontWeight: 500,
-                fontFamily: "system-ui, sans-serif",
               }}
             >
               {tag}
@@ -628,7 +628,7 @@ function GreenCard({ recipients }) {
           justifyContent: "center",
         }}
       >
-        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 17, fontFamily: "sans-serif" }}>A</span>
+        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 17 }}>A</span>
       </div>
 
       {/* Content */}
@@ -646,11 +646,11 @@ function GreenCard({ recipients }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 36 }}>🌿</span>
           <h1
+            className="font-serif"
             style={{
               color: GREEN_DARK,
               fontSize: 40,
               fontWeight: 700,
-              fontFamily: "'Georgia', serif",
               fontStyle: "italic",
               margin: 0,
               textAlign: "center",
@@ -660,6 +660,7 @@ function GreenCard({ recipients }) {
           </h1>
           {/* Tag line */}
           <div
+            className="font-sans"
             style={{
               background: GREEN_LIGHT,
               border: `1px solid ${GREEN_MID}`,
@@ -669,7 +670,6 @@ function GreenCard({ recipients }) {
               fontSize: 12,
               fontWeight: 600,
               letterSpacing: 0.5,
-              fontFamily: "system-ui, sans-serif",
             }}
           >
             On Being Appreciated By the Customer
@@ -693,6 +693,7 @@ function GreenCard({ recipients }) {
                 }}
               >
                 <div
+                  className="font-sans"
                   style={{
                     width: "100%",
                     height: "100%",
@@ -704,13 +705,13 @@ function GreenCard({ recipients }) {
                     fontSize: 22,
                     fontWeight: 700,
                     color: "var(--primary-foreground)",
-                    fontFamily: "system-ui, sans-serif",
                   }}
                 >
                   {getInitials(person.name)}
                 </div>
               </div>
               <div
+                className="font-sans"
                 style={{
                   background: GREEN_LIGHT,
                   border: `1px solid ${GREEN_MID}`,
@@ -720,7 +721,6 @@ function GreenCard({ recipients }) {
                   fontSize: 12,
                   fontWeight: 600,
                   whiteSpace: "nowrap",
-                  fontFamily: "system-ui, sans-serif",
                 }}
               >
                 {person.name.split(" ")[0]}
@@ -738,13 +738,13 @@ function GreenCard({ recipients }) {
 
         {/* Message */}
         <p
+          className="font-serif"
           style={{
             color: "var(--success)",
             fontSize: 14,
             textAlign: "center",
             lineHeight: 1.7,
             maxWidth: 520,
-            fontFamily: "'Georgia', serif",
             fontStyle: "italic",
             margin: 0,
           }}
@@ -839,7 +839,7 @@ function PurpleElegantCard({ recipients }) {
           boxShadow: `0 0 12px rgba(124,58,237,0.6)`,
         }}
       >
-        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18, fontFamily: "sans-serif" }}>A</span>
+        <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18 }}>A</span>
       </div>
 
       {/* Crown icon */}
@@ -847,11 +847,11 @@ function PurpleElegantCard({ recipients }) {
 
       {/* Title */}
       <h1
+        className="font-serif"
         style={{
           color: PURPLE_LIGHT,
           fontSize: 42,
           fontWeight: 700,
-          fontFamily: "'Georgia', 'Times New Roman', serif",
           fontStyle: "italic",
           letterSpacing: 1,
           margin: 0,
@@ -864,6 +864,7 @@ function PurpleElegantCard({ recipients }) {
 
       {/* Subtitle pill */}
       <div
+        className="font-sans"
         style={{
           marginTop: 14,
           border: `1px solid ${PURPLE_LIGHT}`,
@@ -874,7 +875,6 @@ function PurpleElegantCard({ recipients }) {
           fontWeight: 500,
           letterSpacing: 1.5,
           textTransform: "uppercase",
-          fontFamily: "system-ui, sans-serif",
           background: "rgba(124,58,237,0.15)",
         }}
       >
@@ -905,6 +905,7 @@ function PurpleElegantCard({ recipients }) {
               }}
             >
               <div
+                className="font-sans"
                 style={{
                   width: "100%",
                   height: "100%",
@@ -916,13 +917,13 @@ function PurpleElegantCard({ recipients }) {
                   fontSize: 22,
                   fontWeight: 700,
                   color: "var(--primary-foreground)",
-                  fontFamily: "system-ui, sans-serif",
                 }}
               >
                 {getInitials(person.name)}
               </div>
             </div>
             <div
+              className="font-sans"
               style={{
                 background: "rgba(124,58,237,0.2)",
                 border: `1px solid ${PURPLE_LIGHT}`,
@@ -932,7 +933,6 @@ function PurpleElegantCard({ recipients }) {
                 fontSize: 12,
                 fontWeight: 600,
                 whiteSpace: "nowrap",
-                fontFamily: "system-ui, sans-serif",
               }}
             >
               {person.name.split(" ")[0]}
@@ -959,6 +959,7 @@ function PurpleElegantCard({ recipients }) {
 
       {/* Message */}
       <p
+        className="font-serif"
         style={{
           marginTop: 24,
           color: SILVER,
@@ -968,7 +969,6 @@ function PurpleElegantCard({ recipients }) {
           lineHeight: 1.7,
           maxWidth: 520,
           opacity: 0.85,
-          fontFamily: "'Georgia', serif",
         }}
       >
         "Your outstanding dedication, exceptional service, and commitment to excellence have truly

@@ -101,7 +101,7 @@ const GROWTH_TRIGGER = /\bgrowth\b/i;
 const CUSTOMER_PULSE_TRIGGER = /\b(customer pulse|customer experience)\b/i;
 
 const GENERIC_PLACEHOLDER_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>
-body{margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
+body{margin:0;font-family:"Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;background:#f8fafc;color:#334155;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px;}
 .card{max-width:380px;text-align:center;padding:32px;border-radius:16px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 4px 24px rgba(15,23,42,.06);}
 p{margin:0;line-height:1.55;font-size:14px;}
 code{background:#f1f5f9;padding:3px 10px;border-radius:8px;font-size:13px;font-weight:600;}
