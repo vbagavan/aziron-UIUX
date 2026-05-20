@@ -18,7 +18,6 @@ import AgentDetailPage from "@/components/pages/AgentDetailPage";
 import CreateAgentPage from "@/components/pages/CreateAgentPage";
 import { INITIAL_AGENTS } from "@/data/agentsCatalog";
 import AgentPage from "@/components/pages/AgentPage";
-import KudosPage from "@/components/pages/KudosPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
 import FlowsPage from "@/components/pages/FlowsPage";
 import NotFoundPage from "@/components/pages/NotFoundPage";
@@ -145,7 +144,11 @@ export default function AppRoutes() {
 
   const openAgent = useCallback((agent) => {
     setSelectedAgent(agent);
-    navigate(agent?.name === "Customer Appreciation" ? "/kudos" : "/chat");
+    if (agent?.name === "Customer Appreciation") {
+      navigate("/agents", { state: { openKudosAgent: true } });
+    } else {
+      navigate("/chat");
+    }
   }, [navigate]);
 
   const viewAgent = useCallback(
@@ -190,7 +193,6 @@ export default function AppRoutes() {
         element={
           <AgentsListPage
             onNavigate={onNavigate}
-            onOpenAgent={openAgent}
             onViewAgent={viewAgent}
             onEditAgent={navigateToEditAgent}
             agents={agents}
@@ -218,7 +220,10 @@ export default function AppRoutes() {
           <AgentPage agent={selectedAgent} initialMessage={initialMessage} onNavigate={onNavigate} />
         }
       />
-      <Route path="/kudos" element={<KudosPage agent={selectedAgent} onNavigate={onNavigate} />} />
+      <Route
+        path="/kudos"
+        element={<Navigate to="/agents" replace state={{ openKudosAgent: true }} />}
+      />
       <Route path="/settings" element={<SettingsAppearancePage onNavigate={onNavigate} />} />
       <Route
         path="/notifications"

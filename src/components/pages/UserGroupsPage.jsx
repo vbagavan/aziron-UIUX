@@ -153,15 +153,7 @@ export default function UserGroupsPage({ onNavigate }) {
         <Sidebar activePage="user-groups" onNavigate={onNavigate} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <AppHeader onNavigate={onNavigate}>
-            <nav className="ml-1 flex items-center gap-1.5 text-sm">
-              <Button variant="ghost" size="sm" onClick={() => onNavigate("users")} className="h-auto px-0 text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground dark:text-muted-foreground dark:hover:bg-transparent dark:hover:text-foreground">
-                User Management
-              </Button>
-              <ChevronRight size={13} className="text-foreground dark:text-muted-foreground" />
-              <span className="font-medium text-foreground dark:text-foreground">User Groups</span>
-            </nav>
-          </AppHeader>
+          <AppHeader onNavigate={onNavigate} />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mx-auto flex min-h-0 max-w-[1400px] flex-1 flex-col gap-4 px-6 py-5">

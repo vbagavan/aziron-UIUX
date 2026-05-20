@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -23,6 +23,11 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { INITIAL_AGENTS } from "@/data/agentsCatalog";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useKudosWorkflow } from "@/components/features/kudos/useKudosWorkflow";
+import KudosConversationPanel from "@/components/features/kudos/KudosConversationPanel";
+import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
+
+const KUDOS_AGENT_NAME = "Customer Appreciation";
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -693,13 +698,13 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
 
 export default function AgentsListPage({
   onNavigate,
-  onOpenAgent,
   onViewAgent,
   onEditAgent,
   agents: agentsProp,
   onAgentsChange,
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { can } = usePermissions();
   const [searchQuery, setSearchQuery]   = useState("");
   const [openMenu, setOpenMenu]         = useState(null);
@@ -712,12 +717,32 @@ export default function AgentsListPage({
   const setAgents = onAgentsChange ?? setInternalAgents;
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [isConversationExpanded, setIsConversationExpanded] = useState(false);
+  const kudosWorkflow = useKudosWorkflow();
+  const isKudosAgent = selectedAgent?.name === KUDOS_AGENT_NAME;
+  const showKudosCanvas =
+    isKudosAgent &&
+    ["loading-templates", "generating", "preview"].includes(kudosWorkflow.stage);
+  const hideAgentsMainColumn = selectedAgent && isConversationExpanded;
   const [agentPendingDelete, setAgentPendingDelete] = useState(null);
   const [agentPendingFork, setAgentPendingFork] = useState(null);
   const [agentPendingPublish, setAgentPendingPublish] = useState(null);
   const [agentPendingUnpublish, setAgentPendingUnpublish] = useState(null);
   const [publishBusy, setPublishBusy] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
+
+  useEffect(() => {
+    if (!location.state?.openKudosAgent) return;
+    const kudosAgent = agents.find((a) => a.name === KUDOS_AGENT_NAME);
+    if (kudosAgent) {
+      setIsConversationExpanded(false);
+      setSelectedAgent(kudosAgent);
+    }
+    navigate("/agents", { replace: true, state: null });
+  }, [location.state?.openKudosAgent, agents, navigate]);
+
+  const handleKudosActionComplete = (message) => {
+    if (message) showToast(message);
+  };
 
   const handleSort = (key) => {
     setSort((prev) =>
@@ -767,16 +792,19 @@ export default function AgentsListPage({
     setAgentPendingPublish(agent);
   };
 
-  /**
-   * Opening an agent: Customer Appreciation → navigate to /kudos via onOpenAgent;
-   * all other agents → open inline chat panel.
-   */
+  /** Open the inline conversation panel on the right (agents list stays visible). */
   const handleOpen = (agent) => {
-    if (onOpenAgent && agent.name === "Customer Appreciation") {
-      onOpenAgent(agent);
-      return;
+    setIsConversationExpanded(false);
+    if (agent.name !== KUDOS_AGENT_NAME) {
+      kudosWorkflow.reset();
     }
     setSelectedAgent(agent);
+  };
+
+  const handleClosePanel = () => {
+    kudosWorkflow.reset();
+    setSelectedAgent(null);
+    setIsConversationExpanded(false);
   };
 
   const matchesSearch = (a) => a.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -830,14 +858,43 @@ export default function AgentsListPage({
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-dvh min-h-0 w-full overflow-hidden bg-background">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
-        <div className="flex flex-1 min-w-0 min-h-0">
-          <div className={`${selectedAgent && isConversationExpanded ? "hidden" : "flex flex-col flex-1 min-w-0"}`}>
-          <AppHeader onNavigate={onNavigate} />
+        <div className="flex flex-1 min-w-0 min-h-0 h-full overflow-hidden">
+          <div className={`${hideAgentsMainColumn ? "hidden" : "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden"}`}>
+          <AppHeader
+            onNavigate={onNavigate}
+            approvals={isKudosAgent ? kudosWorkflow.approvals : undefined}
+            onApprove={kudosWorkflow.handleApprove}
+            onReject={kudosWorkflow.handleReject}
+            onRequestChanges={kudosWorkflow.handleRequestChanges}
+            onKudosActionComplete={isKudosAgent ? handleKudosActionComplete : undefined}
+            notifOpen={isKudosAgent ? kudosWorkflow.notifOpen : undefined}
+            onNotifToggle={
+              isKudosAgent ? () => kudosWorkflow.setNotifOpen((v) => !v) : undefined
+            }
+          >
+            {selectedAgent && (
+              <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm min-w-0">
+                <button
+                  type="button"
+                  onClick={handleClosePanel}
+                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                >
+                  Agents
+                </button>
+                <ChevronRight size={14} className="text-muted-foreground shrink-0" aria-hidden />
+                <span className="font-medium text-foreground truncate">{selectedAgent.name}</span>
+              </nav>
+            )}
+          </AppHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {showKudosCanvas ? (
+              <KudosPreviewEditor workflow={kudosWorkflow} />
+            ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4 flex flex-col gap-4">
 
               {/* Page title + toolbar */}
@@ -1073,21 +1130,34 @@ export default function AgentsListPage({
                 </div>
               ) : null}
             </div>
+            </div>
+            )}
           </div>
           </div>{/* end inner flex-col */}
 
-          {/* Right conversation panel */}
+          {/* Right conversation panel — h-full keeps panel within viewport */}
+          <div className="flex h-full min-h-0 flex-shrink-0 overflow-hidden">
           <AnimatePresence>
-            {selectedAgent && (
+            {selectedAgent && isKudosAgent && (
+              <KudosConversationPanel
+                key="kudos-panel"
+                workflow={kudosWorkflow}
+                isExpanded={isConversationExpanded}
+                onToggleExpand={() => setIsConversationExpanded((prev) => !prev)}
+                onClose={handleClosePanel}
+              />
+            )}
+            {selectedAgent && !isKudosAgent && (
               <AgentConversationPanel
                 key={selectedAgent.id}
                 agent={selectedAgent}
                 isExpanded={isConversationExpanded}
                 onToggleExpand={() => setIsConversationExpanded((prev) => !prev)}
-                onClose={() => { setSelectedAgent(null); setIsConversationExpanded(false); }}
+                onClose={handleClosePanel}
               />
             )}
           </AnimatePresence>
+          </div>
         </div>{/* end flex row */}
       </main>
       {agentPendingDelete && (

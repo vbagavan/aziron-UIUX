@@ -822,14 +822,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <AppHeader onNavigate={onNavigate}>
-          <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-border dark:bg-border" />
-            <span className="text-sm text-muted-foreground dark:text-muted-foreground">Admin</span>
-            <ChevronRight size={14} className="text-muted-foreground" />
-            <span className="text-sm text-foreground dark:text-foreground font-medium">Tenants</span>
-          </div>
-        </AppHeader>
+        <AppHeader onNavigate={onNavigate} />
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Page header */}

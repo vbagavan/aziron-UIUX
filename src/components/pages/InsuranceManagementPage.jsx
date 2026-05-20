@@ -1750,14 +1750,7 @@ export default function InsuranceManagementPage({ onNavigate }) {
       <Sidebar activePage="insurance-management" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <AppHeader onNavigate={onNavigate}>
-          <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-border dark:bg-border" />
-            <span className="text-sm text-muted-foreground dark:text-muted-foreground">Admin</span>
-            <ChevronRight size={14} className="text-muted-foreground" />
-            <span className="text-sm text-foreground dark:text-foreground font-medium">Insurance Management</span>
-          </div>
-        </AppHeader>
+        <AppHeader onNavigate={onNavigate} />
 
         <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
           <div className="mx-auto flex w-full min-h-0 max-w-[1280px] flex-col px-6 pt-5 pb-8">

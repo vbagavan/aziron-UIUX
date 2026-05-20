@@ -297,15 +297,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
-          <AppHeader onNavigate={onNavigate}>
-            <nav className="flex items-center gap-1.5 text-sm ml-1">
-              <Button variant="ghost" size="sm" onClick={()=>onNavigate("users")} className="h-auto px-0 text-muted-foreground dark:text-muted-foreground hover:bg-transparent hover:text-foreground dark:hover:bg-transparent dark:hover:text-foreground transition-colors">
-                User Management
-              </Button>
-              <ChevronRight size={13} className="text-foreground dark:text-muted-foreground"/>
-              <span className="text-foreground dark:text-foreground font-medium">Users</span>
-            </nav>
-          </AppHeader>
+          <AppHeader onNavigate={onNavigate} />
 
           <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
             <div className="px-6 py-5 flex flex-col gap-4 max-w-[1400px] mx-auto flex-1 min-h-0">

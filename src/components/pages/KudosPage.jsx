@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import AppHeader from "@/components/layout/AppHeader";
+import { useKudosWorkflow } from "@/components/features/kudos/useKudosWorkflow";
+import { KudosConversationBody, KudosPanelHeader } from "@/components/features/kudos/kudosUi";
+import { DEFAULT_CARD_CONTENT } from "@/components/features/kudos/constants";
+import { resolveCardStyles, accentWithAlpha } from "@/lib/kudosCardStyleUtils";
+import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
+import KudosComposeStep from "@/components/features/kudos/KudosComposeStep";
 import {
   Bot,
   X,
@@ -116,9 +122,16 @@ function AgentPlaceholder() {
 // Gold Classic Card
 // ---------------------------------------------------------------------------
 
-function GoldClassicCard({ recipients }) {
-  const GOLD = "var(--warning)";
-  const GOLD_LIGHT = "var(--warning)";
+function GoldClassicCard({ recipients, content = DEFAULT_CARD_CONTENT }) {
+  const s = resolveCardStyles(content, {
+    accent: "var(--warning)",
+    background: "radial-gradient(ellipse at 30% 20%, var(--foreground) 0%, var(--foreground) 70%)",
+    fontColor: "var(--warning)",
+    borderColor: "var(--warning)",
+    buttonColor: "var(--primary)",
+  });
+  const GOLD = s.accent;
+  const GOLD_LIGHT = s.accent;
   const DARK_BG = "var(--foreground)";
 
   // Use provided recipients or fallback defaults
@@ -129,8 +142,8 @@ function GoldClassicCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: `radial-gradient(ellipse at 30% 20%, var(--foreground) 0%, ${DARK_BG} 70%)`,
-        border: `2px solid ${GOLD}`,
+        background: s.background,
+        border: `2px solid ${s.borderColor}`,
         borderRadius: 12,
         position: "relative",
         display: "flex",
@@ -155,33 +168,34 @@ function GoldClassicCard({ recipients }) {
         }}
       />
 
-      {/* Top-right Aziron "A" logo */}
-      <div
-        style={{
-          position: "absolute",
-          top: 20,
-          right: 20,
-          width: 36,
-          height: 36,
-          backgroundColor: "var(--primary)",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <span
-          className="font-serif"
+      {content.showLogo !== false && (
+        <div
           style={{
-            color: "var(--primary-foreground)",
-            fontWeight: 800,
-            fontSize: 18,
-            lineHeight: 1,
+            position: "absolute",
+            top: 20,
+            right: 20,
+            width: 36,
+            height: 36,
+            backgroundColor: s.buttonColor,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          A
-        </span>
-      </div>
+          <span
+            className="font-serif"
+            style={{
+              color: "var(--primary-foreground)",
+              fontWeight: 800,
+              fontSize: 18,
+              lineHeight: 1,
+            }}
+          >
+            A
+          </span>
+        </div>
+      )}
 
       {/* "Congratulations" italic script title */}
       <div
@@ -191,13 +205,13 @@ function GoldClassicCard({ recipients }) {
           fontSize: 44,
           fontStyle: "italic",
           fontWeight: 700,
-          color: GOLD,
+          color: s.fontColor,
           letterSpacing: 1,
           textShadow: `0 0 20px rgba(201,162,39,0.5)`,
           textAlign: "center",
         }}
       >
-        Congratulations
+        {content.headline}
       </div>
 
       {/* Subtitle bar */}
@@ -215,7 +229,7 @@ function GoldClassicCard({ recipients }) {
           whiteSpace: "nowrap",
         }}
       >
-        On Being Appreciated By the Customer
+        {content.subtitle}
       </div>
 
       {/* Recipients area */}
@@ -321,9 +335,7 @@ function GoldClassicCard({ recipients }) {
           opacity: 0.9,
         }}
       >
-        "Your outstanding dedication, exceptional service, and commitment to excellence have
-        truly made a difference. This recognition is a testament to your remarkable contributions
-        and the impact you've had on our customers."
+        &ldquo;{content.message}&rdquo;
       </div>
 
       {/* Decorative gold star divider */}
@@ -360,10 +372,18 @@ function GoldClassicCard({ recipients }) {
 // Blue Modern Card
 // ---------------------------------------------------------------------------
 
-function BlueMordernCard({ recipients }) {
-  const BLUE = "var(--primary)";
-  const BLUE_LIGHT = "var(--primary)/10";
-  const BLUE_MID = "var(--chart-chart-2)";
+function BlueMordernCard({ recipients, content = DEFAULT_CARD_CONTENT }) {
+  const s = resolveCardStyles(content, {
+    accent: "var(--primary)",
+    background: "var(--primary-foreground)",
+    fontColor: "var(--primary)",
+    borderColor: "var(--chart-chart-2)",
+    buttonColor: "rgba(255,255,255,0.2)",
+    bodyBg: accentWithAlpha("var(--primary)", 0.08),
+  });
+  const BLUE = s.accent;
+  const BLUE_LIGHT = s.bodyBg ?? accentWithAlpha(s.accent, 0.08);
+  const BLUE_MID = s.borderColor;
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
 
@@ -372,7 +392,7 @@ function BlueMordernCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: "var(--primary-foreground)",
+        background: s.background,
         border: `1.5px solid ${BLUE_MID}`,
         borderRadius: 12,
         display: "flex",
@@ -385,7 +405,7 @@ function BlueMordernCard({ recipients }) {
       {/* Header band */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${BLUE} 0%, #1e40af 100%)`,
+          background: s.headerBg ?? `linear-gradient(135deg, ${BLUE} 0%, #1e40af 100%)`,
           padding: "36px 48px 32px",
           display: "flex",
           flexDirection: "column",
@@ -424,7 +444,7 @@ function BlueMordernCard({ recipients }) {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.2)",
+            background: s.buttonColor,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -438,7 +458,7 @@ function BlueMordernCard({ recipients }) {
         <h1
           className="font-sans"
           style={{
-            color: "var(--primary-foreground)",
+            color: s.fontColor === s.accent ? "var(--primary-foreground)" : s.fontColor,
             fontSize: 38,
             fontWeight: 700,
             letterSpacing: -0.5,
@@ -446,7 +466,7 @@ function BlueMordernCard({ recipients }) {
             textAlign: "center",
           }}
         >
-          Congratulations
+          {content.headline}
         </h1>
         <p
           className="font-sans"
@@ -458,7 +478,7 @@ function BlueMordernCard({ recipients }) {
             textTransform: "uppercase",
           }}
         >
-          Customer Appreciation Award
+          {content.subtitle}
         </p>
       </div>
 
@@ -466,7 +486,7 @@ function BlueMordernCard({ recipients }) {
       <div
         style={{
           flex: 1,
-          background: BLUE_LIGHT,
+          background: s.bodyBg ?? BLUE_LIGHT,
           padding: "40px 48px 36px",
           display: "flex",
           flexDirection: "column",
@@ -543,9 +563,7 @@ function BlueMordernCard({ recipients }) {
             margin: 0,
           }}
         >
-          "Your outstanding dedication, exceptional service, and commitment to excellence have truly
-          made a difference. This recognition is a testament to your remarkable contributions and
-          the impact you've had on our customers."
+          &ldquo;{content.message}&rdquo;
         </p>
 
         {/* Footer chips */}
@@ -577,11 +595,18 @@ function BlueMordernCard({ recipients }) {
 // Green Nature Card
 // ---------------------------------------------------------------------------
 
-function GreenCard({ recipients }) {
-  const GREEN = "var(--success)";
-  const GREEN_DARK = "var(--success)";
-  const GREEN_LIGHT = "var(--success)/10";
-  const GREEN_MID = "var(--success)";
+function GreenCard({ recipients, content = DEFAULT_CARD_CONTENT }) {
+  const s = resolveCardStyles(content, {
+    accent: "var(--success)",
+    background: accentWithAlpha("var(--success)", 0.08),
+    fontColor: "var(--success)",
+    borderColor: "var(--success)",
+    buttonColor: "var(--success)",
+  });
+  const GREEN = s.accent;
+  const GREEN_DARK = s.fontColor;
+  const GREEN_LIGHT = accentWithAlpha(s.accent, 0.1);
+  const GREEN_MID = s.borderColor;
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
 
@@ -590,7 +615,7 @@ function GreenCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: "var(--success)/10",
+        background: s.background,
         border: `1.5px solid ${GREEN_MID}`,
         borderRadius: 12,
         display: "flex",
@@ -622,7 +647,7 @@ function GreenCard({ recipients }) {
           width: 36,
           height: 36,
           borderRadius: "50%",
-          background: GREEN,
+          background: s.buttonColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -640,6 +665,7 @@ function GreenCard({ recipients }) {
           flexDirection: "column",
           alignItems: "center",
           gap: 28,
+          background: s.bodyBg ?? undefined,
         }}
       >
         {/* Leaf icon + title */}
@@ -656,7 +682,7 @@ function GreenCard({ recipients }) {
               textAlign: "center",
             }}
           >
-            Congratulations
+            {content.headline}
           </h1>
           {/* Tag line */}
           <div
@@ -672,7 +698,7 @@ function GreenCard({ recipients }) {
               letterSpacing: 0.5,
             }}
           >
-            On Being Appreciated By the Customer
+            {content.subtitle}
           </div>
         </div>
 
@@ -749,9 +775,7 @@ function GreenCard({ recipients }) {
             margin: 0,
           }}
         >
-          "Your outstanding dedication, exceptional service, and commitment to excellence have truly
-          made a difference. This recognition is a testament to your remarkable contributions and
-          the impact you've had on our customers."
+          &ldquo;{content.message}&rdquo;
         </p>
 
         {/* Bottom accent */}
@@ -773,10 +797,17 @@ function GreenCard({ recipients }) {
 // Purple Elegant Card
 // ---------------------------------------------------------------------------
 
-function PurpleElegantCard({ recipients }) {
-  const PURPLE = "var(--chart-chart-4)";
-  const PURPLE_LIGHT = "var(--chart-chart-4)";
-  const SILVER = "var(--border)";
+function PurpleElegantCard({ recipients, content = DEFAULT_CARD_CONTENT }) {
+  const s = resolveCardStyles(content, {
+    accent: "var(--chart-chart-4)",
+    background: "radial-gradient(ellipse at 40% 10%, #1e0a3c 0%, var(--foreground) 65%)",
+    fontColor: "var(--chart-chart-4)",
+    borderColor: "var(--chart-chart-4)",
+    buttonColor: "var(--chart-chart-4)",
+  });
+  const PURPLE = s.accent;
+  const PURPLE_LIGHT = s.fontColor;
+  const SILVER = content.messageColor ?? "var(--border)";
   const DARK = "var(--foreground)";
 
   const people = recipients && recipients.length > 0 ? recipients : DEFAULT_RECIPIENTS;
@@ -786,8 +817,8 @@ function PurpleElegantCard({ recipients }) {
       style={{
         width: 700,
         minHeight: 500,
-        background: `radial-gradient(ellipse at 40% 10%, #1e0a3c 0%, ${DARK} 65%)`,
-        border: `2px solid ${PURPLE}`,
+        background: s.background,
+        border: `2px solid ${s.borderColor}`,
         borderRadius: 12,
         display: "flex",
         flexDirection: "column",
@@ -832,11 +863,11 @@ function PurpleElegantCard({ recipients }) {
           width: 36,
           height: 36,
           borderRadius: "50%",
-          background: PURPLE,
+          background: s.buttonColor,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: `0 0 12px rgba(124,58,237,0.6)`,
+          boxShadow: `0 0 12px ${accentWithAlpha(s.accent, 0.5)}`,
         }}
       >
         <span style={{ color: "var(--primary-foreground)", fontWeight: 800, fontSize: 18 }}>A</span>
@@ -859,7 +890,7 @@ function PurpleElegantCard({ recipients }) {
           textShadow: `0 0 24px rgba(167,139,250,0.5)`,
         }}
       >
-        Congratulations
+        {content.headline}
       </h1>
 
       {/* Subtitle pill */}
@@ -878,7 +909,7 @@ function PurpleElegantCard({ recipients }) {
           background: "rgba(124,58,237,0.15)",
         }}
       >
-        On Being Appreciated By the Customer
+        {content.subtitle}
       </div>
 
       {/* Recipients */}
@@ -971,9 +1002,7 @@ function PurpleElegantCard({ recipients }) {
           opacity: 0.85,
         }}
       >
-        "Your outstanding dedication, exceptional service, and commitment to excellence have truly
-        made a difference. This recognition is a testament to your remarkable contributions and
-        the impact you've had on our customers."
+        &ldquo;{content.message}&rdquo;
       </p>
 
       {/* Bottom accent line */}
@@ -982,12 +1011,28 @@ function PurpleElegantCard({ recipients }) {
           marginTop: 28,
           width: "70%",
           height: 1,
-          background: `linear-gradient(to right, transparent, ${PURPLE}, transparent)`,
+          background:
+            s.footerBg ??
+            `linear-gradient(to right, transparent, ${PURPLE}, transparent)`,
           opacity: 0.6,
         }}
       />
     </div>
   );
+}
+
+export function renderKudosTemplate(templateId, recipients, content = DEFAULT_CARD_CONTENT) {
+  switch (templateId) {
+    case "blue-morden":
+      return <BlueMordernCard recipients={recipients} content={content} />;
+    case "green":
+      return <GreenCard recipients={recipients} content={content} />;
+    case "purple-elegant":
+      return <PurpleElegantCard recipients={recipients} content={content} />;
+    case "gold-classic":
+    default:
+      return <GoldClassicCard recipients={recipients} content={content} />;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1477,144 +1522,35 @@ function TemplateSelectorBar({ activeTemplate, onSelect }) {
 }
 
 // ---------------------------------------------------------------------------
+// Embedded preview (agents list main area)
+// ---------------------------------------------------------------------------
+
+export { default as KudosPreviewPane } from "@/components/features/kudos/KudosPreviewEditor";
+
+// ---------------------------------------------------------------------------
 // Main KudosPage component
 // ---------------------------------------------------------------------------
 
-export default function KudosPage({ agent, onNavigate
-
-}) {
-  // Stage machine: "empty" | "generating" | "preview"
-  const [stage, setStage] = useState("empty");
-
-  // Prompt state
-  const [inputValue, setInputValue] = useState("");
-
-  // User picker
-  const [showPicker, setShowPicker] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState("");
-
-  // Selected recipients (for card preview)
-  const [selectedRecipients, setSelectedRecipients] = useState(DEFAULT_RECIPIENTS);
-
-  // Template selection
-  const [activeTemplate, setActiveTemplate] = useState("gold-classic");
-
-  // Approval workflow — supports multiple parallel approvals
-  const [approvals, setApprovals] = useState([]); // Array<{ id, status, template, recipients, emailTo, emailCc, toInput, ccInput, emailSent }>
-  const [notifOpen, setNotifOpen] = useState(false);
-
-  // Timers ref
-  const timersRef = useRef([]);
-
-  const clearTimers = () => {
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-  };
-
-  useEffect(() => {
-    return () => clearTimers();
-  }, []);
-
-  // Detect /kudos + @ for user picker
-  useEffect(() => {
-    const hasKudos = inputValue.includes("/kudos");
-    const atIdx = inputValue.lastIndexOf("@");
-    if (hasKudos && atIdx !== -1) {
-      const query = inputValue.slice(atIdx + 1);
-      // Only show picker if there's no space after the current @-mention word
-      // (i.e., user is still typing the name)
-      const hasSpaceAfterAt = query.includes(" ") && query.trim().split(" ").length > 1;
-      if (!hasSpaceAfterAt || query.trim() === "") {
-        setShowPicker(true);
-        setPickerQuery(query.trim());
-      } else {
-        setShowPicker(false);
-      }
-    } else {
-      setShowPicker(false);
-    }
-  }, [inputValue]);
-
-  const handleSelectUser = (user) => {
-    // Replace the partial @query with the full name
-    const atIdx = inputValue.lastIndexOf("@");
-    const before = inputValue.slice(0, atIdx);
-    const newValue = before + "@" + user.name + " ";
-    setInputValue(newValue);
-    setShowPicker(false);
-
-    // Track selected recipient for card
-    setSelectedRecipients((prev) => {
-      const already = prev.find((r) => r.name === user.name);
-      if (already) return prev;
-      return [...prev, { name: user.name, color: user.color }];
-    });
-  };
-
-  const APPROVAL_KEYWORDS = /\b(request approval|send approval|send for approval|approve|submit for approval)\b/i;
-
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
-
-    // Detect approval intent when a card is ready
-    if (stage === "preview" && APPROVAL_KEYWORDS.test(inputValue)) {
-      handleRequestApproval(inputValue.trim());
-      setInputValue("");
-      setShowPicker(false);
-      return;
-    }
-
-    if (stage === "generating" || stage === "preview") return;
-
-    clearTimers();
-    setStage("generating");
-
-    const t2 = setTimeout(() => {
-      setStage("preview");
-    }, 2000);
-
-    timersRef.current = [t2];
-    setInputValue("");
-    setShowPicker(false);
-  };
-
-  // Approval handlers
-  const handleRequestApproval = (userMessage = "Send for approval") => {
-    const newApproval = {
-      id: Date.now().toString(),
-      status: "pending",
-      template: activeTemplate,
-      recipients: selectedRecipients,
-      userMessage,
-      emailTo: selectedRecipients
-        .map((r) => USERS.find((u) => u.name === r.name)?.email)
-        .filter(Boolean),
-      emailCc: [],
-      toInput: "",
-      ccInput: "",
-      emailSent: false,
-    };
-    setApprovals((prev) => [...prev, newApproval]);
-    setNotifOpen(true);
-  };
-
-  const handleApprove = (approvalId) => {
-    setApprovals((prev) =>
-      prev.map((a) => (a.id === approvalId ? { ...a, status: "approved" } : a))
-    );
-    setNotifOpen(false);
-  };
-
-  const handleReject = (approvalId) => {
-    setApprovals((prev) => prev.filter((a) => a.id !== approvalId));
-    setNotifOpen(false);
-  };
-
-  const handleUpdateApproval = (approvalId, updates) => {
-    setApprovals((prev) =>
-      prev.map((a) => (a.id === approvalId ? { ...a, ...updates } : a))
-    );
-  };
+export default function KudosPage({ onNavigate }) {
+  const workflow = useKudosWorkflow();
+  const {
+    stage,
+    activeTemplate,
+    setActiveTemplate,
+    selectedRecipients,
+    setInputValue,
+    approvals,
+    notifOpen,
+    setNotifOpen,
+    handleApprove,
+    handleReject,
+    handleUpdateApproval,
+    inputValue,
+    handleSend,
+    showPicker,
+    pickerQuery,
+    handleSelectUser,
+  } = workflow;
 
   return (
     <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
@@ -1626,6 +1562,7 @@ export default function KudosPage({ agent, onNavigate
           approvals={approvals}
           onApprove={handleApprove}
           onReject={handleReject}
+          onRequestChanges={workflow.handleRequestChanges}
           notifOpen={notifOpen}
           onNotifToggle={() => setNotifOpen((v) => !v)}
         />
@@ -1635,114 +1572,25 @@ export default function KudosPage({ agent, onNavigate
 
           {/* Left panel */}
           <div className="flex flex-col flex-1 min-w-0 bg-muted">
-            {stage !== "preview" ? (
-              // Empty / generating state: welcome placeholder with suggestions
-              <div className="flex-1 flex flex-col items-center justify-center gap-8 px-12">
-                {/* Icon */}
-                <div className="flex items-center justify-center size-16 rounded-2xl bg-card border border-border shadow-sm">
-                  <svg width="32" height="35" viewBox="0 0 22 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0 14L9 8.5V19.5L0 14Z" fill="var(--primary)" />
-                    <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="var(--primary)" />
-                    <path d="M13 15L22 9.5V20.5L13 15Z" fill="var(--chart-chart-2)" />
-                  </svg>
-                </div>
-
-                {/* Heading */}
-                <div className="flex flex-col items-center gap-2 text-center max-w-md">
-                  <h2 className="text-2xl font-semibold text-foreground leading-tight tracking-[-0.4px]">
-                    Customer Appreciation
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-5">
-                    Use the prompt on the right to describe your appreciation. Try one of the suggestions below to get started.
-                  </p>
-                </div>
-
-                {/* Suggestion cards */}
-                <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
-                  {[
-                    {
-                      icon: "🏆",
-                      title: "Recognise outstanding service",
-                      prompt: "/kudos @  — outstanding customer service this quarter!",
-                    },
-                    {
-                      icon: "🌟",
-                      title: "Celebrate a team milestone",
-                      prompt: "/kudos @  — incredible teamwork on the product launch!",
-                    },
-                    {
-                      icon: "🤝",
-                      title: "Thank a client champion",
-                      prompt: "/kudos @  — thank you for being an amazing advocate for our product.",
-                    },
-                    {
-                      icon: "🚀",
-                      title: "Highlight exceptional effort",
-                      prompt: "/kudos @  — went above and beyond to deliver results on time.",
-                    },
-                  ].map((s) => (
-                    <button
-                      key={s.title}
-                      onClick={() => setInputValue(s.prompt)}
-                      className="group flex flex-col gap-2 bg-card border border-border rounded-[10px] p-4 text-left hover:border-border hover:shadow-md transition-all"
-                    >
-                      <span className="text-xl">{s.icon}</span>
-                      <span className="text-sm font-medium text-foreground leading-5 group-hover:text-primary transition-colors">
-                        {s.title}
-                      </span>
-                      <span className="text-xs text-muted-foreground leading-4 truncate">
-                        {s.prompt}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* How it works */}
-                <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">1</span>
-                    Type <code className="bg-muted px-1 rounded text-muted-foreground">/kudos @Name</code>
-                  </div>
-                  <div className="w-4 h-px bg-border" />
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">2</span>
-                    AI generates a card
-                  </div>
-                  <div className="w-4 h-px bg-border" />
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex items-center justify-center size-4 rounded-full bg-primary text-primary-foreground font-bold text-xs">3</span>
-                    Pick a template & send
-                  </div>
+            {stage === "compose" || stage === "empty" ? (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="max-w-2xl mx-auto px-8 py-10">
+                  <KudosComposeStep workflow={workflow} onContinue={workflow.submitComposeForm} />
                 </div>
               </div>
             ) : (
-              // Preview state: show active template card
-              <>
-                <div className="flex-1 min-h-0 overflow-auto flex items-center justify-center p-8">
-                  {activeTemplate === "gold-classic" && <GoldClassicCard recipients={selectedRecipients} />}
-                  {activeTemplate === "blue-morden" && <BlueMordernCard recipients={selectedRecipients} />}
-                  {activeTemplate === "green" && <GreenCard recipients={selectedRecipients} />}
-                  {activeTemplate === "purple-elegant" && <PurpleElegantCard recipients={selectedRecipients} />}
-                </div>
-                <TemplateSelectorBar activeTemplate={activeTemplate} onSelect={setActiveTemplate} />
-              </>
+              <KudosPreviewEditor workflow={workflow} />
             )}
           </div>
 
-          {/* Right sidebar */}
-          <RightSidebar
-            stage={stage}
-            activeTemplate={activeTemplate}
-            approvals={approvals}
-            onUpdateApproval={handleUpdateApproval}
-            onClose={() => onNavigate && onNavigate("agents")}
-            inputValue={inputValue}
-            onInputChange={setInputValue}
-            onSend={handleSend}
-            showPicker={showPicker}
-            pickerQuery={pickerQuery}
-            onSelectUser={handleSelectUser}
-          />
+          {/* Right sidebar — /kudos conversation */}
+          <div
+            className="flex h-full min-h-0 flex-col border-l border-border bg-muted flex-shrink-0 overflow-hidden"
+            style={{ width: 340 }}
+          >
+            <KudosPanelHeader onClose={() => onNavigate?.("agents")} />
+            <KudosConversationBody workflow={workflow} />
+          </div>
         </div>
       </div>
     </main>

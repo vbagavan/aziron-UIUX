@@ -48,9 +48,9 @@ export function ThemeProvider({ children }) {
   // Initialize state from localStorage
   const [mode, setModeState] = useState(() => {
     try {
-      return localStorage.getItem("aziron-theme-mode") || "dark";
+      return localStorage.getItem("aziron-theme-mode") || "light";
     } catch {
-      return "dark";
+      return "light";
     }
   });
 

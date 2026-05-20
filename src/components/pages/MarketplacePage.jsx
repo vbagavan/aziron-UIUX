@@ -823,10 +823,11 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
           <div className="pointer-events-none absolute -bottom-20 -left-12 size-[300px] rounded-full bg-cyan-500/10 blur-3xl" aria-hidden />
 
           <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 text-center">
-            <div className="mx-auto w-full max-w-2xl space-y-3">
-              <h1 className="text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+            <div className="mx-auto w-full space-y-3">
+              <h1 className="whitespace-nowrap text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
                 Build faster with pre-made agents &amp; flows.
               </h1>
+              <div className="mx-auto w-full max-w-2xl space-y-3">
               <p className="text-pretty text-sm text-muted-foreground sm:text-base">
                 Browse {totalUnfiltered} curated agents and automation flows. Clone, customize, and ship to production in minutes.
               </p>
@@ -837,6 +838,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
                 </kbd>{" "}
                 anywhere to jump to search
               </p>
+              </div>
             </div>
 
             <div className="relative w-full max-w-xl shrink-0">

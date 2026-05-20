@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  APPROVAL_STATUS,
+  APPROVAL_STATUS_LABELS,
+  PSP_TEAM_DESCRIPTION,
+  PSP_TEAM_LABEL,
+} from "@/components/features/kudos/constants";
+import { cn } from "@/lib/utils";
+import {
   X,
   CheckCheck,
   ChevronRight,
+  MessageSquare,
   ServerCrash,
   ShieldAlert,
   Bot,
@@ -271,74 +279,135 @@ const KUDOS_TEMPLATE_LABELS = {
   "purple-elegant": "Purple Elegant",
 };
 
-function KudosApprovalRow({ approval, onApprove, onReject }) {
-  const recipientNames = approval.recipients.map((r) => r.name.split(" ")[0]).join(" & ");
-  const isApproved = approval.status === "approved";
+function KudosApprovalRow({ approval, onApprove, onReject, onRequestChanges, onActionComplete }) {
+  const [comment, setComment] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const recipientNames = approval.recipients?.map((r) => r.name.split(" ")[0]).join(" & ") ?? "—";
+  const isPending = approval.status === APPROVAL_STATUS.PENDING;
+  const statusLabel = APPROVAL_STATUS_LABELS[approval.status] ?? approval.status;
+
+  const statusColor =
+    approval.status === APPROVAL_STATUS.APPROVED
+      ? "text-success bg-success/10 border-success-ring"
+      : approval.status === APPROVAL_STATUS.REJECTED
+        ? "text-destructive bg-destructive/10 border-destructive/30"
+        : approval.status === APPROVAL_STATUS.CHANGES_REQUESTED
+          ? "text-warning bg-warning/10 border-warning-ring"
+          : "text-primary bg-primary/10 border-primary/30";
+
+  const runAction = (fn) => {
+    const message = fn?.(approval.id, comment);
+    if (message === null) {
+      setActionError("Add a comment before rejecting or requesting changes.");
+      return;
+    }
+    setActionError("");
+    setComment("");
+    setExpanded(false);
+    onActionComplete?.(message);
+  };
 
   return (
-    <div className="flex items-start gap-3 px-4 py-4 bg-card dark:bg-card hover:bg-muted dark:hover:bg-muted transition-colors border-b border-border dark:border-border">
-      {/* Unread dot */}
-      <div className="w-2.5 flex-shrink-0 flex justify-center mt-[18px]">
-        {!isApproved && <div className="size-2 rounded-full bg-primary" />}
-      </div>
-
-      {/* Avatar + badge */}
-      <div className="relative flex-shrink-0">
-        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold select-none">
-          KD
+    <div className="border-b border-border bg-card">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="w-full flex items-start gap-3 px-4 py-4 hover:bg-muted transition-colors text-left"
+      >
+        <div className="w-2.5 flex-shrink-0 flex justify-center mt-[18px]">
+          {isPending && <div className="size-2 rounded-full bg-primary" />}
         </div>
-        <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-card dark:border-border flex items-center justify-center bg-primary">
-          {isApproved
-            ? <CheckCircle2 size={9} color="white" strokeWidth={2.5} />
-            : <UserCheck size={9} color="white" strokeWidth={2.5} />
-          }
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground dark:text-foreground leading-snug font-semibold">
-          {isApproved ? "Kudos card approved ✓" : "Kudos approval requested"}
-        </p>
-        <p className="text-xs text-muted-foreground dark:text-muted-foreground mt-0.5 leading-snug">
-          {recipientNames} · {KUDOS_TEMPLATE_LABELS[approval.template] ?? approval.template}
-        </p>
-
-        <div className="flex items-center gap-2 mt-2">
-          <span className="px-[6px] py-[2px] rounded text-xs font-bold tracking-wide bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border border-primary/30 dark:border-primary">
-            KUDOS
-          </span>
-          <span className="text-sm text-muted-foreground dark:text-muted-foreground">Just now</span>
-          {!isApproved && (
-            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-primary dark:text-primary bg-primary/10 dark:bg-primary/20">
-              pending
-            </span>
-          )}
-          {isApproved && (
-            <span className="text-xs font-semibold px-1.5 py-[2px] rounded-full text-success dark:text-success bg-success/10 dark:bg-success/20">
-              approved
-            </span>
-          )}
-        </div>
-
-        {/* Approve / Reject — only for pending */}
-        {!isApproved && onApprove && onReject && (
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              onClick={(e) => { e.stopPropagation(); onApprove(approval.id); }}
-              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold bg-success text-success-foreground hover:bg-success/90 transition-colors"
-            >
-              <CheckCheck size={11} /> Approve
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onReject(approval.id); }}
-              className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold border border-border text-destructive bg-card dark:bg-card hover:bg-destructive/10 dark:hover:bg-destructive/20 transition-colors"
-            >
-              <X size={11} /> Reject
-            </button>
+        <div className="relative flex-shrink-0">
+          <div className="size-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+            PSP
           </div>
-        )}
-      </div>
+          <div className="absolute -bottom-1 -right-1 size-[18px] rounded-full border-2 border-card flex items-center justify-center bg-primary">
+            <UserCheck size={9} color="white" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">Customer Appreciation — {PSP_TEAM_LABEL} review</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {recipientNames} · {KUDOS_TEMPLATE_LABELS[approval.template] ?? approval.template}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-snug" title={PSP_TEAM_DESCRIPTION}>
+            {PSP_TEAM_DESCRIPTION}
+          </p>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className="px-[6px] py-[2px] rounded text-xs font-bold bg-primary/10 text-primary border border-primary/30">
+              KUDOS
+            </span>
+            <span className={cn("text-xs font-semibold px-1.5 py-[2px] rounded-full border", statusColor)}>
+              {statusLabel}
+            </span>
+          </div>
+        </div>
+        <span className="text-[10px] font-semibold text-primary mt-2 flex-shrink-0">
+          {expanded ? "Hide" : "Review"}
+        </span>
+        <ChevronRight
+          size={14}
+          className={cn("text-muted-foreground transition-transform mt-2 flex-shrink-0", expanded && "rotate-90")}
+          aria-hidden
+        />
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 pt-0 ml-[52px] flex flex-col gap-3 border-t border-border/50">
+          {isPending && (
+            <>
+              <textarea
+                value={comment}
+                onChange={(e) => {
+                  setComment(e.target.value);
+                  if (actionError) setActionError("");
+                }}
+                placeholder="Comment required for reject or request changes. Optional for approve."
+                rows={2}
+                className="w-full text-xs rounded-md border border-border bg-background px-2 py-1.5 resize-none"
+              />
+              {actionError && (
+                <p className="text-[10px] text-destructive" role="alert">
+                  {actionError}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => runAction(onApprove)}
+                  className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold bg-success text-success-foreground hover:bg-success/90"
+                >
+                  <CheckCheck size={11} /> Approve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction(onReject)}
+                  disabled={!comment.trim()}
+                  className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold border border-border text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X size={11} /> Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runAction(onRequestChanges)}
+                  disabled={!comment.trim()}
+                  className="flex items-center gap-1 px-3 py-[5px] rounded-[6px] text-xs font-semibold border border-border text-warning hover:bg-warning/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <MessageSquare size={11} /> Request changes
+                </button>
+              </div>
+            </>
+          )}
+
+          {approval.pspComment && !isPending && (
+            <p className="text-xs text-muted-foreground bg-muted rounded-md px-2 py-1.5">
+              <span className="font-medium">PSP note:</span> {approval.pspComment}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -360,7 +429,16 @@ function getFiltered(tab) {
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
-export default function NotificationPanel({ open, onClose, onNavigate, approvals: kudosApprovals, onApprove: onKudosApprove, onReject: onKudosReject }) {
+export default function NotificationPanel({
+  open,
+  onClose,
+  onNavigate,
+  approvals: kudosApprovals,
+  onApprove: onKudosApprove,
+  onReject: onKudosReject,
+  onRequestChanges: onKudosRequestChanges,
+  onKudosActionComplete,
+}) {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
   const panelRef = useRef(null);
@@ -392,7 +470,9 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
   const visibleKudos = (activeTab === "all" || activeTab === "approvals") ? kudosList : [];
 
   const items    = getFiltered(activeTab);
-  const unreadCount = NOTIFICATIONS.filter((n) => n.unread).length + kudosList.filter((a) => a.status === "pending").length;
+  const unreadCount =
+    NOTIFICATIONS.filter((n) => n.unread).length +
+    kudosList.filter((a) => a.status === APPROVAL_STATUS.PENDING).length;
 
   return (
     <>
@@ -490,6 +570,8 @@ export default function NotificationPanel({ open, onClose, onNavigate, approvals
                       approval={approval}
                       onApprove={onKudosApprove}
                       onReject={onKudosReject}
+                      onRequestChanges={onKudosRequestChanges}
+                      onActionComplete={onKudosActionComplete}
                     />
                   ))}
                 </div>

@@ -116,12 +116,7 @@ export default function UsagePage({ onNavigate }) {
       <Sidebar activePage="usage" onNavigate={onNavigate} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <AppHeader onNavigate={onNavigate}>
-          <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-border dark:bg-border" />
-            <span className="text-sm text-foreground dark:text-foreground font-medium">Usage</span>
-          </div>
-        </AppHeader>
+        <AppHeader onNavigate={onNavigate} />
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Header */}

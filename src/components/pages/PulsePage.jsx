@@ -87,14 +87,7 @@ export default function PulsePage({ onNavigate }) {
       <Sidebar activePage="pulse" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
-        {view === "dashboard" && (
-          <AppHeader onNavigate={onNavigate}>
-            <div className="ml-1 flex items-center gap-2">
-              <div className="h-6 w-px bg-border dark:bg-border" />
-              <span className="text-sm font-medium text-foreground dark:text-foreground">Pulse</span>
-            </div>
-          </AppHeader>
-        )}
+        {view === "dashboard" && <AppHeader onNavigate={onNavigate} />}
 
         <div className="min-h-0 flex-1 overflow-hidden">
           {view === "dashboard" ? (

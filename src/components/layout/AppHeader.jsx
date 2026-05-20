@@ -131,6 +131,8 @@ export default function AppHeader({
   approvals,
   onApprove,
   onReject,
+  onRequestChanges,
+  onKudosActionComplete,
   notifOpen: notifOpenProp,
   onNotifToggle,
 }) {
@@ -139,7 +141,7 @@ export default function AppHeader({
   const showNotifications   = notifOpenProp !== undefined ? notifOpenProp : showNotificationsInternal;
   const toggleNotifications = onNotifToggle ?? (() => setShowNotificationsInternal((v) => !v));
 
-  const pendingKudos = (approvals ?? []).filter((a) => a.status === "pending").length;
+  const pendingKudos = (approvals ?? []).filter((a) => a.status === "pending_approval").length;
   const hasBadge     = pendingKudos > 0;
 
   return (
@@ -180,6 +182,8 @@ export default function AppHeader({
         approvals={approvals}
         onApprove={onApprove}
         onReject={onReject}
+        onRequestChanges={onRequestChanges}
+        onKudosActionComplete={onKudosActionComplete}
       />
     </>
   );
