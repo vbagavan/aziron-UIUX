@@ -48,6 +48,11 @@ function SectionLabel({ children }) {
  * @param {object}   props.permissions    – { canFork?, canCreateFlow? }
  * @param {function} props.onFork         – ({ name, description, visibility: "private", source }) => void
  * @param {function} [props.onNavigate]   – (target: string) => void
+ * @param {boolean}  [props.compact]      – shorter dialog (e.g. marketplace)
+ * @param {string}   [props.readinessSectionLabel]
+ * @param {string}   [props.forkError]    – API / submit error message
+ * @param {boolean}  [props.permissionBlocked]
+ * @param {string}   [props.permissionMessage]
  */
 export default function ForkDialog({
   open,
@@ -58,6 +63,11 @@ export default function ForkDialog({
   onFork,
   onNavigate,
   onNotify,
+  compact = false,
+  readinessSectionLabel = "Workspace requirements",
+  forkError = null,
+  permissionBlocked = false,
+  permissionMessage = "",
 }) {
   const [name, setName]               = useState("");
   const [description, setDescription] = useState("");
@@ -128,7 +138,8 @@ export default function ForkDialog({
   const hasMissing = (checkReport?.counts.missing ?? 0) > 0;
   const fullyReady = checkReport?.fullyReady ?? false;
   const trimmedName = name.trim();
-  const canFork = trimmedName.length > 0 && !permError;
+  const canFork =
+    trimmedName.length > 0 && !permError && !permissionBlocked;
 
   const ctaLabel = permError
     ? (kind === "agent" ? "Fork agent" : "Fork flow")
@@ -160,7 +171,10 @@ export default function ForkDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton
-        className="flex w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[min(92vh,880px)] min-h-[min(70vh,560px)] flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        className={cn(
+          "flex w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[min(92vh,880px)] flex-col gap-0 overflow-hidden p-0 sm:w-full",
+          compact ? "min-h-0" : "min-h-[min(70vh,560px)]",
+        )}
       >
         {/* ── Fixed header ── */}
         <DialogHeader className="relative shrink-0 border-b border-border px-8 pt-7 pb-5 pr-16">
@@ -256,7 +270,7 @@ export default function ForkDialog({
           {/* ── Readiness section ── */}
           <div className="flex flex-col gap-3">
             {!(checkPhase === "done" && fullyReady && !permError) && (
-              <SectionLabel>Setup readiness</SectionLabel>
+              <SectionLabel>{readinessSectionLabel}</SectionLabel>
             )}
             <ForkReadinessChecklist
               phase={checkPhase}
@@ -281,6 +295,18 @@ export default function ForkDialog({
           </div>
 
         </div>{/* end scrollable body */}
+
+        {(permissionBlocked && permissionMessage) && (
+          <p className="shrink-0 border-t border-border bg-destructive/5 px-8 py-3 text-sm text-destructive" role="alert">
+            {permissionMessage}
+          </p>
+        )}
+
+        {forkError && (
+          <p className="shrink-0 border-t border-border bg-destructive/5 px-8 py-3 text-sm text-destructive" role="alert">
+            {forkError}
+          </p>
+        )}
 
         {/* ── Fixed footer ── */}
         <div className="shrink-0 flex items-center justify-end gap-3 border-t border-border bg-muted/30 px-8 py-5 dark:bg-muted/20">

@@ -107,6 +107,23 @@ function TenantCreateRoute({ onNavigate, onTenantCreated }) {
   return <TenantCreatePage onNavigate={onNavigate} onTenantCreated={onTenantCreated} />;
 }
 
+function MarketplaceRoute({ onNavigate, agents, patchAgent, navigate }) {
+  const { can } = usePermissions();
+  if (!can("marketplace.view")) {
+    return <Navigate to="/new-chat" replace />;
+  }
+  return (
+    <MarketplacePage
+      onNavigate={onNavigate}
+      workspaceAgents={agents}
+      onUnpublishAgent={(agentId) => {
+        patchAgent(agentId, { visibility: "private" });
+        navigate("/agents");
+      }}
+    />
+  );
+}
+
 function CreateFlowRedirect() {
   const navigate = useNavigate();
   const { createDraftFlow } = useFlowCatalog();
@@ -254,19 +271,7 @@ export default function AppRoutes() {
       <Route path="/usage" element={<UsagePage onNavigate={onNavigate} />} />
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
-      <Route
-        path="/marketplace"
-        element={
-          <MarketplacePage
-            onNavigate={onNavigate}
-            organisationAgents={agents}
-            onUnpublishAgent={(agentId) => {
-              patchAgent(agentId, { visibility: "private" });
-              navigate("/agents");
-            }}
-          />
-        }
-      />
+      <Route path="/marketplace" element={<MarketplaceRoute onNavigate={onNavigate} agents={agents} patchAgent={patchAgent} navigate={navigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 
       <Route

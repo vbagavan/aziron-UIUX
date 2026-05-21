@@ -85,6 +85,10 @@ export function FlowCatalogProvider({ children }) {
           lastRun: typeof normalized.lastRun === "string" ? normalized.lastRun : "—",
           createdAt: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
           creationEntry: "import",
+          ...(normalized.forkedFrom != null ? { forkedFrom: normalized.forkedFrom } : {}),
+          ...(normalized.marketplaceSourceId != null
+            ? { marketplaceSourceId: normalized.marketplaceSourceId }
+            : {}),
         };
         if (flow.versionHistory.length > 0) {
           persistVersionHistory(id, flow.versionHistory);
