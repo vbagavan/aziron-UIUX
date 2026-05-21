@@ -23,6 +23,8 @@ import AppHeader from "@/components/layout/AppHeader";
 import { useFlowStore } from "@/store/flowStore";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ForkFlowDialog } from "@/components/ui/ForkFlowDialog";
+import CloneDependencyCheckDialog from "@/components/features/clone/CloneDependencyCheckDialog";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -3524,9 +3526,19 @@ function TopBar({
   fullscreenTargetRef,
   /** Fork this flow — receives { name, description, visibility } and creates + navigates to copy. */
   onForkFlow,
+  onNavigate,
 }) {
   const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
   const [forkOpen, setForkOpen] = useState(false);
+  const [flowCloneCheckOpen, setFlowCloneCheckOpen] = useState(false);
+  const { can } = usePermissions();
+  const clonePermissions = useMemo(
+    () => ({
+      canFork: can("agents.fork"),
+      canCreateFlow: can("flows.create"),
+    }),
+    [can],
+  );
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveMenuRef = useRef(null);
 
@@ -3723,7 +3735,7 @@ function TopBar({
 
   const handleFork = () => {
     closeMenu();
-    setForkOpen(true);
+    setFlowCloneCheckOpen(true);
   };
 
   const handleExport = () => {
@@ -4232,6 +4244,22 @@ function TopBar({
           </div>
         </div>
       )}
+
+      <CloneDependencyCheckDialog
+        open={flowCloneCheckOpen}
+        onOpenChange={setFlowCloneCheckOpen}
+        kind="flow"
+        source={flow}
+        permissions={clonePermissions}
+        forkChain
+        onProceed={() => {
+          setFlowCloneCheckOpen(false);
+          setForkOpen(true);
+        }}
+        onNavigate={onNavigate}
+        onNotify={showToast}
+        onImportConfig={() => showToast?.("Environment file imported — running check again.")}
+      />
 
       <ForkFlowDialog
         open={forkOpen}
@@ -4929,6 +4957,7 @@ export default function FlowViewPage({
           onUnpublishFlow={handleUnpublishFlow}
           fullscreenTargetRef={fullscreenStageRef}
           onForkFlow={onForkFlow}
+          onNavigate={guardedNavigate}
         />
         <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Panel area — position-aware */}

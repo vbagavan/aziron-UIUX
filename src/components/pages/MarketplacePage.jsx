@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRight,
@@ -17,7 +18,6 @@ import {
   Users,
   Workflow,
   X,
-  Download,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -36,6 +36,12 @@ import { Toast, useToast } from "@/components/ui/Toast";
 import { forkAgent } from "@/lib/marketplaceApi";
 import { cn } from "@/lib/utils";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import ForkDialog from "@/components/features/clone/ForkDialog";
+import {
+  marketplaceFlowToCheckSource,
+  marketplaceFlowTemplateSteps,
+} from "@/lib/marketplaceFork";
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -255,14 +261,16 @@ function MarketplaceToolbar({
 
 // ─── Preview modal ────────────────────────────────────────────────────────────
 
-function PreviewModal({ item, open, onClose, onAction, forkedIds }) {
+function PreviewModal({ item, open, onClose, onAction, forkedAgentIds, forkedFlowIds }) {
   if (!item) return null;
   const isAgent  = item._kind === "agent";
-  const isForked = isAgent && forkedIds.has(String(item.id));
+  const isForked = isAgent
+    ? forkedAgentIds.has(String(item.id))
+    : forkedFlowIds.has(String(item.id));
   const canAct   = isAgent ? (item.canFork || item.isOwnedByMe) : true;
   const ctaLabel = isAgent
-    ? (item.isOwnedByMe || isForked ? "Open in Agents" : "Clone this agent")
-    : "Use this template";
+    ? (item.isOwnedByMe || isForked ? "Open in Agents" : "Fork this agent")
+    : (isForked ? "Open in Flows" : "Fork this flow");
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -341,110 +349,11 @@ function PreviewModal({ item, open, onClose, onAction, forkedIds }) {
               className="min-h-11 flex-1 gap-2"
               onClick={() => { onClose(); onAction(item); }}
             >
-              {isAgent
-                ? <Copy className="size-4" aria-hidden />
-                : <Download className="size-4" aria-hidden />}
+              <GitFork className="size-4" aria-hidden />
               {ctaLabel}
             </Button>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Fork modal ───────────────────────────────────────────────────────────────
-
-function ForkAgentModal({ agent, open, onClose, onSuccess }) {
-  const [name,        setName]    = useState("");
-  const [description, setDesc]    = useState("");
-  const [loading,     setLoading] = useState(false);
-  const [error,       setError]   = useState(null);
-
-  useEffect(() => {
-    if (agent) {
-      setName(`${agent.name} (Fork)`);
-      setDesc(agent.blurb ?? "");
-      setError(null);
-    }
-  }, [agent?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSubmit = async () => {
-    if (!name.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      if (String(agent.id).startsWith("demo-")) {
-        onSuccess({ id: agent.id, name: name.trim(), description: description.trim() });
-        return;
-      }
-      const forked = await forkAgent(agent.id, { name: name.trim(), description: description.trim() });
-      onSuccess(forked);
-    } catch (err) {
-      setError(err?.message ?? "Fork failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!agent) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o && !loading) onClose(); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Fork agent</DialogTitle>
-          <DialogDescription>
-            Create a private copy of{" "}
-            <span className="font-medium text-foreground">"{agent.name}"</span>. You can rename it and adjust the description.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <label htmlFor="fork-agent-name" className="text-sm font-medium text-foreground">Name</label>
-            <Input
-              id="fork-agent-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="My fork name"
-              disabled={loading}
-              autoFocus
-              autoComplete="off"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="fork-agent-desc" className="text-sm font-medium text-foreground">
-              Description <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <Textarea
-              id="fork-agent-desc"
-              value={description}
-              onChange={(e) => setDesc(e.target.value)}
-              placeholder="What will this fork do differently?"
-              rows={3}
-              disabled={loading}
-            />
-          </div>
-          {error && (
-            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-xs text-destructive" role="alert">
-              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-              {error}
-            </div>
-          )}
-        </div>
-
-        <DialogFooter showCloseButton>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading || !name.trim()}
-            className="min-h-10 gap-2 sm:min-w-[120px]"
-          >
-            {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
-            {loading ? "Forking…" : "Fork agent"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -456,7 +365,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview }) {
   const cta =
     agent.isOwnedByMe || isForked
       ? { label: "Open copy", action: () => onOpenForked?.(agent), color: "text-foreground hover:bg-muted/60" }
-      : { label: "Clone", action: () => onFork?.(agent), color: "text-primary hover:bg-primary/10" };
+      : { label: "Fork", action: () => onFork?.(agent), color: "text-primary hover:bg-primary/10" };
 
   return (
     <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-md">
@@ -537,7 +446,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview }) {
 
 // ─── Flow card ────────────────────────────────────────────────────────────────
 
-function FlowCard({ flow, onUseTemplate, onPreview }) {
+function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked }) {
   return (
     <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-cyan-500/35 hover:shadow-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-primary/60 via-cyan-500/50 to-primary/40 transition-transform duration-200 group-hover:scale-x-100" />
@@ -595,11 +504,20 @@ function FlowCard({ flow, onUseTemplate, onPreview }) {
           type="button"
           variant="ghost"
           size="xs"
-          className="min-h-9 gap-1 text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-400"
-          onClick={(e) => { e.stopPropagation(); onUseTemplate?.(flow); }}
+          className={cn(
+            "min-h-9 gap-1",
+            isForked
+              ? "text-foreground hover:bg-muted/60"
+              : "text-cyan-600 hover:bg-cyan-500/10 dark:text-cyan-400",
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isForked) onOpenForked?.(flow);
+            else onForkFlow?.(flow);
+          }}
         >
-          <Download className="size-3" aria-hidden />
-          Use template
+          {!isForked && <GitFork className="size-3" aria-hidden />}
+          {isForked ? "Open copy" : "Fork"}
           <ArrowRight className="size-3" aria-hidden />
         </Button>
       </div>
@@ -695,12 +613,23 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
   const [searchQuery,    setSearchQuery]    = useState("");
   const [sortBy,         setSortBy]         = useState("popular");
   const [previewItem,    setPreviewItem]    = useState(null);
-  const [forkTarget,     setForkTarget]     = useState(null);
-  const [forkedIds,      setForkedIds]      = useState(new Set());
+  const [forkTarget,      setForkTarget]      = useState(null);
+  const [forkedAgentIds,  setForkedAgentIds]  = useState(new Set());
+  const [forkedFlowIds,   setForkedFlowIds]   = useState(new Set());
 
   const searchRef = useRef(null);
+  const navigate = useNavigate();
   const { importFlow } = useFlowCatalog();
+  const { can } = usePermissions();
   const { toasts, showToast, dismissToast } = useToast();
+
+  const clonePermissions = useMemo(
+    () => ({
+      canFork: can("agents.fork") && can("marketplace.fork"),
+      canCreateFlow: can("flows.create"),
+    }),
+    [can],
+  );
 
   const focusSearch = useCallback(() => {
     searchRef.current?.focus();
@@ -783,32 +712,75 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
     setSearchQuery("");
   };
 
-  const handleFork = (agent) => {
+  const openFork = (item, kind) => {
     setPreviewItem(null);
-    setForkTarget(agent);
+    if (kind === "flow") {
+      setForkTarget({
+        kind: "flow",
+        source: marketplaceFlowToCheckSource(item),
+        marketplaceFlow: item,
+      });
+      return;
+    }
+    setForkTarget({ kind: "agent", source: item });
   };
 
-  const handleForkSuccess = (forkedAgent) => {
-    setForkedIds((prev) => new Set([...prev, String(forkTarget?.id)]));
-    setForkTarget(null);
-    showToast(`"${forkedAgent.name}" forked — open Agents to customize it.`);
+  const handleForkAgentSubmit = async ({ name, description, source }) => {
+    try {
+      if (String(source.id).startsWith("demo-")) {
+        setForkedAgentIds((prev) => new Set([...prev, String(source.id)]));
+        setForkTarget(null);
+        showToast(`"${name}" forked — open Agents to customize it.`);
+        return;
+      }
+      const forked = await forkAgent(source.id, {
+        name,
+        description: description.trim(),
+      });
+      setForkedAgentIds((prev) => new Set([...prev, String(source.id)]));
+      setForkTarget(null);
+      showToast(`"${forked.name ?? name}" forked — open Agents to customize it.`);
+    } catch (err) {
+      showToast(err?.message ?? "Fork failed. Please try again.");
+    }
   };
 
-  const handleUseTemplate = (flow) => {
-    setPreviewItem(null);
-    importFlow({
-      name:        flow.name,
-      description: flow.blurb,
-      version:     "v0.1",
-      steps:       [],
+  const handleForkFlowSubmit = ({ name, description, visibility }, marketplaceFlow) => {
+    const created = importFlow({
+      name,
+      description: description.trim(),
+      version: "v0.1",
+      steps: marketplaceFlowTemplateSteps(marketplaceFlow),
     });
-    showToast(`"${flow.name}" added to your flows.`);
+    const flow = created[0];
+    setForkedFlowIds((prev) => new Set([...prev, String(marketplaceFlow.id)]));
+    setForkTarget(null);
+    showToast(`"${name}" forked — opening editor.`);
+    if (flow) {
+      navigate(`/flows/${flow.id}`, { state: { flowOpenIntent: "edit" } });
+    }
+  };
+
+  const handleForkDialogSubmit = (payload) => {
+    if (forkTarget?.kind === "flow") {
+      handleForkFlowSubmit(payload, forkTarget.marketplaceFlow);
+      return;
+    }
+    handleForkAgentSubmit(payload);
+  };
+
+  const handleOpenForkedFlow = () => {
     onNavigate?.("flows");
   };
 
   const handlePreviewAction = (item) => {
-    if (item._kind === "agent") handleFork(item);
-    else handleUseTemplate(item);
+    if (item._kind === "agent") {
+      if (forkedAgentIds.has(String(item.id))) onNavigate?.("agents");
+      else openFork(item, "agent");
+      return;
+    }
+    if (forkedFlowIds.has(String(item.id))) handleOpenForkedFlow();
+    else openFork(item, "flow");
   };
 
   return (
@@ -829,7 +801,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
               </h1>
               <div className="mx-auto w-full max-w-2xl space-y-3">
               <p className="text-pretty text-sm text-muted-foreground sm:text-base">
-                Browse {totalUnfiltered} curated agents and automation flows. Clone, customize, and ship to production in minutes.
+                Browse {totalUnfiltered} curated agents and automation flows. Fork agents and flows, customize, and ship in minutes.
               </p>
               <p className="text-xs text-muted-foreground sm:text-sm">
                 Press{" "}
@@ -961,15 +933,17 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
                         ) : item._kind === "agent" ? (
                           <AgentCard
                             agent={item}
-                            isForked={forkedIds.has(String(item.id))}
-                            onFork={handleFork}
+                            isForked={forkedAgentIds.has(String(item.id))}
+                            onFork={(agent) => openFork(agent, "agent")}
                             onOpenForked={() => onNavigate?.("agents")}
                             onPreview={setPreviewItem}
                           />
                         ) : (
                           <FlowCard
                             flow={item}
-                            onUseTemplate={handleUseTemplate}
+                            isForked={forkedFlowIds.has(String(item.id))}
+                            onForkFlow={(flow) => openFork(flow, "flow")}
+                            onOpenForked={handleOpenForkedFlow}
                             onPreview={setPreviewItem}
                           />
                         )}
@@ -988,14 +962,19 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
         open={!!previewItem}
         onClose={() => setPreviewItem(null)}
         onAction={handlePreviewAction}
-        forkedIds={forkedIds}
+        forkedAgentIds={forkedAgentIds}
+        forkedFlowIds={forkedFlowIds}
       />
 
-      <ForkAgentModal
-        agent={forkTarget}
+      <ForkDialog
         open={!!forkTarget}
-        onClose={() => setForkTarget(null)}
-        onSuccess={handleForkSuccess}
+        onOpenChange={(v) => { if (!v) setForkTarget(null); }}
+        kind={forkTarget?.kind ?? "agent"}
+        source={forkTarget?.source}
+        permissions={clonePermissions}
+        onNavigate={onNavigate}
+        onNotify={showToast}
+        onFork={handleForkDialogSubmit}
       />
 
       {toasts.map((t) => (

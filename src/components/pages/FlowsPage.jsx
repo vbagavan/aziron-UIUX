@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus, MoreVertical, Workflow, Play, Pencil, Trash2,
@@ -11,7 +11,9 @@ import {
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { ForkFlowDialog } from "@/components/ui/ForkFlowDialog";
+import ForkDialog from "@/components/features/clone/ForkDialog";
+import { Toast, useToast } from "@/components/ui/Toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
 import { parseAndValidateFlowImport } from "@/lib/flowImport";
 import { PAGE_PATH, pathToActivePage } from "@/navigation/pagePaths";
-import { Toast, useToast } from "@/components/ui/Toast";
 
 /** Re-export for legacy imports */
 export { INITIAL_FLOWS } from "@/data/initialFlows";
@@ -602,16 +603,21 @@ export default function FlowsPage() {
     navigate(`/flows/${flow.id}`, { state: { flowOpenIntent: "execute", autoRun: true } });
   };
 
-  const [forkSource, setForkSource] = useState(null);
+  const [forkTarget, setForkTarget] = useState(null);
+  const { can } = usePermissions();
 
-  const handleOpenFork = (flow) => {
-    setForkSource(flow);
-  };
+  const clonePermissions = useMemo(
+    () => ({ canFork: can("agents.fork"), canCreateFlow: can("flows.create") }),
+    [can],
+  );
+
+  const handleOpenFork = (flow) => setForkTarget(flow);
 
   const handleConfirmFork = ({ name, description, visibility }) => {
-    if (!forkSource) return;
-    const forked = forkFlow(forkSource.id, { name, description, visibility });
-    setForkSource(null);
+    if (!forkTarget) return;
+    const forked = forkFlow(forkTarget.id, { name, description, visibility });
+    setForkTarget(null);
+    showToast(`"${name}" forked — opening editor.`);
     if (forked) navigate(`/flows/${forked.id}`, { state: { flowOpenIntent: "edit" } });
   };
 
@@ -699,11 +705,15 @@ export default function FlowsPage() {
   return (
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
-      <ForkFlowDialog
-        open={!!forkSource}
-        onOpenChange={(v) => { if (!v) setForkSource(null); }}
-        sourceFlow={forkSource}
-        onConfirm={handleConfirmFork}
+      <ForkDialog
+        open={!!forkTarget}
+        onOpenChange={(v) => { if (!v) setForkTarget(null); }}
+        kind="flow"
+        source={forkTarget}
+        permissions={clonePermissions}
+        onNavigate={(page) => navigate(PAGE_PATH[page] ?? `/${page}`)}
+        onNotify={showToast}
+        onFork={handleConfirmFork}
       />
       <ImportPreviewDialog
         open={previewOpen || !!importError}

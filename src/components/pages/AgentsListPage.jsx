@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -26,6 +26,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useKudosWorkflow } from "@/components/features/kudos/useKudosWorkflow";
 import KudosConversationPanel from "@/components/features/kudos/KudosConversationPanel";
 import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
+import ForkDialog from "@/components/features/clone/ForkDialog";
+import { PAGE_PATH } from "@/navigation/pagePaths";
 
 const KUDOS_AGENT_NAME = "Customer Appreciation";
 
@@ -68,79 +70,6 @@ const STATUS_CONFIG = {
 
 function formatCatalogDate(d = new Date()) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
-/** Fork flow — name/description then append a private copy to the catalog. */
-function ForkAgentDialog({ agent, open, onOpenChange, onFork }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  useEffect(() => {
-    if (open && agent) {
-      setName(`${agent.name} (Fork)`);
-      setDescription((agent.description || "").trim());
-    }
-  }, [open, agent?.id]);
-
-  const handleSubmit = () => {
-    if (!agent || !name.trim()) return;
-    onFork(agent, name.trim(), description);
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open && !!agent} onOpenChange={onOpenChange}>
-      {agent ? (
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
-        <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>Fork agent</DialogTitle>
-          <DialogDescription>
-            Create a private copy of{" "}
-            <span className="font-medium text-foreground">"{agent.name}"</span>. You can rename it and adjust the description.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 px-6 py-2">
-          <div className="space-y-1.5">
-            <label htmlFor="fork-agent-name" className="text-sm font-medium text-foreground">
-              Name
-            </label>
-            <Input
-              id="fork-agent-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="My fork name"
-              autoComplete="off"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="fork-agent-desc" className="text-sm font-medium text-foreground">
-              Description <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <Textarea
-              id="fork-agent-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What will this fork do differently?"
-              rows={3}
-              className="resize-none"
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="border-t bg-muted/30 px-6 py-4 sm:justify-end dark:bg-muted/20">
-          <Button type="button" variant="outline" className="min-h-10 sm:min-w-[100px]" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" className="min-h-10 gap-2 sm:min-w-[120px]" onClick={handleSubmit} disabled={!name.trim()}>
-            <GitFork size={15} className="opacity-90" aria-hidden />
-            Fork agent
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-      ) : null}
-    </Dialog>
-  );
 }
 
 // ─── Provider logo / avatar ───────────────────────────────────────────────────
@@ -766,7 +695,16 @@ export default function AgentsListPage({
     showToast(`Agent "${agentName}" deleted.`);
   };
 
-  const handleForkAgent = (source, name, description) => {
+  const requestAgentFork = (agent) => setAgentPendingFork(agent);
+
+
+
+  const forkPermissions = useMemo(
+    () => ({ canFork: can("agents.fork"), canCreateFlow: can("flows.create") }),
+    [can],
+  );
+
+  const handleForkAgent = ({ name, description, source }) => {
     const nextId = agents.length ? Math.max(...agents.map((a) => a.id)) + 1 : 0;
     const desc = description.trim() || source.description || "";
     const forked = {
@@ -781,6 +719,7 @@ export default function AgentsListPage({
       success: 100,
     };
     setAgents((prev) => [...prev, forked]);
+    setAgentPendingFork(null);
     showToast(`Fork created — "${name}" is in your catalog (private).`);
   };
 
@@ -1059,7 +998,7 @@ export default function AgentsListPage({
                         onOpen={handleOpen}
                         onView={onViewAgent}
                         onEdit={onEditAgent}
-                        onFork={(a) => setAgentPendingFork(a)}
+                        onFork={requestAgentFork}
                         onRequestDelete={setAgentPendingDelete}
                         onRequestVisibilityChange={handleRequestVisibilityChange}
                         isSelected={selectedAgent?.id === agent.id}
@@ -1091,7 +1030,7 @@ export default function AgentsListPage({
                             onOpen={handleOpen}
                             onView={onViewAgent}
                             onEdit={onEditAgent}
-                            onFork={(a) => setAgentPendingFork(a)}
+                            onFork={requestAgentFork}
                             onRequestDelete={setAgentPendingDelete}
                             onRequestVisibilityChange={handleRequestVisibilityChange}
                             zebra={i % 2 !== 0}
@@ -1172,12 +1111,14 @@ export default function AgentsListPage({
           onCancel={() => setAgentPendingDelete(null)}
         />
       )}
-      <ForkAgentDialog
-        agent={agentPendingFork}
+      <ForkDialog
         open={!!agentPendingFork}
-        onOpenChange={(open) => {
-          if (!open) setAgentPendingFork(null);
-        }}
+        onOpenChange={(open) => { if (!open) setAgentPendingFork(null); }}
+        kind="agent"
+        source={agentPendingFork}
+        permissions={forkPermissions}
+        onNavigate={(page) => navigate(PAGE_PATH[page] ?? "/agents")}
+        onNotify={showToast}
         onFork={handleForkAgent}
       />
       <Dialog open={!!agentPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setAgentPendingPublish(null); }}>
