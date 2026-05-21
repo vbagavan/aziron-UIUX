@@ -20,9 +20,9 @@ function CardHeader({ className, ...props }) {
   );
 }
 
-function CardTitle({ className, ...props }) {
+function CardTitle({ className, as: Tag = "p", ...props }) {
   return (
-    <p data-slot="card-title" className={cn("text-sm font-semibold leading-none text-foreground", className)} {...props} />
+    <Tag data-slot="card-title" className={cn("text-sm font-semibold leading-none text-foreground", className)} {...props} />
   );
 }
 

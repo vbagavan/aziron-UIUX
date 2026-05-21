@@ -71,19 +71,6 @@ const navGroups = [
       { icon: Shield,           label: "Employee Insurance", page: "employee-insurance", roles: ["tenantuser", "tenantadmin"], hidden: true },
       { icon: BarChart2,        label: "Usage",   page: "usage",   roles: ["superadmin", "tenantadmin"] },
       { icon: LayoutDashboard,  label: "Pulse",   page: "pulse",   roles: ["superadmin", "tenantadmin"] },
-      {
-        icon: Clock,
-        label: "History",
-        page: "history",
-        activeFor: ["chat"],
-        roles: ["superadmin", "tenantadmin", "tenantuser"],
-        subItems: recentChatsData.map(chat => ({
-          label: chat,
-          page: "chat",
-          noIcon: true,
-          trackActive: false,
-        })),
-      },
     ],
   },
   {
@@ -98,6 +85,26 @@ const navGroups = [
         page: "insurance-management",
         activeFor: ["insurance-config"],
         roles: ["superadmin"],
+      },
+    ],
+  },
+  {
+    id: "history",
+    label: "HISTORY",
+    roles: ["superadmin", "tenantadmin", "tenantuser"],
+    items: [
+      {
+        icon: Clock,
+        label: "History",
+        page: "history",
+        activeFor: ["chat"],
+        roles: ["superadmin", "tenantadmin", "tenantuser"],
+        subItems: recentChatsData.map((chat) => ({
+          label: chat,
+          page: "chat",
+          noIcon: true,
+          trackActive: false,
+        })),
       },
     ],
   },
@@ -137,9 +144,8 @@ function hasActiveChild(items, activePage) {
  * Structure:
  * - SidebarHeader: Logo (responsive to collapsed state)
  * - SidebarContent:
- *   - NavGroup: Collapsible groups (Build, Platform)
- *     - NavItem: Individual menu items with optional submenus
- * - SidebarFooter: User profile & account actions
+ *   - NavGroup: Collapsible groups (Build, Platform, Admin, History)
+ * - SidebarFooter: User profile & account actions only
  *
  * Features:
  * ✓ Auto-expand groups/submenus when child items are active
@@ -284,7 +290,7 @@ function UserFooter({ onNavigate }) {
 
           {/* Role switcher */}
           <div className="px-3 pt-2.5 pb-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Switch Role</p>
+            <p className="type-section-eyebrow mb-1.5">Switch Role</p>
             <div className="flex flex-col gap-0.5">
               {Object.values(ROLES).map(role => {
                 const isActive = currentRole === role.id;
@@ -837,13 +843,19 @@ export default function AppSidebar({ activePage = "agents", onNavigate }) {
       <LogoHeader onNavigate={onNavigate} />
 
       {/* Nav */}
-      <SidebarContent role="navigation" aria-label="Main navigation">
-        {visibleGroups.map(group => (
-          <NavGroup key={group.id} group={group} activePage={activePage} onNavigate={onNavigate} role={currentRole} />
-        ))}
+      <SidebarContent
+        role="navigation"
+        aria-label="Main navigation"
+        className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden group-data-[collapsible=icon]:overflow-hidden"
+      >
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+          {visibleGroups.map(group => (
+            <NavGroup key={group.id} group={group} activePage={activePage} onNavigate={onNavigate} role={currentRole} />
+          ))}
+        </div>
       </SidebarContent>
 
-      {/* Footer */}
+      {/* Footer — account only */}
       <SidebarFooter className="p-2">
         <UserFooter onNavigate={onNavigate} />
       </SidebarFooter>

@@ -24,9 +24,9 @@ export default function TenantDetailPage({ tenant, onNavigate }) {
 
   if (!tenant) {
     return (
-      <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="tenants" onNavigate={onNavigate} />
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="app-page-column flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
           <div className="flex flex-1 items-center justify-center">
             <p className="text-sm text-slate-500">No tenant selected.</p>
@@ -37,10 +37,10 @@ export default function TenantDetailPage({ tenant, onNavigate }) {
   }
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="app-page-column flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="ml-1 flex items-center gap-2">
             <div className="h-6 w-px bg-border" />

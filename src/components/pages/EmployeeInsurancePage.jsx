@@ -799,7 +799,7 @@ function PolicyAssistant({ onClose, variant = "enrollment", refId }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-3" style={{ minHeight: 0 }}>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-3 pr-1 mb-3" style={{ minHeight: 0 }}>
         {messages.map((msg) => (
           <div key={msg.id}>
             {msg.role === "user" ? (
@@ -1335,7 +1335,7 @@ function CoverageIntentView({ firstName, initialId, onContinue, onBack }) {
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-6 py-8"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 py-8"
       style={{ background: "linear-gradient(147.5deg, var(--background) 0%, color-mix(in srgb, var(--primary) 15%, transparent) 50%, color-mix(in srgb, var(--chart-chart-4) 20%, transparent) 100%)" }}
     >
       <div className="mx-auto max-w-2xl">
@@ -1356,7 +1356,7 @@ function CoverageIntentView({ firstName, initialId, onContinue, onBack }) {
         </div>
 
         {/* Heading */}
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
+        <h1 className="type-page-title">
           Who would you like to cover, {firstName}?
         </h1>
         <p className="mt-1.5 mb-6 max-w-lg text-sm leading-relaxed text-muted-foreground">
@@ -3009,7 +3009,7 @@ function EnrollView({ auth, onSuccess }) {
       <header>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Insurance Enrollment</h1>
+            <h1 className="type-page-title">Insurance Enrollment</h1>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               Fill in your details below — changes save automatically to{" "}
               <strong className="font-medium text-muted-foreground">this browser on this device</strong>.
@@ -3509,10 +3509,10 @@ export function InsuranceContent({ onNavigate: _onNavigate }) {
 
 export default function EmployeeInsurancePage({ onNavigate }) {
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="my-profile" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border" />

@@ -11,6 +11,7 @@ import { Toast, useToast } from "@/components/ui/Toast";
 import {
   TENANTS, STATUS_CFG, PLAN_CFG,
 } from "@/data/adminData";
+import { MetricCard } from "@/components/common/MetricCard";
 import { getBaseTierPackage, computePackageMRR } from "@/data/packagesData";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -259,69 +260,6 @@ function RenewalCell({ model }) {
       <p className="mt-0.5 text-[10px] tabular-nums leading-tight text-muted-foreground dark:text-muted-foreground">
         {model.exactDate}
       </p>
-    </div>
-  );
-}
-
-// ─── Stats card ───────────────────────────────────────────────────────────────
-/**
- * alertLevel: "danger" | "warning" | undefined
- * onClick: when set, card becomes a button that applies a table filter
- */
-function StatCard({ icon: Icon, label, value, sub, color = "var(--primary)", onClick, alertLevel }) {
-  const isZero = value === 0 || value === "0";
-  const alertDotColor =
-    alertLevel === "danger" ? "var(--destructive)" :
-    alertLevel === "warning" ? "var(--warning)" : null;
-
-  const borderCls =
-    alertLevel === "danger" && !isZero
-      ? "border-destructive/30 dark:border-border/70"
-      : alertLevel === "warning" && !isZero
-        ? "border-warning-ring dark:border-border/70"
-        : "border-border dark:border-border";
-
-  const bgCls =
-    alertLevel === "danger" && !isZero
-      ? "bg-muted dark:bg-card"
-      : alertLevel === "warning" && !isZero
-        ? "bg-warning/10 dark:bg-card"
-        : "bg-card dark:bg-card";
-
-  const interactiveCls = onClick
-    ? "cursor-pointer hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:-translate-y-px active:scale-[0.99] select-none"
-    : "";
-
-  return (
-    <div
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => (e.key === "Enter" || e.key === " ") && onClick() : undefined}
-      onClick={onClick}
-      className={`relative flex items-center gap-3 rounded-xl p-4 flex-1 min-w-0 border transition-all duration-150 ${bgCls} ${borderCls} ${interactiveCls}`}
-    >
-      {alertDotColor && !isZero && (
-        <span
-          className="absolute top-2.5 right-2.5 size-1.5 rounded-full animate-pulse"
-          style={{ background: alertDotColor }}
-        />
-      )}
-      <div
-        className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: `${color}18` }}
-      >
-        <Icon size={18} style={{ color }} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-muted-foreground dark:text-muted-foreground font-medium leading-none mb-1.5">{label}</p>
-        <p className={`text-2xl font-bold leading-none ${isZero ? "text-foreground dark:text-muted-foreground" : "text-foreground dark:text-foreground"}`}>
-          {value}
-        </p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
-      </div>
-      {onClick && !isZero && (
-        <ChevronRight size={13} className="text-foreground dark:text-muted-foreground flex-shrink-0" />
-      )}
     </div>
   );
 }
@@ -818,17 +756,17 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
   ];
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 py-5 flex flex-col gap-5">
           {/* Page header */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Tenants</h1>
+              <h1 className="type-page-title">Tenants</h1>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">
                 Manage all customer organisations, subscriptions, and overrides.
               </p>
@@ -853,11 +791,18 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
               </button>
             </StatSectionLabel>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard icon={Building2}    label="Total Tenants"  value={tenants.length}                   sub={`${activeCountAll} active`}  color="var(--primary)" />
-              <StatCard icon={CheckCircle2} label="Active Tenants" value={activeCountAll}                   sub="Currently active"            color="var(--success)"
-                onClick={() => { setFilterStatus("active"); setPage(1); setShowFilters(false); }} />
-              <StatCard icon={Users}        label="Total Members"  value={totalMembersAll.toLocaleString()} sub="Across all tenants"          color="var(--info)" />
-              <StatCard icon={Bot}          label="Total Agents"   value={totalAgentsAll.toLocaleString()}  sub="Deployed platform-wide"      color="var(--warning)" />
+              <MetricCard icon={Building2}    label="Total Tenants"  value={tenants.length}                   sub={`${activeCountAll} active`}  color="var(--primary)" />
+              <MetricCard
+                icon={CheckCircle2}
+                label="Active Tenants"
+                value={activeCountAll}
+                sub="Currently active"
+                color="var(--success)"
+                onClick={() => { setFilterStatus("active"); setPage(1); setShowFilters(false); }}
+                trailing={activeCountAll ? <ChevronRight size={13} className="shrink-0 text-muted-foreground" /> : null}
+              />
+              <MetricCard icon={Users}        label="Total Members"  value={totalMembersAll.toLocaleString()} sub="Across all tenants"          color="var(--info)" />
+              <MetricCard icon={Bot}          label="Total Agents"   value={totalAgentsAll.toLocaleString()}  sub="Deployed platform-wide"      color="var(--warning)" />
             </div>
 
             {showDetailStats && (
@@ -866,10 +811,10 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                 <div className="flex flex-col">
                   <StatSectionLabel label="Resource Usage" accentColor="var(--chart-chart-4)" />
                   <div className="grid grid-cols-2 gap-3 mt-3 flex-1">
-                    <StatCard icon={GitBranch} label="Total Workflows"      value={totalWorkflowsAll.toLocaleString()}    sub="Active workflow definitions" color="var(--chart-chart-4)" />
-                    <StatCard icon={Database}  label="Total Vector DBs"     value={totalVectorDbsAll.toLocaleString()}    sub="Knowledge hub stores"        color="var(--info)" />
-                    <StatCard icon={Plug2}     label="Total Providers"      value={totalProvidersAll.toLocaleString()}    sub="Connected integrations"      color="var(--warning)" />
-                    <StatCard icon={BarChart2} label="Avg Members / Tenant" value={avgMembersPerTenant.toLocaleString()}  sub="Mean across all tenants"     color="var(--success)" />
+                    <MetricCard icon={GitBranch} label="Total Workflows"      value={totalWorkflowsAll.toLocaleString()}    sub="Active workflow definitions" color="var(--chart-chart-4)" />
+                    <MetricCard icon={Database}  label="Total Vector DBs"     value={totalVectorDbsAll.toLocaleString()}    sub="Knowledge hub stores"        color="var(--info)" />
+                    <MetricCard icon={Plug2}     label="Total Providers"      value={totalProvidersAll.toLocaleString()}    sub="Connected integrations"      color="var(--warning)" />
+                    <MetricCard icon={BarChart2} label="Avg Members / Tenant" value={avgMembersPerTenant.toLocaleString()}  sub="Mean across all tenants"     color="var(--success)" />
                   </div>
                 </div>
 
@@ -898,7 +843,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                 <input
                   value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Search tenants…"
-                  className="w-full pl-8 pr-8 h-9 text-sm rounded-[8px] border border-border dark:border-border bg-card dark:bg-card text-foreground dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30"
+                  className="w-full pl-8 pr-8 h-9 text-sm rounded-lg border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 {search && (
                   <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">

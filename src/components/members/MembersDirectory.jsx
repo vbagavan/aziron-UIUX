@@ -56,7 +56,7 @@ function roleBadgeClass(role) {
 }
 
 function statusBadgeClass(status) {
-  if (status === "Active") return "border-emerald-500/30 bg-success/100/10 text-emerald-800 dark:text-emerald-200";
+  if (status === "Active") return "border-success/30 bg-success/10 text-success";
   if (status === "Invited") return "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-100";
   return "border-border bg-muted/50 text-muted-foreground";
 }
@@ -65,7 +65,7 @@ function avatarColor(name) {
   const colors = [
     "bg-primary/15 text-primary dark:bg-blue-900/50 dark:text-blue-300",
     "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300",
-    "bg-success/15 text-success dark:bg-emerald-900/50 dark:text-emerald-300",
+    "bg-success/15 text-success",
     "bg-warning/15 text-warning dark:bg-amber-900/50 dark:text-amber-300",
     "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
     "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300",
@@ -289,7 +289,7 @@ function UserProfileDrawer({ user, onClose, onGrantAdmin, onSuspend }) {
               {statusLabel(user.status)}
             </Badge>
             {user.mfa ? (
-              <Badge variant="outline" className="border-emerald-500/30 bg-success/100/10 font-medium text-emerald-800 dark:text-emerald-200">
+              <Badge variant="outline" className="border-success/30 bg-success/10 font-medium text-success">
                 <ShieldCheck className="mr-1 size-3" />MFA on
               </Badge>
             ) : (
@@ -544,7 +544,7 @@ export function MembersDirectory({ tenant, variant = "page" }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             {variant === "page"
-              ? <h1 className="text-xl font-semibold tracking-tight text-foreground">Members</h1>
+              ? <h1 className="type-page-title">Members</h1>
               : <h2 className="text-lg font-semibold tracking-tight text-foreground">Members</h2>}
             <p className="mt-1 text-sm text-muted-foreground">
               {variant === "embedded"
@@ -574,7 +574,7 @@ export function MembersDirectory({ tenant, variant = "page" }) {
             ) : (
               <div key={label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
                 <p className="text-xs font-medium text-muted-foreground">{label}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">{value}</p>
+                <p className="type-metric-value mt-1">{value}</p>
               </div>
             )
           ))}
@@ -791,7 +791,7 @@ export function MembersDirectory({ tenant, variant = "page" }) {
                             {u.mfa ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="flex w-fit items-center gap-1 rounded-full bg-success/100/10 px-2 py-0.5 text-[11px] font-medium text-success dark:text-emerald-300">
+                                  <span className="flex w-fit items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                                     <Check className="size-3" />Enabled
                                   </span>
                                 </TooltipTrigger>

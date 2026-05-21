@@ -16,7 +16,7 @@ export default function RunTimeline({ runs, onSelectRun }) {
     <div className="rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] dark:border-border dark:bg-card">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground dark:text-muted-foreground">Run Timeline</h3>
+          <h3 className="type-section-eyebrow">Run Timeline</h3>
           <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">Interactive run feed with quick diagnostics.</p>
         </div>
       </div>

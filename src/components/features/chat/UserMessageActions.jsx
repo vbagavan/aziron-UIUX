@@ -16,10 +16,10 @@ export default function UserMessageActions({
         className,
       )}
     >
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onCopy}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onCopy}>
         {copied ? <Check /> : <Copy />}
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onEdit}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onEdit}>
         <PencilLine />
       </Button>
     </div>

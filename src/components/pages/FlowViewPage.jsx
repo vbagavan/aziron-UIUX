@@ -2,6 +2,14 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { loadVersionHistory, persistVersionHistory } from "@/lib/flowVersionStorage";
 import { cn } from "@/lib/utils";
 import {
+  tokenBorderSubtle,
+  tokenDropShadowMd,
+  tokenShadowLg,
+  tokenShadowMd,
+  tokenShadowSm,
+  tokenTint,
+} from "@/lib/colorTokens";
+import {
   ArrowLeft, Play, Save, MoreHorizontal, ChevronDown, ChevronRight, ChevronLeft,
   ZoomIn, ZoomOut, Crosshair, CheckCircle2, AlertCircle, Clock, Circle,
   Bot, Database, Mail, Webhook, FileText, Globe, Zap, GitBranch,
@@ -315,7 +323,7 @@ function IOSection({ label, data, defaultOpen = true }) {
         onClick={() => setOpen(v => !v)}
         className="flex w-full items-center justify-between px-4 py-2.5 transition-colors hover:bg-muted/30"
       >
-        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2">
           <span className="rounded bg-muted px-1.5 py-px text-[9px] font-medium text-muted-foreground">json</span>
           <ChevronDown
@@ -541,11 +549,27 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
 
       {/* Selection ring — handled by card border below */}
 
-      {/* Card */}
-      <rect x={x+2} y={y+3} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.06)" />
-      <rect x={x} y={y} width={NODE_W} height={NODE_H} rx={10} fill="white"
-        stroke={isRunning ? "var(--primary)" : selected ? "var(--primary)" : hovered ? "var(--muted-foreground)" : "var(--border)"}
-        strokeWidth={isRunning ? 2 : selected ? 2 : 1} />
+      {/* Card — theme tokens for fill/stroke (WCAG UI contrast on canvas) */}
+      <rect
+        x={x}
+        y={y}
+        width={NODE_W}
+        height={NODE_H}
+        rx={10}
+        fill="var(--card)"
+        stroke={
+          isRunning || selected
+            ? "var(--primary)"
+            : hovered
+              ? "var(--ring)"
+              : "var(--border)"
+        }
+        strokeWidth={isRunning || selected ? 2 : hovered ? 1.5 : 1.5}
+        style={{
+          filter:
+            "drop-shadow(0 1px 2px color-mix(in oklch, var(--foreground) 14%, transparent)) drop-shadow(0 4px 10px color-mix(in oklch, var(--foreground) 8%, transparent))",
+        }}
+      />
 
       {isRunning && (
         <rect
@@ -566,19 +590,47 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
 
 
       {/* Icon */}
-      <circle cx={x+34} cy={y+NODE_H/2} r={17} fill={`${step.color}18`} stroke={`${step.color}35`} strokeWidth={1} />
-      <foreignObject x={x+20} y={y+NODE_H/2-11} width={28} height={22}>
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{ display:"flex",alignItems:"center",justifyContent:"center",width:"100%",height:"100%" }}>
-          <Icon size={14} color={step.color} />
+      <circle
+        cx={x + 34}
+        cy={y + NODE_H / 2}
+        r={17}
+        fill="var(--accent)"
+        stroke="var(--border)"
+        strokeWidth={1}
+      />
+      <foreignObject x={x + 20} y={y + NODE_H / 2 - 11} width={28} height={22}>
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <Icon size={14} color={step.color} aria-hidden />
         </div>
       </foreignObject>
 
       {/* Label + type */}
-      <text x={x+62} y={y+28} fontSize={12} fontWeight={600} fill="var(--foreground)">{step.label}</text>
-      <rect x={x+62} y={y+36} width={72} height={15} rx={4} fill={`${step.color}15`} />
-      <text x={x+98} y={y+47} textAnchor="middle" fontSize={9} fill={step.color} fontWeight={500}>
-        {NODE_CONFIGS[step.icon]?.type ?? "Step"}
+      <text
+        x={x + 62}
+        y={y + 28}
+        fontSize={12}
+        fontWeight={600}
+        fill="var(--card-foreground)"
+      >
+        {step.label}
       </text>
+      <foreignObject x={x + 62} y={y + 34} width={80} height={18}>
+        <div
+          xmlns="http://www.w3.org/1999/xhtml"
+          className="inline-flex max-w-[80px] items-center justify-center rounded px-2 py-0.5 text-[9px] font-medium leading-none bg-muted text-muted-foreground"
+        >
+          {NODE_CONFIGS[step.icon]?.type ?? "Step"}
+        </div>
+      </foreignObject>
 
       {/* Execution duration — done nodes */}
       {isDone && !isRunning && (
@@ -606,9 +658,9 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
            onMouseLeave={(e) => { e.stopPropagation(); setEdgeHov(null); }} style={{ cursor:"pointer" }}>
           {/* Expanded hit area for better clickability */}
           <circle cx={rightEdge.cx} cy={rightEdge.cy} r={16} fill="transparent" />
-          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={EDGE_R} fill={edgeHov==="right"?"var(--primary)":"white"} stroke={edgeHov==="right"?"var(--primary)":"var(--muted-foreground)"} strokeWidth={1.5} />
-          <line x1={rightEdge.cx-4} y1={rightEdge.cy} x2={rightEdge.cx+4} y2={rightEdge.cy} stroke={edgeHov==="right"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
-          <line x1={rightEdge.cx} y1={rightEdge.cy-4} x2={rightEdge.cx} y2={rightEdge.cy+4} stroke={edgeHov==="right"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={EDGE_R} fill={edgeHov==="right"?"var(--primary)":"var(--card)"} stroke={edgeHov==="right"?"var(--primary)":"var(--border)"} strokeWidth={1.5} />
+          <line x1={rightEdge.cx-4} y1={rightEdge.cy} x2={rightEdge.cx+4} y2={rightEdge.cy} stroke={edgeHov==="right"?"var(--primary-foreground)":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={rightEdge.cx} y1={rightEdge.cy-4} x2={rightEdge.cx} y2={rightEdge.cy+4} stroke={edgeHov==="right"?"var(--primary-foreground)":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
         </g>
       )}
       {!readOnly && hovered && (
@@ -617,24 +669,24 @@ function CanvasNode({ step, index, x, y, selected, execStatus, onClick, onOpenPi
            onMouseLeave={(e) => { e.stopPropagation(); setEdgeHov(null); }} style={{ cursor:"pointer" }}>
           {/* Expanded hit area for better clickability */}
           <circle cx={leftEdge.cx} cy={leftEdge.cy} r={16} fill="transparent" />
-          <circle cx={leftEdge.cx} cy={leftEdge.cy} r={EDGE_R} fill={edgeHov==="left"?"var(--primary)":"white"} stroke={edgeHov==="left"?"var(--primary)":"var(--muted-foreground)"} strokeWidth={1.5} />
-          <line x1={leftEdge.cx-4} y1={leftEdge.cy} x2={leftEdge.cx+4} y2={leftEdge.cy} stroke={edgeHov==="left"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
-          <line x1={leftEdge.cx} y1={leftEdge.cy-4} x2={leftEdge.cx} y2={leftEdge.cy+4} stroke={edgeHov==="left"?"white":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <circle cx={leftEdge.cx} cy={leftEdge.cy} r={EDGE_R} fill={edgeHov==="left"?"var(--primary)":"var(--card)"} stroke={edgeHov==="left"?"var(--primary)":"var(--border)"} strokeWidth={1.5} />
+          <line x1={leftEdge.cx-4} y1={leftEdge.cy} x2={leftEdge.cx+4} y2={leftEdge.cy} stroke={edgeHov==="left"?"var(--primary-foreground)":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
+          <line x1={leftEdge.cx} y1={leftEdge.cy-4} x2={leftEdge.cx} y2={leftEdge.cy+4} stroke={edgeHov==="left"?"var(--primary-foreground)":"var(--muted-foreground)"} strokeWidth={1.8} strokeLinecap="round" />
         </g>
       )}
       {!hovered && (
         <>
-          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={5} fill="white" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />
-          {index > 0 && <circle cx={leftEdge.cx} cy={leftEdge.cy} r={5} fill="white" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />}
+          <circle cx={rightEdge.cx} cy={rightEdge.cy} r={5} fill="var(--card)" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />
+          {index > 0 && <circle cx={leftEdge.cx} cy={leftEdge.cy} r={5} fill="var(--card)" stroke={selected?"var(--primary)":"var(--border)"} strokeWidth={1.5} />}
         </>
       )}
 
       {/* Bottom toolbar — build mode only */}
       {!readOnly && hovered && (
-        <g style={{ filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.10))" }} onMouseEnter={cancelHide} onMouseLeave={startHide}>
+        <g style={{ filter: tokenDropShadowMd }} onMouseEnter={cancelHide} onMouseLeave={startHide}>
           {/* Expanded gap area for easier cursor transition from node to toolbar — extends to bottom of toolbar */}
           <rect x={tbX-8} y={y+NODE_H} width={TB_TOTAL_W+16} height={6+TB_TOTAL_H} fill="transparent" />
-          <rect x={tbX} y={tbY} width={TB_TOTAL_W} height={TB_TOTAL_H} rx={8} fill="white" stroke="var(--border)" strokeWidth={1} />
+          <rect x={tbX} y={tbY} width={TB_TOTAL_W} height={TB_TOTAL_H} rx={8} fill="var(--card)" stroke="var(--border)" strokeWidth={1} />
           {NODE_TOOLBAR_BTNS.map((btn, bi) => {
             const btnX = tbX + TB_PAD + bi * (TB_BTN + TB_GAP);
             const btnCX = btnX + TB_BTN / 2;
@@ -694,7 +746,7 @@ function ConnectionWithAdd({ x1, y1, x2, y2, color, afterIndex, onOpenPicker, is
       {!readOnly && hovered && (
         <g onClick={(e) => { e.stopPropagation(); onOpenPicker?.(afterIndex, mx, my); }} style={{ cursor:"pointer" }}>
           <circle cx={mx} cy={my} r={R+4} fill="var(--primary)" opacity={0.08} />
-          <circle cx={mx} cy={my} r={R} fill="white" stroke="var(--primary)" strokeWidth={1.5} />
+          <circle cx={mx} cy={my} r={R} fill="var(--card)" stroke="var(--primary)" strokeWidth={1.5} />
           <line x1={mx-4} y1={my} x2={mx+4} y2={my} stroke="var(--primary)" strokeWidth={1.8} strokeLinecap="round" />
           <line x1={mx} y1={my-4} x2={mx} y2={my+4} stroke="var(--primary)" strokeWidth={1.8} strokeLinecap="round" />
         </g>
@@ -868,7 +920,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
 
   return (
     <div ref={ref} className="absolute z-[200] bg-card rounded-[16px] flex flex-col overflow-hidden"
-      style={{ left, top, width:PW, maxHeight:PH, boxShadow:"0 20px 60px rgba(0,0,0,0.16),0 4px 16px rgba(0,0,0,0.08)", animation:"pickerIn 0.2s cubic-bezier(0.34,1.15,0.64,1)", border:"1px solid rgba(0,0,0,0.06)" }}
+      style={{ left, top, width:PW, maxHeight:PH, boxShadow: tokenShadowLg, animation:"pickerIn 0.2s cubic-bezier(0.34,1.15,0.64,1)", border:`1px solid ${tokenBorderSubtle}` }}
       onClick={(e) => e.stopPropagation()}>
       <style>{`@keyframes pickerIn{from{opacity:0;transform:scale(0.95) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}`}</style>
       <div className="px-3 pt-3 pb-2 flex-shrink-0">
@@ -886,7 +938,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
           <button onClick={query?()=>setQuery(""):selectedCategory?()=>setSelectedCategory(null):onClose} aria-label={query?"Clear search":selectedCategory?"Back to all categories":"Close node picker"}><X size={13} className="text-muted-foreground hover:text-muted-foreground" aria-hidden /></button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-2 pb-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-2 pb-3">
         {/* Show search results OR category content */}
         {filtered ? (
           <>
@@ -905,7 +957,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
             )}
             {filtered.map(tool => { const Icon = tool.icon; return (
               <button key={tool.label} onClick={()=>pick(tool)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-background transition-colors text-left group">
-                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:tool.bg,border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={18} style={{color:tool.iconColor}}/></div>
+                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:tokenTint(tool.iconColor,18),border:`1px solid ${tokenBorderSubtle}`}}><Icon size={18} style={{color:tool.iconColor}}/></div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0"><span className="text-sm font-medium text-foreground">{tool.label}</span><span className="text-xs text-muted-foreground line-clamp-1">{tool.desc}</span></div>
                 <ChevronRight size={14} className="text-muted-foreground group-hover:text-muted-foreground flex-shrink-0" />
               </button>
@@ -916,7 +968,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
             {/* Show nodes in selected category */}
             {(PICKER_NODES_BY_CATEGORY[selectedCategory] || []).map(node => { const Icon = node.icon; return (
               <button key={node.label} onClick={()=>pick(node)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-[8px] hover:bg-background transition-colors text-left group">
-                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:PICKER_COLORS[node.iconKey]+"15",border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={18} style={{color:PICKER_COLORS[node.iconKey]||"var(--muted-foreground)"}}/></div>
+                <div className="size-10 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:tokenTint(PICKER_COLORS[node.iconKey],15),border:`1px solid ${tokenBorderSubtle}`}}><Icon size={18} style={{color:PICKER_COLORS[node.iconKey]||"var(--muted-foreground)"}}/></div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0"><span className="text-sm font-medium text-foreground">{node.label}</span><span className="text-xs text-muted-foreground line-clamp-1">{node.desc}</span></div>
               </button>
             ); })}
@@ -926,7 +978,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
             {/* Show category list */}
             {PICKER_CATEGORIES.map(cat => { const Icon = cat.icon; return (
               <button key={cat.label} onClick={()=>openCategory(cat.label)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-[10px] hover:bg-background transition-colors text-left group">
-                <div className="size-11 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:cat.bg,border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={20} style={{color:cat.iconColor}}/></div>
+                <div className="size-11 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{background:tokenTint(cat.iconColor,18),border:`1px solid ${tokenBorderSubtle}`}}><Icon size={20} style={{color:cat.iconColor}}/></div>
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0"><span className="text-sm font-semibold text-foreground">{cat.label}</span><span className="text-xs text-muted-foreground line-clamp-1">{cat.desc}</span></div>
                 <ChevronRight size={14} className="text-muted-foreground group-hover:text-muted-foreground flex-shrink-0" />
               </button>
@@ -935,7 +987,7 @@ function AddNodePicker({ anchorX, anchorY, afterIndex, onAdd, onClose }) {
             <div className="grid grid-cols-2 gap-1.5">
               {PICKER_FREQUENT.map(tool => { const Icon = tool.icon; return (
                 <button key={tool.label} onClick={()=>pick(tool)} className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[10px] hover:bg-background border border-border hover:border-border transition-all text-left">
-                  <div className="size-9 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{background:tool.bg,border:"1px solid rgba(0,0,0,0.06)"}}><Icon size={16} style={{color:tool.iconColor}}/></div>
+                  <div className="size-9 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{background:tokenTint(tool.iconColor,18),border:`1px solid ${tokenBorderSubtle}`}}><Icon size={16} style={{color:tool.iconColor}}/></div>
                   <div className="flex flex-col gap-0 min-w-0"><span className="text-xs font-semibold text-foreground truncate">{tool.label}</span><span className="text-xs text-muted-foreground truncate">{tool.desc}</span></div>
                 </button>
               ); })}
@@ -1026,7 +1078,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Input</p>
-            <span className="text-[10px] text-muted-foreground">JSON / context passed into this step</span>
+            <span className="text-xs text-muted-foreground">JSON / context passed into this step</span>
           </div>
           <textarea
             value={inputJson}
@@ -1034,7 +1086,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
             onBlur={flush}
             readOnly={readOnly}
             spellCheck={false}
-            className="min-h-[72px] resize-y rounded-[8px] border border-border bg-background px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-default read-only:bg-muted/30"
+            className="min-h-[72px] resize-y rounded-[8px] border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-default read-only:bg-muted/30"
             aria-label="Script input payload"
           />
         </div>
@@ -1046,7 +1098,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
               type="button"
               onClick={runEnhanceWithAI}
               disabled={readOnly || aiLoading}
-              className="inline-flex items-center gap-1 rounded-[6px] border border-border bg-gradient-to-r from-primary/10 to-card px-2.5 py-1 text-[10px] font-semibold text-primary shadow-sm transition-colors hover:border-primary/30 hover:from-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-[6px] border border-border bg-gradient-to-r from-primary/10 to-card px-2.5 py-1 text-xs font-semibold text-primary shadow-sm transition-colors hover:border-primary/30 hover:from-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {aiLoading ? <RefreshCw size={11} className="animate-spin" /> : <Sparkles size={11} />}
               {aiLoading ? "Enhancing…" : "Enhance with AI"}
@@ -1058,7 +1110,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
             onBlur={flush}
             readOnly={readOnly}
             spellCheck={false}
-            className="min-h-[200px] resize-y rounded-[8px] border border-border bg-slate-950 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-slate-200 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 read-only:cursor-default read-only:opacity-90"
+            className="min-h-[200px] resize-y rounded-[8px] border border-border bg-muted px-3 py-2.5 font-mono text-xs leading-relaxed text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 read-only:cursor-default read-only:opacity-90"
             aria-label="Script source code"
           />
           {(aiLoading || aiSuggestion) && (
@@ -1069,7 +1121,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
               aria-label="AI enhancement suggestion"
             >
               {aiLoading && (
-                <div className="flex items-center gap-2 text-[11px] font-medium text-primary">
+                <div className="flex items-center gap-2 text-xs font-medium text-primary">
                   <RefreshCw size={12} className="animate-spin flex-shrink-0" />
                   Analyzing your snippet…
                 </div>
@@ -1078,13 +1130,13 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Sparkles size={12} className="flex-shrink-0 text-primary" />
-                    <span className="text-[11px] font-semibold text-primary">Suggested code</span>
+                    <span className="text-xs font-semibold text-primary">Suggested code</span>
                   </div>
                   <textarea
                     readOnly
                     value={aiSuggestion}
                     spellCheck={false}
-                    className="max-h-[180px] min-h-[100px] w-full resize-y rounded-[6px] border border-primary/25 bg-card px-2.5 py-2 font-mono text-[10px] leading-relaxed text-primary"
+                    className="max-h-[180px] min-h-[100px] w-full resize-y rounded-[6px] border border-primary/25 bg-card px-2.5 py-2 font-mono text-xs leading-relaxed text-primary"
                     aria-label="AI suggested code"
                   />
                   <div className="flex flex-wrap gap-2">
@@ -1097,7 +1149,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
                         setAiSuggestion(null);
                         onUpdateStep?.({ scriptInput: inputJson, scriptCode: aiSuggestion, scriptOutput: outputJson });
                       }}
-                      className="rounded-[6px] bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-[6px] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Replace code
                     </button>
@@ -1111,14 +1163,14 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
                         setAiSuggestion(null);
                         onUpdateStep?.({ scriptInput: inputJson, scriptCode: merged, scriptOutput: outputJson });
                       }}
-                      className="rounded-[6px] border border-primary/30 bg-card px-2.5 py-1 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-[6px] border border-primary/30 bg-card px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Append below
                     </button>
                     <button
                       type="button"
                       onClick={() => setAiSuggestion(null)}
-                      className="rounded-[6px] px-2.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-card/80"
+                      className="rounded-[6px] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-card/80"
                     >
                       Dismiss
                     </button>
@@ -1127,7 +1179,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
               )}
             </div>
           )}
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             <span className="font-semibold text-muted-foreground">Enhance with AI</span> suggests edits inline. Use the{" "}
             <span className="font-semibold text-muted-foreground">Chat</span> tab for free-form questions.
           </p>
@@ -1136,7 +1188,7 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Output</p>
-            <span className="text-[10px] text-muted-foreground">Shape returned to the next step (mock / contract)</span>
+            <span className="text-xs text-muted-foreground">Shape returned to the next step (mock / contract)</span>
           </div>
           <textarea
             value={outputJson}
@@ -1144,14 +1196,14 @@ function ScriptStepEditor({ step, selectedIdx, flow, cfg, execInfo, Icon, onUpda
             onBlur={flush}
             readOnly={readOnly}
             spellCheck={false}
-            className="min-h-[72px] resize-y rounded-[8px] border border-border bg-background px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-default read-only:bg-muted/30"
+            className="min-h-[72px] resize-y rounded-[8px] border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 read-only:cursor-default read-only:bg-muted/30"
             aria-label="Script output schema"
           />
         </div>
 
         <div className="rounded-[8px] border border-dashed border-border bg-muted/40 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Preview</p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Preview</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Last run {flow.lastRun} · inputs and outputs are simulated until this flow is connected to a runtime.
           </p>
         </div>
@@ -1208,7 +1260,7 @@ function ConfigureMode({ step, selectedIdx, flow, onUpdateStep, onClose, readOnl
       </div>
 
       {/* Duration + type quick-info bar */}
-      <div className="flex items-center gap-4 border-b border-border px-4 py-2 text-[11px]">
+      <div className="flex items-center gap-4 border-b border-border px-4 py-2 text-xs">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock size={11} className="flex-shrink-0" aria-hidden />
           <span>Duration</span>
@@ -1277,7 +1329,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 flex flex-col gap-3 min-h-0">
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center gap-2 mb-0.5">
@@ -1302,7 +1354,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col gap-1 ${msg.role==="user"?"items-end":"items-start"}`}>
             {msg.role === "user" ? (
-              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-slate-950 text-white text-xs leading-5">{msg.text}</div>
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-foreground text-background text-xs leading-5">{msg.text}</div>
             ) : (
               <div className="w-full flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
@@ -1357,7 +1409,7 @@ function AskAIMode({ step, selectedIdx, flow, runState, readOnly = false }) {
         <button type="button" disabled={readOnly} className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-[6px] border border-border bg-card text-sm font-medium text-muted-foreground hover:bg-background transition-colors disabled:cursor-not-allowed disabled:opacity-50">
           <RotateCcw size={11} /> Retry Node
         </button>
-        <button type="button" disabled={readOnly} className="flex-1 flex items-center justify-center gap-1.5 h-7 rounded-[6px] bg-slate-950 text-sm font-medium text-white hover:bg-slate-800 transition-colors disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="button" disabled={readOnly} className="flex flex-1 items-center justify-center gap-1.5 h-7 rounded-[6px] bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
           <CheckCircle2 size={11} /> Apply Changes
         </button>
       </div>
@@ -1413,7 +1465,7 @@ function ExecutionMode({ step, selectedIdx, flow, runState }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
         {subTab === "summary" && (
           <div className="flex flex-col">
             {/* Stats row */}
@@ -1548,9 +1600,9 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
             <div className="flex items-center gap-2">
               <span className={cn("size-2 shrink-0 rounded-full", cfg.dot)} />
               <span className={cn("text-xs font-semibold", cfg.text)}>{cfg.label}</span>
-              <span className="text-[10px] text-muted-foreground">· not running</span>
+              <span className="text-xs text-muted-foreground">· not running</span>
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <span>{flow.version}</span>
               <span>·</span>
               <span className="capitalize">{flow.visibility}</span>
@@ -1574,27 +1626,27 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
                 onClick={onRunFlow}
                 className="mt-1 flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                <Play size={11} fill="white" aria-hidden /> Run flow
+                <Play size={11} fill="currentColor" aria-hidden /> Run flow
               </button>
             )}
             {!hasSteps && (
-              <p className="text-[10px] text-muted-foreground italic">Add steps to the canvas first.</p>
+              <p className="text-xs text-muted-foreground italic">Add steps to the canvas first.</p>
             )}
           </div>
 
           {/* Steps preview — real data, no fake health bars */}
           {hasSteps && (
             <div className="flex flex-col gap-2 px-4 py-3">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Steps ({flow.steps.length})</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Steps ({flow.steps.length})</span>
               <div className="flex flex-col gap-1">
                 {flow.steps.map((step, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground">{i + 1}</span>
+                    <span className="w-3.5 shrink-0 text-right text-xs text-muted-foreground">{i + 1}</span>
                     <span
                       className="size-2 shrink-0 rounded-full"
                       style={{ background: step.color ?? "var(--muted-foreground)" }}
                     />
-                    <span className="min-w-0 flex-1 truncate text-[10px] text-foreground">{step.label}</span>
+                    <span className="min-w-0 flex-1 truncate text-xs text-foreground">{step.label}</span>
                     {(() => { const I = ICON_MAP[step.icon]; return I ? <I size={10} className="shrink-0 text-muted-foreground/40" aria-hidden /> : null; })()}
                   </div>
                 ))}
@@ -1608,7 +1660,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
             className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-muted/50"
             onClick={() => setMetaOpen((v) => !v)}
           >
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Details</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</span>
             {metaOpen ? <ChevronUp size={12} className="text-muted-foreground" /> : <ChevronDown size={12} className="text-muted-foreground" />}
           </button>
           {metaOpen && (
@@ -1621,7 +1673,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
                 ["Steps",       flow.steps?.length ?? 0],
               ].map(([k, v]) => (
                 <div key={k} className="flex flex-col gap-0.5 border-b border-border py-1.5 last:border-0">
-                  <dt className="text-[10px] text-muted-foreground">{k}</dt>
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
                   <dd className="m-0 text-xs font-medium text-foreground">{v}</dd>
                 </div>
               ))}
@@ -1695,12 +1747,12 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
           <div className="flex items-center gap-2">
             <span className={cn("size-2 shrink-0 rounded-full", cfg.dot)} />
             <span className={cn("text-xs font-semibold", cfg.text)}>{cfg.label}</span>
-            {flow.status === "idle"       && <span className="text-[10px] text-muted-foreground">· not running</span>}
-            {flow.status === "inprogress" && <span className="text-[10px] text-muted-foreground">· running now</span>}
-            {flow.status === "completed"  && <span className="text-[10px] text-muted-foreground">· last run done</span>}
-            {flow.status === "error"      && <span className="text-[10px] text-muted-foreground">· since 2h ago</span>}
+            {flow.status === "idle"       && <span className="text-xs text-muted-foreground">· not running</span>}
+            {flow.status === "inprogress" && <span className="text-xs text-muted-foreground">· running now</span>}
+            {flow.status === "completed"  && <span className="text-xs text-muted-foreground">· last run done</span>}
+            {flow.status === "error"      && <span className="text-xs text-muted-foreground">· since 2h ago</span>}
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <span>{flow.version}</span>
             <span>·</span>
             <span className="capitalize">{flow.visibility}</span>
@@ -1711,8 +1763,8 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
         <div className="grid grid-cols-2 divide-x divide-border">
           <div className="flex flex-col gap-1.5 px-4 py-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Success Rate</span>
-              <span className="text-[10px] text-muted-foreground">7d</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Success Rate</span>
+              <span className="text-xs text-muted-foreground">7d</span>
             </div>
             <div className="flex items-end justify-between gap-1">
               <span className="text-xl font-bold tabular-nums leading-none" style={{ color: successColor }}>
@@ -1720,13 +1772,13 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               </span>
               <Sparkline data={successSpark} color={successColor} />
             </div>
-            <span className="text-[10px] text-muted-foreground">{successLabel}</span>
+            <span className="text-xs text-muted-foreground">{successLabel}</span>
           </div>
 
           <div className="flex flex-col gap-1.5 px-4 py-3">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Runs</span>
-              <span className="text-[10px] text-muted-foreground">all</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Runs</span>
+              <span className="text-xs text-muted-foreground">all</span>
             </div>
             <div className="flex items-end justify-between gap-1">
               <span className="text-xl font-bold tabular-nums leading-none text-foreground">
@@ -1734,7 +1786,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               </span>
               <Sparkline data={runsSpark} color="var(--chart-chart-3)" />
             </div>
-            <span className="text-[10px] text-muted-foreground">~{avgPerDay}/day avg</span>
+            <span className="text-xs text-muted-foreground">~{avgPerDay}/day avg</span>
           </div>
         </div>
 
@@ -1742,16 +1794,16 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
         <div className="flex flex-col gap-1.5 px-4 py-3">
           <div className="flex items-center gap-2">
             <Timer size={12} className="text-muted-foreground" />
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Latency</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latency</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-baseline gap-1">
               <span className="text-sm font-bold text-foreground">{fmtMs(p50ms)}</span>
-              <span className="text-[10px] text-muted-foreground">p50</span>
+              <span className="text-xs text-muted-foreground">p50</span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-sm font-semibold text-muted-foreground">{fmtMs(p95ms)}</span>
-              <span className="text-[10px] text-muted-foreground">p95</span>
+              <span className="text-xs text-muted-foreground">p95</span>
             </div>
           </div>
         </div>
@@ -1759,15 +1811,15 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
         {/* ── Error breakdown (error flows only) ── */}
         {errorBreakdown.length > 0 && (
           <div className="flex flex-col gap-2 px-4 py-3">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Error Breakdown</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Error Breakdown</span>
             <div className="flex flex-col gap-1.5">
               {errorBreakdown.map((e) => (
                 <div key={e.label} className="flex items-center gap-2">
-                  <span className="w-16 shrink-0 text-[10px] text-muted-foreground">{e.label}</span>
+                  <span className="w-16 shrink-0 text-xs text-muted-foreground">{e.label}</span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                     <div className="h-full rounded-full bg-destructive" style={{ width: `${e.pct}%` }} />
                   </div>
-                  <span className="w-7 text-right text-[10px] font-semibold tabular-nums text-destructive">{e.pct}%</span>
+                  <span className="w-7 text-right text-xs font-semibold tabular-nums text-destructive">{e.pct}%</span>
                 </div>
               ))}
             </div>
@@ -1777,16 +1829,16 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
         {/* ── Step health heatmap ── */}
         {stepHealth.length > 0 && (
           <div className="flex flex-col gap-2 px-4 py-3">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Step Health</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Step Health</span>
             <div className="flex flex-col gap-1.5">
               {stepHealth.map((step, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="w-3.5 shrink-0 text-right text-[10px] text-muted-foreground">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate text-[10px] text-foreground">{step.label}</span>
+                  <span className="w-3.5 shrink-0 text-right text-xs text-muted-foreground">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-foreground">{step.label}</span>
                   <div className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
                     <div className={cn("h-full rounded-full", stepBarColor(step.health))} style={{ width: `${step.health}%` }} />
                   </div>
-                  <span className="w-7 text-right text-[10px] font-semibold tabular-nums text-muted-foreground">{step.health}%</span>
+                  <span className="w-7 text-right text-xs font-semibold tabular-nums text-muted-foreground">{step.health}%</span>
                 </div>
               ))}
             </div>
@@ -1805,7 +1857,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
           className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-muted/50"
           onClick={() => setMetaOpen((v) => !v)}
         >
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Details</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</span>
           {metaOpen
             ? <ChevronUp size={12} className="text-muted-foreground" />
             : <ChevronDown size={12} className="text-muted-foreground" />}
@@ -1820,7 +1872,7 @@ function FlowOverview({ flow, executeOnly = false, onRunFlow }) {
               ["Steps",       flow.steps?.length ?? 0],
             ].map(([k, v]) => (
               <div key={k} className="flex flex-col gap-0.5 border-b border-border py-1.5 last:border-0">
-                <dt className="text-[10px] text-muted-foreground">{k}</dt>
+                <dt className="text-xs text-muted-foreground">{k}</dt>
                 <dd className="m-0 text-xs font-medium text-foreground">{v}</dd>
               </div>
             ))}
@@ -1876,7 +1928,7 @@ const CREATION_TEMPLATES = [
 function FlowCreationMode({ onSendMessage, onAddTemplate }) {
   return (
     <div className="flex flex-col gap-1.5 px-1 pb-1">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-2 pt-2">Start with a template</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-2 pt-2">Start with a template</p>
       {CREATION_TEMPLATES.map((tpl, i) => {
         const TplIcon = tpl.icon;
         return (
@@ -1894,7 +1946,7 @@ function FlowCreationMode({ onSendMessage, onAddTemplate }) {
             </div>
             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
               <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{tpl.label}</span>
-              <span className="text-[11px] text-muted-foreground">{tpl.desc}</span>
+              <span className="text-xs text-muted-foreground">{tpl.desc}</span>
             </div>
             <ChevronRight size={13} className="text-muted-foreground group-hover:text-primary flex-shrink-0 transition-colors" />
           </button>
@@ -1955,13 +2007,13 @@ function FlowAIChat({ flow }) {
         <span className="text-xs text-muted-foreground">
           Context: <span className="font-medium text-foreground">{flow.name}</span>
         </span>
-        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+        <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
           {flow.steps.length} step{flow.steps.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 min-h-0">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 flex flex-col gap-3 min-h-0">
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex items-center gap-2 mb-0.5">
@@ -1988,7 +2040,7 @@ function FlowAIChat({ flow }) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
             {msg.role === "user" ? (
-              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-slate-950 text-white text-xs leading-5">{msg.text}</div>
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-foreground text-background text-xs leading-5">{msg.text}</div>
             ) : (
               <div className="w-full flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
@@ -2276,7 +2328,7 @@ function RightPanel({
           {/* Content */}
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {panelMode === "configure" && (
-              <div className="flex-1 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
                 <ConfigureMode
                   step={step}
                   selectedIdx={selectedIdx}
@@ -2298,7 +2350,7 @@ function RightPanel({
       {/* ── Dock position switcher ── */}
       {onChangePanelDock && (
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-border flex-shrink-0">
-          <span className="text-[10px] text-muted-foreground select-none">Panel position</span>
+          <span className="text-xs text-muted-foreground select-none">Panel position</span>
           <div className="flex items-center gap-0.5">
             {DOCK_OPTIONS.map(({ id, label, icon }) => (
               <button
@@ -2431,7 +2483,7 @@ function ExecutionLogPanel({
                 <button
                   type="button"
                   onClick={() => setActiveTab("history")}
-                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-[11px] font-semibold transition-colors ${
+                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors ${
                     activeTab === "history"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -2448,7 +2500,7 @@ function ExecutionLogPanel({
                 <button
                   type="button"
                   onClick={() => setActiveTab("logs")}
-                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-[11px] font-semibold transition-colors ${
+                  className={`flex h-6 items-center gap-1.5 rounded-[5px] px-2.5 text-xs font-semibold transition-colors ${
                     activeTab === "logs"
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:text-foreground"
@@ -2465,13 +2517,13 @@ function ExecutionLogPanel({
               {/* Status badges + actions */}
               <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
                 {activeTab === "logs" && isRunning && (
-                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                     <RefreshCw size={9} className="animate-spin" />
                     <span className="tabular-nums">{runElapsedLabel ?? "0.0s"}</span>
                   </span>
                 )}
                 {activeTab === "logs" && !isRunning && hasDone && (
-                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-success/10/80 px-1.5 py-0.5 text-[10px] font-medium text-success">
+                  <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-success/10/80 px-1.5 py-0.5 text-xs font-medium text-success">
                     Done{lastRunTotalLabel ? <span className="tabular-nums opacity-90">· {lastRunTotalLabel}</span> : null}
                   </span>
                 )}
@@ -2507,7 +2559,7 @@ function ExecutionLogPanel({
                       <Terminal size={20} className="text-muted-foreground" />
                     </div>
                     <p className="text-xs font-medium text-muted-foreground">No execution output yet.</p>
-                    <p className="max-w-[240px] text-center text-[11px] leading-relaxed text-muted-foreground">
+                    <p className="max-w-[240px] text-center text-xs leading-relaxed text-muted-foreground">
                       Run the flow to see logs here. Use refresh to regenerate demo output.
                     </p>
                   </div>
@@ -2515,7 +2567,7 @@ function ExecutionLogPanel({
                   <div className="flex h-full flex-col items-center justify-center gap-2 px-4 py-8 text-center">
                     <Terminal size={20} className="text-muted-foreground" />
                     <p className="text-xs font-medium text-muted-foreground">INFO lines are hidden</p>
-                    <p className="max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
+                    <p className="max-w-[240px] text-xs leading-relaxed text-muted-foreground">
                       This run only produced INFO-level messages. SUCCESS, WARN, and ERROR lines still appear here.
                     </p>
                   </div>
@@ -2545,27 +2597,27 @@ function ExecutionLogPanel({
                             )}
                             {executionId && (
                               <>
-                                <span className="text-[10px] font-semibold text-foreground tabular-nums flex-shrink-0">
+                                <span className="text-xs font-semibold text-foreground tabular-nums flex-shrink-0">
                                   {shortExecutionId(executionId)}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground/40 flex-shrink-0">·</span>
+                                <span className="text-xs text-muted-foreground/40 flex-shrink-0">·</span>
                               </>
                             )}
                             {hasResult && (
-                              <span className={cn("text-[10px] font-semibold flex-shrink-0",
+                              <span className={cn("text-xs font-semibold flex-shrink-0",
                                 nError > 0 ? "text-destructive dark:text-red-400" : "text-green-700 dark:text-green-400")}>
                                 {nError > 0 ? "Finished with errors" : "Run complete"}
                               </span>
                             )}
-                            <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">·</span>
-                            <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                            <span className="text-xs text-muted-foreground/50 flex-shrink-0">·</span>
+                            <span className="text-xs text-muted-foreground flex-shrink-0">
                               {hasResult
                                 ? `${nSuccess}/${displayLogs.length} passed`
                                 : `${displayLogs.length} event${displayLogs.length !== 1 ? "s" : ""}`}
                             </span>
                           </div>
                           {(lastRunTotalLabel || runElapsedLabel) && (
-                            <span className="ml-3 flex-shrink-0 text-[10px] tabular-nums font-semibold text-foreground">
+                            <span className="ml-3 flex-shrink-0 text-xs tabular-nums font-semibold text-foreground">
                               {lastRunTotalLabel ?? runElapsedLabel}
                             </span>
                           )}
@@ -2591,7 +2643,7 @@ function ExecutionLogPanel({
                         return (
                           <div
                             key={entry.id ?? `${entry.ts}-${entry.msg}`}
-                            className="flex items-center gap-2 py-1.5 pl-3 pr-3 text-[10px] leading-snug transition-colors hover:bg-muted/40"
+                            className="flex items-center gap-2 py-1.5 pl-3 pr-3 text-xs leading-snug transition-colors hover:bg-muted/40"
                             title={entry.level}
                           >
                             <span
@@ -2625,12 +2677,12 @@ function ExecutionLogPanel({
                       <History size={20} className="text-muted-foreground" />
                     </div>
                     <p className="text-xs font-medium text-muted-foreground">No runs yet.</p>
-                    <p className="max-w-[220px] text-center text-[11px] leading-relaxed text-muted-foreground">
+                    <p className="max-w-[220px] text-center text-xs leading-relaxed text-muted-foreground">
                       Run this flow to start building execution history.
                     </p>
                   </div>
                 ) : (
-                  <table className="w-full min-w-[520px] border-collapse text-[11px]">
+                  <table className="w-full min-w-[520px] border-collapse text-xs">
                     <thead className="sticky top-0 z-10">
                       <tr className="border-b border-border bg-muted/60 dark:bg-muted/40">
                         <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Run ID</th>
@@ -2652,12 +2704,12 @@ function ExecutionLogPanel({
                           </td>
                           <td className="px-3 py-2">
                             {row.status === "success" ? (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold text-success dark:bg-success/20/50 dark:text-success">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-success/10 px-1.5 py-0.5 text-xs font-semibold text-success dark:bg-success/20/50 dark:text-success">
                                 <CheckCircle2 size={9} />
                                 Success
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-destructive dark:bg-card/50 dark:text-foreground">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-destructive dark:bg-card/50 dark:text-foreground">
                                 <AlertCircle size={9} />
                                 Error
                               </span>
@@ -2667,7 +2719,7 @@ function ExecutionLogPanel({
                           <td className="px-3 py-2 tabular-nums text-foreground">{row.duration}</td>
                           <td className="px-3 py-2 tabular-nums text-muted-foreground">{row.steps}</td>
                           <td className="px-3 py-2">
-                            <span className="inline-block rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            <span className="inline-block rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                               {row.trigger}
                             </span>
                           </td>
@@ -2724,7 +2776,7 @@ function ExecutionTimeline({ flow, runState, logs, onHighlightNode, collapsed, o
       </div>
 
       {!collapsed && (
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           {logTab === "timeline" && (
             <div className="px-6 py-3 relative">
               {/* Connecting line — positioned at circle center height */}
@@ -2819,7 +2871,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
   const completedDuration = totalMockMs >= 1000 ? `${(totalMockMs / 1000).toFixed(1)}s` : `${totalMockMs}ms`;
 
   return (
-    <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+    <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
 
       {/* ── Canvas subheading — live execution status bar ── */}
       {(isActivelyRunning || hasDoneNodes) && (
@@ -2840,22 +2892,22 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
             </span>
             {/* Step timer — shown on left when running */}
             {isActivelyRunning && runElapsedLabel && (
-              <span className="text-[11px] tabular-nums font-semibold text-primary dark:text-blue-400">
+              <span className="text-xs tabular-nums font-semibold text-primary dark:text-blue-400">
                 {runElapsedLabel}
               </span>
             )}
-            <span className="text-[11px] font-medium text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               {isActivelyRunning ? "Running:" : "Completed:"}
             </span>
-            <span className="text-[11px] font-semibold text-foreground">{flow.name}</span>
+            <span className="text-xs font-semibold text-foreground">{flow.name}</span>
           </div>
           <div className="flex items-center gap-3">
             {hasDoneNodes && (
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {runState.doneIdxs.size}/{flow.steps.length} steps
               </span>
             )}
-            <span className="text-[11px] tabular-nums font-semibold text-foreground">
+            <span className="text-xs tabular-nums font-semibold text-foreground">
               {isActivelyRunning ? (runElapsedLabel ?? "0.0s") : completedDuration}
             </span>
           </div>
@@ -2893,7 +2945,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setPicker({ afterIndex: -1, anchorX: (svgW + NODE_W) / 2 + 24, anchorY: NODE_Y + NODE_H / 2 }); }}
-                    className="flex h-10 items-center gap-2 rounded-[10px] bg-slate-950 px-5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800"
+                    className="flex h-10 items-center gap-2 rounded-[10px] bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                   >
                     <Plus size={16} strokeWidth={2.5} /> Add first step
                   </button>
@@ -2932,7 +2984,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
                         type="button"
                         onClick={() => onAddTemplate(tpl.steps)}
                         className="flex items-center gap-2.5 p-3 rounded-[12px] bg-card border border-border hover:border-primary hover:shadow-md hover:-translate-y-px transition-all text-left group"
-                        style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+                        style={{ boxShadow: tokenShadowSm }}
                       >
                         <div className="size-8 rounded-[8px] flex items-center justify-center flex-shrink-0"
                           style={{ background: `${tpl.color}15`, border: `1px solid ${tpl.color}25` }}>
@@ -2940,7 +2992,7 @@ function Canvas({ flow, selectedIdx, onSelectNode, onAddNode, onAddTemplate, run
                         </div>
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">{tpl.label}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">{tpl.desc}</span>
+                          <span className="text-xs text-muted-foreground truncate">{tpl.desc}</span>
                         </div>
                       </button>
                     );
@@ -3074,16 +3126,16 @@ function OverviewCard({ flow }) {
     <div className="bg-background border border-border rounded-[10px] p-3 flex flex-col gap-2.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold text-foreground truncate">{flow.name}</span>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1"
           style={{background: badge.bg, color: badge.text}}>
           <span className="size-1.5 rounded-full inline-block" style={{background: badge.dot}} />
           {badge.label}
         </span>
       </div>
       {desc ? (
-        <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-4">{desc}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground line-clamp-4">{desc}</p>
       ) : (
-        <p className="text-[10px] leading-relaxed text-muted-foreground/90 italic">
+        <p className="text-xs leading-relaxed text-muted-foreground/90 italic">
           No description yet. Use the menu (⋯) → Settings to say what this flow does.
         </p>
       )}
@@ -3091,11 +3143,11 @@ function OverviewCard({ flow }) {
         {[["Steps", flow.steps.length], ["Runs", flow.runs?.toLocaleString() ?? "0"], ["Success", flow.success != null ? `${flow.success}%` : "—"]].map(([k,v]) => (
           <div key={k} className="flex flex-col items-center bg-card border border-border rounded-[6px] py-2 gap-0.5">
             <span className="text-sm font-bold text-foreground">{v}</span>
-            <span className="text-[10px] text-muted-foreground">{k}</span>
+            <span className="text-xs text-muted-foreground">{k}</span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock size={9} />
         <span>Last run: {flow.lastRun ?? "—"}</span>
       </div>
@@ -3137,7 +3189,7 @@ function StepDoneMsg({ msg }) {
     <div className="flex items-center gap-2 py-1 px-2.5">
       <CheckCircle2 size={12} className="text-foreground flex-shrink-0" />
       <span className="text-xs text-muted-foreground flex-1 truncate">{msg.label}</span>
-      <span className="text-[10px] text-muted-foreground flex-shrink-0">{msg.duration}ms</span>
+      <span className="text-xs text-muted-foreground flex-shrink-0">{msg.duration}ms</span>
     </div>
   );
 }
@@ -3268,13 +3320,13 @@ function ConversationPanel({
         <div className="flex-1" />
 
         {isNewFlow && (
-          <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          <span className="text-xs font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-primary/10 text-primary">
             New flow
           </span>
         )}
         {isRunning && (
           <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1 flex-shrink-0"
+            className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1 flex-shrink-0"
             title={runElapsedLabel ? `Elapsed: ${runElapsedLabel}` : undefined}
           >
             <RefreshCw size={9} className="animate-spin" /> Running
@@ -3291,11 +3343,11 @@ function ConversationPanel({
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5">
             <div className="flex min-w-0 flex-1 items-baseline gap-1.5" title={logExecutionId ?? undefined}>
-              <span className="flex-shrink-0 text-[10px] font-medium text-muted-foreground">Execution ID</span>
+              <span className="flex-shrink-0 text-xs font-medium text-muted-foreground">Execution ID</span>
               {logExecutionId ? (
-                <span className="min-w-0 truncate font-mono text-[10px] text-foreground">{shortExecutionId(logExecutionId)}</span>
+                <span className="min-w-0 truncate font-mono text-xs text-foreground">{shortExecutionId(logExecutionId)}</span>
               ) : (
-                <span className="text-[10px] text-muted-foreground">—</span>
+                <span className="text-xs text-muted-foreground">—</span>
               )}
             </div>
             {typeof onRefreshLogs === "function" && allowLogRefresh && (
@@ -3319,13 +3371,13 @@ function ConversationPanel({
                 </div>
                 <div className="flex flex-col items-center gap-1 text-center">
                   <p className="text-xs font-medium text-muted-foreground">No logs yet</p>
-                  <p className="text-[11px] text-muted-foreground">Run the flow to see the execution log.</p>
+                  <p className="text-xs text-muted-foreground">Run the flow to see the execution log.</p>
                 </div>
               </div>
             ) : displayLogs.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 px-4 py-10 text-center">
                 <p className="text-xs font-medium text-muted-foreground">Nothing to show yet</p>
-                <p className="text-[11px] text-muted-foreground">INFO-level lines are hidden. Run or refresh to see SUCCESS, WARN, or ERROR entries.</p>
+                <p className="text-xs text-muted-foreground">INFO-level lines are hidden. Run or refresh to see SUCCESS, WARN, or ERROR entries.</p>
               </div>
             ) : (
               <div className="divide-y divide-border/60 px-2 py-1 font-mono">
@@ -3334,7 +3386,7 @@ function ConversationPanel({
                   return (
                   <div
                     key={entry.id ?? `${entry.ts}-${i}`}
-                    className={`flex items-start gap-2 py-1.5 pl-1 pr-2 text-[10px] leading-snug transition-colors hover:bg-muted/40 ${entry.nodeIdx !== null && onSelectLogNode ? "cursor-pointer" : ""}`}
+                    className={`flex items-start gap-2 py-1.5 pl-1 pr-2 text-xs leading-snug transition-colors hover:bg-muted/40 ${entry.nodeIdx !== null && onSelectLogNode ? "cursor-pointer" : ""}`}
                     title={rowExecId ? `${entry.level} · ${rowExecId}` : entry.level}
                     onClick={() => entry.nodeIdx !== null && onSelectLogNode?.(entry.nodeIdx)}
                     onKeyDown={(e) => {
@@ -3372,7 +3424,7 @@ function ConversationPanel({
       {!collapsed && (isNewFlow || activeTab === "chat") && (
         <>
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2 min-h-0">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 flex flex-col gap-2 min-h-0">
 
         {/* For new flows with no chat yet: show template picker */}
         {isNewFlow && !hasUserMsg && (
@@ -3391,7 +3443,7 @@ function ConversationPanel({
           if (msg.type === "run-done")    return <RunDoneMsg    key={msg.id} msg={msg} />;
           if (msg.type === "user") return (
             <div key={msg.id} className="flex justify-end">
-              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-slate-950 text-white text-xs leading-5">{msg.text}</div>
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-foreground text-background text-xs leading-5">{msg.text}</div>
             </div>
           );
           if (msg.type === "ai") return (
@@ -3400,7 +3452,7 @@ function ConversationPanel({
                 <div className="size-5 rounded-full bg-gradient-to-br from-chart-chart-3 to-chart-chart-4 flex items-center justify-center flex-shrink-0">
                   <Sparkles size={9} color="white" />
                 </div>
-                <span className="text-[11px] font-semibold text-muted-foreground">AI</span>
+                <span className="text-xs font-semibold text-muted-foreground">AI</span>
               </div>
               <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-muted-foreground leading-5">
                 {msg.message.split("\n").map((line, li) => (
@@ -3417,7 +3469,7 @@ function ConversationPanel({
           if (msg.type === "overview") return null;
           if (msg.type === "user") return (
             <div key={msg.id} className="flex justify-end">
-              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-slate-950 text-white text-xs leading-5">{msg.text}</div>
+              <div className="max-w-[85%] px-3 py-2 rounded-[10px] bg-foreground text-background text-xs leading-5">{msg.text}</div>
             </div>
           );
           if (msg.type === "ai") return (
@@ -3426,7 +3478,7 @@ function ConversationPanel({
                 <div className="size-5 rounded-full bg-gradient-to-br from-[#2563eb] to-chart-chart-3 flex items-center justify-center flex-shrink-0">
                   <Sparkles size={9} color="white" />
                 </div>
-                <span className="text-[11px] font-semibold text-muted-foreground">AI</span>
+                <span className="text-xs font-semibold text-muted-foreground">AI</span>
               </div>
               <div className="bg-background border border-border rounded-[10px] px-3 py-2.5 text-xs text-muted-foreground leading-5">
                 {msg.message.split("\n").map((line, li) => (
@@ -3781,7 +3833,7 @@ function TopBar({
         <button
           onClick={onBack}
           aria-label="Back to flows"
-          className="flex size-8 flex-shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted dark:hover:bg-slate-800"
+          className="flex size-8 flex-shrink-0 items-center justify-center rounded-[8px] text-muted-foreground transition-colors hover:bg-muted dark:hover:bg-foreground/90"
         >
           <ArrowLeft size={16} />
         </button>
@@ -3796,14 +3848,14 @@ function TopBar({
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commit}
               onKeyDown={onKeyDown}
-              className="h-7 max-w-[220px] rounded-[5px] border border-primary bg-card px-2 text-sm font-medium text-foreground outline-none ring-2 ring-primary/20 dark:bg-slate-950 dark:text-foreground"
+              className="h-7 max-w-[220px] rounded-[5px] border border-primary bg-card px-2 text-sm font-medium text-foreground outline-none ring-2 ring-primary/20 dark:bg-muted dark:text-foreground"
             />
           ) : (
             <span
               onClick={pageMode === "edit" ? startEdit : undefined}
               title={pageMode === "edit" ? "Click to rename" : flow.name}
               className={`max-w-[180px] truncate rounded-[5px] px-1 py-0.5 font-medium text-foreground dark:text-foreground ${
-                pageMode === "edit" ? "cursor-text transition-colors hover:bg-muted dark:hover:bg-slate-800" : "cursor-default"
+                pageMode === "edit" ? "cursor-text transition-colors hover:bg-muted dark:hover:bg-foreground/90" : "cursor-default"
               }`}
             >
               {flow.name}
@@ -3837,7 +3889,7 @@ function TopBar({
             style={{
               top: versionPanelPos.top,
               left: versionPanelPos.left,
-              boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06)",
+              boxShadow: tokenShadowLg,
             }}
           >
             <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 dark:border-border">
@@ -3853,11 +3905,11 @@ function TopBar({
                 <ul className="space-y-1" role="listbox">
                   {versionHistory.map((v) => (
                     <li key={v.id}>
-                      <div className="flex flex-col gap-1.5 rounded-lg border border-transparent px-2 py-2 hover:bg-muted/50 dark:hover:bg-slate-950/80">
+                      <div className="flex flex-col gap-1.5 rounded-lg border border-transparent px-2 py-2 hover:bg-muted/50 dark:hover:bg-muted/80">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-foreground dark:text-foreground">{v.label}</p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               {v.savedAt
                                 ? new Date(v.savedAt).toLocaleString(undefined, {
                                     dateStyle: "medium",
@@ -3869,7 +3921,7 @@ function TopBar({
                           </div>
                           <button
                             type="button"
-                            className="flex-shrink-0 rounded-md border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground"
+                            className="flex-shrink-0 rounded-md border border-border bg-card px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground"
                             onClick={() => {
                               onRestoreVersion?.(v);
                               setVersionPanelOpen(false);
@@ -3953,7 +4005,7 @@ function TopBar({
                   <Save size={13} className="mt-0.5 shrink-0 text-muted-foreground" />
                   <span className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-foreground">Save</span>
-                    <span className="text-[10px] text-muted-foreground leading-snug">Overwrite current version</span>
+                    <span className="text-xs text-muted-foreground leading-snug">Overwrite current version</span>
                   </span>
                   <kbd className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground">⌘S</kbd>
                 </button>
@@ -3965,7 +4017,7 @@ function TopBar({
                   <GitBranch size={13} className="mt-0.5 shrink-0 text-muted-foreground" />
                   <span className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-foreground">Save as new version</span>
-                    <span className="text-[10px] text-muted-foreground leading-snug">Creates a history checkpoint</span>
+                    <span className="text-xs text-muted-foreground leading-snug">Creates a history checkpoint</span>
                   </span>
                   <kbd className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-muted-foreground">⌘⇧S</kbd>
                 </button>
@@ -4049,7 +4101,7 @@ function TopBar({
                 type="button"
                 onClick={() => onSetPageMode?.("edit")}
                 title="Edit flow — change steps and configuration"
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-slate-950"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted"
               >
                 <Pencil size={13} strokeWidth={2} /> Edit
               </button>
@@ -4059,9 +4111,9 @@ function TopBar({
                 type="button"
                 title="Click to unpublish"
                 onClick={() => setUnpublishOpen(true)}
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-emerald-300 bg-success/10 px-3 text-xs font-semibold text-emerald-800 transition-colors hover:border-emerald-400 hover:bg-success/15 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-950/80"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success transition-colors hover:border-success/50 hover:bg-success/15"
               >
-                <Globe size={13} className="text-success dark:text-emerald-400" />
+                <Globe size={13} className="text-success" />
                 Published
               </button>
             ) : (
@@ -4069,7 +4121,7 @@ function TopBar({
                 type="button"
                 title="Publish flow"
                 onClick={() => setPublishOpen(true)}
-                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-slate-950"
+                className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted"
               >
                 <Globe size={13} /> Publish
               </button>
@@ -4080,7 +4132,7 @@ function TopBar({
               title={!flow.steps?.length ? "Add steps before running" : "Run flow"}
               className="flex h-8 flex-shrink-0 items-center gap-1.5 rounded-[6px] bg-primary px-3.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              <Play size={12} fill="white" /> Run
+              <Play size={12} fill="currentColor" /> Run
             </button>
           </>
         )}
@@ -4104,19 +4156,19 @@ function TopBar({
           style={{
             top: menuPos.top,
             left: menuPos.left,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+            boxShadow: tokenShadowMd,
           }}
         >
           {/* Group 1: Actions */}
           <button
             onClick={handleFork}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-muted"
           >
             <GitFork size={14} className="text-muted-foreground dark:text-muted-foreground" /> Fork
           </button>
           <button
             onClick={handleExport}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-muted"
           >
             <Download size={14} className="text-muted-foreground dark:text-muted-foreground" /> Export as JSON
           </button>
@@ -4127,7 +4179,7 @@ function TopBar({
           {/* Group 3: Sharing & Info */}
           <button
             onClick={handleShare}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-muted"
           >
             <Share2 size={14} className="text-muted-foreground dark:text-muted-foreground" /> Share
           </button>
@@ -4138,7 +4190,7 @@ function TopBar({
           {/* Group 4: Settings & Danger */}
           <button
             onClick={handleSettings}
-            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-slate-950"
+            className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background dark:text-foreground dark:hover:bg-muted"
           >
             <Settings2 size={14} className="text-muted-foreground dark:text-muted-foreground" /> Settings
           </button>
@@ -4175,7 +4227,7 @@ function TopBar({
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setSettingsOpen(false)} aria-hidden="true" />
           <div
             className="relative w-[420px] overflow-hidden rounded-2xl bg-card dark:bg-card"
-            style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
+            style={{ boxShadow: tokenShadowLg }}
           >
             <div className="h-1 w-full bg-gradient-to-r from-[#3b82f6] to-[#2563eb]" />
             <div className="px-6 pt-6 pb-6">
@@ -4192,16 +4244,16 @@ function TopBar({
                     onChange={(e) => setSettingsDescDraft(e.target.value)}
                     maxLength={500}
                     placeholder="What this flow does (shown on the flow list and in the assistant overview)."
-                    className="w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-sm leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
+                    className="w-full resize-none rounded-[6px] border border-border bg-card px-3 py-2 text-sm leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-muted dark:text-foreground"
                   />
-                  <p className="mt-1 text-[10px] text-muted-foreground">{settingsDescDraft.length}/500</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{settingsDescDraft.length}/500</p>
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-medium text-foreground dark:text-foreground">Execution Timeout</label>
                   <input
                     type="text"
                     defaultValue="30 seconds"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-muted dark:text-foreground"
                   />
                 </div>
                 <div>
@@ -4209,7 +4261,7 @@ function TopBar({
                   <input
                     type="text"
                     defaultValue="3"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-muted dark:text-foreground"
                   />
                 </div>
                 <div>
@@ -4217,14 +4269,14 @@ function TopBar({
                   <input
                     type="text"
                     defaultValue="1 second"
-                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-slate-950 dark:text-foreground"
+                    className="w-full rounded-[6px] border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:border-border dark:bg-muted dark:text-foreground"
                   />
                 </div>
               </div>
               <div className="flex gap-2.5 mt-6">
                 <button
                   onClick={() => setSettingsOpen(false)}
-                  className="flex-1 h-10 rounded-[8px] border border-border bg-card text-sm font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-slate-950"
+                  className="flex-1 h-10 rounded-[8px] border border-border bg-card text-sm font-medium text-muted-foreground transition-colors hover:bg-background dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"
                 >
                   Cancel
                 </button>
@@ -4932,9 +4984,9 @@ export default function FlowViewPage({
 
   return (
     <>
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="flows" onNavigate={guardedNavigate} />
-      <div ref={fullscreenStageRef} className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div ref={fullscreenStageRef} className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <TopBar
           flow={flow} onBack={() => guardedNavigate("flows")}
           onRunNow={handleRunNow} isRunning={runState.activeIdx !== -1}

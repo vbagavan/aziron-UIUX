@@ -547,7 +547,7 @@ export default function NotificationPanel({
         </div>
 
         {/* ── List ── */}
-        <div className="flex-1 overflow-y-auto divide-y divide-muted dark:divide-card">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain divide-y divide-muted dark:divide-card">
           {items.length === 0 && visibleKudos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <CheckCircle2 size={32} className="text-foreground dark:text-muted-foreground" />

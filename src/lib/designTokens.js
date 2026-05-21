@@ -3,6 +3,8 @@
  * Use CSS variables where inline styles or canvas/SVG require raw color values.
  */
 
+export * from "./typography";
+
 export const CHART = {
   grid: "var(--border)",
   tick: "var(--muted-foreground)",
@@ -18,6 +20,12 @@ export const CHART = {
   border: "var(--border)",
   card: "var(--card)",
   foreground: "var(--foreground)",
+};
+
+/** Public / private pills — use with VisibilityBadge */
+export const VISIBILITY_BADGE = {
+  public: "border-primary/35 bg-primary/10 text-primary",
+  private: "border-border bg-muted/80 text-muted-foreground",
 };
 
 export const METRIC_VARIANT = {

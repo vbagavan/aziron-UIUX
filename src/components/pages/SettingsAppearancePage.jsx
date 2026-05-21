@@ -647,7 +647,7 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
   const activeLabel = SETTINGS_NAV.find(n=>n.id===activeSection)?.label ?? activeSection;
 
   return(
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="settings" onNavigate={onNavigate}/>
 
       <div className="flex flex-col flex-1 min-w-0">
@@ -664,7 +664,7 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
 
         <div className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-4 gap-4">
           <div className="flex flex-col gap-0">
-            <h1 className="text-2xl font-semibold text-foreground dark:text-foreground tracking-[-0.6px] leading-8">Settings</h1>
+            <h1 className="type-page-title">Settings</h1>
             <p className="text-sm text-muted-foreground dark:text-muted-foreground leading-5">Manage your preferences</p>
           </div>
 

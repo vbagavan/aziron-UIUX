@@ -25,12 +25,12 @@ export default function PulseDashboard({ artifacts = [], onCreateNew, onEdit, on
   const artifactToDelete = pendingDelete != null ? artifacts.find((a) => a.id === pendingDelete) : null;
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-background">
       <div className="flex flex-col gap-4 px-6 py-4">
         {/* Page title + primary action — matches Flows / Usage list pages */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <h1 className="text-2xl font-semibold leading-8 tracking-[-0.6px] text-foreground dark:text-foreground">
+            <h1 className="type-page-title">
               Pulse
             </h1>
             <p className="text-sm leading-5 text-muted-foreground dark:text-muted-foreground">

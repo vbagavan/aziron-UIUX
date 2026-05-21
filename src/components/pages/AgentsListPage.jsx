@@ -5,7 +5,11 @@ import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
 import Sidebar from "@/components/layout/Sidebar";
+import { CatalogGridCard } from "@/components/common/CatalogGridCard";
 import ExpandableSearch from "@/components/common/ExpandableSearch";
+import { PageHeader } from "@/components/common/PageHeader";
+import { VisibilityBadge } from "@/components/common/VisibilityBadge";
+import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import {
@@ -136,24 +140,21 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
 
   return (
     <>
-    <div
-      className={`group h-full min-h-[164px] bg-card dark:bg-card border rounded-[8px] p-2 flex flex-col gap-2 hover:shadow-lg dark:hover:shadow-none transition-all duration-200 cursor-pointer relative overflow-hidden ${
-        isSelected
-          ? "border-border ring-2 ring-[#2563eb]/20 shadow-md"
-          : "border-border dark:border-border"
-      }`}
-      style={{ "--accent": statusCfg.dot }}
+    <CatalogGridCard
+      ariaLabel={`Open agent ${agent.name}`}
+      selected={isSelected}
       onClick={() => onOpen(agent)}
+      className="gap-2"
+      topAccent={
+        <div
+          className="absolute top-0 left-0 right-0 h-[2.5px] opacity-0 transition-opacity duration-200 rounded-t-xl group-hover:opacity-100 focus-visible:opacity-100"
+          style={{ background: `linear-gradient(90deg, ${statusCfg.dot}, color-mix(in oklch, ${statusCfg.dot} 55%, transparent))` }}
+          aria-hidden
+        />
+      }
     >
-      {/* Status top accent bar */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2.5px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 rounded-t-[8px]"
-        style={{ background: `linear-gradient(90deg, ${statusCfg.dot}, ${statusCfg.dot}88)` }}
-      />
-
-      {/* Top: avatar + info */}
       <div className="flex gap-2 items-start">
-        <div className="relative flex-shrink-0">
+        <div className="relative shrink-0">
           <AgentAvatar name={agent.name} />
           <span
             className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-card"
@@ -161,62 +162,54 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
             title={statusCfg.label}
           />
         </div>
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
             {agent.accessEnabled && (
-              <div className="bg-muted border-2 border-border dark:border-border rounded-full size-2 flex-shrink-0" />
+              <div className="size-2 shrink-0 rounded-full border-2 border-border bg-muted" />
             )}
-            <p className="flex-1 text-base font-medium text-foreground dark:text-foreground leading-6 truncate">
+            <p className="flex-1 truncate text-sm font-semibold leading-5 text-foreground">
               {agent.name}
             </p>
-            <button
+            <Button
               ref={btnRef}
+              type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={handleMenuToggle}
               aria-label="Agent options"
               aria-haspopup="true"
               aria-expanded={isMenuOpen}
-              className="flex items-center justify-center size-8 rounded-[6px] text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              className="size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
             >
-              <MoreVertical size={16} />
-            </button>
+              <MoreVertical className="size-3.5" />
+            </Button>
           </div>
-          <div className="flex items-center gap-1">
-            {agent.visibility === "public" ? (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success-ring">
-                <Globe size={9} /> Public
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
-                <Lock size={9} /> Private
-              </span>
-            )}
-          </div>
+          <VisibilityBadge visibility={agent.visibility} />
           <p
-            className={`text-xs leading-4 tracking-[0.12px] overflow-hidden ${hasDescription ? "text-muted-foreground dark:text-muted-foreground" : "text-muted-foreground dark:text-muted-foreground italic"}`}
-            style={{ height: 35, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
+            className={cn(
+              "line-clamp-3 text-xs leading-4",
+              hasDescription ? "text-muted-foreground" : "italic text-muted-foreground",
+            )}
           >
             {hasDescription ? agent.description : "No description added yet."}
           </p>
         </div>
       </div>
 
-      <div className="mt-auto h-px bg-border dark:bg-border w-full flex-shrink-0" />
+      <Separator className="mt-auto" />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-4 whitespace-nowrap">{agent.date}</span>
-        </div>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="font-medium whitespace-nowrap">{agent.date}</span>
         <div className="flex items-center gap-1">
           <ProviderLogo provider={agent.provider} className="size-3" fallbackClassName="size-3" />
-          <span className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-4 whitespace-nowrap">{agent.model}</span>
+          <span className="font-medium whitespace-nowrap">{agent.model}</span>
         </div>
       </div>
 
-      {/* Context menu — fixed so it escapes any overflow:hidden ancestor */}
       {isMenuOpen && (
         <div
-          className="fixed z-[9999] bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden w-[160px]"
-          style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
+          className="fixed z-[9999] w-40 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
+          style={{ top: menuPos.top, left: menuPos.left }}
           onClick={(e) => e.stopPropagation()}
         >
           <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
@@ -263,7 +256,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
           )}
         </div>
       )}
-    </div>
+    </CatalogGridCard>
     </>
   );
 }
@@ -293,8 +286,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
     <tr
       className={`group border-b border-border dark:border-border transition-all duration-150 cursor-pointer ${zebra ? "bg-background dark:bg-background" : "bg-card dark:bg-card"}`}
       style={hovered ? {
-        backgroundColor: "var(--primary)/10",
-        boxShadow: `inset 3px 0 0 ${statusCfg.dot}, inset 0 0 0 1px rgba(37,99,235,0.06)`,
+        backgroundColor: "color-mix(in oklch, var(--primary) 8%, var(--background))",
+        boxShadow: `inset 3px 0 0 ${statusCfg.dot}, inset 0 0 0 1px color-mix(in oklch, var(--primary) 6%, transparent)`,
       } : {}}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -372,8 +365,8 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
 
           {isMenuOpen && (
             <div
-              className="fixed z-[9999] bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden w-[160px]"
-              style={{ top: menuPos.top, left: menuPos.left, boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
+              className="fixed z-[9999] w-[160px] overflow-hidden rounded-[10px] border border-border bg-card shadow-elevation-md dark:border-border dark:bg-card"
+              style={{ top: menuPos.top, left: menuPos.left }}
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => { setOpenMenu(null); onView?.(agent); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors">
@@ -797,7 +790,7 @@ export default function AgentsListPage({
     <>
       {openMenu && <div className="fixed inset-0 z-20" onClick={() => setOpenMenu(null)} />}
 
-      <main className="flex h-dvh min-h-0 w-full overflow-hidden bg-background">
+      <main className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="agents" onNavigate={onNavigate} />
 
         <div className="flex flex-1 min-w-0 min-h-0 h-full overflow-hidden">
@@ -836,59 +829,51 @@ export default function AgentsListPage({
             <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4 flex flex-col gap-4">
 
-              {/* Page title + toolbar */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-semibold text-foreground leading-8 tracking-[-0.6px]">
-                    Agents
-                  </h1>
-                  <p className="text-sm text-muted-foreground leading-5">
-                    Build and manage your team of digital workers.
-                  </p>
-                </div>
+              <PageHeader
+                title="Agents"
+                description="Build and manage your team of digital workers."
+              >
+                <ExpandableSearch.Provider
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  layoutId="agents-search"
+                >
+                  <ExpandableSearch.Action />
+                  <ExpandableSearch.Input placeholder="Search agents…" className="w-[240px]" />
+                </ExpandableSearch.Provider>
 
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <ExpandableSearch.Provider
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    layoutId="agents-search"
+                <div className={cn("flex items-center rounded-lg border border-border bg-card p-0.5", TOOLBAR_CONTROL_CLASS)}>
+                  <Button
+                    type="button"
+                    variant={viewMode === "grid" ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    onClick={() => setViewMode("grid")}
+                    title="Grid view"
+                    aria-label="Switch to grid view"
+                    aria-pressed={viewMode === "grid"}
                   >
-                    <ExpandableSearch.Action />
-                    <ExpandableSearch.Input placeholder="Search agents…" className="w-[240px]" />
-                  </ExpandableSearch.Provider>
-
-                  <div className="flex items-center bg-card border border-border rounded-[6px] h-9 p-1 gap-0.5">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-muted-foreground"}`}
-                      title="Grid view"
-                      aria-label="Switch to grid view"
-                      aria-pressed={viewMode === "grid"}
-                    >
-                      <LayoutGrid size={15} />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`flex items-center justify-center size-7 rounded-[4px] transition-colors ${viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-muted-foreground"}`}
-                      title="List view"
-                      aria-label="Switch to list view"
-                      aria-pressed={viewMode === "list"}
-                    >
-                      <List size={15} />
-                    </button>
-                  </div>
-
-                  {can("agents.create") && (
-                    <button
-                      onClick={() => navigate("/agents/create")}
-                      className="flex items-center gap-1.5 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-4 h-9 rounded-[6px] transition-colors flex-shrink-0"
-                    >
-                      <Plus size={16} />
-                      Create Agent
-                    </button>
-                  )}
+                    <LayoutGrid className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={viewMode === "list" ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    onClick={() => setViewMode("list")}
+                    title="List view"
+                    aria-label="Switch to list view"
+                    aria-pressed={viewMode === "list"}
+                  >
+                    <List className="size-3.5" />
+                  </Button>
                 </div>
-              </div>
+
+                {can("agents.create") && (
+                  <Button type="button" className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")} onClick={() => navigate("/agents/create")}>
+                    <Plus className="size-4" />
+                    Create Agent
+                  </Button>
+                )}
+              </PageHeader>
 
               {/* Segment filters — matches FlowsPage stat chip pattern */}
               <div
@@ -1060,12 +1045,15 @@ export default function AgentsListPage({
                   >
                     Clear filters
                   </button>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-4 h-9 rounded-[6px] transition-colors"
-                  >
-                    <Plus size={16} /> Create your first agent
-                  </button>
+                  {can("agents.create") && (
+                    <Button
+                      type="button"
+                      className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                      onClick={() => navigate("/agents/create")}
+                    >
+                      <Plus className="size-4" /> Create your first agent
+                    </Button>
+                  )}
                 </div>
               ) : null}
             </div>

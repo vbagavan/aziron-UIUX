@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate, useParams, Navigate } from "react-router-dom";
+import { useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import {
   ArrowRight, ChevronLeft, X, Plus, Search, Bot,
   Check, Database, Wrench, Lock, Key, ChevronDown,
@@ -23,6 +23,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TOOLS, AGENT_TOOLS_METADATA } from "@/data/agentToolsCatalog";
+import { buildHubFileInventory, formatFileSizeKb } from "@/data/knowledgeHubs";
+import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
+import { useAgents } from "@/context/AgentsContext";
+import { agentsUsingHub } from "@/lib/agentKnowledge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { usePermissions } from "@/hooks/usePermissions";
+import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
+import { paginateSlice } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const HUB_FILES_MODAL_PAGE_SIZE = 8;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -82,9 +101,11 @@ function listAgentToForm(agent) {
   const tokens = API_TOKENS_BY_PROVIDER[providerId] ?? [];
   const apiTokenId = tokens[0]?.id ?? "";
   const desc = (agent.description || "").trim();
-  const systemPrompt = desc
-    ? `You are "${agent.name}". ${desc}\n\nStay concise and follow user instructions.`
-    : `You are "${agent.name}", a helpful assistant.`;
+  const systemPrompt =
+    agent.systemPrompt?.trim() ||
+    (desc
+      ? `You are "${agent.name}". ${desc}\n\nStay concise and follow user instructions.`
+      : `You are "${agent.name}", a helpful assistant.`);
 
   return {
     name: agent.name ?? "",
@@ -92,92 +113,97 @@ function listAgentToForm(agent) {
     systemPrompt,
     provider: providerId,
     model,
-    apiTokenId,
-    category: "recruitment",
-    useCase: "cv_processing",
-    vectorSearch: false,
-    ragMode: false,
-    quickPrompts: [],
-    knowledgeHubs: [],
-    tools: [],
-    toolCategoryAccessTokens: {},
+    apiTokenId: agent.apiTokenId ?? apiTokenId,
+    category: agent.category ?? "recruitment",
+    useCase: agent.useCase ?? "cv_processing",
+    vectorSearch: agent.vectorSearch === true,
+    ragMode: agent.ragMode === true,
+    quickPrompts: agent.quickPrompts ?? [],
+    knowledgeHubs: [...(agent.knowledgeHubs ?? [])],
+    knowledgeHubFileIds: { ...(agent.knowledgeHubFileIds ?? {}) },
+    tools: [...(agent.tools ?? [])],
+    toolCategoryAccessTokens: { ...(agent.toolCategoryAccessTokens ?? {}) },
   };
 }
 
-function formToAgentPatch(form) {
+function formToAgentPayload(form) {
   return {
     name: form.name.trim(),
     description: form.description.trim(),
+    systemPrompt: form.systemPrompt?.trim() ?? "",
     provider: PROVIDER_ID_TO_LABEL[form.provider] ?? "Anthropic",
     model: form.model,
+    apiTokenId: form.apiTokenId,
+    category: form.category,
+    useCase: form.useCase,
+    vectorSearch: !!form.vectorSearch,
+    ragMode: !!form.ragMode,
+    quickPrompts: form.quickPrompts ?? [],
+    knowledgeHubs: [...(form.knowledgeHubs ?? [])],
+    knowledgeHubFileIds: { ...(form.knowledgeHubFileIds ?? {}) },
+    tools: [...(form.tools ?? [])],
+    toolCategoryAccessTokens: { ...(form.toolCategoryAccessTokens ?? {}) },
   };
 }
 
-const KNOWLEDGE_HUBS = [
-  { id: 1, name: "Product Documentation", description: "Full product manuals, release notes, and API references.", files: 142, updated: "2 days ago", usedBy: 8 },
-  { id: 2, name: "Customer Support KB",    description: "Resolved tickets, FAQs, and troubleshooting guides.",     files: 87,  updated: "5 days ago", usedBy: 3 },
-  { id: 3, name: "Sales Playbook",         description: "Pitch decks, competitor analysis, and pricing sheets.",    files: 34,  updated: "1 week ago", usedBy: 5 },
-  { id: 4, name: "HR Policies",            description: "Employee handbook, compliance docs, and benefits guide.",  files: 21,  updated: "3 weeks ago", usedBy: 2 },
-  { id: 5, name: "Engineering Wiki",       description: "Architecture diagrams, ADRs, and onboarding guides.",     files: 210, updated: "Yesterday",   usedBy: 12 },
-  { id: 6, name: "Marketing Assets",       description: "Brand guidelines, copy templates, and campaign briefs.",  files: 56,  updated: "4 days ago",  usedBy: 4 },
-];
-
-/** Deterministic sample inventory for the hub files modal (prototype data). */
-function buildHubFileInventory(hub) {
-  const exts = [
-    { ext: "pdf", type: "PDF" },
-    { ext: "docx", type: "Word" },
-    { ext: "md", type: "Markdown" },
-    { ext: "html", type: "HTML" },
-    { ext: "txt", type: "Text" },
-    { ext: "csv", type: "CSV" },
-  ];
-  const slug = hub.name.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "").slice(0, 28) || "hub";
-  const cap = Math.min(hub.files, 80);
-  const rows = [];
-  for (let i = 0; i < cap; i++) {
-    const spec = exts[i % exts.length];
-    const sizeKb = 8 + ((hub.id * 91 + i * 47) % 8200);
-    rows.push({
-      id: `kh${hub.id}-f${i}`,
-      name: `${slug}_${String(i + 1).padStart(3, "0")}.${spec.ext}`,
-      type: spec.type,
-      sizeKb,
-      updated: hub.updated,
-    });
-  }
-  return rows;
-}
-
-function formatFileSizeKb(kb) {
-  if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
-  return `${kb} KB`;
-}
-
-function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
+function KnowledgeHubFilesModal({
+  hub,
+  open,
+  onOpenChange,
+  initialFileIds = [],
+  onSaveFileScope,
+}) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(() => new Set());
+  const [filePage, setFilePage] = useState(1);
+  const [selected, setSelected] = useState(() => new Set(initialFileIds));
   const selectAllRef = useRef(null);
 
-  const inventory = hub ? buildHubFileInventory(hub) : [];
-  const filtered = inventory.filter(row =>
-    !query.trim() || row.name.toLowerCase().includes(query.trim().toLowerCase())
+  const inventoryPack = hub ? buildHubFileInventory(hub) : null;
+  const inventory = inventoryPack?.allFiles ?? [];
+  const filtered = useMemo(
+    () =>
+      inventory.filter(
+        row =>
+          row.source === "user" &&
+          (!query.trim() ||
+            row.name.toLowerCase().includes(query.trim().toLowerCase())),
+      ),
+    [inventory, query],
+  );
+
+  const scopeKey = (initialFileIds ?? []).join("|");
+
+  useEffect(() => {
+    if (open) {
+      setSelected(new Set(initialFileIds));
+    }
+  }, [open, hub?.id, scopeKey]);
+
+  const filePagination = useMemo(
+    () => paginateSlice(filtered, filePage, HUB_FILES_MODAL_PAGE_SIZE),
+    [filtered, filePage],
   );
 
   useEffect(() => {
     if (!open) {
       setQuery("");
+      setFilePage(1);
       setSelected(new Set());
     }
   }, [open, hub?.id]);
 
   useEffect(() => {
+    setFilePage(1);
+  }, [query, hub?.id]);
+
+  useEffect(() => {
     const el = selectAllRef.current;
     if (!el) return;
-    const allOn = filtered.length > 0 && filtered.every(r => selected.has(r.id));
-    const someOn = filtered.some(r => selected.has(r.id));
+    const pageRows = filePagination.items;
+    const allOn = pageRows.length > 0 && pageRows.every(r => selected.has(r.id));
+    const someOn = pageRows.some(r => selected.has(r.id));
     el.indeterminate = someOn && !allOn;
-  }, [filtered, selected]);
+  }, [filePagination.items, selected]);
 
   function toggle(id) {
     setSelected(prev => {
@@ -188,8 +214,8 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
     });
   }
 
-  function toggleAllVisible() {
-    const ids = filtered.map(r => r.id);
+  function toggleAllOnPage() {
+    const ids = filePagination.items.map(r => r.id);
     const allOn = ids.length > 0 && ids.every(id => selected.has(id));
     setSelected(prev => {
       const next = new Set(prev);
@@ -206,8 +232,8 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
       <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px]">
         <DialogHeader className="gap-1 border-b border-border px-5 py-4 dark:border-border">
           <div className="flex items-start gap-2 pr-8">
-            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-success/10 dark:bg-emerald-950/50">
-              <FolderOpen size={18} className="text-success dark:text-emerald-400" />
+            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <FolderOpen size={18} className="text-primary" />
             </div>
             <div className="min-w-0 flex-1">
               <DialogTitle className="text-left text-base font-semibold leading-snug">
@@ -216,7 +242,7 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
               <p className="truncate text-sm font-medium text-foreground dark:text-foreground">{hub.name}</p>
               <DialogDescription className="text-left text-xs leading-relaxed">
                 <span className="flex items-start gap-1.5 text-muted-foreground dark:text-muted-foreground">
-                  <Lock size={12} className="mt-0.5 shrink-0 text-success dark:text-emerald-500" />
+                  <Lock size={12} className="mt-0.5 shrink-0 text-primary" />
                   Access is limited to this hub. File names are not surfaced anywhere else in the app navigation.
                 </span>
               </DialogDescription>
@@ -236,58 +262,125 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
             />
           </div>
           <p className="text-xs text-muted-foreground dark:text-muted-foreground">
-            Showing {filtered.length} of {inventory.length} sample file{inventory.length === 1 ? "" : "s"}
-            {hub.files > inventory.length ? ` (${hub.files} total in hub)` : ""}. Select rows to review inclusion for this agent.
+            {filtered.length} uploaded file{filtered.length === 1 ? "" : "s"}
+            {inventoryPack?.hasDemoRows
+              ? ` (${inventoryPack.totalReported} total in hub includes demo data not shown here)`
+              : ""}
+            {query.trim() ? " match your search" : ""}. Select files this agent may retrieve from; leave none selected to use the full hub.
           </p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-          <table className="w-full border-collapse text-sm">
-            <thead className="sticky top-0 z-[1] bg-background">
-              <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:border-border dark:text-muted-foreground">
-                <th className="w-10 px-2 py-2">
-                  <input
-                    ref={selectAllRef}
-                    type="checkbox"
-                    className="size-3.5 rounded border-border accent-emerald-600"
-                    checked={filtered.length > 0 && filtered.every(r => selected.has(r.id))}
-                    onChange={toggleAllVisible}
-                    aria-label="Select all visible files"
-                  />
-                </th>
-                <th className="px-2 py-2 font-semibold">Name</th>
-                <th className="hidden w-[72px] px-2 py-2 font-semibold sm:table-cell">Type</th>
-                <th className="hidden w-[76px] px-2 py-2 font-semibold md:table-cell">Size</th>
-                <th className="hidden w-[96px] px-2 py-2 font-semibold lg:table-cell">Indexed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(row => (
-                <tr
-                  key={row.id}
-                  className="border-b border-border transition-colors hover:bg-muted dark:border-border dark:hover:bg-muted/80"
-                >
-                  <td className="px-2 py-2 align-middle">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="px-2 pb-2">
+            <table className="w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-[1] bg-background">
+                <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground dark:border-border dark:text-muted-foreground">
+                  <th className="w-10 px-2 py-2">
                     <input
+                      ref={selectAllRef}
                       type="checkbox"
-                      className="size-3.5 rounded border-border accent-emerald-600"
-                      checked={selected.has(row.id)}
-                      onChange={() => toggle(row.id)}
-                      aria-label={`Select ${row.name}`}
+                      className="size-3.5 rounded border-border accent-primary"
+                      checked={
+                        filePagination.items.length > 0 &&
+                        filePagination.items.every(r => selected.has(r.id))
+                      }
+                      onChange={toggleAllOnPage}
+                      aria-label="Select all files on this page"
                     />
-                  </td>
-                  <td className="max-w-[200px] truncate px-2 py-2 font-mono text-[12px] text-foreground dark:text-foreground sm:max-w-none">
-                    {row.name}
-                  </td>
-                  <td className="hidden px-2 py-2 text-muted-foreground sm:table-cell">{row.type}</td>
-                  <td className="hidden px-2 py-2 tabular-nums text-muted-foreground md:table-cell">{formatFileSizeKb(row.sizeKb)}</td>
-                  <td className="hidden px-2 py-2 text-muted-foreground lg:table-cell">{row.updated}</td>
+                  </th>
+                  <th className="px-2 py-2 font-semibold">Name</th>
+                  <th className="hidden w-[72px] px-2 py-2 font-semibold sm:table-cell">Type</th>
+                  <th className="hidden w-[76px] px-2 py-2 font-semibold md:table-cell">Size</th>
+                  <th className="hidden w-[96px] px-2 py-2 font-semibold lg:table-cell">Indexed</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">No files match your search.</p>
+              </thead>
+              <tbody>
+                {filePagination.items.map(row => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border transition-colors hover:bg-muted dark:border-border dark:hover:bg-muted/80"
+                  >
+                    <td className="px-2 py-2 align-middle">
+                      <input
+                        type="checkbox"
+                        className="size-3.5 rounded border-border accent-primary"
+                        checked={selected.has(row.id)}
+                        onChange={() => toggle(row.id)}
+                        aria-label={`Select ${row.name}`}
+                      />
+                    </td>
+                    <td className="max-w-[200px] truncate px-2 py-2 font-mono text-[12px] text-foreground dark:text-foreground sm:max-w-none">
+                      {row.name}
+                    </td>
+                    <td className="hidden px-2 py-2 text-muted-foreground sm:table-cell">{row.type}</td>
+                    <td className="hidden px-2 py-2 tabular-nums text-muted-foreground md:table-cell">{formatFileSizeKb(row.sizeKb)}</td>
+                    <td className="hidden px-2 py-2 text-muted-foreground lg:table-cell">{row.updated}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                {inventoryPack?.userFiles?.length === 0
+                  ? "No uploaded files in this hub yet. Upload files on the hub page, then scope them here."
+                  : "No files match your search."}
+              </p>
+            )}
+          </div>
+          {filtered.length > 0 && filePagination.totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5">
+              <p className="text-xs text-muted-foreground">
+                {filePagination.totalItems} files · page {filePagination.currentPage} of{" "}
+                {filePagination.totalPages}
+              </p>
+              <Pagination className="mx-0 w-auto">
+                <PaginationContent className="gap-0.5">
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setFilePage((p) => Math.max(1, p - 1));
+                      }}
+                      className={cn(
+                        "h-7 cursor-pointer text-xs",
+                        filePagination.currentPage === 1 && "pointer-events-none opacity-40",
+                      )}
+                      aria-disabled={filePagination.currentPage === 1}
+                      text="Prev"
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: filePagination.totalPages }, (_, i) => i + 1).map((pg) => (
+                    <PaginationItem key={pg}>
+                      <PaginationLink
+                        isActive={pg === filePagination.currentPage}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setFilePage(pg);
+                        }}
+                        className="h-7 w-7 cursor-pointer text-xs"
+                      >
+                        {pg}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setFilePage((p) => Math.min(filePagination.totalPages, p + 1));
+                      }}
+                      className={cn(
+                        "h-7 cursor-pointer text-xs",
+                        filePagination.currentPage === filePagination.totalPages &&
+                          "pointer-events-none opacity-40",
+                      )}
+                      aria-disabled={filePagination.currentPage === filePagination.totalPages}
+                      text="Next"
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
         </div>
 
@@ -299,8 +392,16 @@ function KnowledgeHubFilesModal({ hub, open, onOpenChange }) {
               <>No files selected</>
             )}
           </p>
-          <Button type="button" variant="default" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => onOpenChange(false)}>
-            Done
+          <Button
+            type="button"
+            variant="default"
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => {
+              onSaveFileScope?.(Array.from(selected));
+              onOpenChange(false);
+            }}
+          >
+            Save selection
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -506,7 +607,7 @@ function StepBar({ current }) {
             <div className="flex flex-col items-center gap-1 flex-shrink-0">
               <div className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                 state === "done"   ? "bg-primary text-primary-foreground" :
-                state === "active" ? "bg-primary text-primary-foreground ring-4 ring-[#2563eb]/20" :
+                state === "active" ? "bg-primary text-primary-foreground ring-4 ring-primary/20" :
                                      "bg-border dark:bg-border text-muted-foreground"
               }`}>
                 {state === "done" ? <Check size={13} /> : step.id}
@@ -673,7 +774,7 @@ function Step1({ form, setForm, errors }) {
               type="button"
               onClick={() => setProviderOpen(o => !o)}
               className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-background/50 text-sm text-foreground dark:text-foreground hover:border-info-ring transition-colors ${
-                providerOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
+                providerOpen ? "border-border ring-2 ring-primary/15" : "border-border dark:border-border"
               }`}
             >
               <span className="font-mono text-[13px] flex-1 text-left truncate">{selectedProvider.displayId}</span>
@@ -720,7 +821,7 @@ function Step1({ form, setForm, errors }) {
               type="button"
               onClick={() => setModelOpen(o => !o)}
               className={`w-full flex items-center gap-2 h-9 px-3 rounded-lg border bg-background/50 text-sm text-foreground dark:text-foreground hover:border-info-ring transition-colors ${
-                modelOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
+                modelOpen ? "border-border ring-2 ring-primary/15" : "border-border dark:border-border"
               }`}
             >
               <Bot size={13} className="text-muted-foreground flex-shrink-0" />
@@ -759,7 +860,7 @@ function Step1({ form, setForm, errors }) {
               type="button"
               onClick={() => setTokenOpen(o => !o)}
               className={`w-full flex flex-col items-stretch gap-0.5 min-h-9 px-3 py-1.5 rounded-lg border bg-background/50 text-sm text-left hover:border-info-ring transition-colors ${
-                tokenOpen ? "border-border ring-2 ring-[#2563eb]/15" : "border-border dark:border-border"
+                tokenOpen ? "border-border ring-2 ring-primary/15" : "border-border dark:border-border"
               }`}
             >
               <div className="flex items-center gap-2 w-full">
@@ -833,7 +934,7 @@ function Step1({ form, setForm, errors }) {
           icon={FileText}
           iconColor="var(--info)"
           title="RAG Mode"
-          description="Retrieve and augment responses with context from the knowledge hub."
+          description="Retrieve and augment responses with context from a Knowledge Hub."
           checked={form.ragMode ?? false}
           onChange={v => setForm(f => ({ ...f, ragMode: v }))}
         />
@@ -878,10 +979,18 @@ function Step1({ form, setForm, errors }) {
 
 // ─── Step 2 – Attach Knowledge Hub ───────────────────────────────────────────
 
-function KnowledgeCard({ hub, selected, onToggle }) {
+function KnowledgeCard({ hub, selected, onToggle, form, setForm, canDeleteHub }) {
+  const navigate = useNavigate();
+  const { deleteHub } = useKnowledgeHubs();
+  const { agents } = useAgents();
   const [menuOpen, setMenuOpen] = useState(false);
   const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [linkedOpen, setLinkedOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const menuRef = useRef(null);
+  const linked = agentsUsingHub(hub.id, agents);
+  const scopedIds = form.knowledgeHubFileIds?.[hub.id] ?? [];
+
   useEffect(() => {
     function h(e) { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); }
     document.addEventListener("mousedown", h);
@@ -889,21 +998,22 @@ function KnowledgeCard({ hub, selected, onToggle }) {
   }, []);
 
   return (
+    <>
     <div
       onClick={() => onToggle(hub.id)}
       className={`relative flex flex-col gap-3 overflow-hidden rounded-xl border cursor-pointer transition-all p-4 ${
         selected
-          ? "border-border bg-success/10 dark:border-emerald-700 dark:bg-emerald-950/35"
-          : "border-border dark:border-border bg-card dark:bg-card hover:border-border dark:hover:border-emerald-800 hover:shadow-sm"
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card hover:border-primary/40 hover:shadow-sm"
       }`}
     >
       {/* Selected: top-left corner check */}
       {selected && (
         <div
-          className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-success/100 shadow-sm"
+          className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-primary shadow-sm"
           aria-hidden
         >
-          <Check size={14} className="text-white" strokeWidth={2.75} />
+          <Check size={14} className="text-primary-foreground" strokeWidth={2.75} />
         </div>
       )}
 
@@ -915,11 +1025,7 @@ function KnowledgeCard({ hub, selected, onToggle }) {
           aria-label="More actions"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          className={`size-7 flex items-center justify-center rounded-lg transition-colors ${
-            selected
-              ? "hover:bg-success/15/80 dark:hover:bg-emerald-900/40 text-muted-foreground dark:text-muted-foreground"
-              : "hover:bg-muted dark:hover:bg-muted text-muted-foreground"
-          }`}
+          className="size-7 flex items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted"
         >
           <MoreVertical size={14} />
         </button>
@@ -940,19 +1046,45 @@ function KnowledgeCard({ hub, selected, onToggle }) {
                   setMenuOpen(false);
                 }}
               >
-                <FolderOpen size={13} className="shrink-0 text-success dark:text-emerald-400" />
+                <FolderOpen size={13} className="shrink-0 text-primary" />
                 View files in hub
               </button>
-              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors"
+                onClick={() => {
+                  navigate(`/knowledge/${hub.id}`);
+                  setMenuOpen(false);
+                }}
+              >
                 <Pencil size={13} className="text-muted-foreground" />Edit hub
               </button>
-              <button type="button" className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors">
-                <Link2 size={13} className="text-muted-foreground" />View linked agents
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted dark:text-foreground dark:hover:bg-muted transition-colors"
+                onClick={() => {
+                  setLinkedOpen(true);
+                  setMenuOpen(false);
+                }}
+              >
+                <Link2 size={13} className="text-muted-foreground" />
+                View linked agents{linked.length > 0 ? ` (${linked.length})` : ""}
               </button>
-              <div className="h-px bg-muted dark:bg-border mx-2" />
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
-                <Trash2 size={13} />Delete
-              </button>
+              {canDeleteHub && (
+                <>
+                  <div className="h-px bg-muted dark:bg-border mx-2" />
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    onClick={() => {
+                      setDeleteOpen(true);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <Trash2 size={13} />Delete hub
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -980,9 +1112,7 @@ function KnowledgeCard({ hub, selected, onToggle }) {
 
       {/* Divider — full width inside padded card */}
       <div
-        className={`-mx-4 h-px shrink-0 ${
-          selected ? "bg-muted/90 dark:bg-emerald-800/50" : "bg-muted dark:bg-border"
-        }`}
+        className={cn("-mx-4 h-px shrink-0", selected ? "bg-primary/20" : "bg-border")}
       />
 
       {/* Footer — usage meta + file count */}
@@ -991,8 +1121,8 @@ function KnowledgeCard({ hub, selected, onToggle }) {
           <span>Updated {hub.updated}</span>
           <span>
             Used by{" "}
-            <span className="font-semibold text-muted-foreground dark:text-muted-foreground">{hub.usedBy}</span>{" "}
-            {hub.usedBy === 1 ? "Agent" : "Agents"}
+            <span className="font-semibold text-muted-foreground dark:text-muted-foreground">{linked.length}</span>{" "}
+            {linked.length === 1 ? "Agent" : "Agents"}
           </span>
         </div>
         <div className="flex justify-end shrink-0 tabular-nums">
@@ -1003,16 +1133,83 @@ function KnowledgeCard({ hub, selected, onToggle }) {
         </div>
       </div>
 
-      <KnowledgeHubFilesModal hub={hub} open={filesModalOpen} onOpenChange={setFilesModalOpen} />
+      <KnowledgeHubFilesModal
+        hub={hub}
+        open={filesModalOpen}
+        onOpenChange={setFilesModalOpen}
+        initialFileIds={scopedIds}
+        onSaveFileScope={(ids) =>
+          setForm((f) => ({
+            ...f,
+            knowledgeHubFileIds: { ...(f.knowledgeHubFileIds ?? {}), [hub.id]: ids },
+          }))
+        }
+      />
+
+      <Dialog open={linkedOpen} onOpenChange={setLinkedOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agents using {hub.name}</DialogTitle>
+            <DialogDescription>
+              Agents that attach this knowledge hub for retrieval.
+            </DialogDescription>
+          </DialogHeader>
+          {linked.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No agents are linked yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {linked.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    to={`/agents/${a.id}/edit`}
+                    className="text-sm font-medium text-primary hover:underline"
+                    onClick={() => setLinkedOpen(false)}
+                  >
+                    {a.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {deleteOpen && (
+        <ConfirmDialog
+          title="Delete Knowledge Hub?"
+          message={
+            linked.length > 0
+              ? `Delete “${hub.name}”? ${linked.length} agent(s) still reference it. Remove attachments first or proceed to delete the hub.`
+              : `Delete “${hub.name}”? This cannot be undone.`
+          }
+          confirmLabel="Delete"
+          onConfirm={() => {
+            deleteHub(hub.id);
+            setForm((f) => ({
+              ...f,
+              knowledgeHubs: (f.knowledgeHubs ?? []).filter((id) => id !== hub.id),
+              knowledgeHubFileIds: Object.fromEntries(
+                Object.entries(f.knowledgeHubFileIds ?? {}).filter(([k]) => Number(k) !== hub.id),
+              ),
+            }));
+            setDeleteOpen(false);
+          }}
+          onCancel={() => setDeleteOpen(false)}
+        />
+      )}
     </div>
+    </>
   );
 }
 
 function Step2({ form, setForm }) {
+  const { hubs, addHub } = useKnowledgeHubs();
+  const { can } = usePermissions();
   const [search, setSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const ragRequired = form.ragMode;
   const selected = form.knowledgeHubs ?? [];
-  const filtered = KNOWLEDGE_HUBS.filter(h =>
+  const filtered = hubs.filter(h =>
     !search || h.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -1048,14 +1245,30 @@ function Step2({ form, setForm }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search knowledge hubs…"
-            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm text-foreground dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-info-ring focus:ring-2 focus:ring-[#2563eb]/10 transition-colors"
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm text-foreground dark:text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-info-ring focus:ring-2 focus:ring-primary/10 transition-colors"
           />
         </div>
-        <button className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-foreground hover:border-info-ring hover:bg-muted transition-colors flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-1.5 h-9 px-4 rounded-lg border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-foreground hover:border-info-ring hover:bg-muted transition-colors flex-shrink-0"
+        >
           <Plus size={14} />
           Add Knowledge Hub
         </button>
       </div>
+
+      <KnowledgeHubCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={(payload) => {
+          const hub = addHub(payload);
+          setForm(f => ({
+            ...f,
+            knowledgeHubs: [...(f.knowledgeHubs ?? []), hub.id],
+          }));
+        }}
+      />
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1063,20 +1276,26 @@ function Step2({ form, setForm }) {
           <KnowledgeCard
             key={hub.id}
             hub={hub}
+            form={form}
+            setForm={setForm}
+            canDeleteHub={can("knowledge.delete")}
             selected={selected.includes(hub.id)}
             onToggle={id => {
-              setForm(f => ({
-                ...f,
-                knowledgeHubs: (f.knowledgeHubs ?? []).includes(id)
+              setForm(f => {
+                const has = (f.knowledgeHubs ?? []).includes(id);
+                const nextHubs = has
                   ? (f.knowledgeHubs ?? []).filter(x => x !== id)
-                  : [...(f.knowledgeHubs ?? []), id],
-              }));
+                  : [...(f.knowledgeHubs ?? []), id];
+                const nextFileIds = { ...(f.knowledgeHubFileIds ?? {}) };
+                if (has) delete nextFileIds[id];
+                return { ...f, knowledgeHubs: nextHubs, knowledgeHubFileIds: nextFileIds };
+              });
             }}
           />
         ))}
         {filtered.length === 0 && (
           <div className="col-span-2 text-center py-10 text-muted-foreground text-sm">
-            No knowledge hubs match your search.
+            No Knowledge Hubs match your search.
           </div>
         )}
       </div>
@@ -1086,7 +1305,7 @@ function Step2({ form, setForm }) {
           initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
           className="text-sm font-semibold text-primary"
         >
-          {selected.length} knowledge hub{selected.length !== 1 ? "s" : ""} selected
+          {selected.length} Knowledge Hub{selected.length !== 1 ? "s" : ""} selected
         </motion.p>
       )}
     </div>
@@ -1163,16 +1382,16 @@ function Step3({ form, setForm }) {
                 key={category}
                 className={`relative flex min-h-[72px] items-center gap-2 overflow-hidden rounded-xl border px-3 py-3.5 transition-colors ${
                   hasSome
-                    ? "border-border bg-success/10 dark:border-emerald-700 dark:bg-emerald-950/35"
-                    : "border-border bg-card dark:border-border dark:bg-card"
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card"
                 }`}
               >
                 {hasSome && (
                   <div
-                    className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-success/100 shadow-sm"
+                    className="pointer-events-none absolute left-0 top-0 z-10 flex h-8 w-8 items-center justify-center rounded-br-lg bg-primary shadow-sm"
                     aria-hidden
                   >
-                    <Check size={14} className="text-white" strokeWidth={2.75} />
+                    <Check size={14} className="text-primary-foreground" strokeWidth={2.75} />
                   </div>
                 )}
 
@@ -1201,7 +1420,7 @@ function Step3({ form, setForm }) {
                       <button
                         type="button"
                         onClick={() => setOpenCategory(category)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-success/15/80 dark:text-muted-foreground dark:hover:bg-emerald-900/30"
+                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted"
                         aria-label={`Edit ${category} tools`}
                       >
                         <Pencil size={16} />
@@ -1260,6 +1479,7 @@ function SummaryRow({ label, children }) {
 }
 
 function StepSummary({ form }) {
+  const { hubs } = useKnowledgeHubs();
   const selectedProvider = PROVIDERS.find(p => p.id === form.provider) ?? PROVIDERS[0];
   const tokList = API_TOKENS_BY_PROVIDER[selectedProvider.id] ?? [];
   const apiTokenLabel = tokList.find(t => t.id === form.apiTokenId)?.label ?? (
@@ -1267,7 +1487,7 @@ function StepSummary({ form }) {
   );
 
   const hubNames = (form.knowledgeHubs ?? [])
-    .map(id => KNOWLEDGE_HUBS.find(h => h.id === id)?.name)
+    .map(id => hubs.find(h => h.id === id)?.name)
     .filter(Boolean);
 
   const enabledIds = form.tools ?? [];
@@ -1340,17 +1560,28 @@ function StepSummary({ form }) {
       )}
 
       <SectionCard title="Knowledge Hubs" subtitle="Knowledge bases attached to this agent.">
-        {hubNames.length > 0 ? (
+        {(form.knowledgeHubs ?? []).length > 0 ? (
           <ul className="space-y-2">
-            {hubNames.map(name => (
-              <li
-                key={name}
-                className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-foreground"
-              >
-                <Database size={14} className="shrink-0 text-primary" />
-                {name}
-              </li>
-            ))}
+            {(form.knowledgeHubs ?? []).map((id) => {
+              const hub = hubs.find((h) => h.id === id);
+              const scope = form.knowledgeHubFileIds?.[id] ?? [];
+              return (
+                <li
+                  key={id}
+                  className="flex flex-col gap-0.5 text-sm text-foreground dark:text-foreground"
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <Database size={14} className="shrink-0 text-primary" />
+                    {hub?.name ?? `Hub #${id}`}
+                  </span>
+                  <span className="pl-6 text-xs text-muted-foreground">
+                    {scope.length > 0
+                      ? `${scope.length} file${scope.length === 1 ? "" : "s"} scoped for retrieval`
+                      : "Full hub (all stored files)"}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground">None attached.</p>
@@ -1409,12 +1640,12 @@ function RobotIllustration() {
       <line x1="60" y1="20" x2="60" y2="8" stroke="var(--chart-chart-2)" strokeWidth="2" strokeLinecap="round" />
       <circle cx="60" cy="6" r="4" fill="var(--primary)" />
       {/* Eyes */}
-      <circle cx="46" cy="38" r="7" fill="white" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
-      <circle cx="74" cy="38" r="7" fill="white" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
+      <circle cx="46" cy="38" r="7" fill="var(--card)" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
+      <circle cx="74" cy="38" r="7" fill="var(--card)" stroke="var(--chart-chart-2)" strokeWidth="1.5" />
       <circle cx="46" cy="38" r="3.5" fill="var(--primary)" />
       <circle cx="74" cy="38" r="3.5" fill="var(--primary)" />
-      <circle cx="47.5" cy="36.5" r="1.5" fill="white" />
-      <circle cx="75.5" cy="36.5" r="1.5" fill="white" />
+      <circle cx="47.5" cy="36.5" r="1.5" fill="var(--card-foreground)" />
+      <circle cx="75.5" cy="36.5" r="1.5" fill="var(--card-foreground)" />
       {/* Mouth */}
       <rect x="44" y="50" width="32" height="5" rx="2.5" fill="var(--chart-chart-2)" />
       {/* Chest panel */}
@@ -1645,7 +1876,7 @@ const NEXT_LABELS_EDIT = [
   "Save changes",
 ];
 
-export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent }) {
+export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent, onAddAgent }) {
   const navigate = useNavigate();
   const { agentId } = useParams();
   const isEdit = agentId !== undefined && agentId !== "";
@@ -1667,6 +1898,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent 
     vectorSearch: false, ragMode: false,
     quickPrompts: [],
     knowledgeHubs: [],
+    knowledgeHubFileIds: {},
     tools: [],
     toolCategoryAccessTokens: {},
   });
@@ -1716,13 +1948,13 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent 
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar onNavigate={onNavigate} />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} title={isEdit ? "Edit Agent" : "Create Agent"} />
 
         {/* Scrollable main area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           <div className={`flex flex-col min-h-full ${isCreatingStep ? "" : "pb-20"}`}>
             {/* Header section */}
             {!isCreatingStep && (
@@ -1763,8 +1995,11 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent 
                       variant={isEdit ? "edit" : "create"}
                       tasks={isEdit ? UPDATE_TASKS : CREATION_TASKS}
                       onSuccess={() => {
+                        const payload = formToAgentPayload(formRef.current);
                         if (isEdit && agentRecord) {
-                          onPatchAgent?.(agentRecord.id, formToAgentPatch(formRef.current));
+                          onPatchAgent?.(agentRecord.id, payload);
+                        } else {
+                          onAddAgent?.(payload);
                         }
                       }}
                       onGoToAgents={goBack}

@@ -11,8 +11,10 @@ import {
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { cn } from "@/lib/utils";
+import { SectionEyebrow } from "@/components/common/SectionEyebrow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { InsuranceContent } from "@/components/pages/EmployeeInsurancePage";
@@ -117,7 +119,7 @@ function InfoRow({ icon: Icon, label, value, copyable }) {
       <div className="flex items-start gap-2 min-w-0">
         <Icon size={13} className="text-muted-foreground mt-0.5 shrink-0" />
         <div className="min-w-0">
-          <p className="text-[11px] text-muted-foreground leading-none mb-0.5">{label}</p>
+          <p className="type-caption leading-none mb-0.5">{label}</p>
           <p className="text-xs font-medium text-foreground truncate">{value}</p>
         </div>
       </div>
@@ -134,15 +136,17 @@ function InfoRow({ icon: Icon, label, value, copyable }) {
 
 function SectionTitle({ children }) {
   return (
-    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">{children}</p>
+    <SectionEyebrow as="p" className="mb-3">
+      {children}
+    </SectionEyebrow>
   );
 }
 
-function Card({ children, className }) {
+function ProfileCard({ children, className }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card p-5", className)}>
-      {children}
-    </div>
+    <Card className={className}>
+      <CardContent className="p-5">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -175,7 +179,7 @@ function ProfileBanner({ profile, activeTab, onTabChange, onNavigate }) {
             >
               <div className="relative flex h-full w-full items-end px-6 pb-5 sm:px-8 lg:px-10">
                 <div className="min-w-0 pl-28 text-white sm:pl-32">
-                  <h1 className="text-xl font-bold leading-tight">{profile.name}</h1>
+                  <h1 className="type-detail-title">{profile.name}</h1>
                   <p className="mt-0.5 text-sm font-medium text-white/75">{profile.role}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-3">
                     <span className="flex items-center gap-1 text-xs text-white/55">
@@ -263,7 +267,7 @@ function ProfileBanner({ profile, activeTab, onTabChange, onNavigate }) {
 
 function ProfileCompletion({ pct }) {
   return (
-    <Card>
+    <ProfileCard>
       <SectionTitle>Complete your profile</SectionTitle>
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-muted-foreground">Profile strength</p>
@@ -277,10 +281,10 @@ function ProfileCompletion({ pct }) {
           className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70"
         />
       </div>
-      <p className="text-[11px] text-muted-foreground mt-2">
+      <p className="text-xs text-muted-foreground mt-2">
         Add your certifications and skills to reach 100%.
       </p>
-    </Card>
+    </ProfileCard>
   );
 }
 
@@ -291,7 +295,7 @@ function LeftPanel({ profile }) {
     <div className="space-y-4">
 
       {/* Info */}
-      <Card>
+      <ProfileCard>
         <SectionTitle>Info</SectionTitle>
         <div className="space-y-3.5">
           <InfoRow icon={User}     label="Full name"    value={profile.name} />
@@ -301,43 +305,43 @@ function LeftPanel({ profile }) {
           <InfoRow icon={Calendar} label="Joining date" value={profile.joiningDate} />
           <InfoRow icon={Hash}     label="Employee ID"  value={profile.id} />
         </div>
-      </Card>
+      </ProfileCard>
 
       {/* Reporting */}
-      <Card>
+      <ProfileCard>
         <SectionTitle>Reporting structure</SectionTitle>
         <div className="space-y-3">
           <div>
-            <p className="text-[11px] text-muted-foreground mb-2">Reports to</p>
+            <p className="text-xs text-muted-foreground mb-2">Reports to</p>
             <div className="flex items-center gap-2.5 rounded-xl border border-border p-2.5 hover:bg-muted/30 transition-colors cursor-pointer group">
               <Avatar className="size-8 shrink-0">
                 <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">{profile.reportingManager.initials}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-foreground truncate">{profile.reportingManager.name}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{profile.reportingManager.role}</p>
+                <p className="text-xs text-muted-foreground truncate">{profile.reportingManager.role}</p>
               </div>
               <ExternalLink size={12} className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0" />
             </div>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground mb-2">Direct reports ({profile.directReports.length})</p>
+            <p className="text-xs text-muted-foreground mb-2">Direct reports ({profile.directReports.length})</p>
             <div className="space-y-1.5">
               {profile.directReports.map(m => (
                 <div key={m.name} className="flex items-center gap-2.5 rounded-xl border border-border p-2 hover:bg-muted/30 transition-colors cursor-pointer group">
                   <Avatar className="size-7 shrink-0">
-                    <AvatarFallback className={cn("text-[11px] font-bold text-white", m.color)}>{m.initials}</AvatarFallback>
+                    <AvatarFallback className={cn("text-xs font-bold text-white", m.color)}>{m.initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-foreground truncate">{m.name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{m.role}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.role}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </Card>
+      </ProfileCard>
     </div>
   );
 }
@@ -348,7 +352,7 @@ function AboutSection({ profile }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
       {/* Work info */}
-      <Card>
+      <ProfileCard>
         <SectionTitle>Work information</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
@@ -364,13 +368,13 @@ function AboutSection({ profile }) {
                 <r.icon size={12} className="text-muted-foreground" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground leading-none mb-0.5">{r.label}</p>
+                <p className="text-xs text-muted-foreground leading-none mb-0.5">{r.label}</p>
                 <p className="text-xs font-medium text-foreground truncate">{r.value}</p>
               </div>
             </div>
           ))}
         </div>
-      </Card>
+      </ProfileCard>
     </motion.div>
   );
 }
@@ -383,7 +387,7 @@ function ActivityItem({ item }) {
   return (
     <div className="flex gap-3">
       <Avatar className="size-8 shrink-0 mt-0.5">
-        <AvatarFallback className={cn("text-[11px] font-bold text-white", item.color)}>{item.initials}</AvatarFallback>
+        <AvatarFallback className={cn("text-xs font-bold text-white", item.color)}>{item.initials}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 pb-5 border-b border-border last:border-0 last:pb-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-1">
@@ -399,7 +403,7 @@ function ActivityItem({ item }) {
                 <Paperclip size={12} className="text-muted-foreground shrink-0" />
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground truncate">{a.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{a.size}</p>
+                  <p className="text-xs text-muted-foreground">{a.size}</p>
                 </div>
               </div>
             ))}
@@ -412,14 +416,14 @@ function ActivityItem({ item }) {
 
 function ActivitySection() {
   return (
-    <Card>
+    <ProfileCard>
       <div className="mb-4">
         <p className="text-sm font-semibold text-foreground">Recent activity</p>
       </div>
       <div className="space-y-0">
         {ACTIVITY.map(item => <ActivityItem key={item.id} item={item} />)}
       </div>
-    </Card>
+    </ProfileCard>
   );
 }
 
@@ -427,7 +431,7 @@ function ActivitySection() {
 
 function TimelineSection() {
   return (
-    <Card>
+    <ProfileCard>
       <SectionTitle>Career timeline</SectionTitle>
       <div className="space-y-0">
         {TIMELINE.map((e, i) => (
@@ -439,13 +443,13 @@ function TimelineSection() {
               {i < TIMELINE.length - 1 && <div className="w-px flex-1 bg-border my-1" />}
             </div>
             <div className="pb-4 min-w-0 flex-1">
-              <p className="text-[11px] text-muted-foreground mb-0.5">{e.date}</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{e.date}</p>
               <p className="text-sm font-medium text-foreground">{e.label}</p>
             </div>
           </div>
         ))}
       </div>
-    </Card>
+    </ProfileCard>
   );
 }
 
@@ -520,10 +524,10 @@ export default function MyProfilePage({ onNavigate }) {
   };
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="my-profile" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border" />

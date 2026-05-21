@@ -633,7 +633,7 @@ function BatchDurationSection() {
               !editing && "opacity-60 cursor-not-allowed",
             )}
           >
-            <span className={cn("inline-block size-3.5 rounded-full bg-white shadow transition-transform", (editing ? draft : cfg).autoReminders ? "translate-x-[18px]" : "translate-x-[2px]")} />
+            <span className={cn("inline-block size-3.5 rounded-full bg-background shadow transition-transform", (editing ? draft : cfg).autoReminders ? "translate-x-[18px]" : "translate-x-[2px]")} />
           </button>
         </div>
 
@@ -662,10 +662,10 @@ function BatchDurationSection() {
 
 export default function InsuranceConfigPage({ onNavigate }) {
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-config" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border" />
@@ -697,7 +697,7 @@ export default function InsuranceConfigPage({ onNavigate }) {
                   Back to dashboard
                 </button>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-foreground">Insurance setup</h1>
+                  <h1 className="type-page-title">Insurance setup</h1>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">Open enrollment · 2026</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">Set your insurer, age-based premiums, documents, and enrollment windows</p>

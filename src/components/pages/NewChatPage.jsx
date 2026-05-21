@@ -703,7 +703,7 @@ export default function NewChatPage({ onNavigate }) {
               <button
                 onClick={stopVoiceInput}
                 aria-label="Stop voice mode"
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-muted/8 dark:bg-card/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-foreground dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-[#2563eb]/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-muted/12 dark:hover:bg-card/14"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full bg-muted/8 dark:bg-card/10 px-3 py-1.5 text-[13px] sm:px-4 sm:py-2 sm:text-[14px] font-medium text-foreground dark:text-white shadow-[0_10px_24px_-18px_rgba(0,0,0,.28)] dark:shadow-[0_10px_24px_-18px_rgba(0,0,0,.95)] ring-1 ring-primary/12 dark:ring-white/8 backdrop-blur-md transition-all duration-200 hover:bg-muted/12 dark:hover:bg-card/14"
               >
                 <Square size={14} className="fill-current" />
                 <span>Stop</span>
@@ -730,21 +730,21 @@ export default function NewChatPage({ onNavigate }) {
 
   return (
     <>
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="new-chat" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
         {/* ── Messages ── */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           {!hasMessages ? (
             <div className="flex h-full items-center justify-center px-4 py-10">
               <div className="w-full max-w-[720px]">
                 <div className="flex flex-col items-center justify-center gap-6">
                   <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
                   <div className="space-y-2 text-center">
-                    <h1 className="text-[30px] font-medium text-foreground" style={{ letterSpacing: "-0.8px" }}>
+                    <h1 className="type-page-title text-3xl font-medium tracking-tight">
                       Hi John, where should we start?
                     </h1>
                     <p className="text-sm text-muted-foreground">

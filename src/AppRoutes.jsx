@@ -16,7 +16,13 @@ import NewChatPage from "@/components/pages/NewChatPage";
 import AgentsListPage from "@/components/pages/AgentsListPage";
 import AgentDetailPage from "@/components/pages/AgentDetailPage";
 import CreateAgentPage from "@/components/pages/CreateAgentPage";
-import { INITIAL_AGENTS } from "@/data/agentsCatalog";
+import {
+  INITIAL_AGENTS,
+  loadAgentsFromStorage,
+  saveAgentsToStorage,
+} from "@/data/agentsCatalog";
+import { AgentsProvider } from "@/context/AgentsContext";
+import { KnowledgeHubProvider } from "@/context/KnowledgeHubContext";
 import AgentPage from "@/components/pages/AgentPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
 import FlowsPage from "@/components/pages/FlowsPage";
@@ -153,7 +159,11 @@ export default function AppRoutes() {
   const ownTenant = TENANTS[0];
 
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [agents, setAgents] = useState(INITIAL_AGENTS);
+  const [agents, setAgents] = useState(() => loadAgentsFromStorage() ?? INITIAL_AGENTS);
+
+  useEffect(() => {
+    saveAgentsToStorage(agents);
+  }, [agents]);
   const [viewedAgent, setViewedAgent] = useState(null);
   const [initialMessage, setInitialMessage] = useState("");
   const [viewedUser, setViewedUser] = useState(null);
@@ -181,6 +191,30 @@ export default function AppRoutes() {
     setViewedAgent((prev) => (prev?.id === id ? { ...prev, ...partial } : prev));
   }, []);
 
+  const addAgent = useCallback((payload) => {
+    setAgents((prev) => {
+      const nextId = prev.length ? Math.max(...prev.map((a) => a.id)) + 1 : 0;
+      const date = new Date().toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      return [
+        ...prev,
+        {
+          id: nextId,
+          date,
+          status: "idle",
+          lastRun: "Never",
+          success: 0,
+          accessEnabled: false,
+          visibility: "private",
+          ...payload,
+        },
+      ];
+    });
+  }, []);
+
   const navigateToEditAgent = useCallback(
     (agent) => {
       navigate(`/agents/${agent.id}/edit`);
@@ -198,7 +232,14 @@ export default function AppRoutes() {
   );
 
   return (
-    <Routes>
+    <AgentsProvider
+      agents={agents}
+      setAgents={setAgents}
+      patchAgent={patchAgent}
+      addAgent={addAgent}
+    >
+      <KnowledgeHubProvider>
+        <Routes>
       <Route path="/" element={<Navigate to="/new-chat" replace />} />
 
       <Route
@@ -217,8 +258,28 @@ export default function AppRoutes() {
           />
         }
       />
-      <Route path="/agents/create" element={<CreateAgentPage onNavigate={onNavigate} agents={agents} onPatchAgent={patchAgent} />} />
-      <Route path="/agents/:agentId/edit" element={<CreateAgentPage onNavigate={onNavigate} agents={agents} onPatchAgent={patchAgent} />} />
+      <Route
+        path="/agents/create"
+        element={
+          <CreateAgentPage
+            onNavigate={onNavigate}
+            agents={agents}
+            onPatchAgent={patchAgent}
+            onAddAgent={addAgent}
+          />
+        }
+      />
+      <Route
+        path="/agents/:agentId/edit"
+        element={
+          <CreateAgentPage
+            onNavigate={onNavigate}
+            agents={agents}
+            onPatchAgent={patchAgent}
+            onAddAgent={addAgent}
+          />
+        }
+      />
       <Route
         path="/agents/detail"
         element={
@@ -271,6 +332,7 @@ export default function AppRoutes() {
       <Route path="/usage" element={<UsagePage onNavigate={onNavigate} />} />
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
+      <Route path="/knowledge/:hubId" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
       <Route path="/marketplace" element={<MarketplaceRoute onNavigate={onNavigate} agents={agents} patchAgent={patchAgent} navigate={navigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 
@@ -323,6 +385,8 @@ export default function AppRoutes() {
       <Route path="/my-profile" element={<MyProfilePage onNavigate={onNavigate} />} />
 
       <Route path="*" element={<NotFoundPage onNavigate={onNavigate} />} />
-    </Routes>
+        </Routes>
+      </KnowledgeHubProvider>
+    </AgentsProvider>
   );
 }

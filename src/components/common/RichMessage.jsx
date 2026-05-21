@@ -4,6 +4,9 @@ import {
   AlertCircle, CheckCircle2, FileText, File, FileSpreadsheet,
   Presentation, Image, Brain, Wrench,
 } from "lucide-react";
+import { CONTENT_HEADING } from "@/lib/typography";
+
+const H_STYLES = CONTENT_HEADING;
 
 /* ── Thinking ─────────────────────────────────────────────────── */
 export function ThinkingBlock({ duration }) {
@@ -14,7 +17,7 @@ export function ThinkingBlock({ duration }) {
         Thinking<span className="text-muted-foreground">...</span>
       </span>
       {duration && (
-        <span className="ml-auto inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-mono tabular-nums text-muted-foreground">
+        <span className="ml-auto inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-xs font-mono tabular-nums text-muted-foreground">
           {duration}
         </span>
       )}
@@ -36,15 +39,6 @@ export function GeneratingBlock() {
 }
 
 /* ── Heading ──────────────────────────────────────────────────── */
-/* DS: Inter Variable — bold for display headings, medium for sub-headings */
-const H_STYLES = {
-  1: "text-xl  font-bold   text-foreground mt-4 mb-2",
-  2: "text-lg  font-bold   text-foreground mt-3 mb-1.5",
-  3: "text-base font-medium text-foreground mt-2 mb-1",
-  4: "text-sm  font-medium  text-foreground/90 mt-2 mb-1",
-  5: "text-sm  font-medium  text-muted-foreground mt-1 mb-0.5",
-  6: "text-xs  font-medium  text-muted-foreground uppercase tracking-wider mt-1 mb-0.5",
-};
 export function HeadingBlock({ level, content }) {
   const Tag = `h${level}`;
   return <Tag className={H_STYLES[level] || H_STYLES[3]}>{content}</Tag>;
@@ -76,7 +70,7 @@ export function CodeBlock({ language, content }) {
   return (
     <div className="my-2 overflow-hidden rounded-2xl border border-border">
       <div className="flex items-center justify-between bg-muted px-4 py-2.5">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
           {language || "code"}
         </span>
         <button onClick={copy}

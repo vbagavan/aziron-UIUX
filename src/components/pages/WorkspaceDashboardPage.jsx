@@ -102,7 +102,7 @@ function StickyWorkspaceHeader({
                 Workspace
               </p>
               <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                <h1 className="type-page-title">
                   {tenant.name}
                 </h1>
                 {planCfg && (
@@ -234,7 +234,7 @@ function ActivityFeed({ tenant, className, onViewAll }) {
     <section aria-labelledby="activity-heading" className={cn("flex min-h-0 flex-1 flex-col", className)}>
       <div className="mb-4 flex shrink-0 flex-col gap-2 border-b border-border/70 pb-4 sm:flex-row sm:items-end sm:justify-between dark:border-border/80">
         <div>
-          <h2 id="activity-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <h2 id="activity-heading" className="type-section-eyebrow">
             Workspace activity
           </h2>
           <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
@@ -332,7 +332,7 @@ function MetadataPanel({ tenant, deployCfg, onNavigate, className }) {
     <aside aria-labelledby="meta-heading" className={cn("flex min-h-0 flex-col", className)}>
       <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 id="meta-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <h2 id="meta-heading" className="type-section-eyebrow">
             Workspace profile
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -459,7 +459,7 @@ function ResourceUsageOverview({ tenant }) {
     <section aria-labelledby="resource-usage-heading" className="col-span-12">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 id="resource-usage-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <h2 id="resource-usage-heading" className="type-section-eyebrow">
             Resource footprint
           </h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
@@ -477,7 +477,7 @@ function ResourceUsageOverview({ tenant }) {
               "dark:bg-card/90",
             )}
           >
-            <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+            <p className="type-metric-value">
               {(row.value ?? 0).toLocaleString()}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
@@ -498,7 +498,7 @@ function WorkspaceInsightsColumn({ can, onNavigate, onOpenGovernance, className 
   return (
     <aside aria-labelledby="insights-heading" className={cn("flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-y-contain", className)}>
       <div>
-        <h2 id="insights-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h2 id="insights-heading" className="type-section-eyebrow">
           Signals &amp; actions
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">Operational nudges without leaving the overview.</p>
@@ -861,7 +861,7 @@ export default function WorkspaceDashboardPage({
   }, [safeActive, tenant, deployCfg, can, onNavigate, setActive]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
       {!canEditTenant && (
         <div className="shrink-0 border-b border-info-ring/25 bg-info/10 px-4 py-3 text-sm text-info-foreground dark:dark:border-border dark:bg-muted text-info-foreground">
           <span className="font-semibold">View-only workspace.</span>{" "}

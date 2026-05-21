@@ -48,7 +48,7 @@ function Popover({ open, onClose, anchor, width = "w-48", children }) {
   if (!open) return null;
 
   return (
-    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-border dark:bg-card`}>
+    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} overflow-hidden rounded-[10px] border border-border bg-card shadow-elevation-md dark:border-border dark:bg-card`}>
       {children}
     </div>
   );
@@ -149,17 +149,17 @@ export default function UserGroupsPage({ onNavigate }) {
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={() => setRowMenu(null)} />}
 
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="user-groups" onNavigate={onNavigate} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <div className="mx-auto flex min-h-0 max-w-[1400px] flex-1 flex-col gap-4 px-6 py-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-[22px] font-semibold leading-8 tracking-[-0.4px] text-foreground dark:text-foreground">User Groups</h1>
+                  <h1 className="type-page-title">User Groups</h1>
                   <p className="mt-0.5 text-sm text-muted-foreground dark:text-muted-foreground">Organize people into reusable teams and access cohorts.</p>
                 </div>
                 <Button className="h-9 gap-1.5 rounded-[7px] bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary">
@@ -168,7 +168,7 @@ export default function UserGroupsPage({ onNavigate }) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-9 w-72 items-center gap-2 rounded-[7px] border border-border bg-card px-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:border-border dark:bg-card">
+                <div className="flex h-9 w-72 items-center gap-2 rounded-[7px] border border-border bg-card px-3 shadow-elevation-sm dark:border-border dark:bg-card">
                   <Search size={14} className="shrink-0 text-muted-foreground" />
                   <input
                     value={search}
@@ -188,7 +188,7 @@ export default function UserGroupsPage({ onNavigate }) {
                     ref={statusRef}
                     variant="outline"
                     onClick={() => { setShowColsPop(false); setShowStatusPop((v) => !v); }}
-                    className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] border px-3 text-sm font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors ${statusFilter ? "border-border bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"}`}
+                    className={`inline-flex h-9 items-center gap-1.5 rounded-[7px] border px-3 text-sm font-medium shadow-elevation-sm transition-colors ${statusFilter ? "border-border bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"}`}
                   >
                     <Users size={12} /> Status {statusFilter && <span className="font-semibold">: {statusFilter}</span>}
                     <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showStatusPop ? "rotate-180" : ""}`} />
@@ -220,7 +220,7 @@ export default function UserGroupsPage({ onNavigate }) {
                     ref={colsRef}
                     variant="outline"
                     onClick={() => { setShowStatusPop(false); setShowColsPop((v) => !v); }}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-[7px] border border-border bg-card px-3 text-sm font-medium text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-[7px] border border-border bg-card px-3 text-sm font-medium text-muted-foreground shadow-elevation-sm transition-colors hover:bg-muted dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:bg-muted"
                   >
                     <Settings size={13} /> Columns
                     <ChevronDown size={12} className={`text-muted-foreground transition-transform ${showColsPop ? "rotate-180" : ""}`} />
@@ -241,7 +241,7 @@ export default function UserGroupsPage({ onNavigate }) {
                 </div>
               </div>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_1px_4px_rgba(0,0,0,0.05)] dark:border-border dark:bg-card">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-border bg-card shadow-elevation-sm dark:border-border dark:bg-card">
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -299,7 +299,7 @@ export default function UserGroupsPage({ onNavigate }) {
                               </Button>
 
                               {rowMenu?.id === group.id && (
-                                <div className="fixed z-50 w-48 overflow-hidden rounded-[10px] border border-border bg-card py-1 shadow-[0_8px_24px_rgba(0,0,0,0.12)] dark:border-border dark:bg-card" style={{ top: rowMenu.top, right: rowMenu.right }}>
+                                <div className="fixed z-50 w-48 overflow-hidden rounded-[10px] border border-border bg-card py-1 shadow-elevation-md dark:border-border dark:bg-card" style={{ top: rowMenu.top, right: rowMenu.right }}>
                                   <Button type="button" variant="ghost" size="sm" onClick={() => { setRowMenu(null); notify("Group editor coming next"); }} className="flex h-auto w-full items-center gap-2 rounded-none px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted">
                                     <Pencil size={14} /> Edit group
                                   </Button>

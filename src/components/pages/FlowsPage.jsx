@@ -9,6 +9,9 @@ import {
   FileJson2, AlertCircle, CheckCircle2, Info,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
+import { CatalogGridCard } from "@/components/common/CatalogGridCard";
+import { PageHeader } from "@/components/common/PageHeader";
+import { VisibilityBadge } from "@/components/common/VisibilityBadge";
 import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import ForkDialog from "@/components/features/clone/ForkDialog";
@@ -68,20 +71,6 @@ const STATUS_CONFIG = {
   },
 };
 
-/** Public / private access pill */
-function FlowVisibilityBadge({ visibility }) {
-  const isPublic = visibility === "public";
-  const outline = isPublic
-    ? "border-primary/35 bg-primary/10 text-primary dark:bg-primary/15"
-    : "border-border bg-muted/80 text-muted-foreground";
-  return (
-    <Badge variant="outline" className={cn("h-6 gap-1 rounded-full px-2 py-0 text-xs font-semibold", outline)}>
-      <span className={cn("size-1.5 shrink-0 rounded-full", isPublic ? "bg-primary" : "bg-muted-foreground")} />
-      {isPublic ? "Public" : "Private"}
-    </Badge>
-  );
-}
-
 function FlowAccessBadge({ flow }) {
   if (flow.status === "error") {
     return (
@@ -90,11 +79,11 @@ function FlowAccessBadge({ flow }) {
           <span className="size-1.5 shrink-0 rounded-full bg-destructive-foreground/80" />
           Error
         </Badge>
-        <FlowVisibilityBadge visibility={flow.visibility} />
+        <VisibilityBadge visibility={flow.visibility} />
       </div>
     );
   }
-  return <FlowVisibilityBadge visibility={flow.visibility} />;
+  return <VisibilityBadge visibility={flow.visibility} />;
 }
 
 // ─── Flow card (grid view) ─────────────────────────────────────────────────────
@@ -130,29 +119,19 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFl
           onCancel={() => setConfirmDelete(false)}
         />
       )}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={`Open flow ${flow.name}`}
-        className={cn(
-          "group relative flex cursor-pointer flex-col gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-md",
-          "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        )}
+      <CatalogGridCard
+        ariaLabel={`Open flow ${flow.name}`}
         onClick={() => onViewFlow?.(flow)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onViewFlow?.(flow);
-          }
-        }}
+        topAccent={
+          <div
+            className={cn(
+              "absolute inset-x-0 top-0 h-[3px] rounded-t-xl bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100",
+              flow.status === "error" ? "from-destructive to-destructive/70" : "from-border to-border/50",
+            )}
+            aria-hidden
+          />
+        }
       >
-        <div
-          className={cn(
-            "absolute inset-x-0 top-0 h-[3px] rounded-t-lg bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100",
-            flow.status === "error" ? "from-destructive to-destructive/70" : "from-border to-border/50",
-          )}
-          aria-hidden
-        />
 
         <div className="flex flex-col gap-1.5">
           <div className="flex items-start justify-between gap-2">
@@ -172,7 +151,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFl
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="h-5 shrink-0 rounded-md px-1.5 py-0 text-[10px] font-medium">
+            <Badge variant="secondary" className="h-5 shrink-0 rounded-md px-1.5 py-0 text-xs font-medium">
               {flow.version}
             </Badge>
             <FlowAccessBadge flow={flow} />
@@ -250,7 +229,7 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFl
             </button>
           </div>
         )}
-      </div>
+      </CatalogGridCard>
     </>
   );
 }
@@ -729,7 +708,7 @@ export default function FlowsPage() {
 
       <div
         ref={pageRef}
-        className={cn("flex min-h-0 w-full flex-1 overflow-hidden bg-background transition-colors", dragOver && "ring-2 ring-inset ring-primary/60")}
+        className={cn("flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background transition-colors", dragOver && "ring-2 ring-inset ring-primary/60")}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -747,20 +726,15 @@ export default function FlowsPage() {
 
         <Sidebar activePage={activePage} onNavigate={onNavigate} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="app-scroll-region min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
             <div className="flex flex-col gap-4 px-6 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-semibold leading-8 tracking-tight text-foreground">Flows</h1>
-                  <p className="text-sm leading-5 text-muted-foreground">
-                    Design and automate multi-step AI workflows.
-                  </p>
-                </div>
-
-                <div className="flex flex-shrink-0 flex-wrap items-center gap-3">
+              <PageHeader
+                title="Flows"
+                description="Design and automate multi-step AI workflows."
+              >
                   <div className="relative w-[220px]">
                     <Search
                       className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
@@ -804,8 +778,7 @@ export default function FlowsPage() {
                       variant="toolbar"
                     />
                   )}
-                </div>
-              </div>
+              </PageHeader>
 
               {!catalogEmpty && (
                 <div

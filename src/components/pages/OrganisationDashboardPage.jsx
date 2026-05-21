@@ -543,7 +543,7 @@ function ActivityFeed({ tenant, className, onViewAll }) {
       <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Activity className="size-3.5 text-muted-foreground" aria-hidden />
-          <h2 id="activity-heading" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 id="activity-heading" className="type-section-eyebrow">
             Recent Activity
           </h2>
         </div>
@@ -638,7 +638,7 @@ function BillingHealthPanel({ tenant, deployCfg, onNavigate, onGoToMembers, clas
   return (
     <aside aria-labelledby="billing-health-heading" className={cn("flex min-h-0 flex-col", className)}>
       <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
-        <h2 id="billing-health-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h2 id="billing-health-heading" className="type-section-eyebrow">
           Billing &amp; Health
         </h2>
         <Button
@@ -832,7 +832,7 @@ function ResourceUsageOverview({ tenant, onNavigate }) {
     <section aria-labelledby="resource-usage-heading" className="col-span-12">
       <div className="mb-3 flex items-end justify-between gap-2">
         <div>
-          <h2 id="resource-usage-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <h2 id="resource-usage-heading" className="type-section-eyebrow">
             Resource footprint
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -858,7 +858,7 @@ function ResourceUsageOverview({ tenant, onNavigate }) {
               aria-label={`${row.label}: ${row.value}${row.limit ? ` of ${row.limit}` : ""}. Go to ${row.navId}`}
             >
               <p className={cn(
-                "font-mono text-2xl font-semibold tabular-nums tracking-tight",
+                "type-metric-value",
                 isAtRisk ? "text-destructive" : "text-foreground",
               )}>
                 {(row.value ?? 0).toLocaleString()}
@@ -1130,7 +1130,7 @@ function AuditSection({ tenant }) {
         ].map(({ label, value, valueClass }) => (
           <div key={label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className={cn("mt-1 text-2xl font-semibold tabular-nums text-foreground", valueClass)}>{value}</p>
+            <p className={cn("type-metric-value mt-1", valueClass)}>{value}</p>
           </div>
         ))}
       </div>
@@ -1438,7 +1438,7 @@ export default function OrganisationDashboardPage({
   }, [safeActive, tenant, deployCfg, onNavigate, setActive]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
       {!canEditTenant && (
         <div
           className="shrink-0 border-b border-border bg-muted px-4 py-3 text-sm text-foreground"

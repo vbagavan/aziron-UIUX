@@ -1553,11 +1553,11 @@ export default function KudosPage({ onNavigate }) {
   } = workflow;
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
       {/* Main content wrapper */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="app-page-column flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader
           approvals={approvals}
           onApprove={handleApprove}
@@ -1568,12 +1568,12 @@ export default function KudosPage({ onNavigate }) {
         />
 
         {/* Body: left content area + right sidebar */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
 
           {/* Left panel */}
-          <div className="flex flex-col flex-1 min-w-0 bg-muted">
+          <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-muted">
             {stage === "compose" || stage === "empty" ? (
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="app-scroll-region min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
                 <div className="max-w-2xl mx-auto px-8 py-10">
                   <KudosComposeStep workflow={workflow} onContinue={workflow.submitComposeForm} />
                 </div>

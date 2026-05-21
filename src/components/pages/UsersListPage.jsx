@@ -84,7 +84,7 @@ function Popover({ open, onClose, anchor, width="w-48", children }){
   },[open,onClose,anchor]);
   if(!open) return null;
   return(
-    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden`}>
+    <div ref={ref} className={`absolute z-50 top-full mt-1 ${width} bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-elevation-md overflow-hidden`}>
       {children}
     </div>
   );
@@ -293,19 +293,19 @@ export default function UsersListPage({ onNavigate, onViewUser }){
     <>
       {rowMenu && <div className="fixed inset-0 z-30" onClick={()=>{ setRowMenu(null); setRowSubMenu(null); }}/>}
 
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="app-page-column flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
 
-          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          <div className="app-scroll-region flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
             <div className="px-6 py-5 flex flex-col gap-4 max-w-[1400px] mx-auto flex-1 min-h-0">
 
               {/* heading */}
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <h1 className="text-[22px] font-semibold text-foreground dark:text-foreground leading-8 tracking-[-0.4px]">Users</h1>
+                  <h1 className="type-page-title">Users</h1>
                   <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">Manage user accounts and their access permissions.</p>
                 </div>
                 <Button className="bg-primary hover:bg-primary text-primary-foreground gap-1.5 h-9 px-4 text-sm font-medium rounded-[7px] shadow-sm">
@@ -316,7 +316,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               {/* ── toolbar row ── */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Search */}
-                <div className="flex items-center gap-2 h-9 px-3 bg-card dark:bg-card border border-border dark:border-border rounded-[7px] w-64 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="flex items-center gap-2 h-9 px-3 bg-card dark:bg-card border border-border dark:border-border rounded-[7px] w-64 shadow-elevation-sm">
                   <Search size={14} className="text-muted-foreground flex-shrink-0"/>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}
                     placeholder="Search by name or email"
@@ -331,7 +331,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Status filter */}
                 <div className="relative">
                   <Button ref={statusFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowStatusFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterStatus?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-elevation-sm ${filterStatus?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <Filter size={12}/> Status {filterStatus && <span className="font-semibold">: {filterStatus}</span>}
                     <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showStatusFilt?"rotate-180":""}`}/>
                   </Button>
@@ -361,7 +361,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Role filter */}
                 <div className="relative">
                   <Button ref={roleFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowRoleFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterRole?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-elevation-sm ${filterRole?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <ShieldCheck size={12}/> Role {filterRole && <span className="font-semibold">: {filterRole}</span>}
                     <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showRoleFilt?"rotate-180":""}`}/>
                   </Button>
@@ -389,7 +389,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Group filter */}
                 <div className="relative">
                   <Button ref={groupFRef} variant="outline" onClick={()=>{ closeAllPops(); setShowGroupFilt(v=>!v); }}
-                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${filterGroup?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
+                    className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border text-sm font-medium transition-colors shadow-elevation-sm ${filterGroup?"border-border bg-primary/10 text-primary":"border-border dark:border-border bg-card dark:bg-card text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted"}`}>
                     <Users size={12}/> Group {filterGroup && <span className="font-semibold">: {ALL_GROUPS.find(g=>g.id===filterGroup)?.name}</span>}
                     <ChevronDown size={11} className={`text-muted-foreground transition-transform ${showGroupFilt?"rotate-180":""}`}/>
                   </Button>
@@ -419,7 +419,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                 {/* Columns toggle */}
                 <div className="relative ml-auto">
                   <Button ref={colRef} variant="outline" onClick={()=>{ closeAllPops(); setShowColPop(v=>!v); }}
-                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-card text-sm font-medium text-muted-foreground dark:text-muted-foreground hover:bg-muted dark:hover:bg-muted transition-colors shadow-elevation-sm">
                     <Settings size={13}/> Columns
                     <ChevronDown size={12} className={`text-muted-foreground transition-transform ${showColPop?"rotate-180":""}`}/>
                   </Button>
@@ -458,7 +458,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
               )}
 
               {/* ── table card ── */}
-              <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.05)] flex flex-col flex-1 min-h-0">
+              <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm flex flex-col flex-1 min-h-0">
 
                 {/* ── Aziron action bar (shown inside table card, above thead) ── */}
                 {selected.length>0 && (
@@ -613,7 +613,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
 
                             {rowMenu?.id===user.id && (
                               <div
-                                className="fixed z-50 w-52 bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-visible py-1"
+                                className="fixed z-50 w-52 bg-card dark:bg-card border border-border dark:border-border rounded-[10px] shadow-elevation-md overflow-visible py-1"
                                 style={{top:rowMenu.top,right:rowMenu.right}}
                                 onClick={e=>e.stopPropagation()}>
 
@@ -639,7 +639,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                     <ChevronRight size={12} className="text-muted-foreground"/>
                                   </button>
                                   {rowSubMenu==="role" && (
-                                    <div className="absolute left-full top-0 ml-1 w-40 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 z-10">
+                                    <div className="absolute left-full top-0 ml-1 w-40 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-elevation-md py-1 z-10">
                                       {ROLES.map(r=>{
                                         const cfg=ROLE_CFG[r]; const active=user.role===r;
                                         return(
@@ -663,7 +663,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                                     <ChevronRight size={12} className="text-muted-foreground"/>
                                   </button>
                                   {rowSubMenu==="add-group" && (
-                                    <div className="absolute left-full top-0 ml-1 w-44 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] py-1 overflow-hidden z-10">
+                                    <div className="absolute left-full top-0 ml-1 w-44 bg-card dark:bg-card border border-border dark:border-border rounded-[8px] shadow-elevation-md py-1 overflow-hidden z-10">
                                       {ALL_GROUPS.map(g=>{
                                         const has=user.groups.includes(g.id);
                                         return(
@@ -904,7 +904,7 @@ export default function UsersListPage({ onNavigate, onViewUser }){
                   <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-1.5 uppercase tracking-wide">{label}</label>
                   <input type={type} value={editModal.draft[field]}
                     onChange={e=>setEditModal(prev=>({...prev,draft:{...prev.draft,[field]:e.target.value}}))}
-                    className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none focus:border-border focus:ring-1 focus:ring-[#2563eb]/20 transition-colors"/>
+                    className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none focus:border-border focus:ring-1 focus:ring-primary/20 transition-colors"/>
                 </div>
               ))}
 

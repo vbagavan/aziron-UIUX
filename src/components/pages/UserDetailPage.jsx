@@ -82,7 +82,7 @@ function OverviewTab({ user }){
       {/* stats */}
       <div className="grid grid-cols-3 gap-4">
         {stats.map(s=>(
-          <div key={s.label} className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] p-4 flex items-center gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div key={s.label} className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] p-4 flex items-center gap-3 shadow-elevation-sm">
             <div className="size-10 rounded-[8px] bg-primary/10 dark:bg-primary/20/30 flex items-center justify-center flex-shrink-0">
               <s.icon size={18} className="text-primary"/>
             </div>
@@ -95,7 +95,7 @@ function OverviewTab({ user }){
       </div>
 
       {/* info rows */}
-      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
         {[
           { label:"Email",      value:user.email },
           { label:"Role",       value:<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{color:ROLE_CFG[user.role]?.text,backgroundColor:ROLE_CFG[user.role]?.bg}}>{user.role}</span> },
@@ -141,7 +141,7 @@ function AccessRolesTab({ user, onRoleChange }){
   return(
     <div className="flex flex-col gap-5">
       {/* Role assignment */}
-      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
         <div className="px-5 py-3.5 border-b border-border dark:border-border">
           <h3 className="text-sm font-semibold text-foreground dark:text-foreground">Role Assignment</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Assign a role to control what this user can access.</p>
@@ -167,7 +167,7 @@ function AccessRolesTab({ user, onRoleChange }){
       </div>
 
       {/* Permissions */}
-      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
         <div className="px-5 py-3.5 border-b border-border dark:border-border">
           <h3 className="text-sm font-semibold text-foreground dark:text-foreground">Permissions</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Fine-grained access controls for this user.</p>
@@ -205,7 +205,7 @@ function GroupsTab({ user, onGroupChange }){
   return(
     <div className="flex flex-col gap-5">
       {/* Current groups */}
-      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+      <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
         <div className="px-5 py-3.5 border-b border-border dark:border-border flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-foreground dark:text-foreground">Group Membership</h3>
@@ -242,7 +242,7 @@ function GroupsTab({ user, onGroupChange }){
 
       {/* Add to groups */}
       {otherGroups.length>0 && (
-        <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
           <div className="px-5 py-3.5 border-b border-border dark:border-border">
             <h3 className="text-sm font-semibold text-foreground dark:text-foreground">Available Groups</h3>
             <p className="text-xs text-muted-foreground mt-0.5">Add this user to additional groups.</p>
@@ -276,7 +276,7 @@ function GroupsTab({ user, onGroupChange }){
 
 function ActivityTab(){
   return(
-    <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+    <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[10px] overflow-hidden shadow-elevation-sm">
       <div className="px-5 py-3.5 border-b border-border dark:border-border">
         <h3 className="text-sm font-semibold text-foreground dark:text-foreground">Activity Log</h3>
         <p className="text-xs text-muted-foreground mt-0.5">Recent actions performed by or for this user.</p>
@@ -344,7 +344,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
 
   return(
     <>
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="users-list" onNavigate={onNavigate}/>
 
         <div className="flex flex-col flex-1 min-w-0">
@@ -366,7 +366,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
             <div className="px-6 py-5 flex flex-col gap-5 max-w-[900px] mx-auto">
 
               {/* ── Profile header card ── */}
-              <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[12px] p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
+              <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[12px] p-5 shadow-elevation-sm">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
@@ -378,7 +378,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
                     {/* Name + meta */}
                     <div>
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <h1 className="text-[19px] font-semibold text-foreground dark:text-foreground leading-none">{user.name}</h1>
+                        <h1 className="type-page-title">{user.name}</h1>
                         {/* Status badge — inline with name */}
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-xs font-semibold"
                           style={{color:statusCfg.text, backgroundColor:statusCfg.bg}}>
@@ -501,7 +501,7 @@ export default function UserDetailPage({ user: initUser, onNavigate }){
                   <label className="block text-xs font-semibold text-muted-foreground dark:text-muted-foreground mb-1.5 uppercase tracking-wide">{label}</label>
                   <input type={type} value={editModal.draft[field]}
                     onChange={e=>setEditModal(prev=>({...prev,draft:{...prev.draft,[field]:e.target.value}}))}
-                    className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none focus:border-border focus:ring-1 focus:ring-[#2563eb]/20 transition-colors"/>
+                    className="w-full h-9 px-3 rounded-[7px] border border-border dark:border-border bg-card dark:bg-background text-foreground dark:text-foreground text-sm outline-none focus:border-border focus:ring-1 focus:ring-primary/20 transition-colors"/>
                 </div>
               ))}
             </div>

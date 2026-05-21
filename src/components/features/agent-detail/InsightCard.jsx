@@ -1,5 +1,8 @@
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, Minus, Timer } from "lucide-react";
 
+import { SectionCard } from "@/components/common/SectionCard";
+import { cn } from "@/lib/utils";
+
 function Sparkline({ points, stroke }) {
   const width = 120;
   const height = 40;
@@ -22,35 +25,30 @@ function Sparkline({ points, stroke }) {
 }
 
 const STATUS_STYLE = {
-  improving: { text: "Improving", tone: "text-success dark:text-success", icon: ArrowUpRight },
-  stable: { text: "Stable", tone: "text-info dark:text-info", icon: Minus },
-  dropping: { text: "Dropping", tone: "text-destructive dark:text-destructive", icon: ArrowDownRight },
-  good: { text: "Good", tone: "text-success dark:text-success", icon: Activity },
-  warning: { text: "Warning", tone: "text-warning dark:text-warning", icon: AlertTriangle },
-  critical: { text: "Critical", tone: "text-destructive dark:text-destructive", icon: AlertTriangle },
+  improving: { text: "Improving", tone: "text-success", icon: ArrowUpRight },
+  stable: { text: "Stable", tone: "text-info", icon: Minus },
+  dropping: { text: "Dropping", tone: "text-destructive", icon: ArrowDownRight },
+  good: { text: "Good", tone: "text-success", icon: Activity },
+  warning: { text: "Warning", tone: "text-warning", icon: AlertTriangle },
+  critical: { text: "Critical", tone: "text-destructive", icon: AlertTriangle },
 };
 
 export default function InsightCard({ label, value, comparison, trendPercent, points, status, accent, metric }) {
   const trendUp = trendPercent > 0;
-  const tone = trendPercent === 0
-    ? "text-muted-foreground dark:text-muted-foreground"
-    : trendUp
-    ? "text-success dark:text-success"
-    : "text-destructive dark:text-destructive";
+  const tone =
+    trendPercent === 0 ? "text-muted-foreground" : trendUp ? "text-success" : "text-destructive";
 
   const statusStyle = STATUS_STYLE[status];
   const StatusIcon = statusStyle?.icon || Timer;
 
   return (
-    <div className="group rounded-2xl border border-border bg-card px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] transition-transform duration-200 hover:-translate-y-0.5 dark:border-border dark:bg-card">
+    <SectionCard className="group transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-elevation-md">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-muted-foreground">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-foreground dark:text-foreground">{value}</p>
+          <p className="type-section-eyebrow">{label}</p>
+          <p className="type-metric-value mt-2 text-3xl tracking-tight">{value}</p>
         </div>
-        <div className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground dark:bg-background dark:text-muted-foreground">
-          {metric}
-        </div>
+        <div className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{metric}</div>
       </div>
 
       <div className="mt-4">
@@ -59,18 +57,23 @@ export default function InsightCard({ label, value, comparison, trendPercent, po
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <div>
-          <div className={`flex items-center gap-1 text-xs font-semibold ${tone}`}>
+          <div className={cn("flex items-center gap-1 text-xs font-semibold", tone)}>
             {trendPercent === 0 ? <Minus size={13} /> : trendUp ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
             {Math.abs(trendPercent)}%
           </div>
-          <p className="mt-1 text-xs text-muted-foreground dark:text-muted-foreground">{comparison}</p>
+          <p className="type-caption mt-1">{comparison}</p>
         </div>
 
-        <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle?.tone || "text-muted-foreground"}`}>
+        <div
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+            statusStyle?.tone || "text-muted-foreground",
+          )}
+        >
           <StatusIcon size={13} />
           {statusStyle?.text}
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 }

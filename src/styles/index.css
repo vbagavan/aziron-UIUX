@@ -831,6 +831,47 @@
       animation: none;
     }
   }
+
+  /* Theme-aware elevation (replaces hardcoded rgba(0,0,0,…) shadows) */
+  .shadow-elevation-sm {
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 10%, transparent);
+  }
+  .shadow-elevation-md {
+    box-shadow:
+      0 8px 24px color-mix(in oklch, var(--foreground) 12%, transparent),
+      0 2px 8px color-mix(in oklch, var(--foreground) 6%, transparent);
+  }
+  .shadow-elevation-lg {
+    box-shadow:
+      0 20px 60px color-mix(in oklch, var(--foreground) 14%, transparent),
+      0 4px 16px color-mix(in oklch, var(--foreground) 8%, transparent);
+  }
+
+  /* Typography scale — matches src/lib/typography.js */
+  .type-page-title {
+    @apply text-2xl font-semibold leading-8 tracking-tight text-foreground;
+  }
+  .type-page-subtitle {
+    @apply text-sm leading-5 text-muted-foreground;
+  }
+  .type-detail-title {
+    @apply text-xl font-semibold tracking-tight text-foreground;
+  }
+  .type-section-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-widest text-muted-foreground;
+  }
+  .type-dialog-title {
+    @apply text-lg font-semibold leading-snug text-foreground;
+  }
+  .type-metric-value {
+    @apply font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground;
+  }
+  .type-body {
+    @apply text-sm leading-6 text-foreground;
+  }
+  .type-caption {
+    @apply text-xs text-muted-foreground;
+  }
 }
 
 @layer base {
@@ -841,10 +882,23 @@
     @apply scroll-smooth font-sans antialiased;
   }
   body {
-    @apply m-0 min-h-dvh bg-background text-foreground;
+    @apply m-0 h-dvh overflow-hidden bg-background text-foreground;
   }
   #root {
-    @apply isolate min-h-dvh w-full;
+    @apply isolate flex h-dvh min-h-0 w-full flex-col overflow-hidden;
+  }
+}
+
+@layer utilities {
+  .app-page-main {
+    @apply flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background;
+  }
+  .app-page-column {
+    @apply flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden;
+  }
+  .app-scroll-region {
+    @apply min-h-0 flex-1 overflow-y-auto overscroll-y-contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

@@ -1,18 +1,19 @@
 import { AlertTriangle, RotateCcw, TerminalSquare, Zap } from "lucide-react";
 
+import { SectionCard } from "@/components/common/SectionCard";
 import { Button } from "@/components/ui/button";
 
 export default function FailureInsightsPanel({ failures, onSelectRun }) {
   return (
-    <div className="rounded-2xl border border-destructive/30 bg-card px-4 py-4 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.4)] dark:border-border dark:bg-card">
+    <SectionCard className="border-destructive/30">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-destructive dark:text-destructive">Failure Insights</h3>
-          <p className="mt-1 text-sm text-muted-foreground dark:text-muted-foreground">
+          <h3 className="type-section-eyebrow text-destructive">Failure Insights</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
             {failures.length > 0 ? "Latest failures with logs and tool traces one click away." : "No failed runs in the selected range."}
           </p>
         </div>
-        <div className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive dark:bg-card dark:text-destructive">
+        <div className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
           {failures.length} failed
         </div>
       </div>
@@ -28,7 +29,7 @@ export default function FailureInsightsPanel({ failures, onSelectRun }) {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-semibold text-foreground dark:text-foreground">{run.id}</span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-destructive dark:bg-card dark:text-destructive">{run.errorType}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-destructive">{run.errorType}</span>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground dark:text-muted-foreground">{run.errorMessage}</p>
                   <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">{run.timestamp}</p>
@@ -36,7 +37,7 @@ export default function FailureInsightsPanel({ failures, onSelectRun }) {
                   <details className="mt-3 rounded-xl border border-destructive/30 bg-card px-3 py-2 dark:border-border dark:bg-background">
                     <summary className="cursor-pointer text-xs font-medium text-muted-foreground dark:text-muted-foreground">Logs preview and tool execution</summary>
                     <div className="mt-3 space-y-3">
-                      <pre className="overflow-x-auto rounded-xl bg-muted px-3 py-2 text-[11px] leading-5 text-foreground">{run.logs.join("\n")}</pre>
+                      <pre className="overflow-x-auto rounded-xl bg-muted px-3 py-2 text-xs leading-5 text-foreground">{run.logs.join("\n")}</pre>
                       <div className="flex flex-col gap-2">
                         {run.tools.map((tool) => (
                           <div key={tool.name} className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-xs dark:border-border">
@@ -68,6 +69,6 @@ export default function FailureInsightsPanel({ failures, onSelectRun }) {
           </div>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 }

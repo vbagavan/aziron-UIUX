@@ -38,7 +38,7 @@ export default function RunDetailsDrawer({ run, open, onOpenChange }) {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-muted text-white dark:bg-muted dark:text-foreground" : "text-muted-foreground hover:bg-muted dark:text-muted-foreground dark:hover:bg-muted"}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
               >
                 <Icon size={13} />
                 {label}
@@ -47,7 +47,7 @@ export default function RunDetailsDrawer({ run, open, onOpenChange }) {
           })}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 py-4">
           {tab === "summary" && (
             <div className="space-y-4">
               <div className="rounded-2xl border border-border bg-muted px-4 py-4 dark:border-border dark:bg-background">

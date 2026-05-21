@@ -1,7 +1,29 @@
 /** Seed catalog for the Agents UI (list, edit flow). */
+
+export const AGENTS_STORAGE_KEY = "aziron_agents_v1";
+
+export function loadAgentsFromStorage() {
+  try {
+    const raw = localStorage.getItem(AGENTS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveAgentsToStorage(agents) {
+  try {
+    localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
+  } catch {
+    /* ignore */
+  }
+}
+
 export const INITIAL_AGENTS = [
   { id: 0,  name: "Customer Appreciation",   description: "AI-powered recognition workflow that creates personalized appreciation cards and messages for clients.",                        date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "2 min ago",   success: 98,  accessEnabled: true,  visibility: "public"  },
-  { id: 1,  name: "CV Agent",                description: "Streamlines resume creation with smart suggestions and formatting to help you stand out in any application.",                date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "1h ago",      success: 94,  accessEnabled: true,  visibility: "public"  },
+  { id: 1,  name: "CV Agent",                description: "Streamlines resume creation with smart suggestions and formatting to help you stand out in any application.",                date: "23 Mar 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "1h ago",      success: 94,  accessEnabled: true,  visibility: "public",  knowledgeHubs: [8], ragMode: true, vectorSearch: true },
   { id: 2,  name: "Portfolio Builder",       description: "Creates and curates a personalized portfolio showcasing your best work and achievements effectively.",                        date: "15 Apr 2025", provider: "Anthropic", model: "Claude 3.5",     status: "idle",     lastRun: "3h ago",      success: 87,  accessEnabled: false, visibility: "private" },
   { id: 3,  name: "Job Matcher",             description: "",                                                                                                                         date: "10 May 2025", provider: "OpenAI",    model: "GPT-4o",         status: "idle",     lastRun: "Yesterday",   success: 91,  accessEnabled: false, visibility: "private" },
   { id: 4,  name: "Interview Coach",         description: "Prepares you for interviews with practice questions, feedback, and real-time personalized coaching.",                        date: "01 Jun 2025", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "30 min ago",  success: 96,  accessEnabled: true,  visibility: "public"  },
@@ -11,7 +33,7 @@ export const INITIAL_AGENTS = [
   { id: 8,  name: "Freelance Finder",        description: "Discovers freelance opportunities that precisely match your expertise and hourly rate expectations.",                        date: "25 Sep 2025", provider: "OpenAI",    model: "GPT-4.5",        status: "idle",     lastRun: "5h ago",      success: 83,  accessEnabled: false, visibility: "private" },
   { id: 9,  name: "Profile Enhancer",        description: "Optimizes your professional profiles on major job platforms to maximize your visibility to recruiters.",                     date: "05 Oct 2025", provider: "Anthropic", model: "Claude 3.5",     status: "disabled", lastRun: "1 week ago",  success: 78,  accessEnabled: false, visibility: "private" },
   { id: 10, name: "Job Application Tracker", description: "Keeps track of all your job applications, deadlines, follow-up actions, and application statuses.",                         date: "15 Nov 2025", provider: "OpenAI",    model: "GPT-4o mini",    status: "active",   lastRun: "5 min ago",   success: 99,  accessEnabled: false, visibility: "private" },
-  { id: 11, name: "Resume Analyzer",         description: "Analyzes your resume and provides specific, actionable feedback to significantly improve your success rates.",               date: "03 Dec 2025", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "45 min ago",  success: 93,  accessEnabled: true,  visibility: "public"  },
+  { id: 11, name: "Resume Analyzer",         description: "Analyzes your resume and provides specific, actionable feedback to significantly improve your success rates.",               date: "03 Dec 2025", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "45 min ago",  success: 93,  accessEnabled: true,  visibility: "public",  knowledgeHubs: [8, 2], ragMode: true, vectorSearch: false },
   { id: 12, name: "Cover Letter Generator",  description: "",                                                                                                                         date: "20 Jan 2026", provider: "OpenAI",    model: "GPT-4.5",        status: "idle",     lastRun: "Yesterday",   success: 90,  accessEnabled: false, visibility: "private" },
   { id: 13, name: "Skill Assessment",        description: "Evaluates your technical and soft skills through engaging interactive assessments and practical quizzes.",                   date: "28 Feb 2026", provider: "OpenAI",    model: "GPT-4o",         status: "error",    lastRun: "3h ago",      success: 55,  accessEnabled: false, visibility: "private" },
   { id: 14, name: "Personal Branding",       description: "Helps you craft a strong and consistent personal brand narrative across all professional channels.",                         date: "15 Mar 2026", provider: "Anthropic", model: "Claude 3 Haiku", status: "idle",     lastRun: "4 days ago",  success: 85,  accessEnabled: false, visibility: "private" },

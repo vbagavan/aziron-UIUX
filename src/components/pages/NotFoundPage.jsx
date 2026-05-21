@@ -1,6 +1,6 @@
 export default function NotFoundPage({ onNavigate }) {
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-50">
+    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain bg-background">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -28,40 +28,37 @@ export default function NotFoundPage({ onNavigate }) {
         }
       `}</style>
 
-      {/* Left side - SVG Illustration */}
-      <div className="hidden lg:flex w-1/2 items-center justify-center">
-        <div className="w-full h-full flex items-center justify-center px-2 lg:px-4">
+      <div className="hidden lg:flex w-1/2 items-center justify-center bg-muted/30">
+        <div className="flex h-full w-full items-center justify-center px-2 lg:px-4">
           <object
             data="/astronaut.svg"
             type="image/svg+xml"
-            className="w-full h-full max-w-lg"
+            className="h-full w-full max-w-lg"
           />
         </div>
       </div>
 
-      {/* Right side - Content */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 lg:px-6">
-        <div className="flex flex-col gap-6 w-full text-center lg:text-left">
-          {/* 404 Number */}
+      <div className="flex w-full items-center justify-center px-4 lg:w-1/2 lg:px-6">
+        <div className="flex w-full flex-col gap-6 text-center lg:text-left">
           <div>
-            <p className="text-8xl lg:text-9xl font-black text-gray-900 leading-none">404</p>
+            <p className="text-8xl font-black leading-none text-foreground lg:text-9xl">404</p>
           </div>
 
-          {/* Heading and Text */}
           <div className="space-y-4">
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900">
-              UH OH! You're lost.
+            <h1 className="type-page-title text-4xl lg:text-5xl">
+              UH OH! You&apos;re lost.
             </h1>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              The page you are looking for does not exist. How you got here is a mystery. But you can click the button below to go back to the homepage.
+            <p className="type-page-subtitle text-lg leading-relaxed">
+              The page you are looking for does not exist. How you got here is a mystery. But you
+              can click the button below to go back to the homepage.
             </p>
           </div>
 
-          {/* Button */}
-          <div className="pt-4 flex justify-center lg:justify-start">
+          <div className="flex justify-center pt-4 lg:justify-start">
             <button
+              type="button"
               onClick={() => onNavigate?.("new-chat")}
-              className="px-10 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-lg hover:bg-primary/90 transition-all duration-200 shadow-md hover:shadow-lg"
+              className="rounded-lg bg-primary px-10 py-3 text-lg font-bold text-primary-foreground shadow-md transition-all duration-200 hover:bg-primary/90 hover:shadow-lg"
             >
               Back to Homepage
             </button>

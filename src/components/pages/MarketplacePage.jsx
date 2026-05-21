@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -131,7 +132,7 @@ function matchesTextSearch(item, q) {
 
 const BADGE_STYLES = {
   Popular:  "bg-amber-500/10 text-warning dark:text-amber-400 border-amber-500/20",
-  New:      "bg-success/100/10 text-success dark:text-emerald-400 border-emerald-500/20",
+  New:      "bg-success/10 text-success border-success/30",
   Featured: "bg-primary/10 text-primary border-primary/20",
   Yours:    "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20",
 };
@@ -154,26 +155,30 @@ function UsesMetric({ count }) {
 function ItemBadge({ label }) {
   if (!label) return null;
   return (
-    <span className={cn(
-      "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold leading-none",
-      BADGE_STYLES[label] ?? "bg-muted text-muted-foreground border-border",
-    )}>
+    <Badge
+      variant="outline"
+      className={cn(
+        "h-6 shrink-0 rounded-full px-2 py-0 text-xs font-semibold leading-none",
+        BADGE_STYLES[label] ?? "border-border bg-muted text-muted-foreground",
+      )}
+    >
       {label}
-    </span>
+    </Badge>
   );
 }
 
 function KindPill({ kind }) {
   const isAgent = kind === "agent";
   return (
-    <span
+    <Badge
+      variant="secondary"
       className={cn(
-        "inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-        isAgent ? "bg-primary/12 text-primary" : "bg-cyan-500/12 text-cyan-700 dark:text-cyan-400",
+        "h-5 shrink-0 rounded-md px-1.5 py-0 text-xs font-semibold uppercase tracking-wide",
+        isAgent ? "bg-primary/10 text-primary" : "bg-info/10 text-info",
       )}
     >
       {isAgent ? "Agent" : "Flow"}
-    </span>
+    </Badge>
   );
 }
 
@@ -331,13 +336,13 @@ function PreviewModal({
 
           {!isAgent && previewSteps.length > 0 && (
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Steps in this template
               </p>
               <ol className="space-y-1.5 text-sm text-foreground">
                 {previewSteps.map((step, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium tabular-nums">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium tabular-nums">
                       {i + 1}
                     </span>
                     <span>{step.label}</span>
@@ -349,7 +354,7 @@ function PreviewModal({
 
           {isAgent && (
             <div className="rounded-lg border border-border bg-muted/25 px-3 py-2.5 text-sm">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Model</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Model</p>
               <p className="mt-0.5 font-medium text-foreground">
                 {item.provider} · {item.model}
               </p>
@@ -363,14 +368,14 @@ function PreviewModal({
 
           {(item.useCases ?? []).length > 0 && (
             <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Use cases
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {(item.useCases ?? []).map((ucId) => (
                   <span
                     key={ucId}
-                    className="rounded-full border border-border bg-muted/40 px-2 py-1 text-[11px] text-foreground"
+                    className="rounded-full border border-border bg-muted/40 px-2 py-1 text-xs text-foreground"
                   >
                     {categoryLabel(ucId)}
                   </span>
@@ -381,7 +386,7 @@ function PreviewModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-border bg-muted/25 px-3 py-2.5">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Uses
               </p>
               <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
@@ -389,7 +394,7 @@ function PreviewModal({
               </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/25 px-3 py-2.5">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Updated</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Updated</p>
               <p className="mt-0.5 text-sm text-foreground">{formatUpdated(item.addedDays)}</p>
             </div>
           </div>
@@ -433,7 +438,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview, canFork, 
         : { label: "Fork to workspace", action: () => onForkDenied?.(), color: "text-muted-foreground opacity-60", icon: "fork", disabled: true };
 
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[10.25rem] flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-elevation-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-primary to-primary/50 transition-transform duration-200 group-hover:scale-x-100" />
 
       <button
@@ -454,11 +459,11 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview, canFork, 
                   <KindPill kind="agent" />
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     by {agent.author ?? agent.provider}
                   </p>
                   {isForked && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+                    <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
                       <GitFork className="size-2.5" aria-hidden />
                       Forked
                     </span>
@@ -478,14 +483,14 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview, canFork, 
           {(agent.tags ?? []).slice(0, 4).map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
+              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-[11px]">
+        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <UsesMetric count={agent.installs} />
           <span className="text-muted-foreground">{formatUpdated(agent.addedDays)}</span>
         </div>
@@ -514,7 +519,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview, canFork, 
 
 function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked, canFork, onForkDenied }) {
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-200 hover:border-cyan-500/35 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[10.25rem] flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-elevation-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-primary/60 via-cyan-500/50 to-primary/40 transition-transform duration-200 group-hover:scale-x-100" />
 
       <button
@@ -535,11 +540,11 @@ function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked, canFork
                   <KindPill kind="flow" />
                 </div>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     by {flow.author ?? "Platform"} · {flow.steps} steps · {flow.category}
                   </p>
                   {isForked && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+                    <span className="inline-flex items-center gap-0.5 text-xs font-medium text-muted-foreground">
                       <GitFork className="size-2.5" aria-hidden />
                       Forked
                     </span>
@@ -559,14 +564,14 @@ function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked, canFork
           {(flow.tags ?? []).slice(0, 4).map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
+              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
             >
               {tag}
             </span>
           ))}
         </div>
 
-        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-[11px]">
+        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <UsesMetric count={flow.installs} />
           <span className="text-muted-foreground">{formatUpdated(flow.addedDays)}</span>
         </div>
@@ -608,7 +613,7 @@ function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked, canFork
 
 function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
   return (
-    <article className="group relative flex h-full min-h-[17.5rem] flex-col overflow-hidden rounded-xl border border-violet-500/30 bg-card shadow-sm transition-all duration-200 hover:border-violet-500/50 hover:shadow-md">
+    <article className="group relative flex h-full min-h-[10.25rem] flex-col overflow-hidden rounded-xl border border-primary/25 bg-card text-card-foreground shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-elevation-md">
       {/* Left accent bar — marks this as your card */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-violet-500/60" aria-hidden />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-gradient-to-r from-violet-500 to-violet-400/50 transition-transform duration-200 group-hover:scale-x-100" />
@@ -631,7 +636,7 @@ function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
                   <p className="truncate text-sm font-semibold text-foreground">{agent.name}</p>
                   <KindPill kind="agent" />
                 </div>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">by Your workspace</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">by Your workspace</p>
               </div>
             </div>
             <ItemBadge label="Yours" />
@@ -647,7 +652,7 @@ function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
         {/* no tags row — keep height consistent */}
         <div className="min-h-[1.625rem]" />
 
-        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-[11px]">
+        <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <span className="inline-flex items-center gap-1 text-muted-foreground">
             <CheckCircle2 className="size-3 text-primary" aria-hidden />
             <span className="font-medium text-primary">{agent.success}%</span> success
@@ -954,10 +959,10 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
   };
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="marketplace" onNavigate={onNavigate} />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
         <header className="relative shrink-0 overflow-hidden border-b border-border bg-card px-4 py-8 sm:px-6 sm:py-10">
@@ -966,7 +971,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
 
           <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 text-center">
             <div className="mx-auto w-full space-y-3">
-              <h1 className="text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+              <h1 className="type-page-title text-balance sm:text-3xl lg:text-4xl">
                 Build faster with ready-made agents and flows
               </h1>
               <div className="mx-auto w-full max-w-2xl space-y-3">
@@ -975,7 +980,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
               </p>
               <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
                 Press{" "}
-                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
                   /
                 </kbd>{" "}
                 anywhere to jump to search
@@ -1020,10 +1025,10 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <main
             id="marketplace-results"
-            className="flex min-w-0 flex-1 flex-col overflow-hidden"
+            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             aria-label="Marketplace search results"
           >
-            <div className="flex-1 overflow-y-auto scroll-smooth">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain scroll-smooth">
               <div className="mx-auto max-w-6xl px-4 py-5 pb-20 md:px-5">
                 <MarketplaceToolbar
                   contentType={contentType}

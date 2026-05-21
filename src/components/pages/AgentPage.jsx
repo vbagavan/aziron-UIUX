@@ -30,7 +30,9 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { KnowledgeHubPicker, defaultHubs } from "@/components/common/KnowledgeHubPicker";
+import { useNavigate } from "react-router-dom";
+import { KnowledgeHubPicker } from "@/components/common/KnowledgeHubPicker";
+import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import Sidebar from "@/components/layout/Sidebar";
@@ -101,116 +103,18 @@ function AgentPlaceholder() {
   );
 }
 
-function CreateKnowledgeHubModal({ onClose }) {
-  const [checked, setChecked] = useState({});
-  const [files, setFiles] = useState(hubFiles);
-  const dialogRef = useRef(null);
-  const previouslyFocusedRef = useRef(null);
-
-  useEffect(() => {
-    previouslyFocusedRef.current = document.activeElement;
-    const handleKey = (e) => { if (e.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", handleKey);
-    const focusable = dialogRef.current?.querySelector("button, [href], input, [tabindex]:not([tabindex='-1'])");
-    focusable?.focus();
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      const prev = previouslyFocusedRef.current;
-      if (prev && typeof prev.focus === "function") prev.focus();
-    };
-  }, [onClose]);
-
-  const toggleAll = (e) => {
-    if (e.target.checked) {
-      const all = {};
-      files.forEach((f) => (all[f.id] = true));
-      setChecked(all);
-    } else {
-      setChecked({});
-    }
-  };
-
-  const deleteFile = (id) => setFiles((prev) => prev.filter((f) => f.id !== id));
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="khub-title"
-        onClick={(e) => e.stopPropagation()}
-        className="bg-card rounded-[12px] w-[640px] max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-        <div className="border border-dashed border-chart-chart-3 rounded-t-[12px] p-6 pb-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 id="khub-title" className="text-lg font-semibold text-foreground leading-6">Create Knowledge Hub</h2>
-              <p className="text-sm text-chart-chart-3 mt-1 leading-5">
-                Store the files and knowledge your AI agents will use for answering questions, reasoning, and workflows.
-              </p>
-            </div>
-            <button onClick={onClose} aria-label="Close create knowledge hub dialog" className="text-muted-foreground hover:text-foreground ml-4 flex-shrink-0">
-              <X size={20} aria-hidden />
-            </button>
-          </div>
-        </div>
-
-        <div className="mx-6 mt-4 mb-4 border border-dashed border-chart-chart-3 rounded-[8px] overflow-hidden flex-1 min-h-0">
-          <div className="flex items-center px-4 py-3 border-b border-border bg-card">
-            <input
-              type="checkbox"
-              onChange={toggleAll}
-              checked={files.length > 0 && Object.keys(checked).length === files.length}
-              className="mr-4 size-4 accent-[#6366f1] cursor-pointer"
-            />
-            <span className="flex-1 text-sm font-medium text-foreground">File Name</span>
-            <span className="w-24 text-sm font-medium text-foreground text-center">File Size</span>
-            <span className="w-32 text-sm font-medium text-foreground text-center">Created On</span>
-            <span className="w-8" />
-          </div>
-
-          <div className="overflow-y-auto max-h-[340px]">
-            {files.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center px-4 py-3 border-b border-border last:border-0 hover:bg-muted"
-              >
-                <input
-                  type="checkbox"
-                  checked={!!checked[file.id]}
-                  onChange={() => setChecked((prev) => ({ ...prev, [file.id]: !prev[file.id] }))}
-                  className="mr-4 size-4 accent-[#6366f1] cursor-pointer"
-                />
-                <span className="flex-1 text-sm text-foreground">{file.name}</span>
-                <span className="w-24 text-sm text-foreground text-center">{file.size}</span>
-                <span className="w-32 text-sm text-foreground text-center">{file.date}</span>
-                <button
-                  onClick={() => deleteFile(file.id)}
-                  aria-label={`Delete file ${file.name}`}
-                  className="w-8 flex justify-center text-destructive hover:text-destructive"
-                >
-                  <Trash2 size={16} aria-hidden />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="border border-dashed border-chart-chart-3 rounded-b-[12px] mx-6 mb-6 px-4 py-3 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="text-sm font-medium text-foreground hover:text-muted-foreground">
-            Cancel
-          </button>
-          <button className="flex items-center gap-2 bg-primary hover:bg-primary text-primary-foreground text-sm font-medium px-5 py-2 rounded-[8px] transition-colors">
-            Next <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Sent file chip with three-dot menu and hub picker
-function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, setHubPickerFor, hubs, onHubsChange, onSave }) {
+function SentFileChip({
+  chip,
+  savedFiles,
+  openMenu,
+  setOpenMenu,
+  hubPickerFor,
+  setHubPickerFor,
+  pickerHubs,
+  onSave,
+  onRequestCreateHub,
+}) {
   const menuId = `file-${chip.id}`;
   const pickerId = `filepicker-${chip.id}`;
   const saved = savedFiles[chip.id];
@@ -285,11 +189,11 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
       {isPickerOpen && (
         <div className="absolute top-full mt-1 left-0 z-30">
           <KnowledgeHubPicker
-            hubs={hubs}
-            onHubsChange={onHubsChange}
+            hubs={pickerHubs}
             selectedHubId={null}
             onSelect={(hub) => onSave([chip.id], hub)}
             onClose={() => setHubPickerFor(null)}
+            onRequestCreate={onRequestCreateHub}
           />
         </div>
       )}
@@ -297,16 +201,17 @@ function SentFileChip({ chip, savedFiles, openMenu, setOpenMenu, hubPickerFor, s
   );
 }
 
-export default function AgentPage({ agent, onNavigate
-
-}) {
+export default function AgentPage({ agent, onNavigate }) {
+  const navigate = useNavigate();
+  const { pickerHubs } = useKnowledgeHubs();
 
   // KB state
-  const [hubs, setHubs] = useState(defaultHubs);
   const [selectedHub, setSelectedHub] = useState(null);
   const [saveToHub, setSaveToHub] = useState(true);
   const [hubPickerFor, setHubPickerFor] = useState(null); // null | 'bar' | 'bubble' | 'filepicker-s1' | etc.
-  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const openKnowledgeAdmin = () => navigate("/knowledge");
+  const openCreateKnowledgeHub = () => navigate("/knowledge?create=1");
 
   // Attachment state
   const [attachments, setAttachments] = useState([
@@ -377,8 +282,6 @@ export default function AgentPage({ agent, onNavigate
 
   return (
     <>
-      {showCreateModal && <CreateKnowledgeHubModal onClose={() => setShowCreateModal(false)} />}
-
       {confirmDeleteMsg && (
         <ConfirmDialog
           title="Delete this message?"
@@ -408,15 +311,15 @@ export default function AgentPage({ agent, onNavigate
         <div className="fixed inset-0 z-20" onClick={closeAll} />
       )}
 
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="chat" onNavigate={onNavigate} />
 
         {/* Main Content */}
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="app-page-column flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
 
           {/* Agent Panel */}
-          <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {/* Agent Panel Header */}
             <div className="flex h-16 flex-shrink-0 items-center gap-2 border-b border-border px-4 dark:border-border">
               <AgentPlaceholder />
@@ -461,9 +364,9 @@ export default function AgentPage({ agent, onNavigate
                             setOpenMenu={setOpenMenu}
                             hubPickerFor={hubPickerFor}
                             setHubPickerFor={setHubPickerFor}
-                            hubs={hubs}
-                            onHubsChange={setHubs}
+                            pickerHubs={pickerHubs}
                             onSave={saveChipsToHub}
+                            onRequestCreateHub={openCreateKnowledgeHub}
                           />
                         ))}
                       </div>
@@ -524,8 +427,7 @@ export default function AgentPage({ agent, onNavigate
                       {hubPickerFor === "bubble" && (
                         <div className="z-30 relative">
                           <KnowledgeHubPicker
-                            hubs={hubs}
-                            onHubsChange={setHubs}
+                            hubs={pickerHubs}
                             selectedHubId={null}
                             onSelect={(hub) =>
                               saveChipsToHub(
@@ -534,6 +436,7 @@ export default function AgentPage({ agent, onNavigate
                               )
                             }
                             onClose={() => setHubPickerFor(null)}
+                            onRequestCreate={openCreateKnowledgeHub}
                           />
                         </div>
                       )}
@@ -749,7 +652,7 @@ export default function AgentPage({ agent, onNavigate
                               className="flex w-[240px] items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-2 dark:border-border dark:bg-card"
                             >
                               <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left text-sm leading-5 text-muted-foreground dark:text-muted-foreground">
-                                {selectedHub ? selectedHub.name : "Select Knowledge hub"}
+                                {selectedHub ? selectedHub.name : "Select Knowledge Hub"}
                               </span>
                               <ChevronDown size={16} className="flex-shrink-0 text-muted-foreground dark:text-muted-foreground" />
                             </button>
@@ -758,14 +661,14 @@ export default function AgentPage({ agent, onNavigate
                             {hubPickerFor === "bar" && (
                               <div className="absolute bottom-[42px] left-0 z-30">
                                 <KnowledgeHubPicker
-                                  hubs={hubs}
-                                  onHubsChange={setHubs}
+                                  hubs={pickerHubs}
                                   selectedHubId={selectedHub?.id}
                                   onSelect={(hub) => {
                                     setSelectedHub(hub);
                                     setHubPickerFor(null);
                                   }}
                                   onClose={() => setHubPickerFor(null)}
+                                  onRequestCreate={openCreateKnowledgeHub}
                                 />
                               </div>
                             )}
@@ -826,7 +729,13 @@ export default function AgentPage({ agent, onNavigate
                       <div className="flex items-center justify-center h-4 w-0 mx-0">
                         <div className="h-px w-4 rotate-90 bg-border dark:bg-border" />
                       </div>
-                      <button aria-label="Knowledge Hub" title="Knowledge Hub" className="flex items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-muted dark:hover:bg-muted">
+                      <button
+                        type="button"
+                        onClick={openKnowledgeAdmin}
+                        aria-label="Open Knowledge Hub"
+                        title="Open Knowledge Hub"
+                        className="flex items-center gap-1 rounded-[6px] px-3 py-2 transition-colors hover:bg-muted dark:hover:bg-muted"
+                      >
                         <img src={imgElements3} alt="" className="size-4 object-contain" />
                         <span className="text-xs text-muted-foreground dark:text-muted-foreground">Knowledge Hub</span>
                       </button>

@@ -31,7 +31,7 @@ import ForkReadinessChecklist from "@/components/features/clone/ForkReadinessChe
 
 function SectionLabel({ children }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
+    <p className="type-section-eyebrow text-muted-foreground/80">
       {children}
     </p>
   );
@@ -136,18 +136,23 @@ export default function ForkDialog({
 
   const permError = checkReport?.blocking.some((i) => i.status === DEP_STATUS.ERROR) ?? false;
   const hasMissing = (checkReport?.counts.missing ?? 0) > 0;
+  const warningCount = checkReport?.counts.warning ?? 0;
   const fullyReady = checkReport?.fullyReady ?? false;
   const trimmedName = name.trim();
   const canFork =
     trimmedName.length > 0 && !permError && !permissionBlocked;
 
-  const ctaLabel = permError
-    ? (kind === "agent" ? "Fork agent" : "Fork flow")
-    : fullyReady
-      ? (kind === "agent" ? "Fork agent" : "Fork flow")
-      : hasMissing
-        ? (kind === "agent" ? "Fork agent · set up later" : "Fork flow · set up later")
-        : (kind === "agent" ? "Fork agent · review warnings" : "Fork flow · review warnings");
+  const forkNoun = kind === "agent" ? "Fork agent" : "Fork flow";
+  const ctaLabel = (() => {
+    if (permError) return forkNoun;
+    if (fullyReady) return forkNoun;
+    if (hasMissing) return `${forkNoun} · set up later`;
+    if (warningCount > 0) {
+      const w = `${warningCount} warning${warningCount === 1 ? "" : "s"}`;
+      return `${forkNoun} · ${w}`;
+    }
+    return forkNoun;
+  })();
 
   const handleAutoResolve = () => {
     if (!checkReport?.blocking?.length) return;
@@ -320,9 +325,14 @@ export default function ForkDialog({
           </Button>
           <Button
             type="button"
-            className="min-h-10 w-[220px] shrink-0 gap-2"
+            className="min-h-10 min-w-[220px] shrink-0 gap-2 px-4"
             disabled={!canFork}
             onClick={handleFork}
+            aria-label={
+              warningCount > 0 && !fullyReady && !hasMissing && !permError
+                ? `${ctaLabel}. Creates your fork; review flagged items in the checklist above.`
+                : ctaLabel
+            }
           >
             <GitFork className="size-4" aria-hidden />
             {ctaLabel}

@@ -99,9 +99,9 @@ function TrendCard({ label, current, prev, data, color, icon: Icon }) {
         <div>
           <div className="flex items-center gap-1.5">
             <Icon className="size-3.5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className="type-section-eyebrow">{label}</p>
           </div>
-          <p className="mt-1 font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground">
+          <p className="mt-1 type-metric-value tracking-tight text-foreground">
             {current.toLocaleString()}
           </p>
         </div>
@@ -253,7 +253,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
       {/* ── Section 1: Core Metrics ── */}
       <section aria-labelledby="core-metrics-heading">
         <div className="mb-3">
-          <h2 id="core-metrics-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <h2 id="core-metrics-heading" className="type-section-eyebrow">
             Core metrics
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">Current snapshot against plan limits.</p>
@@ -277,7 +277,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
               </span>
             </div>
             <div>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">{members.toLocaleString()}</p>
+              <p className="type-metric-value text-foreground">{members.toLocaleString()}</p>
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Members</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
                 {maxUsers ? `of ${maxUsers.toLocaleString()}` : "Unlimited"}
@@ -295,7 +295,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
               <Bot className="size-7 text-violet-500" strokeWidth={1.5} aria-hidden />
             </div>
             <div>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">{agents.toLocaleString()}</p>
+              <p className="type-metric-value text-foreground">{agents.toLocaleString()}</p>
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Agents</p>
               <p className="mt-0.5 text-[11px] text-success">↑ 3 this week</p>
             </div>
@@ -311,7 +311,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
               <Workflow className="size-7 text-teal-500" strokeWidth={1.5} aria-hidden />
             </div>
             <div>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">{workflows.toLocaleString()}</p>
+              <p className="type-metric-value text-foreground">{workflows.toLocaleString()}</p>
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Workflows</p>
               <p className="mt-0.5 text-[11px] text-success">↑ 1 this week</p>
             </div>
@@ -327,7 +327,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
               <Database className="size-7 text-amber-500" strokeWidth={1.5} aria-hidden />
             </div>
             <div>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">{vectorDbs.toLocaleString()}</p>
+              <p className="type-metric-value text-foreground">{vectorDbs.toLocaleString()}</p>
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vector DBs</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">{knowledgeGB.toLocaleString()} GB</p>
             </div>
@@ -343,7 +343,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
               <Network className="size-7 text-sky-500" strokeWidth={1.5} aria-hidden />
             </div>
             <div>
-              <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">{providers.toLocaleString()}</p>
+              <p className="type-metric-value text-foreground">{providers.toLocaleString()}</p>
               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Providers</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">Model routes</p>
             </div>
@@ -353,7 +353,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
 
       {/* ── Section 2: Utilization & Health ── */}
       <section aria-labelledby="util-heading">
-        <h2 id="util-heading" className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h2 id="util-heading" className="mb-3 type-section-eyebrow">
           Utilization &amp; Health
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -482,7 +482,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
 
       {/* ── Section 3: Efficiency & Derived Metrics ── */}
       <section aria-labelledby="efficiency-heading">
-        <h2 id="efficiency-heading" className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h2 id="efficiency-heading" className="mb-3 type-section-eyebrow">
           Efficiency &amp; derived metrics
         </h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
@@ -514,7 +514,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
       <section aria-labelledby="trends-heading">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <h2 id="trends-heading" className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            <h2 id="trends-heading" className="type-section-eyebrow">
               Growth trends — last 6 months
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -560,7 +560,7 @@ export default function OrganisationUsageSection({ tenant, onNavigate }) {
 
       {/* ── Section 5: Breakdown & Insights ── */}
       <section aria-labelledby="breakdown-heading">
-        <h2 id="breakdown-heading" className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        <h2 id="breakdown-heading" className="mb-3 type-section-eyebrow">
           Breakdown &amp; insights
         </h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

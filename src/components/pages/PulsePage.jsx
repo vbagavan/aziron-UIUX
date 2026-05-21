@@ -83,13 +83,13 @@ export default function PulsePage({ onNavigate }) {
   const currentArtifact = editingId ? artifacts.find(a => a.id === editingId) : null;
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="pulse" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         {view === "dashboard" && <AppHeader onNavigate={onNavigate} />}
 
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           {view === "dashboard" ? (
             <PulseDashboard
               artifacts={artifacts}

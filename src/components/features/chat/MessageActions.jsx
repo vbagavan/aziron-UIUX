@@ -18,16 +18,16 @@ export default function MessageActions({
         className,
       )}
     >
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onCopy}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onCopy}>
         {copied ? <Check /> : <Copy />}
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onRegenerate}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onRegenerate}>
         <RefreshCw />
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onThumbsUp}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onThumbsUp}>
         <ThumbsUp />
       </Button>
-      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-white" onClick={onThumbsDown}>
+      <Button variant="ghost" size="icon-xs" className="text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground" onClick={onThumbsDown}>
         <ThumbsDown />
       </Button>
     </div>

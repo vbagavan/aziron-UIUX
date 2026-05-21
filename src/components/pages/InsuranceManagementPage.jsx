@@ -16,6 +16,7 @@ import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MetricCard } from "@/components/common/MetricCard";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,15 +48,6 @@ const CHART_STATUS_COLORS = {
   completed: "#22c55e",
   pending: "#f59e0b",
   missed: "#ef4444",
-};
-
-const METRIC_VARIANT = {
-  primary:     { icon: "text-primary",     iconBg: "bg-primary/10",     bar: "bg-primary" },
-  success:     { icon: "text-success",     iconBg: "bg-success/10",     bar: "bg-success" },
-  warning:     { icon: "text-warning",     iconBg: "bg-warning/10",     bar: "bg-warning" },
-  destructive: { icon: "text-destructive", iconBg: "bg-destructive/10", bar: "bg-destructive" },
-  info:        { icon: "text-info",        iconBg: "bg-info/10",        bar: "bg-info" },
-  muted:       { icon: "text-muted-foreground", iconBg: "bg-muted", bar: "bg-muted-foreground" },
 };
 
 const AVATAR_STYLES = [
@@ -275,7 +267,7 @@ function LocationBarTotalLabel({ x, y, width, height, value }) {
 function LocationSegmentLabel({ x, y, width, height, value, dataKey }) {
   const count = Number(value);
   if (!count || count < 2 || (width ?? 0) < 22) return null;
-  const fill = dataKey === "pending" ? "#422006" : "#ffffff";
+  const fill = dataKey === "pending" ? "var(--warning-foreground)" : "var(--primary-foreground)";
   return (
     <text
       x={(x ?? 0) + (width ?? 0) / 2}
@@ -504,43 +496,6 @@ function OverviewStatusPill({ status, enrollmentClosed }) {
       <span className={cn("size-1.5 rounded-full flex-shrink-0", m.dot)} aria-hidden />
       {m.label}
     </Badge>
-  );
-}
-
-function MetricCard({ icon: Icon, label, value, sub, variant = "primary", trend, onClick, active }) {
-  const v = METRIC_VARIANT[variant] ?? METRIC_VARIANT.primary;
-  const interactive = Boolean(onClick);
-  return (
-    <Card
-      onClick={onClick}
-      role={interactive ? "button" : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onKeyDown={interactive ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } } : undefined}
-      className={cn(
-        "flex items-start gap-3 p-4 flex-1 min-w-0 relative overflow-hidden transition-all shadow-none",
-        interactive ? "cursor-pointer hover:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-ring/50" : "cursor-default",
-        active ? "ring-2 ring-ring border-primary/30 bg-primary/5" : "",
-      )}
-    >
-      <div className={cn("size-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5", v.iconBg)}>
-        <Icon size={17} className={v.icon} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-muted-foreground font-medium leading-none mb-1.5">{label}</p>
-        <p className="text-2xl font-bold text-foreground leading-none">{value}</p>
-        {sub && <p className="text-[11px] text-muted-foreground mt-1">{sub}</p>}
-      </div>
-      {trend != null && (
-        <div className={cn(
-          "flex items-center gap-0.5 text-[11px] font-semibold mt-1",
-          trend >= 0 ? "text-success" : "text-destructive",
-        )}>
-          {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-          {Math.abs(trend)}%
-        </div>
-      )}
-      <div className={cn("absolute bottom-0 left-0 right-0 h-0.5 rounded-b-xl opacity-20", v.bar)} />
-    </Card>
   );
 }
 
@@ -1222,6 +1177,7 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
               : "grid-cols-2",
           )}>
             <MetricCard
+              flat
               icon={Users}
               label="Total employees"
               value={metrics.total}
@@ -1231,6 +1187,7 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
             />
             {showPendingMetric && (
               <MetricCard
+                flat
                 icon={Clock}
                 label="Pending"
                 value={metrics.pending}
@@ -1240,6 +1197,7 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
               />
             )}
             <MetricCard
+              flat
               icon={CheckCircle2}
               label="Enrolled"
               value={metrics.completed}
@@ -1249,6 +1207,7 @@ function OverviewTab({ filterMode, activeBatch, fromDate, toDate }) {
             />
             {showMissedMetric && (
               <MetricCard
+                flat
                 icon={X}
                 label="Did not enroll"
                 value={metrics.missed}
@@ -1746,10 +1705,10 @@ export default function InsuranceManagementPage({ onNavigate }) {
   };
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-management" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
         <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
@@ -1758,7 +1717,7 @@ export default function InsuranceManagementPage({ onNavigate }) {
             {/* Page header */}
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <h1 className="text-xl font-bold text-foreground">Insurance Management</h1>
+                <h1 className="type-page-title">Insurance Management</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Track enrollment and premium across batches</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">

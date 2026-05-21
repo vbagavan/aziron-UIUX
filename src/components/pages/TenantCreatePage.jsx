@@ -392,9 +392,9 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   // ── Success screen ──────────────────────────────────────────────────────────
   if (created) {
     return (
-      <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="tenants" onNavigate={onNavigate} />
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
           <AppHeader onNavigate={onNavigate} />
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-5 text-center max-w-sm">
@@ -442,10 +442,10 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
   const isLastStep = step === 2;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <div className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="tenants" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border dark:bg-border" />
@@ -458,11 +458,11 @@ export default function TenantCreatePage({ onNavigate, onTenantCreated }) {
           </div>
         </AppHeader>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-8">
 
             <div className="flex flex-col gap-2">
-              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Create New Tenant</h1>
+              <h1 className="type-page-title">Create New Tenant</h1>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground">
                 Provision a new customer organisation. Packages are assigned after creation.
               </p>

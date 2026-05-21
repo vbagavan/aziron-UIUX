@@ -20,6 +20,7 @@ import FailureInsightsPanel from "@/components/features/agent-detail/FailureInsi
 import RunDetailsDrawer from "@/components/features/agent-detail/RunDetailsDrawer";
 import ConfigSectionCard from "@/components/features/agent-detail/ConfigSectionCard";
 import TestPromptPanel from "@/components/features/agent-detail/TestPromptPanel";
+import AgentKnowledgePanel from "@/components/features/agent-detail/AgentKnowledgePanel";
 import OperationsTimelineChart from "@/components/features/agent-detail/OperationsTimelineChart";
 import { Button } from "@/components/ui/button";
 import {
@@ -278,6 +279,8 @@ function OverviewTab({ insights, recentRuns, failures, onSelectRun, agent }) {
         <FailureInsightsPanel failures={failures.slice(0, 2)} onSelectRun={onSelectRun} />
       </div>
 
+      <AgentKnowledgePanel agent={agent} />
+
       <TestPromptPanel agentName={agent.name} />
     </div>
   );
@@ -381,7 +384,7 @@ function RunHistoryTab({ runs, filters, setFilters, onSelectRun }) {
 function SearchField({ value, onChange }) {
   return (
     <label className="rounded-xl border border-border px-3 py-2 dark:border-border">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-muted-foreground">Search</span>
+      <span className="type-section-eyebrow">Search</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -395,7 +398,7 @@ function SearchField({ value, onChange }) {
 function SelectChip({ label, value, options, onChange }) {
   return (
     <label className="rounded-xl border border-border px-3 py-2 dark:border-border">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:text-muted-foreground">{label}</span>
+      <span className="type-section-eyebrow">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full bg-transparent text-sm text-foreground outline-none dark:text-foreground">
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>{optionLabel}</option>
@@ -444,13 +447,13 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
   };
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="agents" onNavigate={onNavigate} />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-6 py-6">
             <nav className="flex items-center gap-1.5 text-xs text-muted-foreground dark:text-muted-foreground">
               <button onClick={() => onNavigate("agents")} className="transition-colors hover:text-muted-foreground dark:hover:text-muted-foreground">Agents</button>
@@ -466,7 +469,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-foreground dark:text-foreground">{currentAgent.name}</h1>
+                    <h1 className="type-page-title">{currentAgent.name}</h1>
                     <StatusPill status={currentAgent.status} />
                     <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary dark:bg-background dark:text-primary">
                       {insights.metrics[0].value} success
@@ -488,7 +491,7 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button className="gap-1.5 bg-muted text-white hover:bg-card dark:bg-muted dark:text-foreground dark:hover:bg-border">
+                <Button className="gap-1.5">
                   <Play size={14} />
                   Run now
                 </Button>

@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import { MetricCard } from "@/components/common/MetricCard";
 import {
   TENANTS, SAAS_TIERS, TREND_MONTHS, TENANT_USER_USAGE, getLimits,
 } from "@/data/adminData";
@@ -14,23 +15,6 @@ const CURRENT = TENANTS.find(t => t.id === 3);
 const TIER_DEF = SAAS_TIERS[CURRENT.tier];
 const LIMITS   = getLimits(CURRENT);
 const USERS    = TENANT_USER_USAGE[3] ?? [];
-
-// ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, sub, color = "var(--primary)" }) {
-  return (
-    <div className="flex items-center gap-3 bg-card dark:bg-card border border-border dark:border-border rounded-xl p-4 flex-1 min-w-0">
-      <div className="size-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: `${color}18` }}>
-        <Icon size={18} style={{ color }} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground dark:text-muted-foreground font-medium leading-none mb-1">{label}</p>
-        <p className="text-xl font-bold text-foreground dark:text-foreground leading-none">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </div>
-    </div>
-  );
-}
 
 // ─── Bar chart ────────────────────────────────────────────────────────────────
 function BarChart({ data, labels, color = "var(--primary)", unit = "M", height = 80 }) {
@@ -47,7 +31,7 @@ function BarChart({ data, labels, color = "var(--primary)", unit = "M", height =
             onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
             {/* Tooltip */}
             {hovered === i && (
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-10 bg-muted text-white text-[10px] font-semibold px-2 py-1 rounded-[5px] whitespace-nowrap">
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-10 rounded-md border border-border bg-popover px-2 py-1 text-xs font-semibold text-popover-foreground shadow-md whitespace-nowrap">
                 {v.toLocaleString()}{unit}
               </div>
             )}
@@ -75,7 +59,7 @@ function UsageMeter({ label, used, limit, unit = "", color = "var(--primary)", i
   const fmtV = v => v == null ? "—" : v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toLocaleString();
 
   return (
-    <div className="flex flex-col gap-2 bg-card dark:bg-card border border-border dark:border-border rounded-xl p-4">
+    <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {Icon && <Icon size={14} className="text-muted-foreground" />}
@@ -112,24 +96,24 @@ export default function UsagePage({ onNavigate }) {
   const [period, setPeriod] = useState("apr-2025");
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="usage" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 py-5 flex flex-col gap-5">
           {/* Header */}
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Usage Analytics</h1>
+              <h1 className="type-page-title">Usage Analytics</h1>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">
                 Vanta Logistics · Growth tier · Platform consumption for current billing period
               </p>
             </div>
             {/* Period selector */}
             <select value={period} onChange={e => setPeriod(e.target.value)}
-              className="h-9 px-3 rounded-[8px] border border-border dark:border-border bg-card dark:bg-card text-sm text-muted-foreground dark:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#2563eb]/30">
+              className="h-9 px-3 rounded-lg border border-border bg-card text-sm text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30">
               <option value="apr-2025">April 2025</option>
               <option value="mar-2025">March 2025</option>
               <option value="feb-2025">February 2025</option>
@@ -138,10 +122,10 @@ export default function UsagePage({ onNavigate }) {
 
           {/* Summary stats */}
           <div className="flex gap-3 flex-wrap">
-            <StatCard icon={Zap}       label="Tokens Consumed"    value={`${(usage.tokensConsumed ?? 0)}M`}      sub={`@ $${TIER_DEF.tokenRatePerM}/1M`}          color="var(--primary)" />
-            <StatCard icon={Users}     label="Active Seats"       value={`${usage.seatsUsed ?? 0} / ${CURRENT.seats}`} sub="of provisioned seats"                  color="var(--info)" />
-            <StatCard icon={Workflow}  label="Flow Executions"    value={(usage.flowExecutions ?? 0).toLocaleString()} sub={`of ${(LIMITS.flowExecPerMonth ?? 0).toLocaleString()} limit`} color="var(--success)" />
-            <StatCard icon={HardDrive} label="Knowledge Hub"      value={`${usage.storageGB ?? 0} GB`}           sub={`of ${LIMITS.knowledgeHubGB ?? 0} GB`}       color="var(--warning)" />
+            <MetricCard icon={Zap}       label="Tokens Consumed"    value={`${(usage.tokensConsumed ?? 0)}M`}      sub={`@ $${TIER_DEF.tokenRatePerM}/1M`}          color="var(--primary)" />
+            <MetricCard icon={Users}     label="Active Seats"       value={`${usage.seatsUsed ?? 0} / ${CURRENT.seats}`} sub="of provisioned seats"                  color="var(--info)" />
+            <MetricCard icon={Workflow}  label="Flow Executions"    value={(usage.flowExecutions ?? 0).toLocaleString()} sub={`of ${(LIMITS.flowExecPerMonth ?? 0).toLocaleString()} limit`} color="var(--success)" />
+            <MetricCard icon={HardDrive} label="Knowledge Hub"      value={`${usage.storageGB ?? 0} GB`}           sub={`of ${LIMITS.knowledgeHubGB ?? 0} GB`}       color="var(--warning)" />
           </div>
 
           {/* Token trend chart */}

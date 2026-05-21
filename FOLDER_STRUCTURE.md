@@ -20,10 +20,17 @@ src/
 │   ├── features/                  # Feature-specific components
 │   │   ├── agent-detail/          # Agent detail feature
 │   │   ├── chat/                  # Chat feature
+│   │   ├── knowledge/             # Knowledge Hub dialogs, detail, upload
 │   │   ├── examples/              # Component examples
 │   │   └── ... (other features)
 │   │
 │   ├── common/                    # Reusable components
+│   │   ├── PageHeader.jsx         # Standard H1 + subtitle
+│   │   ├── SectionEyebrow.jsx     # Dashboard section labels
+│   │   ├── MetricCard.jsx         # KPI / stat tiles (shadcn Card)
+│   │   ├── SectionCard.jsx        # Agent detail panel wrapper
+│   │   ├── CatalogGridCard.jsx    # Agents / Flows / catalog grids
+│   │   ├── VisibilityBadge.jsx    # Public / Private pill
 │   │   ├── ExpandableSearch.jsx
 │   │   ├── KnowledgeHubPicker.jsx
 │   │   ├── ProviderLogo.jsx
@@ -52,6 +59,9 @@ src/
 │
 ├── lib/                           # Utilities & helpers
 │   ├── api.js                     # API client
+│   ├── typography.js              # Type scale (PAGE_TITLE, SECTION_EYEBROW, …)
+│   ├── designTokens.js            # Color + typography re-exports (VISIBILITY_BADGE, …)
+│   ├── listToolbar.js             # TOOLBAR_CONTROL_CLASS, list page shell
 │   ├── utils.js                   # General utilities
 │   └── constants.js               # App constants
 │

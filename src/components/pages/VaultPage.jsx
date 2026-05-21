@@ -4,7 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 
 export default function VaultPage({ onNavigate }) {
   return (
-    <div className="flex min-h-svh min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="vault" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
@@ -18,7 +18,7 @@ export default function VaultPage({ onNavigate }) {
                   <Vault size={32} className="text-warning dark:text-amber-400" />
                 </div>
                 <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold text-foreground">Secure Vault</h1>
+                  <h1 className="type-page-title">Secure Vault</h1>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                     Manage API keys, credentials, and sensitive data securely in your vault.
                   </p>

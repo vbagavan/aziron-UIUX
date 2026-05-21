@@ -1,25 +1,26 @@
 import { useState } from "react";
 import { Search, Plus, Check, Database } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 
-export const defaultHubs = [
-  { id: 1, name: "VectorDB-Aurora", fileCount: 7 },
-  { id: 2, name: "VectorDB-Nova", fileCount: 14 },
-  { id: 3, name: "VectorDB-Zenith", fileCount: 3 },
-  { id: 4, name: "VectorDB-Avalon", fileCount: 2 },
-  { id: 5, name: "VectorDB-Olympus", fileCount: 9 },
-  { id: 6, name: "VectorDB-Elysium", fileCount: 18 },
-  { id: 7, name: "VectorDB-Arcadia", fileCount: 11 },
-  { id: 8, name: "VectorDB-Nebula", fileCount: 1 },
-];
-
-export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect, onClose }) {
+export function KnowledgeHubPicker({
+  hubs: hubsProp,
+  onHubsChange,
+  selectedHubId,
+  onSelect,
+  onClose,
+  onRequestCreate,
+}) {
+  const ctx = useKnowledgeHubs();
+  const hubs = hubsProp ?? ctx.pickerHubs;
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const [newHubName, setNewHubName] = useState("");
   const [error, setError] = useState("");
 
   const filtered = hubs.filter((h) =>
-    h.name.toLowerCase().includes(search.toLowerCase())
+    h.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleCreate = () => {
@@ -32,74 +33,83 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
       setError("A hub with this name already exists.");
       return;
     }
-    const newHub = { id: Date.now(), name: trimmed, fileCount: 0 };
-    onHubsChange([...hubs, newHub]);
-    onSelect(newHub);
+    const created = ctx.addHub({ name: trimmed, description: "" });
+    const pickerShape = {
+      id: created.id,
+      name: created.name,
+      fileCount: created.files ?? 0,
+    };
+    onHubsChange?.([...hubs, pickerShape]);
+    onSelect(pickerShape);
     onClose?.();
   };
 
   return (
-    <div className="bg-card dark:bg-card border border-border dark:border-border rounded-[6px] shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.1),0px_2px_4px_-3px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden w-[240px]">
-      {/* Search */}
-      <div className="border-b border-border dark:border-border flex items-center px-3 py-2.5">
-        <div className="pr-2 flex-shrink-0">
-          <Search size={16} className="text-muted-foreground dark:text-muted-foreground" />
-        </div>
-        <input
+    <div className="w-[240px] overflow-hidden rounded-lg border border-border bg-popover shadow-md ring-1 ring-foreground/10">
+      <div className="flex items-center border-b border-border px-3 py-2.5">
+        <Search size={16} className="mr-2 shrink-0 text-muted-foreground" />
+        <Input
           autoFocus
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search Knowledge Hub..."
-          aria-label="Search knowledge hubs"
-          className="flex-1 text-sm text-foreground dark:text-foreground leading-5 outline-none placeholder:text-muted-foreground dark:placeholder:text-muted-foreground bg-transparent"
+          placeholder="Search Knowledge Hubs…"
+          aria-label="Search Knowledge Hubs"
+          className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
         />
       </div>
 
-      {/* Hub list */}
-      <div className="max-h-[132px] overflow-y-auto p-1">
+      <div className="max-h-[min(280px,50vh)] overflow-y-auto p-1">
         {filtered.map((hub) => (
-          <button
+          <Button
             key={hub.id}
+            type="button"
+            variant="ghost"
             onClick={() => {
               onSelect(hub);
               onClose?.();
             }}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded-[4px] hover:bg-muted dark:hover:bg-muted transition-colors"
+            className="h-auto w-full justify-between px-2 py-1.5 font-normal"
           >
-            <div className="flex flex-col items-start">
-              <span className="text-sm text-foreground leading-5">{hub.name}</span>
-              <span className="text-xs text-muted-foreground dark:text-muted-foreground tracking-[0.12px] leading-4 whitespace-nowrap">
-                {hub.fileCount === 1 ? "1 File" : `${hub.fileCount} Files`}
+            <div className="flex min-w-0 flex-col items-start">
+              <span className="truncate text-sm leading-5">{hub.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {hub.fileCount === 1 ? "1 file" : `${hub.fileCount} files`}
               </span>
             </div>
             {selectedHubId === hub.id && (
-              <Check size={14} className="text-primary flex-shrink-0" />
+              <Check size={14} className="shrink-0 text-primary" />
             )}
-          </button>
+          </Button>
         ))}
         {filtered.length === 0 && (
-          <div className="flex flex-col items-center gap-1.5 py-4 px-2">
-            <Database size={20} className="text-foreground" />
-            <p className="text-xs text-muted-foreground text-center">No hubs found.</p>
+          <div className="flex flex-col items-center gap-1.5 px-2 py-4">
+            <Database size={20} className="text-muted-foreground" />
+            <p className="text-center text-xs text-muted-foreground">No hubs found.</p>
           </div>
         )}
       </div>
 
-      {/* Create section */}
-      <div className="border-t border-border dark:border-border p-1">
+      <div className="border-t border-border p-1">
         {!creating ? (
-          <button
-            onClick={() => setCreating(true)}
-            className="w-full flex items-center justify-center gap-2 h-9 px-4 py-2 bg-card dark:bg-card border border-border dark:border-border rounded-[6px] hover:bg-muted dark:hover:bg-muted transition-colors"
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              if (onRequestCreate) {
+                onRequestCreate();
+                onClose?.();
+              } else {
+                setCreating(true);
+              }
+            }}
           >
-            <Plus size={20} className="text-foreground dark:text-foreground flex-shrink-0" />
-            <span className="text-sm font-medium text-foreground dark:text-foreground leading-5 whitespace-nowrap">
-              Create new knowledge hub
-            </span>
-          </button>
+            <Plus size={16} />
+            Create Knowledge Hub
+          </Button>
         ) : (
           <div className="flex flex-col gap-1.5 p-1">
-            <input
+            <Input
               autoFocus
               value={newHubName}
               onChange={(e) => {
@@ -107,27 +117,27 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
                 setError("");
               }}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              placeholder="Hub name..."
-              className="text-sm text-foreground dark:text-foreground bg-card dark:bg-background border border-border dark:border-border rounded-[6px] px-3 py-1.5 outline-none focus:border-border placeholder:text-muted-foreground dark:placeholder:text-muted-foreground"
+              placeholder="Knowledge Hub name…"
+              aria-label="New Knowledge Hub name"
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex gap-1.5">
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
                 onClick={() => {
                   setCreating(false);
                   setNewHubName("");
                   setError("");
                 }}
-                className="flex-1 text-xs font-medium text-muted-foreground dark:text-muted-foreground border border-border dark:border-border rounded-[6px] py-1.5 hover:bg-muted dark:hover:bg-muted transition-colors"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                className="flex-1 text-xs font-medium text-primary-foreground bg-primary rounded-[6px] py-1.5 hover:bg-primary transition-colors"
-              >
+              </Button>
+              <Button type="button" size="sm" className="flex-1" onClick={handleCreate}>
                 Create &amp; select
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -135,3 +145,6 @@ export function KnowledgeHubPicker({ hubs, onHubsChange, selectedHubId, onSelect
     </div>
   );
 }
+
+/** @deprecated Import hubs from useKnowledgeHubs instead */
+export const defaultHubs = [];

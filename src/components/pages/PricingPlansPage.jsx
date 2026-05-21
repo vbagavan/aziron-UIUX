@@ -119,7 +119,7 @@ function SaasTierCard({ tier, def, editMode, onChange, onReset }) {
                     value={def.limits[key] ?? ""}
                     onChange={e => onChange(`limits.${key}`, e.target.value === "" ? null : Number(e.target.value))}
                     placeholder="∞"
-                    className="w-20 h-6 px-2 text-xs text-right rounded-[5px] border border-border dark:border-border bg-background text-foreground dark:text-foreground focus:outline-none focus:ring-1 focus:ring-[#2563eb]/40 tabular-nums"
+                    className="w-20 h-6 px-2 text-xs text-right rounded-[5px] border border-border dark:border-border bg-background text-foreground dark:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 tabular-nums"
                   />
                   <span className="text-xs text-muted-foreground">{unit}</span>
                 </div>
@@ -197,17 +197,17 @@ export default function PricingPlansPage({ onNavigate }) {
   };
 
   return (
-    <main className="flex min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="pricing-plans" onNavigate={onNavigate} />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-6 py-5 flex flex-col gap-5">
           {/* Header */}
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold text-foreground dark:text-foreground tracking-tight">Pricing & Plans</h1>
+              <h1 className="type-page-title">Pricing &amp; Plans</h1>
               <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-0.5">
                 Default tier configurations. Changes apply to new tenants — existing tenants retain their current pricing.
               </p>
