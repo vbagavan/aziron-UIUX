@@ -7,6 +7,7 @@ import {
   ChevronDown, ListOrdered,
   LayoutTemplate, PenLine, GitFork, Upload, Loader2,
   FileJson2, AlertCircle, CheckCircle2, Info,
+  Globe, Lock, Users,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { CatalogGridCard } from "@/components/common/CatalogGridCard";
@@ -17,7 +18,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import ForkDialog from "@/components/features/clone/ForkDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -88,7 +89,7 @@ function FlowAccessBadge({ flow }) {
 
 // ─── Flow card (grid view) ─────────────────────────────────────────────────────
 
-function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFlow, onForkFlow, onDeleteFlow }) {
+function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFlow, onForkFlow, onDeleteFlow, onRequestVisibilityChange }) {
   const stepCount = flow.steps?.length ?? 0;
   const btnRef = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -219,6 +220,24 @@ function FlowCard({ flow, openMenu, setOpenMenu, onViewFlow, onEditFlow, onRunFl
             >
               <GitFork className="size-3.5 text-muted-foreground" /> Fork
             </button>
+            <Separator />
+            {flow.visibility === "public" ? (
+              <button
+                type="button"
+                onClick={() => { setOpenMenu(null); onRequestVisibilityChange?.(flow); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                <Lock className="size-3.5 text-muted-foreground" /> Unpublish
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setOpenMenu(null); onRequestVisibilityChange?.(flow); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                <Globe className="size-3.5 text-muted-foreground" /> Publish
+              </button>
+            )}
             <Separator />
             <button
               type="button"
@@ -496,12 +515,50 @@ function ImportPreviewDialog({ open, onOpenChange, preview, onConfirm, importing
   );
 }
 
+// ─── Publish flow details (shown inside the publish confirmation dialog) ───────
+
+function PublishFlowDetails({ flow }) {
+  if (!flow) return null;
+  const stepCount = flow.steps?.length ?? 0;
+  return (
+    <>
+      <Separator className="my-3" />
+      <div className="flex gap-3">
+        <ListOrdered className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+        <div className="min-w-0 flex-1 text-left">
+          <p className="font-medium text-foreground">
+            Workflow steps
+            <span className="font-normal text-muted-foreground"> ({stepCount})</span>
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {stepCount === 0
+              ? "No steps configured yet — users will see an empty canvas."
+              : `${stepCount} step${stepCount !== 1 ? "s" : ""} will be visible to all logged-in users.`}
+          </p>
+        </div>
+      </div>
+      <Separator className="my-3" />
+      <div className="flex gap-3">
+        <Zap className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+        <div className="min-w-0 flex-1 text-left">
+          <p className="font-medium text-foreground">Run history</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {flow.runs > 0
+              ? `${flow.runs.toLocaleString()} run${flow.runs !== 1 ? "s" : ""} recorded — history remains visible after publishing.`
+              : "No runs recorded yet."}
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FlowsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { flows, removeFlow, createDraftFlow, forkFlow, importFlow } = useFlowCatalog();
+  const { flows, removeFlow, createDraftFlow, forkFlow, importFlow, patchFlow } = useFlowCatalog();
   const { toasts, showToast, dismissToast } = useToast();
   const fileImportRef = useRef(null);
   const pageRef = useRef(null);
@@ -520,6 +577,11 @@ export default function FlowsPage() {
   /** `null` = all; `public`/`private` = `visibility`; `error` = operational error status */
   const [statFilter, setStatFilter] = useState(null);
   const [listLoading, setListLoading] = useState(true);
+
+  // ── Publish / unpublish state
+  const [flowPendingPublish, setFlowPendingPublish] = useState(null);
+  const [flowPendingUnpublish, setFlowPendingUnpublish] = useState(null);
+  const [publishBusy, setPublishBusy] = useState(false);
 
   // ── Import state
   const [importBusy, setImportBusy] = useState(false);
@@ -607,6 +669,18 @@ export default function FlowsPage() {
 
   const handleDeleteFlow = (flowId) => {
     removeFlow(flowId);
+  };
+
+  const handleSetFlowVisibility = (flowId, visibility) => {
+    patchFlow(flowId, { visibility });
+  };
+
+  const handleRequestVisibilityChange = (flow) => {
+    if (flow.visibility === "public") {
+      setFlowPendingUnpublish(flow);
+    } else {
+      setFlowPendingPublish(flow);
+    }
   };
 
   /** Read a File → parse → open preview dialog (or show inline error). */
@@ -892,6 +966,7 @@ export default function FlowsPage() {
                       onRunFlow={openFlowRunNow}
                       onForkFlow={handleOpenFork}
                       onDeleteFlow={handleDeleteFlow}
+                      onRequestVisibilityChange={handleRequestVisibilityChange}
                     />
                   ))}
                 </div>
@@ -900,6 +975,133 @@ export default function FlowsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Publish flow dialog ────────────────────────────────────────────── */}
+      <Dialog open={!!flowPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setFlowPendingPublish(null); }}>
+        <DialogContent
+          showCloseButton
+          className="flex max-h-[min(90vh,640px)] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/25">
+                <Globe className="h-6 w-6 text-primary" aria-hidden />
+              </div>
+              <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug text-foreground">
+                Publish this flow?
+              </DialogTitle>
+              <DialogDescription asChild>
+                <div className="px-1 pt-2 text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    {flowPendingPublish?.name || "This flow"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    You can unpublish at any time from the flow&apos;s settings.
+                  </p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mx-6 mb-4 mt-4 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+              <div className="flex gap-3 rounded-md bg-primary/8 border border-primary/20 px-3 py-2.5 -mx-1">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-semibold text-foreground">Visible to all users</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    Anyone logged in can find and run this flow from the Flows page.
+                  </p>
+                </div>
+              </div>
+              {flowPendingPublish ? <PublishFlowDetails flow={flowPendingPublish} /> : null}
+            </div>
+          </div>
+
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setFlowPendingPublish(null)}
+              disabled={publishBusy}
+            >
+              Keep Private
+            </Button>
+            <Button
+              type="button"
+              className="min-h-10 flex-1 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={publishBusy}
+              onClick={() => {
+                if (!flowPendingPublish) return;
+                setPublishBusy(true);
+                try {
+                  handleSetFlowVisibility(flowPendingPublish.id, "public");
+                  showToast(`"${flowPendingPublish.name}" is now public.`);
+                  setFlowPendingPublish(null);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Globe className="h-3.5 w-3.5" />
+              )}
+              Publish
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Unpublish flow dialog ──────────────────────────────────────────── */}
+      <Dialog open={!!flowPendingUnpublish} onOpenChange={(open) => { if (!publishBusy && !open) setFlowPendingUnpublish(null); }}>
+        <DialogContent
+          showCloseButton
+          className="flex max-h-[min(90vh,420px)] w-[calc(100vw-2rem)] max-w-sm flex-col gap-0 overflow-hidden p-0 sm:w-full"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4 pr-14">
+            <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-warning/15 dark:bg-amber-950">
+              <Globe className="h-6 w-6 text-warning dark:text-amber-400" aria-hidden />
+            </div>
+            <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug">
+              Unpublish &ldquo;{flowPendingUnpublish?.name || "this flow"}&rdquo;?
+            </DialogTitle>
+            <DialogDescription className="text-balance pt-2 text-center text-sm leading-relaxed text-muted-foreground">
+              {flowPendingUnpublish?.name || "This flow"} will be hidden from other users and no longer listed as public.
+            </DialogDescription>
+          </div>
+          <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-10 flex-1"
+              onClick={() => setFlowPendingUnpublish(null)}
+              disabled={publishBusy}
+            >
+              Keep published
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-10 flex-1"
+              disabled={publishBusy}
+              onClick={() => {
+                if (!flowPendingUnpublish) return;
+                setPublishBusy(true);
+                try {
+                  handleSetFlowVisibility(flowPendingUnpublish.id, "private");
+                  showToast(`"${flowPendingUnpublish.name}" unpublished — status set to Private.`);
+                  setFlowPendingUnpublish(null);
+                } finally {
+                  setPublishBusy(false);
+                }
+              }}
+            >
+              {publishBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Unpublish"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {toasts.map((t) => (
         <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
