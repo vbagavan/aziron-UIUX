@@ -2,7 +2,12 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-xl border px-4 py-3 text-sm [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg+div]:pl-7",
+  [
+    "relative w-full rounded-xl border px-4 py-3 text-sm",
+    "has-[>svg]:grid has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:items-start has-[>svg]:gap-x-3 has-[>svg]:gap-y-1",
+    "[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:translate-y-0.5 [&>svg]:text-foreground",
+    "[&>svg~*]:col-start-2 [&>svg~*]:min-w-0",
+  ].join(" "),
   {
     variants: {
       variant: {

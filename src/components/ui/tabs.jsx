@@ -1,12 +1,21 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
 const TabsContext = createContext(null);
 
-function Tabs({ value, onValueChange, className, children, ...props }) {
+function Tabs({ value: valueProp, defaultValue = "", onValueChange, className, children, ...props }) {
+  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
+  const isControlled = valueProp !== undefined;
+  const value = isControlled ? valueProp : uncontrolledValue;
+
+  function handleValueChange(next) {
+    if (!isControlled) setUncontrolledValue(next);
+    onValueChange?.(next);
+  }
+
   return (
-    <TabsContext.Provider value={{ value, onValueChange }}>
+    <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
       <div data-slot="tabs" className={cn("flex flex-col gap-2", className)} {...props}>
         {children}
       </div>

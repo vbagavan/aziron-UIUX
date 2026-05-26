@@ -45,6 +45,11 @@ import InsuranceManagementPage from "@/components/pages/InsuranceManagementPage"
 import InsuranceConfigPage     from "@/components/pages/InsuranceConfigPage";
 import EmployeeInsurancePage from "@/components/pages/EmployeeInsurancePage";
 import MyProfilePage from "@/components/pages/MyProfilePage";
+import ProjectsPage from "@/components/pages/ProjectsPage";
+import ProjectDetailPage from "@/components/pages/ProjectDetailPage";
+import ProjectFormPage from "@/components/pages/ProjectFormPage";
+import ProjectDocumentUploadPage from "@/components/pages/ProjectDocumentUploadPage";
+import InvoiceSectionPage from "@/components/pages/invoice/InvoiceSectionPage";
 
 const FlowViewPage = lazy(() => import("@/components/pages/FlowViewPage"));
 
@@ -385,6 +390,85 @@ export default function AppRoutes() {
       <Route path="/tenant-users" element={<TenantUsersPage onNavigate={onNavigate} />} />
 
       <Route path="/my-profile" element={<MyProfilePage onNavigate={onNavigate} />} />
+
+      <Route path="/finance/projects" element={<ProjectsPage onNavigate={onNavigate} />} />
+      <Route
+        path="/finance/projects/create/manual"
+        element={<ProjectFormPage onNavigate={onNavigate} mode="manual-create" />}
+      />
+      <Route
+        path="/finance/projects/create/document"
+        element={<Navigate to="/finance/projects/create/manual" replace />}
+      />
+      <Route path="/finance/projects/create" element={<Navigate to="/finance/projects" replace />} />
+      <Route path="/finance/projects/new" element={<Navigate to="/finance/projects" replace />} />
+      <Route
+        path="/finance/projects/:projectId/edit"
+        element={<ProjectFormPage onNavigate={onNavigate} mode="manual-edit" />}
+      />
+      <Route
+        path="/finance/projects/:projectId/upload"
+        element={<ProjectDocumentUploadPage onNavigate={onNavigate} />}
+      />
+      <Route
+        path="/finance/projects/:projectId"
+        element={<ProjectDetailPage onNavigate={onNavigate} />}
+      />
+      <Route
+        path="/finance/reports"
+        element={
+          <InvoiceSectionPage
+            activePage="invoice-reports"
+            onNavigate={onNavigate}
+            title="Reports"
+            description="View invoice and revenue reports."
+          />
+        }
+      />
+      <Route
+        path="/finance/invoices"
+        element={
+          <InvoiceSectionPage
+            activePage="invoice-invoices"
+            onNavigate={onNavigate}
+            title="Invoices"
+            description="Create and manage customer invoices."
+          />
+        }
+      />
+      <Route
+        path="/finance/payments"
+        element={
+          <InvoiceSectionPage
+            activePage="invoice-payments"
+            onNavigate={onNavigate}
+            title="Payments"
+            description="Track and reconcile incoming payments."
+          />
+        }
+      />
+      <Route
+        path="/finance/customers"
+        element={
+          <InvoiceSectionPage
+            activePage="invoice-customers"
+            onNavigate={onNavigate}
+            title="Customers"
+            description="Manage billing customers and contacts."
+          />
+        }
+      />
+      <Route
+        path="/finance/currency-rates"
+        element={
+          <InvoiceSectionPage
+            activePage="invoice-currency-rates"
+            onNavigate={onNavigate}
+            title="Currency Rates"
+            description="Configure exchange rates for multi-currency billing."
+          />
+        }
+      />
 
       <Route path="*" element={<NotFoundPage onNavigate={onNavigate} />} />
         </Routes>

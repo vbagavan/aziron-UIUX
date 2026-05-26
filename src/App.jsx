@@ -6,6 +6,7 @@ import { FlowCatalogProvider } from "@/context/FlowCatalogContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import LoginPage from "@/components/pages/LoginPage";
 import AppRoutes from "@/AppRoutes";
+import { Toaster } from "@/components/ui/sonner";
 
 class ErrorBoundary extends Component {
   state = { error: null };
@@ -52,6 +53,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <AppInner />
+          <Toaster richColors closeButton position="top-right" />
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

@@ -29,6 +29,12 @@ export const PAGE_PATH = {
   "insurance-config":     "/insurance-config",
   "employee-insurance":   "/employee-insurance",
   "my-profile":           "/my-profile",
+  "invoice-reports":        "/finance/reports",
+  "invoice-invoices":       "/finance/invoices",
+  "invoice-payments":       "/finance/payments",
+  "invoice-customers":      "/finance/customers",
+  "invoice-projects":       "/finance/projects",
+  "invoice-currency-rates": "/finance/currency-rates",
 };
 
 /**
@@ -61,5 +67,11 @@ export function pathToActivePage(pathname) {
   if (pathname.startsWith("/insurance-management")) return "insurance-management";
   if (pathname.startsWith("/employee-insurance"))   return "employee-insurance";
   if (pathname.startsWith("/my-profile"))           return "my-profile";
+  if (pathname.startsWith("/finance/reports"))        return "invoice-reports";
+  if (pathname.startsWith("/finance/invoices"))       return "invoice-invoices";
+  if (pathname.startsWith("/finance/payments"))       return "invoice-payments";
+  if (pathname.startsWith("/finance/customers"))      return "invoice-customers";
+  if (pathname.startsWith("/finance/projects")) return "invoice-projects";
+  if (pathname.startsWith("/finance/currency-rates")) return "invoice-currency-rates";
   return "new-chat";
 }

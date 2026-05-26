@@ -23,6 +23,13 @@ export const PRIMARY_SIDEBAR_PAGES = new Set([
   "tenants",
   "pricing-plans",
   "insurance-management",
+  // FINANCE — Invoice Management
+  "invoice-reports",
+  "invoice-invoices",
+  "invoice-payments",
+  "invoice-customers",
+  "invoice-projects",
+  "invoice-currency-rates",
 ]);
 
 export function isPrimarySidebarPage(pageId) {

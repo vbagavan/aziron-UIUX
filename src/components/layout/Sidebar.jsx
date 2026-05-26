@@ -4,6 +4,7 @@ import {
   Sparkles, Bot, BrainCog, Vault, BarChart2, LayoutDashboard, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
   UserCircle, ShieldCheck, Clock, Building2, Tag, Store, ChevronRight, ClipboardList, Shield,
+  Receipt, FileBarChart2, FileText, CreditCard, FolderKanban, CircleDollarSign,
 } from "lucide-react";
 import { useAuth, ROLES } from "@/context/AuthContext";
 import { ROLE_SCOPE, SCOPE_COLORS } from "@/config/rbac";
@@ -74,6 +75,35 @@ const navGroups = [
     ],
   },
   {
+    id: "finance",
+    label: "FINANCE",
+    roles: ["superadmin", "tenantadmin"],
+    items: [
+      {
+        icon: Receipt,
+        label: "Invoice Management",
+        page: "invoice-management",
+        activeFor: [
+          "invoice-reports",
+          "invoice-invoices",
+          "invoice-payments",
+          "invoice-customers",
+          "invoice-projects",
+          "invoice-currency-rates",
+        ],
+        roles: ["superadmin", "tenantadmin"],
+        subItems: [
+          { icon: FileBarChart2,    label: "Reports",        page: "invoice-reports" },
+          { icon: FileText,         label: "Invoices",       page: "invoice-invoices" },
+          { icon: CreditCard,       label: "Payments",       page: "invoice-payments" },
+          { icon: Users,            label: "Customers",      page: "invoice-customers" },
+          { icon: FolderKanban,     label: "Projects",       page: "invoice-projects" },
+          { icon: CircleDollarSign, label: "Currency Rates", page: "invoice-currency-rates" },
+        ],
+      },
+    ],
+  },
+  {
     id: "admin", label: "ADMIN",
     roles: ["superadmin", "tenantadmin"],
     items: [
@@ -123,6 +153,19 @@ function isActive(itemPage, activePage, activeFor = []) {
   // Handle routing aliases and related pages
   if (itemPage === "users" && (activePage === "users-list" || activePage === "user-groups" || activePage === "users-roles" || activePage === "tenant-users")) return true;
   if (itemPage === "tenants" && activePage === "tenant-detail") return true;
+  if (
+    itemPage === "invoice-management" &&
+    [
+      "invoice-reports",
+      "invoice-invoices",
+      "invoice-payments",
+      "invoice-customers",
+      "invoice-projects",
+      "invoice-currency-rates",
+    ].includes(activePage)
+  ) {
+    return true;
+  }
 
   return false;
 }
