@@ -5,6 +5,7 @@ export function ConfirmDialog({
   title,
   message,
   confirmLabel = "Delete",
+  cancelLabel = "Cancel",
   confirmClass,
   onConfirm,
   onCancel,
@@ -41,7 +42,7 @@ export function ConfirmDialog({
               onClick={onCancel}
               className="flex-1 h-10 rounded-lg border border-border bg-background text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
             >
-              Cancel
+              {cancelLabel}
             </button>
             <button
               onClick={onConfirm}
