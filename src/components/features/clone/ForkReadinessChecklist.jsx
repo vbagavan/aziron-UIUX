@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CircleAlert,
   CircleX,
+  KeyRound,
   Loader2,
   Minus,
   RefreshCw,
@@ -18,7 +19,10 @@ import {
   FORK_PILLARS,
   getForkReadinessSummary,
   markDependencyResolved,
+  markVaultDependenciesResolved,
 } from "@/lib/cloneDependencyCheck";
+import { VaultBulkPopulatePanel, getVaultPopulateSummary } from "@/components/features/vault/VaultBulkPopulatePanel";
+import { useVault } from "@/context/VaultContext";
 
 const STATUS_META = {
   [DEP_STATUS.SUCCESS]: {
@@ -236,27 +240,70 @@ function groupActionableOnly(grouped) {
     .filter((pillar) => pillar.items.length > 0);
 }
 
-function ActionableIssuesList({ grouped, source, kind, onNavigate, onRecheck }) {
+function ActionableIssuesList({
+  grouped,
+  source,
+  kind,
+  onNavigate,
+  onRecheck,
+  vaultPopulateExpanded,
+  onVaultPopulateOpen,
+  onVaultPopulateClose,
+  onVaultPopulateComplete,
+}) {
+  const { secrets } = useVault();
   const pillars = groupActionableOnly(grouped);
   if (pillars.length === 0) return null;
+
+  const { total, pendingCount } = getVaultPopulateSummary(source, kind, secrets);
 
   return (
     <div className="divide-y divide-border/60 border-t border-border/50">
       {pillars.map((pillar) => (
         <section key={pillar.id} className="px-5 py-3">
-          <p className="mb-2 text-xs font-semibold text-foreground">{pillar.label}</p>
-          <ul className="space-y-0">
-            {pillar.items.map((item) => (
-              <DependencyItemRow
-                key={item.id}
-                item={item}
-                source={source}
-                kind={kind}
-                onNavigate={onNavigate}
-                onResolved={onRecheck}
-              />
-            ))}
-          </ul>
+          {pillar.id === "vault" && vaultPopulateExpanded ? (
+            <VaultBulkPopulatePanel
+              source={source}
+              kind={kind}
+              onCancel={onVaultPopulateClose}
+              onComplete={onVaultPopulateComplete}
+            />
+          ) : (
+            <>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-foreground">{pillar.label}</p>
+                {pillar.id === "vault" && onVaultPopulateOpen && total > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1.5 text-[11px]"
+                    onClick={onVaultPopulateOpen}
+                  >
+                    <KeyRound data-icon="inline-start" />
+                    Fill vault variables
+                    {pendingCount > 0 ? (
+                      <Badge variant="secondary" className="ml-0.5 px-1.5 py-0 text-[10px]">
+                        {pendingCount}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                ) : null}
+              </div>
+              <ul className="space-y-0">
+                {pillar.items.map((item) => (
+                  <DependencyItemRow
+                    key={item.id}
+                    item={item}
+                    source={source}
+                    kind={kind}
+                    onNavigate={onNavigate}
+                    onResolved={onRecheck}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       ))}
     </div>
@@ -294,12 +341,35 @@ export default function ForkReadinessChecklist({
   onNavigate,
   onRecheck,
   onAutoResolve,
+  onNotify,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [vaultPopulateExpanded, setVaultPopulateExpanded] = useState(false);
   const isChecking = phase === "idle" || phase === "checking";
 
+  function handleVaultPopulateComplete({ created }) {
+    markVaultDependenciesResolved(source, kind);
+    setVaultPopulateExpanded(false);
+    onRecheck?.();
+    if (created > 0) {
+      onNotify?.(
+        `${created} secret${created === 1 ? "" : "s"} saved to Vault and linked to this ${kind}.`,
+      );
+    }
+  }
+
+  const vaultPopulateProps = {
+    vaultPopulateExpanded,
+    onVaultPopulateOpen: () => setVaultPopulateExpanded(true),
+    onVaultPopulateClose: () => setVaultPopulateExpanded(false),
+    onVaultPopulateComplete: handleVaultPopulateComplete,
+  };
+
   useEffect(() => {
-    if (isChecking) setDetailsOpen(false);
+    if (isChecking) {
+      setDetailsOpen(false);
+      setVaultPopulateExpanded(false);
+    }
   }, [isChecking, source?.id, kind]);
 
   if (isChecking) {
@@ -385,6 +455,7 @@ export default function ForkReadinessChecklist({
             kind={kind}
             onNavigate={onNavigate}
             onRecheck={onRecheck}
+            {...vaultPopulateProps}
           />
         )}
         <CardFooter onRecheck={onRecheck}>
@@ -420,6 +491,7 @@ export default function ForkReadinessChecklist({
         kind={kind}
         onNavigate={onNavigate}
         onRecheck={onRecheck}
+        {...vaultPopulateProps}
       />
       <CardFooter onRecheck={onRecheck} onAutoResolve={onAutoResolve} showAutoResolve={missingCount > 0} />
     </div>

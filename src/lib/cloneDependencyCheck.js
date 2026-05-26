@@ -69,6 +69,13 @@ export function markDependencyResolved(checkId, source, kind) {
   sessionStorage.setItem(RESOLVED_STORAGE_KEY, JSON.stringify([...keys]));
 }
 
+/** Mark all vault pillar checks resolved after bulk secret import. */
+export function markVaultDependenciesResolved(source, kind) {
+  getDependencyCheckDefinitions(source, kind).forEach((def) => {
+    if (def.category === "vault") markDependencyResolved(def.id, source, kind);
+  });
+}
+
 export function clearResolvedDependencies() {
   sessionStorage.removeItem(RESOLVED_STORAGE_KEY);
 }

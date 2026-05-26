@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users } from "lucide-react";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database, Vault } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -32,6 +32,11 @@ import KudosConversationPanel from "@/components/features/kudos/KudosConversatio
 import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
 import ForkDialog from "@/components/features/clone/ForkDialog";
 import { PAGE_PATH } from "@/navigation/pagePaths";
+import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
+import {
+  getAgentVaultLabels,
+  getPublishKnowledgeHubSummary,
+} from "@/lib/agentPublishPreview";
 
 const KUDOS_AGENT_NAME = "Customer Appreciation";
 
@@ -616,6 +621,113 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
   );
 }
 
+function PublishAgentMarketplaceDetails({ agent }) {
+  const { hubs } = useKnowledgeHubs();
+  const hubSummary = getPublishKnowledgeHubSummary(agent, hubs);
+  const vaultLabels = getAgentVaultLabels(agent);
+  const vaultCount = vaultLabels.length;
+  const [hubsExpanded, setHubsExpanded] = useState(false);
+  const [vaultExpanded, setVaultExpanded] = useState(vaultCount <= 3);
+
+  const notListedHubCount = hubSummary.attached.filter((h) => !h.marketplacePublished).length;
+
+  return (
+    <>
+      <Separator className="my-3" />
+      <div className="flex gap-3">
+        <Database className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+        <div className="min-w-0 flex-1 text-left">
+          <p className="font-medium text-foreground">
+            Knowledge hubs
+            {hubSummary.total > 0 && (
+              <span className="font-normal text-muted-foreground"> ({hubSummary.total})</span>
+            )}
+          </p>
+          {hubSummary.total === 0 ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              No knowledge hubs attached to this agent.
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                aria-expanded={hubsExpanded}
+                aria-controls="publish-hub-list"
+                onClick={() => setHubsExpanded((prev) => !prev)}
+                className="mt-1 flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline transition-colors"
+              >
+                <span>
+                  {hubsExpanded ? "Hide hubs" : `Show ${hubSummary.total} hub${hubSummary.total !== 1 ? "s" : ""}`}
+                  {!hubsExpanded && notListedHubCount > 0 && ` · ${notListedHubCount} not on marketplace`}
+                </span>
+                <ChevronDown size={12} className={cn("transition-transform", hubsExpanded && "rotate-180")} />
+              </button>
+              {hubsExpanded && (
+                <ul id="publish-hub-list" className="mt-1.5 space-y-1 text-xs leading-relaxed">
+                  {hubSummary.attached.map((hub) => (
+                    <li key={hub.id} className="text-foreground">{hub.name}</li>
+                  ))}
+                </ul>
+              )}
+              {notListedHubCount > 0 && (
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Some connected hubs aren&apos;t listed publicly — they&apos;ll still be accessible to logged-in users.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      <Separator className="my-3" />
+      <div className="flex gap-3">
+        <Vault className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+        <div className="min-w-0 flex-1 text-left">
+          <p className="font-medium text-foreground">
+            Vault labels
+            {vaultCount > 0 && (
+              <span className="font-normal text-muted-foreground"> ({vaultCount})</span>
+            )}
+          </p>
+          {vaultCount === 0 ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+              No vault labels linked to this agent.
+            </p>
+          ) : (
+            <>
+              {vaultCount > 3 && (
+                <button
+                  type="button"
+                  aria-expanded={vaultExpanded}
+                  aria-controls="publish-vault-list"
+                  onClick={() => setVaultExpanded((prev) => !prev)}
+                  className="mt-1 flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline transition-colors"
+                >
+                  <span>{vaultExpanded ? "Hide labels" : `Show ${vaultCount} labels`}</span>
+                  <ChevronDown size={12} className={cn("transition-transform", vaultExpanded && "rotate-180")} />
+                </button>
+              )}
+              {vaultExpanded && (
+                <ul id="publish-vault-list" className="mt-1.5 space-y-2 text-xs leading-relaxed">
+                  {vaultLabels.map(({ label, variableRef }) => (
+                    <li key={label} className="flex flex-col gap-0.5">
+                      <span className="font-medium text-foreground">{label}</span>
+                      <span className="font-mono text-muted-foreground">{variableRef}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Secret values are never exposed — only{" "}
+                <span className="font-mono text-foreground">{"{{variable}}"}</span> references are shown.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AgentsListPage({
@@ -1112,9 +1224,9 @@ export default function AgentsListPage({
       <Dialog open={!!agentPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setAgentPendingPublish(null); }}>
         <DialogContent
           showCloseButton
-          className="flex w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:w-full"
+          className="flex max-h-[min(90vh,700px)] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:w-full"
         >
-          <div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/25">
                 <Globe className="h-6 w-6 text-primary" aria-hidden />
@@ -1122,32 +1234,31 @@ export default function AgentsListPage({
               <DialogTitle className="text-balance text-center text-lg font-semibold leading-snug text-foreground">
                 Publish this agent?
               </DialogTitle>
-              <DialogDescription className="text-balance px-1 pt-2 text-center text-sm leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">{agentPendingPublish?.name || "This agent"}</span>{" "}
-                will become visible to all logged-in users in the Agents list.
+              <DialogDescription asChild>
+                <div className="px-1 pt-2 text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    {agentPendingPublish?.name || "This agent"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    You can unpublish at any time from the agent&apos;s settings.
+                  </p>
+                </div>
               </DialogDescription>
             </DialogHeader>
 
             <div className="mx-6 mb-4 mt-4 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
-              <div className="flex gap-3">
-                <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <div className="flex gap-3 rounded-md bg-primary/8 border border-primary/20 px-3 py-2.5 -mx-1">
+                <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
                 <div className="min-w-0 flex-1 text-left">
-                  <p className="font-medium text-foreground">Visible to all users</p>
+                  <p className="font-semibold text-foreground">Visible to all users</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                     Anyone logged in can find and run this agent from the Agents page.
                   </p>
                 </div>
               </div>
-              <Separator className="my-3" />
-              <div className="flex gap-3">
-                <Bot className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="font-medium text-foreground">Latest agent configuration will be shared</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                    Users will access this agent with its current saved setup.
-                  </p>
-                </div>
-              </div>
+              {agentPendingPublish ? (
+                <PublishAgentMarketplaceDetails agent={agentPendingPublish} />
+              ) : null}
             </div>
           </div>
 
@@ -1159,7 +1270,7 @@ export default function AgentsListPage({
               onClick={() => setAgentPendingPublish(null)}
               disabled={publishBusy}
             >
-              Cancel
+              Keep Private
             </Button>
             <Button
               type="button"

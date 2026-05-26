@@ -296,6 +296,7 @@ export default function ForkDialog({
               }
               onRecheck={runCheck}
               onAutoResolve={handleAutoResolve}
+              onNotify={onNotify}
             />
           </div>
 

@@ -5,6 +5,9 @@ import {
   Presentation, Image, Brain, Wrench,
 } from "lucide-react";
 import { CONTENT_HEADING } from "@/lib/typography";
+import KudosRecipientsTableBlockComponent from "@/components/features/kudos/blocks/KudosRecipientsTableBlock";
+import KudosApprovalStatusBlockComponent from "@/components/features/kudos/blocks/KudosApprovalStatusBlock";
+import KudosTemplatePreviewBlockComponent from "@/components/features/kudos/blocks/KudosTemplatePreviewBlock";
 
 const H_STYLES = CONTENT_HEADING;
 
@@ -641,6 +644,7 @@ export function ToolExecutionBlock({ tools }) {
   );
 }
 
+
 /* ── Rich Message Renderer ────────────────────────────────────── */
 export default function RichMessage({ blocks }) {
   if (!blocks || !Array.isArray(blocks)) return null;
@@ -661,6 +665,9 @@ export default function RichMessage({ blocks }) {
           case "files":      return <FilesBlock          key={i} {...block} />;
           case "timeline":        return <AgentTimelineBlock  key={i} {...block} />;
           case "tool_execution":  return <ToolExecutionBlock  key={i} {...block} />;
+          case "kudos_recipients_table": return <KudosRecipientsTableBlockComponent key={i} {...block} />;
+          case "kudos_approval_status":  return <KudosApprovalStatusBlockComponent  key={i} {...block} />;
+          case "kudos_template_preview": return <KudosTemplatePreviewBlockComponent key={i} {...block} />;
           default:                return null;
         }
       })}

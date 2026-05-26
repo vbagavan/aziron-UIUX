@@ -1,19 +1,30 @@
 import { useState, useEffect, useCallback } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-export function Toast({ message, onDismiss, duration = 3000 }) {
+export function Toast({
+  message,
+  onDismiss,
+  duration = 3000,
+  actionLabel,
+  onAction,
+}) {
   const [visible, setVisible] = useState(true);
+  const effectiveDuration = actionLabel ? Math.max(duration, 8000) : duration;
 
   useEffect(() => {
     const t = setTimeout(() => {
       setVisible(false);
       setTimeout(onDismiss, 300);
-    }, duration);
+    }, effectiveDuration);
     return () => clearTimeout(t);
-  }, [duration, onDismiss]);
+  }, [effectiveDuration, onDismiss]);
 
-  const dismiss = () => { setVisible(false); setTimeout(onDismiss, 300); };
+  const dismiss = () => {
+    setVisible(false);
+    setTimeout(onDismiss, 300);
+  };
 
   return (
     <div
@@ -25,9 +36,24 @@ export function Toast({ message, onDismiss, duration = 3000 }) {
       role="status"
       aria-live="polite"
     >
-      <CheckCircle2 size={16} className="text-success flex-shrink-0" />
+      <CheckCircle2 size={16} className="text-success shrink-0" />
       <span>{message}</span>
+      {actionLabel && onAction ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 shrink-0 text-background hover:bg-background/15 dark:text-foreground dark:hover:bg-foreground/10"
+          onClick={() => {
+            onAction();
+            dismiss();
+          }}
+        >
+          {actionLabel}
+        </Button>
+      ) : null}
       <button
+        type="button"
         onClick={dismiss}
         aria-label="Dismiss notification"
         className="ml-1 text-background/60 transition-colors hover:text-background dark:text-foreground/60 dark:hover:text-foreground"
@@ -40,9 +66,17 @@ export function Toast({ message, onDismiss, duration = 3000 }) {
 
 export function useToast() {
   const [toasts, setToasts] = useState([]);
-  const showToast = useCallback((message) => {
+  const showToast = useCallback((message, options) => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message }]);
+    setToasts((prev) => [
+      ...prev,
+      {
+        id,
+        message,
+        actionLabel: options?.actionLabel,
+        onAction: options?.onAction,
+      },
+    ]);
   }, []);
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

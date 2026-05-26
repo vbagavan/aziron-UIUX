@@ -11,8 +11,8 @@ export const USERS = [
 ];
 
 export const DEFAULT_RECIPIENTS = [
-  { name: "Balachandra Husaine", color: "var(--info)" },
-  { name: "Sridhar", color: "var(--success)" },
+  { name: "Balachandra Husaine", email: "bhusaine@aziro.com", color: "var(--info)" },
+  { name: "Sridhar", email: "sridhar@aziro.com", color: "var(--success)" },
 ];
 
 export const TEMPLATES = [

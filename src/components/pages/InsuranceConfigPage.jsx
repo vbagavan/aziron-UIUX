@@ -77,15 +77,14 @@ function SelectInput({ value, onChange, options }) {
 const DEFAULT_INSURER = {
   name: "Star Health and Allied Insurance",
   policyNumber: "P/161123/01/2026/004821",
-  policyType: "group",
   contactPerson: "Ramesh Subramaniam",
   contactEmail: "ramesh.s@starhealth.in",
   contactPhone: "+91 98400 12345",
+  hrContactPerson: "Priya Nair",
+  hrContactEmail: "priya.nair@company.com",
+  hrContactPhone: "+91 98765 43210",
   effectiveDate: "2026-04-01",
   expiryDate: "2027-03-31",
-  maxCoverage: 500000,
-  tpaName: "Family Health Plan (TPA) Ltd.",
-  networkHospitals: "8,200+",
 };
 
 function InsurerSection() {
@@ -127,23 +126,17 @@ function InsurerSection() {
       }
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <FormField label="Policy Effective Date" required>
+          <TextInput {...field("effectiveDate")} type="date" />
+        </FormField>
+        <FormField label="Policy Expiry Date" required>
+          <TextInput {...field("expiryDate")} type="date" />
+        </FormField>
         <FormField label="Insurer Name" required>
           <TextInput {...field("name")} placeholder="e.g. Star Health Insurance" />
         </FormField>
         <FormField label="Policy Number" required>
           <TextInput {...field("policyNumber")} placeholder="e.g. P/161123/01/2026/..." />
-        </FormField>
-        <FormField label="Policy Type" required>
-          <SelectInput
-            value={editing ? draft.policyType : data.policyType}
-            onChange={v => setDraft(d => ({ ...d, policyType: v }))}
-            options={[
-              { value: "group", label: "Group Mediclaim" },
-              { value: "individual", label: "Individual" },
-              { value: "family_floater", label: "Family Floater" },
-              { value: "top_up", label: "Top-up / Super Top-up" },
-            ]}
-          />
         </FormField>
         <FormField label="Contact Person">
           <TextInput {...field("contactPerson")} placeholder="e.g. Ramesh Subramaniam" />
@@ -154,20 +147,19 @@ function InsurerSection() {
         <FormField label="Contact Phone">
           <TextInput {...field("contactPhone")} placeholder="+91 XXXXX XXXXX" />
         </FormField>
-        <FormField label="Policy Effective Date" required>
-          <TextInput {...field("effectiveDate")} type="date" />
+
+        <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-border">
+          <p className="text-xs font-semibold text-foreground pt-4">HR contact</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Internal point of contact for enrollment and benefits questions</p>
+        </div>
+        <FormField label="Name">
+          <TextInput {...field("hrContactPerson")} placeholder="e.g. Priya Nair" />
         </FormField>
-        <FormField label="Policy Expiry Date" required>
-          <TextInput {...field("expiryDate")} type="date" />
+        <FormField label="Email">
+          <TextInput {...field("hrContactEmail")} type="email" placeholder="hr@company.com" />
         </FormField>
-        <FormField label="Sum insured per member (₹/year)">
-          <TextInput {...field("maxCoverage")} type="number" placeholder="500000" />
-        </FormField>
-        <FormField label="TPA name" hint="TPA (third-party administrator) handles claims">
-          <TextInput {...field("tpaName")} placeholder="e.g. Medi Assist" />
-        </FormField>
-        <FormField label="Network Hospitals">
-          <TextInput {...field("networkHospitals")} placeholder="e.g. 8,200+" />
+        <FormField label="Contact number">
+          <TextInput {...field("hrContactPhone")} placeholder="+91 XXXXX XXXXX" />
         </FormField>
       </div>
       {!editing && (() => {
@@ -177,7 +169,6 @@ function InsurerSection() {
         const chips = [
           { id: "policy", label: "Policy in force", ok: true },
           { id: "expiry", label: expiryOk ? `Renews ${expiryFormatted}` : `Expired ${expiryFormatted}`, ok: expiryOk },
-          { id: "tpa", label: data.tpaName ? `TPA: ${data.tpaName}` : "No TPA on file", ok: !!data.tpaName },
         ];
         return (
           <div className="mt-5 flex flex-wrap gap-3">

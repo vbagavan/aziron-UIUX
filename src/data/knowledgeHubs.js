@@ -37,6 +37,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-04-21",
     updated: "21 Apr 2026",
     usedBy: 0,
+    visibility: "private",
   },
   {
     id: 2,
@@ -49,6 +50,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-04-21",
     updated: "2 days ago",
     usedBy: 3,
+    visibility: "public",
   },
   {
     id: 3,
@@ -61,6 +63,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-04-07",
     updated: "1 week ago",
     usedBy: 2,
+    visibility: "private",
   },
   {
     id: 4,
@@ -73,6 +76,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-03-20",
     updated: "3 weeks ago",
     usedBy: 4,
+    visibility: "private",
   },
   {
     id: 5,
@@ -85,6 +89,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-03-18",
     updated: "5 days ago",
     usedBy: 6,
+    visibility: "private",
   },
   {
     id: 6,
@@ -97,6 +102,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-03-09",
     updated: "Yesterday",
     usedBy: 8,
+    visibility: "private",
   },
   {
     id: 7,
@@ -109,6 +115,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-03-03",
     updated: "4 days ago",
     usedBy: 5,
+    visibility: "private",
   },
   {
     id: 8,
@@ -121,6 +128,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     createdOn: "2026-01-28",
     updated: "2 days ago",
     usedBy: 2,
+    visibility: "public",
   },
 ];
 
@@ -338,6 +346,7 @@ export function createHubPayload({
     createdOn: today,
     updated: "Just now",
     usedBy: 0,
+    visibility: "private",
     isUserCreated: true,
     userFiles,
     pendingFileName: fileList[0]?.name ?? null,

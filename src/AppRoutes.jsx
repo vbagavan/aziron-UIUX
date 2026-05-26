@@ -23,6 +23,7 @@ import {
 } from "@/data/agentsCatalog";
 import { AgentsProvider } from "@/context/AgentsContext";
 import { KnowledgeHubProvider } from "@/context/KnowledgeHubContext";
+import { VaultProvider } from "@/context/VaultContext";
 import AgentPage from "@/components/pages/AgentPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
 import FlowsPage from "@/components/pages/FlowsPage";
@@ -239,6 +240,7 @@ export default function AppRoutes() {
       addAgent={addAgent}
     >
       <KnowledgeHubProvider>
+        <VaultProvider>
         <Routes>
       <Route path="/" element={<Navigate to="/new-chat" replace />} />
 
@@ -386,6 +388,7 @@ export default function AppRoutes() {
 
       <Route path="*" element={<NotFoundPage onNavigate={onNavigate} />} />
         </Routes>
+        </VaultProvider>
       </KnowledgeHubProvider>
     </AgentsProvider>
   );
