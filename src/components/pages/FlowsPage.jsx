@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
 import { parseAndValidateFlowImport } from "@/lib/flowImport";
 import { PAGE_PATH, pathToActivePage } from "@/navigation/pagePaths";
+import PublishSharedVaultVariablesSection from "@/components/features/publish/PublishSharedVaultVariablesSection";
 
 /** Re-export for legacy imports */
 export { INITIAL_FLOWS } from "@/data/initialFlows";
@@ -549,6 +550,11 @@ function PublishFlowDetails({ flow }) {
           </p>
         </div>
       </div>
+      <PublishSharedVaultVariablesSection
+        source={flow}
+        kind="flow"
+        listId="publish-flow-shared-vault-list"
+      />
     </>
   );
 }
@@ -980,7 +986,7 @@ export default function FlowsPage() {
       <Dialog open={!!flowPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setFlowPendingPublish(null); }}>
         <DialogContent
           showCloseButton
-          className="flex max-h-[min(90vh,640px)] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:w-full"
+          className="flex max-h-[min(90vh,720px)] w-[calc(100vw-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl sm:w-full"
         >
           <div className="min-h-0 flex-1 overflow-y-auto">
             <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">

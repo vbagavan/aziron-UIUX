@@ -61,7 +61,7 @@ export default function KudosComposeStep({ workflow, onContinue }) {
       <div className="flex items-start gap-2">
         <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Compose your appreciation</p>
+          <p className="text-sm font-semibold text-foreground">Compose your appreciation card</p>
           <p className="text-xs text-muted-foreground leading-4 mt-0.5">
             Write the message and add at least one recipient email. You can also mention
             colleagues with @Name in the chat panel.
@@ -174,7 +174,7 @@ export default function KudosComposeStep({ workflow, onContinue }) {
         {templatesLoading || stage === "loading-templates" ? (
           <>
             <Loader2 size={14} className="animate-spin" />
-            Loading templates from OneDrive…
+            Loading templates from cloud folder…
           </>
         ) : (
           <>

@@ -43,7 +43,7 @@ const TABS = [
 const FALLBACK_AGENT = {
   id: 0,
   name: "Customer Appreciation",
-  description: "AI-powered recognition workflow that creates personalized appreciation cards and messages for clients.",
+  description: "Create branded appreciation cards, submit for team approval, and send to recipients—from one chat.",
   date: "23 Mar 2025",
   provider: "OpenAI",
   model: "GPT-4.5",
@@ -68,7 +68,7 @@ function generateRuns(agent) {
       tokens: 1240,
       status: "Success",
       timestamp: "Today, 12:04 PM",
-      preview: "Processed customer appreciation workflow and generated personalized summary.",
+      preview: "Processed Customer Appreciation workflow and generated card preview.",
       errorType: null,
       errorMessage: null,
       logs: ["12:04:01 INFO Starting workflow", "12:04:02 INFO Enrichment step completed", "12:04:03 INFO Response delivered to CRM"],

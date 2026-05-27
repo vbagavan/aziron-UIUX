@@ -1362,11 +1362,11 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
         {stage === "empty" && (
           <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center px-2">
             <h2 className="text-3xl font-medium text-foreground leading-tight">
-              Hi! Let's create a customer appreciation.
+              Customer Appreciation
             </h2>
             <p className="text-sm text-foreground leading-5 max-w-[260px]">
-              I'll help you generate a professional appreciation card and message. You'll be able
-              to review, edit, and approve it before sending.
+              Create an appreciation card and message. Review the preview, adjust the design, and
+              Submit for approval before sending.
             </p>
           </div>
         )}
@@ -1419,7 +1419,7 @@ function RightSidebar({ stage, activeTemplate, approvals, onUpdateApproval, onCl
                     Template has been generated
                   </span>
                   <span className="text-sm text-muted-foreground leading-5">
-                    Your appreciation card is ready. Review the preview on the left, then use the prompt to request approval.
+                    Your appreciation card is ready. Review the preview on the left, then Submit for approval.
                   </span>
                 </div>
               </div>

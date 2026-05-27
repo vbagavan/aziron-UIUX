@@ -1,4 +1,4 @@
-import { getAgentVaultLabels } from "@/lib/agentPublishPreview";
+import { getExplicitVaultLabels } from "@/lib/vaultPublishLabels";
 import { DEFAULT_VAULT_SCOPE, normalizeVaultKeyName } from "@/data/vaultSecrets";
 
 /**
@@ -39,8 +39,8 @@ function detectAgentVariables(source) {
   /** @type {DetectedVaultVariable[]} */
   const variables = [];
 
-  getAgentVaultLabels(source).forEach(({ label, key }) => {
-    if (key) variables.push(makeVariable(key, label, "workspace"));
+  getExplicitVaultLabels(source).forEach(({ label, key, secretType }) => {
+    if (key) variables.push(makeVariable(key, label, secretType ?? "workspace"));
   });
 
   if (variables.length === 0) {

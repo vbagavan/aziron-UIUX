@@ -7,7 +7,7 @@ import { TEMPLATES } from "@/components/features/kudos/constants";
 const ONEDRIVE_META = {
   "gold-classic": {
     driveItemId: "01GOLDCLASSIC",
-    path: "/KudosTemplates/GoldClassic.pptx",
+    path: "/KudosTemplates/GoldClassic.png",
     tags: ["individual", "executive", "quarterly", "customer-service"],
     maxRecipients: 2,
     minRecipients: 1,
@@ -15,7 +15,7 @@ const ONEDRIVE_META = {
   },
   "blue-morden": {
     driveItemId: "01BLUEMODERN",
-    path: "/KudosTemplates/BlueModern.pptx",
+    path: "/KudosTemplates/BlueModern.png",
     tags: ["team", "milestone", "launch", "corporate"],
     maxRecipients: 8,
     minRecipients: 2,
@@ -23,7 +23,7 @@ const ONEDRIVE_META = {
   },
   green: {
     driveItemId: "01GREENNATURE",
-    path: "/KudosTemplates/GreenNature.pptx",
+    path: "/KudosTemplates/GreenNature.png",
     tags: ["team", "wellness", "individual", "sustainability"],
     maxRecipients: 4,
     minRecipients: 1,
@@ -31,7 +31,7 @@ const ONEDRIVE_META = {
   },
   "purple-elegant": {
     driveItemId: "01PURPLEELEGANT",
-    path: "/KudosTemplates/PurpleElegant.pptx",
+    path: "/KudosTemplates/PurpleElegant.png",
     tags: ["individual", "client-champion", "campaign", "premium"],
     maxRecipients: 3,
     minRecipients: 1,
@@ -39,7 +39,7 @@ const ONEDRIVE_META = {
   },
   "blue-modern-team": {
     driveItemId: "01BLUEMODERNTEAM",
-    path: "/KudosTemplates/BlueModernTeam.pptx",
+    path: "/KudosTemplates/BlueModernTeam.png",
     tags: ["team", "milestone", "launch", "corporate"],
     maxRecipients: 8,
     minRecipients: 3,
@@ -47,7 +47,7 @@ const ONEDRIVE_META = {
   },
   "green-nature": {
     driveItemId: "01GREENNATURECLS",
-    path: "/KudosTemplates/GreenNatureClassic.pptx",
+    path: "/KudosTemplates/GreenNatureClassic.png",
     tags: ["team", "wellness", "individual", "sustainability"],
     maxRecipients: 4,
     minRecipients: 1,
@@ -55,13 +55,46 @@ const ONEDRIVE_META = {
   },
   "gold-celebration": {
     driveItemId: "01GOLDCELEBRATION",
-    path: "/KudosTemplates/GoldCelebration.pptx",
+    path: "/KudosTemplates/GoldCelebration.png",
     tags: ["individual", "executive", "quarterly", "customer-service"],
     maxRecipients: 4,
     minRecipients: 1,
     teamFriendly: false,
   },
 };
+
+export const KUDOS_DRIVE_FOLDER = "KudosTemplates";
+
+/** Map a template catalog entry to a OneDrive file row for the prompt file list. */
+export function templateToDriveFile(template) {
+  const thumbFileName = template.thumbSrc?.match(/\/([^/?#]+)$/)?.[1];
+  const path =
+    template.path ??
+    `/${KUDOS_DRIVE_FOLDER}/${thumbFileName ?? `${template.id}.png`}`;
+  const segments = path.split("/").filter(Boolean);
+  const name = segments[segments.length - 1] ?? `${template.id}.png`;
+  const folder = segments.length > 1 ? segments[segments.length - 2] : KUDOS_DRIVE_FOLDER;
+  const extension = name.includes(".") ? name.split(".").pop().toLowerCase() : "png";
+  const thumbFormat = template.thumbSrc?.match(/\.([a-z0-9]+)(?:\?.*)?$/i)?.[1]?.toLowerCase() ?? null;
+
+  return {
+    id: template.id,
+    name,
+    folder,
+    path,
+    extension,
+    thumbFormat,
+    label: template.label,
+    driveItemId: template.driveItemId,
+    thumbSrc: template.thumbSrc,
+    thumbBg: template.thumbBg,
+    thumbAccent: template.thumbAccent,
+  };
+}
+
+export function templatesToDriveFiles(templates) {
+  return (templates ?? []).map(templateToDriveFile);
+}
 
 export async function fetchTemplatesFromOneDrive() {
   await new Promise((r) => setTimeout(r, 900));

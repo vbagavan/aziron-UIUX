@@ -18,6 +18,11 @@ export const INITIAL_FLOWS = [
     success: 97,
     createdAt: "12 Jan 2026",
     visibility: "public",
+    vaultLabels: [
+      { label: "OpenAI API Key", key: "OPENAI_API_KEY", marketplacePublished: true, secretType: "workspace" },
+      { label: "CRM API key", key: "CRM_API_KEY", marketplacePublished: false, secretType: "credential" },
+      { label: "Email service API key", key: "EMAIL_API_KEY", marketplacePublished: false, secretType: "credential" },
+    ],
   },
   {
     id: 1,
@@ -56,6 +61,10 @@ export const INITIAL_FLOWS = [
     success: 100,
     createdAt: "05 Feb 2026",
     visibility: "public",
+    vaultLabels: [
+      { label: "Slack webhook URL", key: "SLACK_WEBHOOK_URL", marketplacePublished: true, secretType: "project" },
+      { label: "OpenAI API Key", key: "OPENAI_API_KEY", marketplacePublished: true, secretType: "workspace" },
+    ],
   },
   {
     id: 3,

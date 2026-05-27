@@ -56,7 +56,7 @@ export default function TemplateThumbnailGallery({
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-2">
         <Cloud size={14} className="text-primary" />
-        <p className="text-xs font-semibold text-foreground flex-1">OneDrive template gallery</p>
+        <p className="text-xs font-semibold text-foreground flex-1">Cloud template gallery</p>
         {onOpenFullPreview && (
           <button
             type="button"
@@ -79,8 +79,8 @@ export default function TemplateThumbnailGallery({
         </div>
       )}
       <p className="text-[11px] text-muted-foreground leading-4">
-        Click a thumbnail to update the left preview. All templates are synced from Microsoft
-        OneDrive.
+        Click a thumbnail to update the left preview. Templates are synced from your connected
+        cloud folder.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {templates.map((tpl) => {

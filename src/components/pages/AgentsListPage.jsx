@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database, Vault } from "lucide-react";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -33,10 +33,8 @@ import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
 import ForkDialog from "@/components/features/clone/ForkDialog";
 import { PAGE_PATH } from "@/navigation/pagePaths";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
-import {
-  getAgentVaultLabels,
-  getPublishKnowledgeHubSummary,
-} from "@/lib/agentPublishPreview";
+import { getPublishKnowledgeHubSummary } from "@/lib/agentPublishPreview";
+import PublishSharedVaultVariablesSection from "@/components/features/publish/PublishSharedVaultVariablesSection";
 
 const KUDOS_AGENT_NAME = "Customer Appreciation";
 
@@ -624,10 +622,7 @@ function AgentConversationPanel({ agent, onClose, isExpanded, onToggleExpand }) 
 function PublishAgentMarketplaceDetails({ agent }) {
   const { hubs } = useKnowledgeHubs();
   const hubSummary = getPublishKnowledgeHubSummary(agent, hubs);
-  const vaultLabels = getAgentVaultLabels(agent);
-  const vaultCount = vaultLabels.length;
   const [hubsExpanded, setHubsExpanded] = useState(false);
-  const [vaultExpanded, setVaultExpanded] = useState(vaultCount <= 3);
 
   const notListedHubCount = hubSummary.attached.filter((h) => !h.marketplacePublished).length;
 
@@ -678,52 +673,11 @@ function PublishAgentMarketplaceDetails({ agent }) {
           )}
         </div>
       </div>
-      <Separator className="my-3" />
-      <div className="flex gap-3">
-        <Vault className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
-        <div className="min-w-0 flex-1 text-left">
-          <p className="font-medium text-foreground">
-            Vault labels
-            {vaultCount > 0 && (
-              <span className="font-normal text-muted-foreground"> ({vaultCount})</span>
-            )}
-          </p>
-          {vaultCount === 0 ? (
-            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-              No vault labels linked to this agent.
-            </p>
-          ) : (
-            <>
-              {vaultCount > 3 && (
-                <button
-                  type="button"
-                  aria-expanded={vaultExpanded}
-                  aria-controls="publish-vault-list"
-                  onClick={() => setVaultExpanded((prev) => !prev)}
-                  className="mt-1 flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline transition-colors"
-                >
-                  <span>{vaultExpanded ? "Hide labels" : `Show ${vaultCount} labels`}</span>
-                  <ChevronDown size={12} className={cn("transition-transform", vaultExpanded && "rotate-180")} />
-                </button>
-              )}
-              {vaultExpanded && (
-                <ul id="publish-vault-list" className="mt-1.5 space-y-2 text-xs leading-relaxed">
-                  {vaultLabels.map(({ label, variableRef }) => (
-                    <li key={label} className="flex flex-col gap-0.5">
-                      <span className="font-medium text-foreground">{label}</span>
-                      <span className="font-mono text-muted-foreground">{variableRef}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Secret values are never exposed — only{" "}
-                <span className="font-mono text-foreground">{"{{variable}}"}</span> references are shown.
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+      <PublishSharedVaultVariablesSection
+        source={agent}
+        kind="agent"
+        listId="publish-agent-shared-vault-list"
+      />
     </>
   );
 }
@@ -1238,7 +1192,7 @@ export default function AgentsListPage({
       <Dialog open={!!agentPendingPublish} onOpenChange={(open) => { if (!publishBusy && !open) setAgentPendingPublish(null); }}>
         <DialogContent
           showCloseButton
-          className="flex max-h-[min(90vh,700px)] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:w-full"
+          className="flex max-h-[min(90vh,720px)] w-[calc(100vw-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl sm:w-full"
         >
           <div className="min-h-0 flex-1 overflow-y-auto">
             <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">

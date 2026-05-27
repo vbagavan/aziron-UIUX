@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import PublishSharedVaultVariablesSection from "@/components/features/publish/PublishSharedVaultVariablesSection";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const NODE_W = 200;
@@ -4323,7 +4324,7 @@ function TopBar({
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
         <DialogContent
           showCloseButton
-          className="flex max-h-[min(90vh,620px)] w-[calc(100vw-2rem)] max-w-md flex-col gap-0 overflow-hidden p-0 sm:w-full"
+          className="flex max-h-[min(90vh,720px)] w-[calc(100vw-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl sm:w-full"
         >
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <DialogHeader className="relative px-6 pt-6 pb-2 pr-14 text-center">
@@ -4360,6 +4361,11 @@ function TopBar({
                   </p>
                 </div>
               </div>
+              <PublishSharedVaultVariablesSection
+                source={flow}
+                kind="flow"
+                listId="publish-flow-view-shared-vault-list"
+              />
             </div>
           </div>
 

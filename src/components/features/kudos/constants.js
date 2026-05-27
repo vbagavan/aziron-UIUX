@@ -162,13 +162,18 @@ export const KUDOS_SUGGESTIONS = [
   },
 ];
 
-export const APPROVAL_KEYWORDS = /\b(request approval|send approval|send for approval|approve|submit for approval)\b/i;
+/** UI label and typed/sent phrase for submitting a card for PSP review — keep in sync everywhere */
+export const SUBMIT_FOR_APPROVAL_LABEL = "Submit for approval";
+export const SUBMIT_FOR_APPROVAL_COMMAND = "submit for approval";
+export const APPROVAL_KEYWORDS = /\bsubmit for approval\b/i;
 
-/** Product & Success Planning — approves kudos before send */
+/** Product & Success Planning — reviews Customer Appreciation cards before send */
 export const PSP_TEAM_LABEL = "Approval team";
 export const PSP_TEAM_LONG_LABEL = "Product & Success Planning (PSP)";
-export const PSP_TEAM_DESCRIPTION =
-  "The approval team reviews your card before it is sent to recipients.";
+export const PSP_APPROVAL_EXPLAINER =
+  "Product & Success Planning reviews your card before send. You will be notified when it is approved, needs changes, or is declined.";
+export const PSP_TEAM_DESCRIPTION = PSP_APPROVAL_EXPLAINER;
+export const PSP_APPROVAL_HEADLINE = "Submitted for approval";
 
 export const PREVIEW_COMMAND_CHIPS = [
   { label: "Blue background", command: "change background to blue" },
@@ -178,4 +183,5 @@ export const PREVIEW_COMMAND_CHIPS = [
   { label: "Undo last style", command: "__undo_style__" },
 ];
 
-export const SUBMIT_APPROVAL_COMMAND = "send approval";
+/** @deprecated Use SUBMIT_FOR_APPROVAL_COMMAND */
+export const SUBMIT_APPROVAL_COMMAND = SUBMIT_FOR_APPROVAL_COMMAND;

@@ -27,12 +27,12 @@ export default function KudosTemplatePreviewBlock({
         )}
       </div>
 
-      {/* OneDrive template thumbnails */}
+      {/* Cloud folder template thumbnails */}
       <div className="px-3 py-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Cloud size={12} className="text-primary flex-shrink-0" />
           <span className="text-[10px] font-medium text-muted-foreground">
-            Templates from OneDrive
+            Templates from cloud folder
           </span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">

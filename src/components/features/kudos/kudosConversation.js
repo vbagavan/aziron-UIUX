@@ -1,4 +1,4 @@
-import { TEMPLATES } from "./constants";
+import { SUBMIT_FOR_APPROVAL_COMMAND, SUBMIT_FOR_APPROVAL_LABEL, TEMPLATES } from "./constants";
 
 export const KUDOS_TIMELINE_STEPS = [
   {
@@ -10,8 +10,8 @@ export const KUDOS_TIMELINE_STEPS = [
     id: 2,
     kind: "action",
     action: "Read",
-    target: "Microsoft OneDrive /KudosTemplates",
-    meta: "Listing available certificate layouts",
+    target: "Cloud folder /KudosTemplates",
+    meta: "Listing available card layouts",
     code: null,
   },
   {
@@ -33,13 +33,13 @@ export const KUDOS_TEMPLATE_SWITCH_STEPS = [
   {
     id: 1,
     kind: "comment",
-    text: "Applying your template choice to the certificate preview.",
+    text: "Applying your template choice to the card preview.",
   },
   {
     id: 2,
     kind: "action",
     action: "Read",
-    target: "Microsoft OneDrive /KudosTemplates",
+    target: "Cloud folder /KudosTemplates",
     meta: "Loading layout assets",
     code: null,
   },
@@ -132,7 +132,7 @@ export function buildIntroBlocks() {
     {
       type: "heading",
       level: 2,
-      content: "Send a customer appreciation",
+      content: "Create an appreciation card",
     },
     {
       type: "text",
@@ -142,7 +142,7 @@ export function buildIntroBlocks() {
     {
       type: "text",
       content:
-        "You will see thinking, a step-by-step timeline, and template thumbnails in this chat — same as New Chat — then pick a layout below.",
+        "You will see progress steps and template options in this chat, then pick a layout below.",
     },
     {
       type: "text",
@@ -192,7 +192,7 @@ export function buildPreviewResultBlocks({
     },
     {
       type: "text",
-      content: `Templates are synced from OneDrive. Recommended layout: ${templateLabel}. Confirm recipients and pick a different template if you like.`,
+      content: `Templates are synced from your cloud folder. Recommended layout: ${templateLabel}. Confirm recipients and pick a different template if you like.`,
     },
     {
       type: "kudos_recipients_table",
@@ -239,22 +239,13 @@ export function buildStyleReplyBlocks({ summary, isHint, isError, showsStyledPre
     blocks.push({
       type: "text",
       content:
-        "Template layout previews use your OneDrive sample. Color and theme changes apply to the live card preview on the left.",
+        "Template layout previews use your cloud folder samples. Color and theme changes apply to the live card preview on the left.",
     });
   }
   blocks.push({
     type: "text",
-    content: "Tap Submit for approval when you are ready.",
+    content: `Select ${SUBMIT_FOR_APPROVAL_LABEL} when you are ready, or type "${SUBMIT_FOR_APPROVAL_COMMAND}". Product & Success Planning reviews your card before send.`,
   });
   return blocks;
 }
 
-export function buildApprovalSubmittedBlocks() {
-  return [
-    {
-      type: "text",
-      content:
-        "Your card is with the approval team. You will be notified when they approve, request changes, or reject.",
-    },
-  ];
-}

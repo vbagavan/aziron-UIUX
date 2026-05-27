@@ -1,20 +1,21 @@
 import { normalizeHubId } from "@/lib/agentKnowledge";
+import { findVaultSecretByKeyName } from "@/data/vaultSecrets";
+import { detectRequiredVaultVariables } from "@/lib/vaultVariableDetection";
+import {
+  getExplicitVaultLabels,
+  isSharedVaultScope,
+  mergeDetectedVaultLabels,
+} from "@/lib/vaultPublishLabels";
 
-/** @typedef {{ label: string, key?: string, marketplacePublished?: boolean }} VaultLabelRef */
+export {
+  formatVaultVariableRef,
+  isSharedVaultScope,
+  mergeDetectedVaultLabels,
+  parseVaultLabelsArray,
+  SHARED_VAULT_SCOPES,
+} from "@/lib/vaultPublishLabels";
 
-/** Display name for a vault variable reference (e.g. `{{OPENAI_API_KEY}}`). */
-export function formatVaultVariableRef(labelOrKey) {
-  const raw = String(labelOrKey ?? "").trim();
-  if (!raw) return "{{}}";
-  if (raw.startsWith("{{") && raw.endsWith("}}")) return raw;
-  const key = /[\s-]/.test(raw)
-    ? raw
-        .replace(/[^a-zA-Z0-9]+/g, "_")
-        .replace(/^_|_$/g, "")
-        .toUpperCase()
-    : raw.replace(/[^a-zA-Z0-9_]/g, "") || raw;
-  return `{{${key}}}`;
-}
+/** @typedef {import("@/lib/vaultPublishLabels").VaultLabelRef} VaultLabelRef */
 
 /**
  * Vault label refs for an agent (names only in publish UI; values never shown).
@@ -23,40 +24,43 @@ export function formatVaultVariableRef(labelOrKey) {
  */
 export function getAgentVaultLabels(agent) {
   if (!agent) return [];
-  if (Array.isArray(agent.vaultLabels) && agent.vaultLabels.length > 0) {
-    return agent.vaultLabels
-      .map((entry) => {
-        if (typeof entry === "string") {
-          const label = entry;
-          return {
-            label,
-            key: formatVaultVariableRef(label).slice(2, -2),
-            variableRef: formatVaultVariableRef(label),
-            marketplacePublished: false,
-          };
-        }
-        const label = entry?.label ?? entry?.key ?? "";
-        if (!label) return null;
-        const key = entry?.key ?? formatVaultVariableRef(label).slice(2, -2);
-        return {
-          label: String(label),
-          key: String(key),
-          variableRef: formatVaultVariableRef(entry?.key ?? label),
-          marketplacePublished: entry.marketplacePublished === true,
-        };
-      })
-      .filter(Boolean);
-  }
-  const keys = Array.isArray(agent.vaultKeys) ? agent.vaultKeys : [];
-  return keys.map((key) => {
-    const label = String(key);
-    return {
-      label,
-      key: formatVaultVariableRef(label).slice(2, -2),
-      variableRef: formatVaultVariableRef(label),
-      marketplacePublished: false,
-    };
-  });
+  const explicit = getExplicitVaultLabels(agent);
+  if (explicit.length > 0) return explicit;
+  return mergeDetectedVaultLabels(agent, detectRequiredVaultVariables(agent, "agent"));
+}
+
+/**
+ * Vault label refs for a flow (explicit labels, legacy keys, or step-based detection).
+ * @returns {VaultLabelRef[]}
+ */
+export function getFlowVaultLabels(flow) {
+  if (!flow) return [];
+  const explicit = getExplicitVaultLabels(flow);
+  if (explicit.length > 0) return explicit;
+  return mergeDetectedVaultLabels(flow, detectRequiredVaultVariables(flow, "flow"));
+}
+
+/**
+ * Shared vault variables referenced by an agent or flow, enriched with scope from Vault storage.
+ * @param {object} source
+ * @param {"agent"|"flow"} kind
+ * @param {import("@/data/vaultSecrets").VaultSecret[]} [vaultSecrets]
+ * @returns {VaultLabelRef[]}
+ */
+export function getSharedVaultLabelsForPublish(source, kind, vaultSecrets = []) {
+  const all = kind === "agent" ? getAgentVaultLabels(source) : getFlowVaultLabels(source);
+
+  return all
+    .map((entry) => {
+      const stored = findVaultSecretByKeyName(vaultSecrets, entry.key);
+      const secretType = entry.secretType ?? stored?.secretType ?? "workspace";
+      return {
+        ...entry,
+        secretType,
+        isShared: isSharedVaultScope(secretType),
+      };
+    })
+    .filter((entry) => entry.isShared);
 }
 
 /**

@@ -1,9 +1,9 @@
-import { SparkLogo } from "./kudosUi";
+import { SparkLogo } from "./kudosPrimitives";
 
 const STEPS = [
   "In the chat, describe who you are recognizing and why — include @Name or an email.",
-  "Press Enter — watch the chat for thinking, timeline, and template thumbnails (like New Chat).",
-  "Pick a template in chat, adjust styles with chips, then submit for approval.",
+  "Press Enter — watch the chat for progress steps and template options.",
+  "Pick a template in chat, adjust styles with chips, then Submit for approval.",
 ];
 
 export default function KudosIdleGuide() {
@@ -11,9 +11,9 @@ export default function KudosIdleGuide() {
     <div className="flex flex-1 min-h-0 flex-col items-center justify-center gap-6 bg-muted p-8">
       <SparkLogo size={28} />
       <div className="max-w-md text-center space-y-2">
-        <h2 className="text-lg font-semibold text-foreground">Customer appreciation</h2>
+        <h2 className="text-lg font-semibold text-foreground">Customer Appreciation</h2>
         <p className="text-sm text-muted-foreground leading-6">
-          Your certificate preview will appear here after you send a message in the chat panel.
+          Your card preview will appear here after you send a message in the chat panel.
         </p>
       </div>
       <ol className="max-w-sm w-full space-y-3 text-left">

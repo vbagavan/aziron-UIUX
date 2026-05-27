@@ -5,7 +5,8 @@ import {
   DEFAULT_RECIPIENTS,
   APPROVAL_KEYWORDS,
   APPROVAL_STATUS,
-  SUBMIT_APPROVAL_COMMAND,
+  SUBMIT_FOR_APPROVAL_COMMAND,
+  SUBMIT_FOR_APPROVAL_LABEL,
   TEMPLATES,
 } from "./constants";
 import {
@@ -24,7 +25,6 @@ import {
   buildTemplateSelectBlocks,
   buildPreviewResultBlocks,
   buildStyleReplyBlocks,
-  buildApprovalSubmittedBlocks,
   KUDOS_STYLE_TIMELINE_STEPS,
 } from "./kudosConversation";
 
@@ -47,6 +47,7 @@ export function useKudosWorkflow() {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [recommendedTemplateId, setRecommendedTemplateId] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState("gold-classic");
+  const [promptContextFileIds, setPromptContextFileIds] = useState([]);
   const [templateContent, setTemplateContent] = useState(DEFAULT_CARD_CONTENT);
   const [baselineTemplateContent, setBaselineTemplateContent] = useState(DEFAULT_CARD_CONTENT);
   const [approvals, setApprovals] = useState([]);
@@ -71,6 +72,23 @@ export function useKudosWorkflow() {
   };
 
   useEffect(() => () => clearTimers(), []);
+
+  useEffect(() => {
+    if (onedriveTemplates.length > 0) return undefined;
+    let cancelled = false;
+    (async () => {
+      setTemplatesLoading(true);
+      try {
+        const templates = await fetchTemplatesFromOneDrive();
+        if (!cancelled) setOnedriveTemplates(templates);
+      } finally {
+        if (!cancelled) setTemplatesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [onedriveTemplates.length]);
 
   const updateCompose = (partial) => setCompose((prev) => ({ ...prev, ...partial }));
 
@@ -117,7 +135,7 @@ export function useKudosWorkflow() {
   }, [inputValue, compose.message, stage]);
 
   useEffect(() => {
-    if (stage === "loading-templates") setLiveStatus("Loading templates from OneDrive");
+    if (stage === "loading-templates") setLiveStatus("Loading templates from cloud folder");
     else if (stage === "generating") setLiveStatus("Generating your appreciation card");
     else if (stage === "preview") setLiveStatus("Preview ready for review");
     else setLiveStatus("");
@@ -160,10 +178,48 @@ export function useKudosWorkflow() {
     requestChatScroll,
   ]);
 
+  const attachDriveFileToPrompt = useCallback((fileId) => {
+    if (!fileId) return;
+    setPromptContextFileIds((prev) => (prev.includes(fileId) ? prev : [...prev, fileId]));
+  }, []);
+
+  const detachDriveFileFromPrompt = useCallback((fileId) => {
+    if (!fileId) return;
+    setPromptContextFileIds((prev) => prev.filter((id) => id !== fileId));
+  }, []);
+
+  const handleDriveFileSelect = useCallback(
+    (fileId) => {
+      attachDriveFileToPrompt(fileId);
+      if (fileId === activeTemplate) return;
+      setActiveTemplate(fileId);
+      if (stage !== "preview") return;
+
+      const catalog = onedriveTemplates.length > 0 ? onedriveTemplates : TEMPLATES;
+      const label = catalog.find((t) => t.id === fileId)?.label ?? fileId;
+
+      appendChatMessages({
+        id: `a-tpl-${Date.now()}`,
+        role: "assistant",
+        blocks: buildTemplateSelectBlocks(label),
+      });
+      requestChatScroll();
+    },
+    [
+      activeTemplate,
+      attachDriveFileToPrompt,
+      stage,
+      onedriveTemplates,
+      appendChatMessages,
+      requestChatScroll,
+    ],
+  );
+
   const selectTemplate = useCallback(
     (templateId) => {
       if (templateId === activeTemplate) return;
       setActiveTemplate(templateId);
+      attachDriveFileToPrompt(templateId);
       if (stage !== "preview") return;
 
       const catalog = onedriveTemplates.length > 0 ? onedriveTemplates : TEMPLATES;
@@ -176,7 +232,7 @@ export function useKudosWorkflow() {
       });
       requestChatScroll();
     },
-    [activeTemplate, stage, onedriveTemplates, appendChatMessages, requestChatScroll],
+    [activeTemplate, attachDriveFileToPrompt, stage, onedriveTemplates, appendChatMessages, requestChatScroll],
   );
 
   const handleSelectUser = (user) => {
@@ -302,7 +358,7 @@ export function useKudosWorkflow() {
     return channels;
   };
 
-  const handleRequestApproval = (userMessage = SUBMIT_APPROVAL_COMMAND) => {
+  const handleRequestApproval = (userMessage = SUBMIT_FOR_APPROVAL_COMMAND) => {
     const recipients = syncRecipientsFromCompose();
     const newApproval = {
       id: Date.now().toString(),
@@ -319,16 +375,20 @@ export function useKudosWorkflow() {
       reviewHistory: [{ at: new Date().toISOString(), action: "submitted", by: "Requester" }],
     };
     setApprovals((prev) => [...prev, newApproval]);
-    dispatchPspNotifications(newApproval.id);
+    const notifications = dispatchPspNotifications(newApproval.id);
+    const approvalForChat = { ...newApproval, notifications };
     setNotifOpen(true);
     setInputValue("");
     setShowPicker(false);
     setLiveStatus("Submitted for approval");
-    appendChatMessages({
-      id: `a-approval-${newApproval.id}`,
-      role: "assistant",
-      blocks: buildApprovalSubmittedBlocks(),
-    });
+    appendChatMessages(
+      { id: `approval-request-${newApproval.id}`, role: "user", content: userMessage },
+      {
+        id: `approval-response-${newApproval.id}`,
+        role: "assistant",
+        blocks: [{ type: "kudos_approval_status", approval: approvalForChat }],
+      },
+    );
     requestChatScroll();
   };
 
@@ -382,7 +442,7 @@ export function useKudosWorkflow() {
     if (APPROVAL_KEYWORDS.test(raw)) {
       setChatMessages((prev) => prev.filter((m) => m.id !== assistantId));
       styleReplyMsgIdRef.current = null;
-      handleRequestApproval(raw);
+      handleRequestApproval(SUBMIT_FOR_APPROVAL_COMMAND);
       return;
     }
     const styleResult = parseTemplateStylePrompt(raw);
@@ -393,7 +453,7 @@ export function useKudosWorkflow() {
       return;
     }
     finishStyleReply(
-      'Try "blue background", "dark theme", or tap Submit for approval when you are done.',
+      `Try "blue background", "dark theme", or type "${SUBMIT_FOR_APPROVAL_COMMAND}" when you are done.`,
       { isHint: true },
     );
   };
@@ -569,6 +629,7 @@ export function useKudosWorkflow() {
     setTemplatesLoading(false);
     setRecommendedTemplateId(null);
     setActiveTemplate("gold-classic");
+    setPromptContextFileIds([]);
     setTemplateContent(DEFAULT_CARD_CONTENT);
     setBaselineTemplateContent(DEFAULT_CARD_CONTENT);
     setApprovals([]);
@@ -598,6 +659,10 @@ export function useKudosWorkflow() {
     recommendedTemplateId,
     activeTemplate,
     setActiveTemplate,
+    promptContextFileIds,
+    attachDriveFileToPrompt,
+    detachDriveFileFromPrompt,
+    handleDriveFileSelect,
     selectTemplate,
     templateContent,
     updateTemplateContent,

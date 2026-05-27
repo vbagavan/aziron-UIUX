@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SparkLogo } from "./kudosUi";
+import { SparkLogo } from "./kudosPrimitives";
 import KudosTemplatePreview from "./KudosTemplatePreview";
 import KudosIdleGuide from "./KudosIdleGuide";
 import { hasCustomCardStyles } from "@/lib/kudosPreviewUtils";
@@ -68,7 +68,7 @@ export default function KudosPreviewEditor({ workflow }) {
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
           <SparkLogo size={18} />
           {stage === "loading-templates"
-            ? "Syncing templates from Microsoft OneDrive…"
+            ? "Syncing templates from cloud storage…"
             : "Generating your appreciation card…"}
         </div>
       ) : (

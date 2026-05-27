@@ -8,6 +8,10 @@ import {
   Maximize2,
   Minimize2,
   RotateCcw,
+  Paperclip,
+  Wrench,
+  Database,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import RichMessage from "@/components/common/RichMessage";
@@ -17,63 +21,22 @@ import KudosRecipientsTableBlock from "./blocks/KudosRecipientsTableBlock";
 import KudosApprovalStatusBlock from "./blocks/KudosApprovalStatusBlock";
 import KudosTemplatePreviewBlock from "./blocks/KudosTemplatePreviewBlock";
 import { getActiveMention } from "@/lib/kudosEmailUtils";
+import { templatesToDriveFiles } from "@/services/oneDriveTemplates";
 import { buildIntroBlocks } from "./kudosConversation";
+import {
+  KudosDriveContextChip,
+  KudosDriveFileList,
+} from "./KudosDriveFileList";
 import {
   USERS,
   TEMPLATES,
   PREVIEW_COMMAND_CHIPS,
-  SUBMIT_APPROVAL_COMMAND,
+  SUBMIT_FOR_APPROVAL_COMMAND,
+  SUBMIT_FOR_APPROVAL_LABEL,
 } from "./constants";
+import { UserAvatar } from "./kudosPrimitives";
 
-export function getInitials(name) {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-export function UserAvatar({ name, color, size = 32 }) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: color,
-        borderRadius: "50%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        fontSize: size * 0.35,
-        fontWeight: 600,
-        color: "var(--primary-foreground)",
-        userSelect: "none",
-      }}
-    >
-      {getInitials(name)}
-    </div>
-  );
-}
-
-export function SparkLogo({ size = 18 }) {
-  const s = size;
-  return (
-    <svg
-      width={s}
-      height={Math.round(s * 1.09)}
-      viewBox="0 0 22 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ flexShrink: 0 }}
-    >
-      <path d="M0 14L9 8.5V19.5L0 14Z" fill="var(--primary)" />
-      <path d="M13 0L22 5.5V14.5L13 9V0Z" fill="var(--primary)" />
-      <path d="M13 15L22 9.5V20.5L13 15Z" fill="var(--chart-chart-2)" />
-    </svg>
-  );
-}
+export { UserAvatar, SparkLogo, getInitials } from "./kudosPrimitives";
 
 function AgentPlaceholder() {
   return (
@@ -148,6 +111,12 @@ function PromptBox({
   placeholder = "Describe who you are recognizing. Include an email or @name…",
   isSending = false,
   selectedEmails = [],
+  driveFiles = [],
+  activeTemplateId,
+  promptContextFileIds = [],
+  onSelectDriveFile,
+  onRemoveContextFile,
+  templatesLoading = false,
 }) {
   const textareaRef = useRef(null);
   const [focused, setFocused] = useState(false);
@@ -218,32 +187,72 @@ function PromptBox({
   };
 
   const shellClass = cn(
-    "rounded-[12px] border bg-card transition-all duration-150",
-    "shadow-[0px_5px_10px_-2px_rgba(0,0,0,0.08)]",
-    "dark:bg-card",
+    "w-full overflow-hidden rounded-[12px] border bg-card transition-all duration-150",
+    "shadow-[0_4px_24px_0_rgba(37,99,235,0.10)] dark:shadow-none",
     focused
       ? "border-primary border-2 shadow-[0_0_0_4px_color-mix(in_oklch,var(--color-primary)_8%,transparent)]"
       : "border-border",
   );
 
+  const canSend = Boolean(value.trim()) && !isSending;
+
+  const promptContextFiles = useMemo(
+    () =>
+      promptContextFileIds
+        .map((id) => driveFiles.find((f) => f.id === id))
+        .filter(Boolean),
+    [driveFiles, promptContextFileIds],
+  );
+
+  const showDrivePanel = templatesLoading || driveFiles.length > 0;
+
   return (
     <div className="w-full">
+      {showPicker && (
+        <div className="mb-1">
+          <UserPickerDropdown
+            query={pickerQuery}
+            onSelect={onSelectUser}
+            selectedEmails={selectedEmails}
+            activeIndex={pickerIndex}
+            listId={listId}
+          />
+        </div>
+      )}
+
       <div className={shellClass}>
-        {/* User Picker Dropdown */}
-        {showPicker && (
-          <div className="mb-1">
-            <UserPickerDropdown
-              query={pickerQuery}
-              onSelect={onSelectUser}
-              selectedEmails={selectedEmails}
-              activeIndex={pickerIndex}
-              listId={listId}
-            />
+        {showDrivePanel && (
+          <KudosDriveFileList
+            files={driveFiles}
+            activeFileId={activeTemplateId}
+            contextFileIds={promptContextFileIds}
+            onSelectFile={onSelectDriveFile}
+            loading={templatesLoading}
+          />
+        )}
+
+        {promptContextFiles.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+            {promptContextFiles.map((file) => (
+              <KudosDriveContextChip
+                key={file.id}
+                file={file}
+                onRemove={onRemoveContextFile}
+              />
+            ))}
           </div>
         )}
 
-        {/* Row 1: Input Controls */}
-        <div className="border border-border rounded-t-[12px] flex items-end gap-2 p-3">
+        <div className="flex items-end gap-2 px-3 py-3">
+          <button
+            type="button"
+            aria-label="Attach file"
+            title="Attach file"
+            className="mb-0.5 flex size-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+          >
+            <Paperclip size={16} aria-hidden />
+          </button>
+
           <textarea
             ref={textareaRef}
             value={value}
@@ -253,21 +262,75 @@ function PromptBox({
             onBlur={() => setFocused(false)}
             placeholder={placeholder}
             rows={1}
+            aria-label="Message input"
             aria-controls={showPicker ? listId : undefined}
             aria-expanded={showPicker}
             aria-autocomplete={showPicker ? "list" : undefined}
-            className="flex-1 min-w-0 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none leading-6 min-h-[36px] max-h-[120px] py-1 overflow-y-auto"
+            className="min-h-[36px] max-h-[120px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1 text-sm leading-6 text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <button
             type="button"
             onClick={handleSendClick}
-            disabled={!value.trim() || isSending}
+            disabled={!canSend}
             aria-label={isSending ? "Sending" : "Send message"}
             aria-busy={isSending}
-            className="flex items-center justify-center size-8 rounded-full border border-border bg-card text-muted-foreground hover:bg-muted flex-shrink-0 mt-0.5 disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed"
+            className={cn(
+              "mb-0.5 flex size-9 flex-shrink-0 items-center justify-center rounded-full border transition-colors",
+              canSend
+                ? "border-border bg-primary text-primary-foreground hover:bg-primary"
+                : "cursor-not-allowed border-border bg-card text-muted-foreground",
+            )}
           >
             <Send size={14} aria-hidden className={isSending ? "animate-pulse" : ""} />
+          </button>
+        </div>
+
+        <div className="flex h-9 items-center justify-between px-3">
+          <div className="flex min-w-0 items-center gap-0.5">
+            <button
+              type="button"
+              className="flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <Wrench size={14} aria-hidden />
+              <span>Tools</span>
+            </button>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <button
+              type="button"
+              aria-label="Browse knowledge hub"
+              title="Knowledge Hub"
+              className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <Database size={14} aria-hidden />
+            </button>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <div className="flex items-center gap-1.5 px-1.5" title="Context window usage">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <circle cx="7" cy="7" r="5" stroke="var(--border)" strokeWidth="3" fill="none" />
+                <circle
+                  cx="7"
+                  cy="7"
+                  r="5"
+                  stroke="var(--primary)"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray={`${0.65 * 2 * Math.PI * 5} ${2 * Math.PI * 5}`}
+                  strokeDashoffset={2 * Math.PI * 5 * 0.25}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="text-xs text-muted-foreground">65% used</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            aria-label="Select AI model"
+            className="flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
+          >
+            <Cpu size={14} aria-hidden />
+            <span className="hidden sm:inline">Claude-sonnet</span>
           </button>
         </div>
       </div>
@@ -333,7 +396,16 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
     handleUpdateApproval,
     chatScrollEpoch,
     reset,
+    templatesLoading,
+    promptContextFileIds,
+    handleDriveFileSelect,
+    detachDriveFileFromPrompt,
   } = workflow;
+
+  const driveFiles = useMemo(
+    () => templatesToDriveFiles(onedriveTemplates?.length ? onedriveTemplates : TEMPLATES),
+    [onedriveTemplates],
+  );
 
   const messagesEndRef = useRef(null);
 
@@ -452,56 +524,54 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
         </div>
       </div>
 
-      {/* Input Footer */}
+      {/* Prompt box — matches agent chat footer */}
       {showPrompt && (
-        <div
-          className={cn(
-            "flex-shrink-0 border-t border-border bg-muted",
-            "p-3 flex flex-col gap-2",
-          )}
-        >
-          <div className="w-full flex flex-col gap-2">
-            {/* Style command chips - shown in preview stage */}
-            {stage === "preview" && (
-              <div className="flex flex-wrap gap-1.5">
-                {PREVIEW_COMMAND_CHIPS.filter(
-                  (c) => c.command !== "__reset_styles__" && c.command !== "__undo_style__",
-                ).map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => runPreviewCommand(chip.command)}
-                    className="text-[10px] font-medium px-2 py-1 rounded-full border border-border bg-card text-foreground hover:bg-muted transition-colors"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
+        <div className="flex flex-shrink-0 flex-col gap-2 px-3 pb-3 pt-2">
+          {stage === "preview" && (
+            <div className="flex flex-wrap gap-1.5">
+              {PREVIEW_COMMAND_CHIPS.filter(
+                (c) => c.command !== "__reset_styles__" && c.command !== "__undo_style__",
+              ).map((chip) => (
                 <button
+                  key={chip.label}
                   type="button"
-                  onClick={() => handleRequestApproval(SUBMIT_APPROVAL_COMMAND)}
-                  className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  onClick={() => runPreviewCommand(chip.command)}
+                  className="rounded-full border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted"
                 >
-                  Submit for approval
+                  {chip.label}
                 </button>
-              </div>
-            )}
+              ))}
+              <button
+                type="button"
+                onClick={() => handleRequestApproval(SUBMIT_FOR_APPROVAL_COMMAND)}
+                className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                {SUBMIT_FOR_APPROVAL_LABEL}
+              </button>
+            </div>
+          )}
 
-            <PromptBox
-              value={inputValue}
-              onChange={setInputValue}
-              onSend={handleSend}
-              showPicker={showPicker}
-              pickerQuery={pickerQuery}
-              onSelectUser={handleSelectUser}
-              isSending={isSending}
-              selectedEmails={selectedRecipients.map((r) => r.email)}
-              placeholder={
-                stage === "preview"
-                  ? 'Try "blue background" or "dark theme", or use the chips above…'
-                  : "@Zoya Baum — thank you for… name@company.com"
-              }
-            />
-          </div>
+          <PromptBox
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSend}
+            showPicker={showPicker}
+            pickerQuery={pickerQuery}
+            onSelectUser={handleSelectUser}
+            isSending={isSending}
+            selectedEmails={selectedRecipients.map((r) => r.email)}
+            driveFiles={driveFiles}
+            activeTemplateId={activeTemplate}
+            promptContextFileIds={promptContextFileIds}
+            onSelectDriveFile={handleDriveFileSelect}
+            onRemoveContextFile={detachDriveFileFromPrompt}
+            templatesLoading={templatesLoading && onedriveTemplates.length === 0}
+            placeholder={
+              stage === "preview"
+                ? `Try "blue background", "dark theme", the chips above, or type "${SUBMIT_FOR_APPROVAL_COMMAND}"…`
+                : "@Zoya Baum — thank you for… name@company.com"
+            }
+          />
         </div>
       )}
 

@@ -1,6 +1,12 @@
 import { Mail, Check, Clock, X, AlertCircle } from "lucide-react";
-import { APPROVAL_STATUS, APPROVAL_STATUS_LABELS } from "../constants";
-import { UserAvatar } from "../kudosUi";
+import {
+  APPROVAL_STATUS,
+  APPROVAL_STATUS_LABELS,
+  PSP_APPROVAL_EXPLAINER,
+  PSP_APPROVAL_HEADLINE,
+  PSP_TEAM_LONG_LABEL,
+} from "../constants";
+import { UserAvatar } from "../kudosPrimitives";
 import { cn } from "@/lib/utils";
 
 function ApprovalStatusBadge({ status }) {
@@ -104,25 +110,41 @@ export default function KudosApprovalStatusBlock({
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted">
         <StatusIcon status={approval.status} />
-        <span className="text-xs font-semibold text-foreground flex-1">
-          Sent to PSP team for review
-        </span>
+        <p className="min-w-0 flex-1 text-xs font-semibold text-foreground leading-5">
+          {approval.status === APPROVAL_STATUS.PENDING
+            ? PSP_APPROVAL_HEADLINE
+            : (APPROVAL_STATUS_LABELS[approval.status] ?? approval.status)}
+        </p>
         <ApprovalStatusBadge status={approval.status} />
       </div>
 
       {/* Status Info */}
       <div className="px-3 py-2.5 border-b border-border">
-        <div className="flex items-center gap-2 flex-wrap mb-1">
-          <p className="text-xs font-medium text-foreground leading-5">
-            Sent to PSP team for review
+        {approval.status === APPROVAL_STATUS.PENDING && (
+          <p className="text-xs text-muted-foreground leading-5">{PSP_APPROVAL_EXPLAINER}</p>
+        )}
+        {approval.status === APPROVAL_STATUS.APPROVED && (
+          <p className="text-xs text-muted-foreground leading-5">
+            {PSP_TEAM_LONG_LABEL} approved your card. Confirm recipients below, then send email.
           </p>
-        </div>
+        )}
+        {approval.status === APPROVAL_STATUS.REJECTED && (
+          <p className="text-xs text-muted-foreground leading-5">
+            {PSP_TEAM_LONG_LABEL} declined this card. Update your design or message and submit again.
+          </p>
+        )}
+        {approval.status === APPROVAL_STATUS.CHANGES_REQUESTED && (
+          <p className="text-xs text-muted-foreground leading-5">
+            {PSP_TEAM_LONG_LABEL} requested changes. Update your card and submit again.
+          </p>
+        )}
         <NotificationChannelsSent
           notifications={approval.notifications ?? lastNotificationChannels}
         />
         {approval.pspComment && (
           <p className="text-xs text-muted-foreground mt-1.5 leading-4">
-            PSP: {approval.pspComment}
+            <span className="font-medium text-foreground">{PSP_TEAM_LONG_LABEL}:</span>{" "}
+            {approval.pspComment}
           </p>
         )}
       </div>

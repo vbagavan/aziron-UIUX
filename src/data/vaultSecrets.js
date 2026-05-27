@@ -1,4 +1,4 @@
-import { formatVaultVariableRef } from "@/lib/agentPublishPreview";
+import { formatVaultVariableRef } from "@/lib/vaultPublishLabels";
 
 /** @typedef {"agent" | "credential" | "project" | "workspace"} VaultScope */
 
