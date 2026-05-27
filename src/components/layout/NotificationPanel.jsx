@@ -4,6 +4,8 @@ import {
   APPROVAL_STATUS_LABELS,
   PSP_TEAM_DESCRIPTION,
   PSP_TEAM_LABEL,
+  PSP_TEAM_LONG_LABEL,
+  TEMPLATES,
 } from "@/components/features/kudos/constants";
 import { cn } from "@/lib/utils";
 import {
@@ -272,12 +274,9 @@ function NotificationRow({ item, selected, onSelect }) {
 
 // ─── Kudos Approval Row ───────────────────────────────────────────────────────
 
-const KUDOS_TEMPLATE_LABELS = {
-  "gold-classic": "Gold Classic",
-  "blue-morden": "Blue Modern",
-  "green": "Green Nature",
-  "purple-elegant": "Purple Elegant",
-};
+const KUDOS_TEMPLATE_LABELS = Object.fromEntries(
+  TEMPLATES.map((t) => [t.id, t.label]),
+);
 
 function KudosApprovalRow({ approval, onApprove, onReject, onRequestChanges, onActionComplete }) {
   const [comment, setComment] = useState("");
@@ -328,7 +327,10 @@ function KudosApprovalRow({ approval, onApprove, onReject, onRequestChanges, onA
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground">Customer Appreciation — {PSP_TEAM_LABEL} review</p>
+          <p className="text-sm font-semibold text-foreground">
+            Customer Appreciation — {PSP_TEAM_LABEL}
+            <span className="font-normal text-muted-foreground"> ({PSP_TEAM_LONG_LABEL})</span>
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {recipientNames} · {KUDOS_TEMPLATE_LABELS[approval.template] ?? approval.template}
           </p>

@@ -37,6 +37,30 @@ const ONEDRIVE_META = {
     minRecipients: 1,
     teamFriendly: false,
   },
+  "blue-modern-team": {
+    driveItemId: "01BLUEMODERNTEAM",
+    path: "/KudosTemplates/BlueModernTeam.pptx",
+    tags: ["team", "milestone", "launch", "corporate"],
+    maxRecipients: 8,
+    minRecipients: 3,
+    teamFriendly: true,
+  },
+  "green-nature": {
+    driveItemId: "01GREENNATURECLS",
+    path: "/KudosTemplates/GreenNatureClassic.pptx",
+    tags: ["team", "wellness", "individual", "sustainability"],
+    maxRecipients: 4,
+    minRecipients: 1,
+    teamFriendly: true,
+  },
+  "gold-celebration": {
+    driveItemId: "01GOLDCELEBRATION",
+    path: "/KudosTemplates/GoldCelebration.pptx",
+    tags: ["individual", "executive", "quarterly", "customer-service"],
+    maxRecipients: 4,
+    minRecipients: 1,
+    teamFriendly: false,
+  },
 };
 
 export async function fetchTemplatesFromOneDrive() {

@@ -3,10 +3,10 @@ import Sidebar from "@/components/layout/Sidebar";
 import AppHeader from "@/components/layout/AppHeader";
 import { useKudosWorkflow } from "@/components/features/kudos/useKudosWorkflow";
 import { KudosConversationBody, KudosPanelHeader } from "@/components/features/kudos/kudosUi";
-import { DEFAULT_CARD_CONTENT } from "@/components/features/kudos/constants";
+import { DEFAULT_CARD_CONTENT, resolveKudosRendererId, getKudosTemplate } from "@/components/features/kudos/constants";
 import { resolveCardStyles, accentWithAlpha } from "@/lib/kudosCardStyleUtils";
 import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
-import KudosComposeStep from "@/components/features/kudos/KudosComposeStep";
+import KudosOneDriveTemplatePreview from "@/components/features/kudos/KudosOneDriveTemplatePreview";
 import {
   Bot,
   X,
@@ -1022,7 +1022,7 @@ function PurpleElegantCard({ recipients, content = DEFAULT_CARD_CONTENT }) {
 }
 
 export function renderKudosTemplate(templateId, recipients, content = DEFAULT_CARD_CONTENT) {
-  switch (templateId) {
+  switch (resolveKudosRendererId(templateId)) {
     case "blue-morden":
       return <BlueMordernCard recipients={recipients} content={content} />;
     case "green":
@@ -1534,22 +1534,12 @@ export { default as KudosPreviewPane } from "@/components/features/kudos/KudosPr
 export default function KudosPage({ onNavigate }) {
   const workflow = useKudosWorkflow();
   const {
-    stage,
-    activeTemplate,
-    setActiveTemplate,
-    selectedRecipients,
-    setInputValue,
     approvals,
     notifOpen,
     setNotifOpen,
     handleApprove,
     handleReject,
     handleUpdateApproval,
-    inputValue,
-    handleSend,
-    showPicker,
-    pickerQuery,
-    handleSelectUser,
   } = workflow;
 
   return (
@@ -1567,28 +1557,16 @@ export default function KudosPage({ onNavigate }) {
           onNotifToggle={() => setNotifOpen((v) => !v)}
         />
 
-        {/* Body: left content area + right sidebar */}
+        {/* Body: wide preview + 400px chat (matches Agents workspace) */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
-
-          {/* Left panel */}
-          <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-muted">
-            {stage === "compose" || stage === "empty" ? (
-              <div className="app-scroll-region min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
-                <div className="max-w-2xl mx-auto px-8 py-10">
-                  <KudosComposeStep workflow={workflow} onContinue={workflow.submitComposeForm} />
-                </div>
-              </div>
-            ) : (
-              <KudosPreviewEditor workflow={workflow} />
-            )}
-          </div>
-
-          {/* Right sidebar — /kudos conversation */}
+          <KudosPreviewEditor workflow={workflow} />
           <div
-            className="flex h-full min-h-0 flex-col border-l border-border bg-muted flex-shrink-0 overflow-hidden"
-            style={{ width: 340 }}
+            className="flex h-full min-h-0 w-[400px] flex-shrink-0 flex-col overflow-hidden border-l border-border bg-muted"
           >
-            <KudosPanelHeader onClose={() => onNavigate?.("agents")} />
+            <KudosPanelHeader
+              onClose={() => onNavigate?.("agents")}
+              onReset={workflow.reset}
+            />
             <KudosConversationBody workflow={workflow} />
           </div>
         </div>

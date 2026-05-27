@@ -1,7 +1,18 @@
 import { Check, Cloud, Maximize2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-function TemplateThumb({ template }) {
+export function TemplateThumb({ template }) {
+  if (template.thumbSrc) {
+    return (
+      <img
+        src={template.thumbSrc}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-top"
+        draggable={false}
+      />
+    );
+  }
+
   return (
     <div
       className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2"

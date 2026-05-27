@@ -1,13 +1,17 @@
-import { Star } from "lucide-react";
+import { Star, Cloud, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { TEMPLATES } from "../constants";
+import { TemplateThumb } from "../TemplateThumbnailGallery";
 
 export default function KudosTemplatePreviewBlock({
   templateId,
+  templates = TEMPLATES,
+  recommendedTemplateId,
   recommended = false,
   onSelectTemplate,
-  onViewFullPreview,
 }) {
-  const template = TEMPLATES.find((t) => t.id === templateId);
+  const catalog = templates?.length ? templates : TEMPLATES;
+  const template = catalog.find((t) => t.id === templateId);
   if (!template) return null;
 
   return (
@@ -23,42 +27,48 @@ export default function KudosTemplatePreviewBlock({
         )}
       </div>
 
-      {/* Template Thumbnail */}
-      <div
-        className="mx-3 my-3 h-32 rounded-[6px] border border-border cursor-pointer transition-all hover:ring-2 hover:ring-primary/40"
-        style={{ background: template.thumbBg }}
-        onClick={() => onViewFullPreview?.()}
-      >
-        <div className="h-full flex items-center justify-center relative">
-          <div
-            className="absolute inset-0 rounded-[6px] opacity-30 pointer-events-none"
-            style={{
-              boxShadow: `inset 0 1px 3px rgba(0,0,0,0.1), inset 0 0 20px ${template.thumbAccent}33`,
-            }}
-          />
-          <span
-            className="text-xs font-medium"
-            style={{ color: template.thumbAccent }}
-          >
-            {template.label}
+      {/* OneDrive template thumbnails */}
+      <div className="px-3 py-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Cloud size={12} className="text-primary flex-shrink-0" />
+          <span className="text-[10px] font-medium text-muted-foreground">
+            Templates from OneDrive
           </span>
         </div>
-      </div>
-
-      {/* Template Name */}
-      <div className="px-3 py-2 border-t border-border text-center">
-        <p className="text-xs font-medium text-foreground">{template.label}</p>
-      </div>
-
-      {/* Action */}
-      <div className="px-3 py-2 border-t border-border">
-        <button
-          type="button"
-          onClick={() => onViewFullPreview?.()}
-          className="w-full text-center text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          View full preview →
-        </button>
+        <div className="grid grid-cols-2 gap-1.5">
+          {catalog.map((tpl) => {
+            const selected = templateId === tpl.id;
+            const isRecommended = tpl.id === recommendedTemplateId;
+            return (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => onSelectTemplate?.(tpl.id)}
+                className={cn(
+                  "relative h-16 w-full rounded border overflow-hidden text-left transition-all hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selected
+                    ? "border-primary ring-2 ring-primary/25"
+                    : "border-border hover:border-primary/40",
+                )}
+                aria-pressed={selected}
+                aria-label={`Select ${tpl.label} template`}
+              >
+                {isRecommended && (
+                  <span className="absolute top-1 left-1 z-10 text-[7px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-1 py-0.5 rounded">
+                    Recommended
+                  </span>
+                )}
+                <TemplateThumb template={tpl} />
+                <div className="absolute bottom-0 inset-x-0 flex items-center justify-between gap-0.5 bg-card/95 backdrop-blur-sm px-1 py-px border-t border-border">
+                  <span className="text-[9px] font-medium text-foreground truncate leading-tight" title={tpl.label}>
+                    {tpl.label}
+                  </span>
+                  {selected && <Check size={8} className="text-primary flex-shrink-0" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

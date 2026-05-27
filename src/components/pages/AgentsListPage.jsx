@@ -753,10 +753,11 @@ export default function AgentsListPage({
   const [isConversationExpanded, setIsConversationExpanded] = useState(false);
   const kudosWorkflow = useKudosWorkflow();
   const isKudosAgent = selectedAgent?.name === KUDOS_AGENT_NAME;
-  const showKudosCanvas =
-    isKudosAgent &&
-    ["loading-templates", "generating", "preview"].includes(kudosWorkflow.stage);
-  const hideAgentsMainColumn = selectedAgent && isConversationExpanded;
+  /** Kudos: left preview fills remaining width; chat stays 400px unless preview is maximized. */
+  const isKudosPreviewExpanded = isKudosAgent && isConversationExpanded;
+  const showKudosWorkspace = isKudosAgent && !!selectedAgent;
+  const hideAgentsMainColumn = selectedAgent && isConversationExpanded && !isKudosAgent;
+  const hideKudosChatPanel = isKudosPreviewExpanded;
   const [agentPendingDelete, setAgentPendingDelete] = useState(null);
   const [agentPendingFork, setAgentPendingFork] = useState(null);
   const [agentPendingPublish, setAgentPendingPublish] = useState(null);
@@ -934,9 +935,21 @@ export default function AgentsListPage({
             )}
           </AppHeader>
 
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            {showKudosCanvas ? (
-              <KudosPreviewEditor workflow={kudosWorkflow} />
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col relative">
+            {showKudosWorkspace ? (
+              <>
+                <KudosPreviewEditor workflow={kudosWorkflow} />
+                {isKudosPreviewExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConversationExpanded(false)}
+                    className="absolute top-3 right-3 z-10 flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+                  >
+                    <Minimize2 size={14} aria-hidden />
+                    Show chat
+                  </button>
+                )}
+              </>
             ) : (
             <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="px-6 py-4 flex flex-col gap-4">
@@ -1174,16 +1187,17 @@ export default function AgentsListPage({
           </div>
           </div>{/* end inner flex-col */}
 
-          {/* Right conversation panel — h-full keeps panel within viewport */}
+          {/* Right conversation panel — fixed 400px for kudos; other agents may expand chat */}
           <div className="flex h-full min-h-0 flex-shrink-0 overflow-hidden">
           <AnimatePresence>
-            {selectedAgent && isKudosAgent && (
+            {selectedAgent && isKudosAgent && !hideKudosChatPanel && (
               <KudosConversationPanel
                 key="kudos-panel"
                 workflow={kudosWorkflow}
-                isExpanded={isConversationExpanded}
+                isExpanded={false}
                 onToggleExpand={() => setIsConversationExpanded((prev) => !prev)}
                 onClose={handleClosePanel}
+                expandPreviewLabel
               />
             )}
             {selectedAgent && !isKudosAgent && (

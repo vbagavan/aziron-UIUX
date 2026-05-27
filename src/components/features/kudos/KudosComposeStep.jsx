@@ -61,10 +61,10 @@ export default function KudosComposeStep({ workflow, onContinue }) {
       <div className="flex items-start gap-2">
         <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-foreground">Start your appreciation</p>
+          <p className="text-sm font-semibold text-foreground">Compose your appreciation</p>
           <p className="text-xs text-muted-foreground leading-4 mt-0.5">
-            Enter the message and recipient emails. We&apos;ll extract addresses from the
-            conversation when possible, or you can add them below.
+            Write the message and add at least one recipient email. You can also mention
+            colleagues with @Name in the chat panel.
           </p>
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function KudosComposeStep({ workflow, onContinue }) {
       {needsEmail && (
         <p className="text-xs text-warning flex items-center gap-1.5 bg-warning/10 border border-warning-ring rounded-md px-2 py-1.5">
           <Mail size={12} />
-          No To recipients detected yet — add emails above or mention colleagues with @Name in chat.
+          Add at least one recipient email in To before generating your card.
         </p>
       )}
 
@@ -179,7 +179,7 @@ export default function KudosComposeStep({ workflow, onContinue }) {
         ) : (
           <>
             <Users size={14} />
-            Load templates & generate preview
+            Generate card preview
           </>
         )}
       </Button>

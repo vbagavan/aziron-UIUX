@@ -10,17 +10,75 @@ export const USERS = [
   { id: 9, name: "Crystel Bayer", email: "bcrystel@aziro.com", color: "var(--success)" },
 ];
 
-export const DEFAULT_RECIPIENTS = [
-  { name: "Balachandra Husaine", email: "bhusaine@aziro.com", color: "var(--info)" },
-  { name: "Sridhar", email: "sridhar@aziro.com", color: "var(--success)" },
-];
+export const DEFAULT_RECIPIENTS = [];
 
 export const TEMPLATES = [
-  { id: "gold-classic", label: "Gold Classic", thumbBg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)", thumbAccent: "var(--warning)" },
-  { id: "blue-morden", label: "Blue Modern", thumbBg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", thumbAccent: "var(--primary)" },
-  { id: "green", label: "Green Nature", thumbBg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", thumbAccent: "var(--success)" },
-  { id: "purple-elegant", label: "Purple Elegant", thumbBg: "linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%)", thumbAccent: "var(--chart-chart-4)" },
+  {
+    id: "gold-classic",
+    label: "Gold Classic",
+    thumbSrc: "/kudos-templates/gold-classic.png",
+    rendererId: "gold-classic",
+    thumbBg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+    thumbAccent: "var(--warning)",
+  },
+  {
+    id: "blue-morden",
+    label: "Blue Modern",
+    thumbSrc: "/kudos-templates/blue-modern-individual.png",
+    rendererId: "blue-morden",
+    thumbBg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+    thumbAccent: "var(--primary)",
+  },
+  {
+    id: "green",
+    label: "Green Nature",
+    thumbSrc: "/kudos-templates/green-team.png",
+    rendererId: "green",
+    thumbBg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+    thumbAccent: "var(--success)",
+  },
+  {
+    id: "purple-elegant",
+    label: "Purple Elegant",
+    thumbSrc: "/kudos-templates/purple-elegant.png",
+    rendererId: "purple-elegant",
+    thumbBg: "linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%)",
+    thumbAccent: "var(--chart-chart-4)",
+  },
+  {
+    id: "blue-modern-team",
+    label: "Blue Modern (Team)",
+    thumbSrc: "/kudos-templates/blue-modern-team.png",
+    rendererId: "blue-morden",
+    thumbBg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+    thumbAccent: "var(--primary)",
+  },
+  {
+    id: "green-nature",
+    label: "Green Nature (Classic)",
+    thumbSrc: "/kudos-templates/green-nature.png",
+    rendererId: "green",
+    thumbBg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+    thumbAccent: "var(--success)",
+  },
+  {
+    id: "gold-celebration",
+    label: "Gold Celebration",
+    thumbSrc: "/kudos-templates/gold-celebration.png",
+    rendererId: "gold-classic",
+    thumbBg: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+    thumbAccent: "var(--warning)",
+  },
 ];
+
+/** Maps a catalog template id to the card renderer used in the left preview. */
+export function resolveKudosRendererId(templateId) {
+  return TEMPLATES.find((t) => t.id === templateId)?.rendererId ?? templateId;
+}
+
+export function getKudosTemplate(templateId) {
+  return TEMPLATES.find((t) => t.id === templateId) ?? null;
+}
 
 export const APPRECIATION_CATEGORIES = [
   { id: "customer-service", label: "Outstanding customer service" },
@@ -52,7 +110,7 @@ export const APPROVAL_STATUS_LABELS = {
 
 export const DEFAULT_CARD_CONTENT = {
   headline: "Congratulations",
-  subtitle: "On Being Appreciated By the Customer",
+  subtitle: "On Being Appreciated by the Customer",
   message:
     "Your outstanding dedication, exceptional service, and commitment to excellence have truly made a difference. This recognition is a testament to your remarkable contributions and the impact you've had on our customers.",
   accentColor: "var(--warning)",
@@ -85,31 +143,32 @@ export const KUDOS_SUGGESTIONS = [
   {
     icon: "🏆",
     title: "Recognise outstanding service",
-    prompt: "/kudos @  — outstanding customer service this quarter!",
+    prompt: "@Zoya Baum — outstanding customer service this quarter! zbaum@aziro.com",
   },
   {
     icon: "🌟",
     title: "Celebrate a team milestone",
-    prompt: "/kudos @  — incredible teamwork on the product launch!",
+    prompt: "@Malik Boatwright — incredible teamwork on the product launch! boatwright@aziro.com",
   },
   {
     icon: "🤝",
     title: "Thank a client champion",
-    prompt: "/kudos @  — thank you for being an amazing advocate for our product.",
+    prompt: "@Kenton Rue — thank you for being an amazing advocate. rkenton@aziro.com",
   },
   {
     icon: "🚀",
     title: "Highlight exceptional effort",
-    prompt: "/kudos @  — went above and beyond to deliver results on time.",
+    prompt: "@Zackary Turcotte — went above and beyond to deliver on time. zturcotte@aziro.com",
   },
 ];
 
 export const APPROVAL_KEYWORDS = /\b(request approval|send approval|send for approval|approve|submit for approval)\b/i;
 
-/** Product Policy & Planning — approves kudos before send */
-export const PSP_TEAM_LABEL = "PSP team";
+/** Product & Success Planning — approves kudos before send */
+export const PSP_TEAM_LABEL = "Approval team";
+export const PSP_TEAM_LONG_LABEL = "Product & Success Planning (PSP)";
 export const PSP_TEAM_DESCRIPTION =
-  "Product & Success Planning reviews your card before it is sent to recipients.";
+  "The approval team reviews your card before it is sent to recipients.";
 
 export const PREVIEW_COMMAND_CHIPS = [
   { label: "Blue background", command: "change background to blue" },
