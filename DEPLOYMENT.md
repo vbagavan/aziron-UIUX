@@ -70,6 +70,20 @@ Pick one:
 
 ## Troubleshooting
 
+### `git pull` / merge: untracked files would be overwritten
+
+The VM may have old **untracked** copies of `.dockerignore`, `Dockerfile`, or `docker-compose.yml` from before they were added to the repo. Remove them, then pull:
+
+```bash
+cd ~/workspace/aziron-UIUX
+rm -f .dockerignore Dockerfile docker-compose.yml
+git pull origin main
+```
+
+Or run `./scripts/deploy-on-vm.sh` (it removes those files automatically before pull).
+
+### Logs and health
+
 ```bash
 docker compose ps
 docker compose logs -f web
