@@ -416,7 +416,6 @@ export function useKudosWorkflow() {
         role: "assistant",
         kind: "style-pending",
         blocks: [
-          { type: "thinking", duration: "1.0s" },
           { type: "timeline", duration: "1.2s", steps: KUDOS_STYLE_TIMELINE_STEPS },
         ],
       },

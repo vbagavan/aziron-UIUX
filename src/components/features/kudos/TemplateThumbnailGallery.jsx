@@ -1,5 +1,6 @@
 import { Check, Cloud, Maximize2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KUDOS_BADGE, KUDOS_CAPTION, KUDOS_CHIP, KUDOS_LABEL, KUDOS_TEMPLATE_LABEL } from "./kudosTypography";
 
 export function TemplateThumb({ template }) {
   if (template.thumbSrc) {
@@ -23,7 +24,7 @@ export function TemplateThumb({ template }) {
         style={{ backgroundColor: template.thumbAccent }}
       />
       <div
-        className="text-[9px] font-semibold italic leading-none opacity-90"
+        className={cn(KUDOS_BADGE, "italic opacity-90")}
         style={{ color: template.thumbAccent }}
       >
         {template.label.split(" ")[0]}
@@ -56,12 +57,12 @@ export default function TemplateThumbnailGallery({
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-2">
         <Cloud size={14} className="text-primary" />
-        <p className="text-xs font-semibold text-foreground flex-1">Cloud template gallery</p>
+        <p className={cn(KUDOS_LABEL, "flex-1 font-semibold")}>Cloud template gallery</p>
         {onOpenFullPreview && (
           <button
             type="button"
             onClick={onOpenFullPreview}
-            className="flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+            className={cn("flex items-center gap-1 text-primary hover:underline", KUDOS_CHIP)}
           >
             <Maximize2 size={12} aria-hidden />
             View full size
@@ -71,14 +72,14 @@ export default function TemplateThumbnailGallery({
       {recommended && (
         <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
           <Sparkles size={14} className="text-primary flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-foreground leading-4">
+          <p className={cn(KUDOS_CAPTION, "text-foreground leading-4")}>
             <span className="font-medium">Recommended:</span> {recommended.label} — based on{" "}
             {recommended.teamFriendly ? "team" : "individual"} recognition, recipient count, and
             category.
           </p>
         </div>
       )}
-      <p className="text-[11px] text-muted-foreground leading-4">
+      <p className={cn(KUDOS_CAPTION, "leading-4")}>
         Click a thumbnail to update the left preview. Templates are synced from your connected
         cloud folder.
       </p>
@@ -101,13 +102,16 @@ export default function TemplateThumbnailGallery({
               aria-label={`Select ${tpl.label} template`}
             >
               {isRecommended && (
-                <span className="absolute top-1 left-1 z-10 text-[8px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-1 py-0.5 rounded">
+                <span className={cn(
+                  "absolute top-1 left-1 z-10 rounded bg-primary px-1 py-0.5 uppercase tracking-wide text-primary-foreground",
+                  KUDOS_BADGE,
+                )}>
                   Recommended
                 </span>
               )}
               <TemplateThumb template={tpl} />
               <div className="absolute bottom-0 inset-x-0 flex items-center justify-between gap-1 bg-card/95 backdrop-blur-sm px-2 py-1 border-t border-border">
-                <span className="text-[10px] font-medium text-foreground truncate">{tpl.label}</span>
+                <span className={cn("truncate", KUDOS_TEMPLATE_LABEL)}>{tpl.label}</span>
                 {selected && <Check size={12} className="text-primary flex-shrink-0" />}
               </div>
             </button>

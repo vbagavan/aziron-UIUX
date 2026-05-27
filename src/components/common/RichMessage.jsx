@@ -4,7 +4,8 @@ import {
   AlertCircle, CheckCircle2, FileText, File, FileSpreadsheet,
   Presentation, Image, Brain, Wrench,
 } from "lucide-react";
-import { CONTENT_HEADING } from "@/lib/typography";
+import { BODY, CAPTION, CONTENT_HEADING } from "@/lib/typography";
+import { cn } from "@/lib/utils";
 import KudosRecipientsTableBlockComponent from "@/components/features/kudos/blocks/KudosRecipientsTableBlock";
 import KudosApprovalStatusBlockComponent from "@/components/features/kudos/blocks/KudosApprovalStatusBlock";
 import KudosTemplatePreviewBlockComponent from "@/components/features/kudos/blocks/KudosTemplatePreviewBlock";
@@ -16,7 +17,7 @@ export function ThinkingBlock({ duration }) {
   return (
     <div className="flex items-center gap-2 px-2 py-2">
       <Brain size={16} className="text-chart-chart-3 flex-shrink-0" style={{ animation: "rmPulse 1.5s ease-in-out infinite" }} />
-      <span className="text-base font-medium text-foreground">
+      <span className={cn(BODY, "font-semibold")}>
         Thinking<span className="text-muted-foreground">...</span>
       </span>
       {duration && (
@@ -35,7 +36,7 @@ export function GeneratingBlock() {
     <div className="flex items-center gap-2 py-1">
       <span className="text-sm leading-none"
         style={{ display: "inline-block", animation: "rmSparkle 1s ease-in-out infinite" }}>✨</span>
-      <span className="text-sm text-muted-foreground italic">Generating...</span>
+      <span className={cn(BODY, "text-muted-foreground italic")}>Generating...</span>
       <style>{`@keyframes rmSparkle{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}`}</style>
     </div>
   );
@@ -50,7 +51,7 @@ export function HeadingBlock({ level, content }) {
 /* ── Text ─────────────────────────────────────────────────────── */
 /* DS: text-sm (14px) / leading-6 (24px) / font-normal / Inter */
 export function TextBlock({ content }) {
-  return <p className="text-sm leading-6 text-foreground">{content}</p>;
+  return <p className={BODY}>{content}</p>;
 }
 
 /* ── Blockquote ───────────────────────────────────────────────── */
@@ -364,12 +365,11 @@ export function AgentTimelineBlock({ steps, duration }) {
       >
         <Brain size={16} className="text-chart-chart-3 flex-shrink-0"
           style={{ animation: "rmPulse 1.5s ease-in-out infinite" }} />
-        <span className="text-base font-medium text-foreground">
+        <span className={cn(BODY, "font-semibold")}>
           Thinking<span className="tl-dots text-muted-foreground">...</span>
         </span>
         {duration && (
-          <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full
-            bg-muted text-[10px] font-mono text-muted-foreground tabular-nums">
+          <span className="ml-auto inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-xs font-mono tabular-nums text-muted-foreground">
             {duration}
           </span>
         )}
@@ -438,7 +438,7 @@ export function AgentTimelineBlock({ steps, duration }) {
                           <div className="mt-1.5">
                             {step.meta && (
                               <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5
-                                rounded-full bg-muted text-[10px] font-mono text-muted-foreground">
+                                rounded-full bg-muted text-xs font-mono text-muted-foreground">
                                 <span className="opacity-60">L</span>
                                 {step.meta}
                               </span>
@@ -448,11 +448,11 @@ export function AgentTimelineBlock({ steps, duration }) {
                                 {step.code.map(line => (
                                   <div key={line.num}
                                     className="flex gap-4 px-3 py-[3px] bg-muted hover:bg-muted/80 transition-colors">
-                                    <span className="text-[11px] font-mono text-muted-foreground/40
+                                    <span className="text-xs font-mono text-muted-foreground/40
                                       w-4 text-right flex-shrink-0 select-none">
                                       {line.num}
                                     </span>
-                                    <span className="text-[11px] font-mono text-foreground/75 whitespace-pre truncate">
+                                    <span className="text-xs font-mono text-foreground/75 whitespace-pre truncate">
                                       {line.text}
                                     </span>
                                   </div>

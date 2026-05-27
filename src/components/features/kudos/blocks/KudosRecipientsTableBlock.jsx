@@ -1,3 +1,6 @@
+import { KUDOS_BODY, KUDOS_LABEL } from "../kudosTypography";
+import { cn } from "@/lib/utils";
+
 function formatRecipientLine(recipient) {
   if (!recipient?.email) return recipient?.name ?? "";
   if (!recipient?.name) return recipient.email;
@@ -24,12 +27,12 @@ export default function KudosRecipientsTableBlock({
 
   return (
     <div className="w-full border border-border rounded-lg overflow-hidden bg-card">
-      <table className="w-full text-sm border-collapse">
+      <table className={cn("w-full border-collapse", KUDOS_BODY)}>
         <tbody>
           <tr className="border-b border-border">
             <th
               scope="row"
-              className="text-left px-4 py-3 font-semibold text-foreground bg-muted min-w-fit align-top"
+              className={cn("min-w-fit bg-muted px-4 py-3 text-left align-top", KUDOS_LABEL, "font-semibold")}
             >
               To
             </th>
@@ -49,7 +52,7 @@ export default function KudosRecipientsTableBlock({
             <tr>
               <th
                 scope="row"
-                className="text-left px-4 py-3 font-semibold text-foreground bg-muted min-w-fit align-top"
+                className={cn("min-w-fit bg-muted px-4 py-3 text-left align-top", KUDOS_LABEL, "font-semibold")}
               >
                 Cc
               </th>

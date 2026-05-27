@@ -79,7 +79,7 @@ export const KUDOS_STYLE_TIMELINE_STEPS = [
   { id: 4, kind: "pondering" },
 ];
 
-/** Progressive blocks — same pattern as New Chat / Pulse: thinking → generating → timeline. */
+/** Progressive blocks — generating shimmer, then agent timeline (timeline header shows Thinking…). */
 export function buildKudosGenerationBlocks(stage, { variant = "compose" } = {}) {
   const blocks = [];
   const timelineSteps =
@@ -99,14 +99,11 @@ export function buildKudosGenerationBlocks(stage, { variant = "compose" } = {}) 
   }
 
   if (variant === "template-switch") {
-    blocks.push(
-      { type: "thinking", duration: "0.9s" },
-      { type: "timeline", duration: "1.4s", steps: timelineSteps },
-    );
+    blocks.push({ type: "timeline", duration: "1.4s", steps: timelineSteps });
     return blocks;
   }
 
-  blocks.push({ type: "thinking", duration: "1.4s" });
+  // Timeline header already shows "Thinking…" — avoid a duplicate ThinkingBlock above it.
   blocks.push({ type: "generating" });
   blocks.push({
     type: "timeline",

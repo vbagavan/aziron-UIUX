@@ -18,6 +18,7 @@ import KudosTemplatePreviewBlock from "./blocks/KudosTemplatePreviewBlock";
 import { templatesToDriveFiles } from "@/services/oneDriveTemplates";
 import { buildIntroBlocks } from "./kudosConversation";
 import { KudosPromptBox } from "./KudosPromptBox";
+import { KUDOS_BODY, KUDOS_CHIP, KUDOS_PANEL_TITLE } from "./kudosTypography";
 import {
   TEMPLATES,
   PREVIEW_COMMAND_CHIPS,
@@ -195,7 +196,7 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
           if (msg.role === "user") {
             return (
               <UserMessage key={msg.id}>
-                <p className="whitespace-pre-wrap text-sm leading-6">{msg.content}</p>
+                <p className={cn(KUDOS_BODY, "whitespace-pre-wrap")}>{msg.content}</p>
               </UserMessage>
             );
           }
@@ -234,7 +235,11 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
                   key={chip.label}
                   type="button"
                   onClick={() => runPreviewCommand(chip.command)}
-                  className="rounded-full border border-border bg-card px-2 py-1 text-[10px] font-medium text-foreground transition-colors hover:bg-muted"
+                  className={cn(
+                    "rounded-full border border-border bg-card px-2 py-1 transition-colors hover:bg-muted",
+                    KUDOS_CHIP,
+                    "text-foreground",
+                  )}
                 >
                   {chip.label}
                 </button>
@@ -242,7 +247,11 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
               <button
                 type="button"
                 onClick={() => handleRequestApproval(SUBMIT_FOR_APPROVAL_COMMAND)}
-                className="rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                className={cn(
+                  "rounded-full bg-primary px-2 py-1 text-primary-foreground transition-colors hover:bg-primary/90",
+                  KUDOS_CHIP,
+                  "font-semibold",
+                )}
               >
                 {SUBMIT_FOR_APPROVAL_LABEL}
               </button>
@@ -287,7 +296,7 @@ export function KudosPanelHeader({
   return (
     <div className="flex items-center gap-2 h-14 px-3 border-b border-border flex-shrink-0 bg-card">
       <AgentPlaceholder />
-      <span className="flex-1 text-sm font-medium text-foreground leading-5 truncate">
+      <span className={cn(KUDOS_PANEL_TITLE, "flex-1 truncate")}>
         Customer Appreciation
       </span>
       {onReset && (

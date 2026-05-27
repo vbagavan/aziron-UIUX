@@ -4,6 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { KUDOS_DRIVE_FOLDER } from "@/services/oneDriveTemplates";
+import {
+  KUDOS_BADGE,
+  KUDOS_CAPTION,
+  KUDOS_FILE_META,
+  KUDOS_FILE_NAME,
+  KUDOS_TEMPLATE_LABEL,
+} from "./kudosTypography";
 
 const FILE_EXT_STYLES = {
   pptx: { label: "PPT", className: "bg-[#d24726] text-white" },
@@ -40,7 +47,8 @@ export function DriveFileTypeIcon({ extension = "png", className }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[18px] min-w-[26px] flex-shrink-0 items-center justify-center rounded-[3px] px-1 text-[9px] font-bold leading-none",
+        "inline-flex h-[18px] min-w-[26px] flex-shrink-0 items-center justify-center rounded-[3px] px-1",
+        KUDOS_BADGE,
         style.className,
         className,
       )}
@@ -72,7 +80,8 @@ export function DriveImageFormatBadge({ format, className, subtle = false }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[18px] min-w-[28px] flex-shrink-0 items-center justify-center rounded-[3px] px-1 text-[9px] font-bold leading-none",
+        "inline-flex h-[18px] min-w-[28px] flex-shrink-0 items-center justify-center rounded-[3px] px-1",
+        KUDOS_BADGE,
         subtle ? "border-0 shadow-none" : "border border-white/20 shadow-sm",
         style.className,
         className,
@@ -149,7 +158,7 @@ function DriveFileListRows({ files, activeFileId, contextFileIds = [], onSelectF
       aria-label={`Files in ${folderName}`}
     >
       {loading && files.length === 0 && (
-        <p className="px-2 py-2 text-xs text-muted-foreground">Syncing folder from cloud storage…</p>
+        <p className={cn("px-2 py-2", KUDOS_CAPTION)}>Syncing folder from cloud storage…</p>
       )}
       {files.map((file) => {
         const inContext = contextFileIds.includes(file.id);
@@ -169,10 +178,8 @@ function DriveFileListRows({ files, activeFileId, contextFileIds = [], onSelectF
             )}
           >
             <DriveFileFormatBadge file={file} />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
-              {file.name}
-            </span>
-            <span className="max-w-[88px] flex-shrink-0 truncate text-[11px] text-foreground/55">
+            <span className={cn("min-w-0 flex-1 truncate", KUDOS_FILE_NAME)}>{file.name}</span>
+            <span className={cn("max-w-[88px] flex-shrink-0 truncate", KUDOS_FILE_META)}>
               {file.folder}
             </span>
           </button>
@@ -190,7 +197,7 @@ function DriveFileGrid({ files, activeFileId, contextFileIds = [], onSelectFile,
       aria-label={`Files in ${folderName}`}
     >
       {loading && files.length === 0 && (
-        <p className="px-1 py-2 text-xs text-muted-foreground">Syncing folder from cloud storage…</p>
+        <p className={cn("px-1 py-2", KUDOS_CAPTION)}>Syncing folder from cloud storage…</p>
       )}
       <div className="grid grid-cols-2 gap-2">
         {files.map((file) => {
@@ -232,7 +239,7 @@ function DriveFileGrid({ files, activeFileId, contextFileIds = [], onSelectFile,
                 </span>
               </div>
               <div className="flex items-center justify-between gap-1 border-t border-border bg-card/95 px-1.5 py-1 backdrop-blur-sm">
-                <span className="truncate text-[9px] font-medium leading-tight text-foreground">
+                <span className={cn("truncate leading-tight", KUDOS_TEMPLATE_LABEL)}>
                   {file.label ?? file.name.replace(/\.[^.]+$/, "")}
                 </span>
               </div>
@@ -257,9 +264,18 @@ export function KudosDriveFileList({
   className,
 }) {
   const [expandedInternal, setExpandedInternal] = useState(defaultExpanded);
-  const expanded = expandedProp ?? expandedInternal;
-  const setExpanded = onExpandedChange ?? setExpandedInternal;
+  const isControlled = expandedProp !== undefined;
+  const expanded = isControlled ? expandedProp : expandedInternal;
   const [viewMode, setViewMode] = useState("list");
+
+  const toggleExpanded = () => {
+    const next = !expanded;
+    if (isControlled) {
+      onExpandedChange?.(next);
+    } else {
+      setExpandedInternal(next);
+    }
+  };
 
   const fileCountLabel = useMemo(() => {
     if (loading) return null;
@@ -274,7 +290,7 @@ export function KudosDriveFileList({
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={toggleExpanded}
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
           aria-expanded={expanded}
         >
@@ -284,7 +300,7 @@ export function KudosDriveFileList({
             <ChevronRight size={14} className="flex-shrink-0 text-foreground/70" aria-hidden />
           )}
           <Folder size={14} className="flex-shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0 truncate text-xs text-foreground">
+          <span className={cn("min-w-0 truncate", KUDOS_CAPTION, "text-foreground")}>
             {loading ? (
               <>
                 Loading{" "}

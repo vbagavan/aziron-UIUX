@@ -1,6 +1,7 @@
 import { Star, Cloud, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TEMPLATES } from "../constants";
+import { KUDOS_BADGE, KUDOS_CAPTION, KUDOS_LABEL, KUDOS_TEMPLATE_LABEL } from "../kudosTypography";
 import { TemplateThumb } from "../TemplateThumbnailGallery";
 
 export default function KudosTemplatePreviewBlock({
@@ -18,9 +19,12 @@ export default function KudosTemplatePreviewBlock({
     <div className="bg-card border border-border rounded-[8px] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted">
-        <span className="text-xs font-semibold text-foreground">Template Preview</span>
+        <span className={cn(KUDOS_LABEL, "font-semibold")}>Template Preview</span>
         {recommended && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning-ring">
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded-full border border-warning-ring bg-warning/10 px-2 py-0.5 text-warning",
+            KUDOS_BADGE,
+          )}>
             <Star size={9} className="fill-current" />
             Recommended
           </span>
@@ -31,9 +35,7 @@ export default function KudosTemplatePreviewBlock({
       <div className="px-3 py-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Cloud size={12} className="text-primary flex-shrink-0" />
-          <span className="text-[10px] font-medium text-muted-foreground">
-            Templates from cloud folder
-          </span>
+          <span className={KUDOS_CAPTION}>Templates from cloud folder</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {catalog.map((tpl) => {
@@ -54,13 +56,16 @@ export default function KudosTemplatePreviewBlock({
                 aria-label={`Select ${tpl.label} template`}
               >
                 {isRecommended && (
-                  <span className="absolute top-1 left-1 z-10 text-[7px] font-bold uppercase tracking-wide bg-primary text-primary-foreground px-1 py-0.5 rounded">
+                  <span className={cn(
+                    "absolute top-1 left-1 z-10 rounded bg-primary px-1 py-0.5 uppercase tracking-wide text-primary-foreground",
+                    KUDOS_BADGE,
+                  )}>
                     Recommended
                   </span>
                 )}
                 <TemplateThumb template={tpl} />
                 <div className="absolute bottom-0 inset-x-0 flex items-center justify-between gap-0.5 bg-card/95 backdrop-blur-sm px-1 py-px border-t border-border">
-                  <span className="text-[9px] font-medium text-foreground truncate leading-tight" title={tpl.label}>
+                  <span className={cn("truncate leading-tight", KUDOS_TEMPLATE_LABEL)} title={tpl.label}>
                     {tpl.label}
                   </span>
                   {selected && <Check size={8} className="text-primary flex-shrink-0" />}

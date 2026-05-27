@@ -18,6 +18,12 @@ import {
 } from "./KudosDriveFileList";
 import { USERS } from "./constants";
 import { UserAvatar } from "./kudosPrimitives";
+import {
+  KUDOS_BODY,
+  KUDOS_CAPTION,
+  KUDOS_MENTION_EMAIL,
+  KUDOS_MENTION_NAME,
+} from "./kudosTypography";
 
 const PROMPT_TEXTAREA_MAX_HEIGHT = 160;
 const PROMPT_TEXTAREA_MIN_HEIGHT = 56;
@@ -44,7 +50,7 @@ function UserPickerDropdown({
       className="mb-1 max-h-[260px] overflow-y-auto rounded-lg border border-border bg-popover shadow-md"
     >
       {filtered.length === 0 && (
-        <p className="px-3 py-2 text-xs text-muted-foreground">No matching people</p>
+        <p className={cn("px-3 py-2", KUDOS_CAPTION)}>No matching people</p>
       )}
       {filtered.map((user, idx) => (
         <button
@@ -64,12 +70,8 @@ function UserPickerDropdown({
         >
           <UserAvatar name={user.name} color={user.color} size={30} />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-sm font-medium leading-5 text-foreground">
-              {user.name}
-            </span>
-            <span className="truncate text-xs leading-4 text-muted-foreground">
-              {user.email}
-            </span>
+            <span className={cn("truncate", KUDOS_MENTION_NAME)}>{user.name}</span>
+            <span className={cn("truncate", KUDOS_MENTION_EMAIL)}>{user.email}</span>
           </div>
         </button>
       ))}
@@ -95,7 +97,7 @@ export function KudosPromptBox({
   templatesLoading = false,
 }) {
   const textareaRef = useRef(null);
-  const [driveExpanded, setDriveExpanded] = useState(false);
+  const [driveListExpanded, setDriveListExpanded] = useState(true);
   const [pickerIndex, setPickerIndex] = useState(0);
   const listId = "kudos-mention-list";
 
@@ -113,6 +115,10 @@ export function KudosPromptBox({
   useEffect(() => {
     setPickerIndex(0);
   }, [pickerQuery, showPicker]);
+
+  useEffect(() => {
+    if (showPicker) setDriveListExpanded(false);
+  }, [showPicker]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -193,7 +199,7 @@ export function KudosPromptBox({
           "has-[[data-slot=input-group-control]:focus-visible]:border-ring",
         )}
       >
-        {showDrivePanel && driveExpanded && (
+        {showDrivePanel && (
           <InputGroupAddon align="block-start" className="w-full cursor-default p-0">
             <KudosDriveFileList
               files={driveFiles}
@@ -201,10 +207,8 @@ export function KudosPromptBox({
               contextFileIds={promptContextFileIds}
               onSelectFile={onSelectDriveFile}
               loading={templatesLoading}
-              expanded
-              onExpandedChange={(open) => {
-                if (!open) setDriveExpanded(false);
-              }}
+              expanded={driveListExpanded}
+              onExpandedChange={setDriveListExpanded}
               className="w-full border-0"
             />
           </InputGroupAddon>
@@ -231,7 +235,10 @@ export function KudosPromptBox({
           aria-controls={showPicker ? listId : undefined}
           aria-expanded={showPicker}
           aria-autocomplete={showPicker ? "list" : undefined}
-          className="max-h-40 min-h-14 resize-none border-0 bg-transparent px-4 pt-4 pb-1 text-sm leading-6 text-foreground shadow-none dark:bg-transparent"
+          className={cn(
+            "max-h-40 min-h-14 resize-none border-0 bg-transparent px-4 pt-4 pb-1 shadow-none dark:bg-transparent",
+            KUDOS_BODY,
+          )}
           style={{ height: `${PROMPT_TEXTAREA_MIN_HEIGHT}px` }}
         />
 
@@ -244,11 +251,11 @@ export function KudosPromptBox({
               <InputGroupButton
                 size="icon-sm"
                 variant="outline"
-                aria-label={driveExpanded ? "Hide templates" : "Browse templates"}
-                aria-expanded={driveExpanded}
-                title={driveExpanded ? "Hide templates" : "Browse templates"}
-                className={cn(driveExpanded && "border-primary/40 bg-primary/10")}
-                onClick={() => setDriveExpanded((v) => !v)}
+                aria-label={driveListExpanded ? "Collapse template list" : "Expand template list"}
+                aria-expanded={driveListExpanded}
+                title={driveListExpanded ? "Collapse template list" : "Expand template list"}
+                className={cn(driveListExpanded && "border-primary/40 bg-primary/10")}
+                onClick={() => setDriveListExpanded((v) => !v)}
               >
                 <Plus />
               </InputGroupButton>
@@ -280,7 +287,7 @@ export function KudosPromptBox({
               variant="outline"
               aria-label="Attach template"
               title="Attach template"
-              onClick={() => showDrivePanel && setDriveExpanded(true)}
+              onClick={() => showDrivePanel && setDriveListExpanded(true)}
             >
               <Paperclip />
             </InputGroupButton>

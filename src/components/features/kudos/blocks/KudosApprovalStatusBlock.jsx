@@ -8,6 +8,7 @@ import {
 } from "../constants";
 import { UserAvatar } from "../kudosPrimitives";
 import { cn } from "@/lib/utils";
+import { KUDOS_BADGE, KUDOS_CAPTION, KUDOS_FIELD_LABEL, KUDOS_LABEL } from "../kudosTypography";
 
 function ApprovalStatusBadge({ status }) {
   const styles = {
@@ -19,7 +20,8 @@ function ApprovalStatusBadge({ status }) {
   return (
     <span
       className={cn(
-        "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+        "rounded-full border px-2 py-0.5",
+        KUDOS_BADGE,
         styles[status] ?? styles[APPROVAL_STATUS.PENDING],
       )}
     >
@@ -49,17 +51,17 @@ function NotificationChannelsSent({ notifications }) {
   return (
     <div className="flex flex-wrap gap-1.5 mt-2">
       {notifications.push?.sent && (
-        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+        <span className={cn("inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5", KUDOS_CAPTION)}>
           📱 Push
         </span>
       )}
       {notifications.teams?.sent && (
-        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+        <span className={cn("inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5", KUDOS_CAPTION)}>
           💬 Teams
         </span>
       )}
       {notifications.email?.sent && (
-        <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+        <span className={cn("inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5", KUDOS_CAPTION)}>
           📧 Email
         </span>
       )}
@@ -95,8 +97,8 @@ export default function KudosApprovalStatusBlock({
       <div className="bg-success/10 border border-success-ring rounded-[10px] p-3 flex items-center gap-2.5">
         <Check size={15} className="text-success flex-shrink-0" />
         <div className="flex flex-col gap-0.5">
-          <p className="text-xs font-semibold text-success">Email Sent!</p>
-          <p className="text-xs text-muted-foreground">
+          <p className={cn(KUDOS_LABEL, "font-semibold text-success")}>Email Sent!</p>
+          <p className={KUDOS_CAPTION}>
             Delivered to {approval.emailTo.length} recipient{approval.emailTo.length !== 1 ? "s" : ""}
             {approval.emailCc.length > 0 ? ` + ${approval.emailCc.length} CC` : ""}.
           </p>
@@ -110,7 +112,7 @@ export default function KudosApprovalStatusBlock({
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted">
         <StatusIcon status={approval.status} />
-        <p className="min-w-0 flex-1 text-xs font-semibold text-foreground leading-5">
+        <p className={cn("min-w-0 flex-1 leading-5", KUDOS_LABEL, "font-semibold")}>
           {approval.status === APPROVAL_STATUS.PENDING
             ? PSP_APPROVAL_HEADLINE
             : (APPROVAL_STATUS_LABELS[approval.status] ?? approval.status)}
@@ -121,20 +123,20 @@ export default function KudosApprovalStatusBlock({
       {/* Status Info */}
       <div className="px-3 py-2.5 border-b border-border">
         {approval.status === APPROVAL_STATUS.PENDING && (
-          <p className="text-xs text-muted-foreground leading-5">{PSP_APPROVAL_EXPLAINER}</p>
+          <p className={cn(KUDOS_CAPTION, "leading-5")}>{PSP_APPROVAL_EXPLAINER}</p>
         )}
         {approval.status === APPROVAL_STATUS.APPROVED && (
-          <p className="text-xs text-muted-foreground leading-5">
+          <p className={cn(KUDOS_CAPTION, "leading-5")}>
             {PSP_TEAM_LONG_LABEL} approved your card. Confirm recipients below, then send email.
           </p>
         )}
         {approval.status === APPROVAL_STATUS.REJECTED && (
-          <p className="text-xs text-muted-foreground leading-5">
+          <p className={cn(KUDOS_CAPTION, "leading-5")}>
             {PSP_TEAM_LONG_LABEL} declined this card. Update your design or message and submit again.
           </p>
         )}
         {approval.status === APPROVAL_STATUS.CHANGES_REQUESTED && (
-          <p className="text-xs text-muted-foreground leading-5">
+          <p className={cn(KUDOS_CAPTION, "leading-5")}>
             {PSP_TEAM_LONG_LABEL} requested changes. Update your card and submit again.
           </p>
         )}
@@ -142,7 +144,7 @@ export default function KudosApprovalStatusBlock({
           notifications={approval.notifications ?? lastNotificationChannels}
         />
         {approval.pspComment && (
-          <p className="text-xs text-muted-foreground mt-1.5 leading-4">
+          <p className={cn(KUDOS_CAPTION, "mt-1.5 leading-4")}>
             <span className="font-medium text-foreground">{PSP_TEAM_LONG_LABEL}:</span>{" "}
             {approval.pspComment}
           </p>
@@ -153,7 +155,7 @@ export default function KudosApprovalStatusBlock({
       {isApproved && (
         <>
           <div className="flex items-start gap-2 px-3 py-2 border-b border-border">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide w-10 pt-1.5 flex-shrink-0">
+            <span className={cn(KUDOS_FIELD_LABEL, "w-10 flex-shrink-0 pt-1.5")}>
               To
             </span>
             <div className="flex-1 min-w-0 pt-1.5">
@@ -195,7 +197,7 @@ export default function KudosApprovalStatusBlock({
           </div>
 
           <div className="flex items-start gap-2 px-3 py-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide w-10 pt-1.5 flex-shrink-0">
+            <span className={cn(KUDOS_FIELD_LABEL, "w-10 flex-shrink-0 pt-1.5")}>
               CC
             </span>
             <div className="flex-1 min-w-0 pt-1.5">

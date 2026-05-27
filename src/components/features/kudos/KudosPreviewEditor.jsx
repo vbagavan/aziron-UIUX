@@ -60,7 +60,7 @@ export default function KudosPreviewEditor({ workflow }) {
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-muted">
       {styledPreview && stage === "preview" && (
-        <p className="flex-shrink-0 px-4 py-2 text-center text-[11px] text-muted-foreground border-b border-border bg-card/80">
+        <p className="flex-shrink-0 border-b border-border bg-card/80 px-4 py-2 text-center text-xs text-muted-foreground">
           Live preview with your color and theme changes applied
         </p>
       )}
