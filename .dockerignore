@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+.git
+.github
+.cursor
+.claude
+.codex
+*.md
+!README.md
+deploy/.env
+.env
+.env.*
+*.log
+.DS_Store

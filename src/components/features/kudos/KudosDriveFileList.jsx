@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Folder, LayoutGrid, List, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { KUDOS_DRIVE_FOLDER } from "@/services/oneDriveTemplates";
 
@@ -114,8 +116,8 @@ function DriveViewSwitcher({ viewMode, onViewModeChange }) {
         className={cn(
           "flex size-7 items-center justify-center rounded-[4px] transition-colors",
           viewMode === "list"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted/60",
+            ? "bg-accent text-foreground"
+            : "text-foreground/60 hover:bg-accent hover:text-foreground",
         )}
       >
         <List size={14} aria-hidden />
@@ -129,8 +131,8 @@ function DriveViewSwitcher({ viewMode, onViewModeChange }) {
         className={cn(
           "flex size-7 items-center justify-center rounded-[4px] transition-colors",
           viewMode === "grid"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted/60",
+            ? "bg-accent text-foreground"
+            : "text-foreground/60 hover:bg-accent hover:text-foreground",
         )}
       >
         <LayoutGrid size={14} aria-hidden />
@@ -161,12 +163,16 @@ function DriveFileListRows({ files, activeFileId, contextFileIds = [], onSelectF
             onClick={() => onSelectFile?.(file.id)}
             className={cn(
               "flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left transition-colors",
-              isActive || inContext ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-muted",
+              isActive || inContext
+                ? "bg-primary/10 ring-1 ring-primary/30"
+                : "hover:bg-accent",
             )}
           >
             <DriveFileFormatBadge file={file} />
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground">{file.name}</span>
-            <span className="max-w-[88px] flex-shrink-0 truncate text-[11px] text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+              {file.name}
+            </span>
+            <span className="max-w-[88px] flex-shrink-0 truncate text-[11px] text-foreground/55">
               {file.folder}
             </span>
           </button>
@@ -246,9 +252,13 @@ export function KudosDriveFileList({
   loading = false,
   folderName = KUDOS_DRIVE_FOLDER,
   defaultExpanded = true,
+  expanded: expandedProp,
+  onExpandedChange,
   className,
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expandedInternal, setExpandedInternal] = useState(defaultExpanded);
+  const expanded = expandedProp ?? expandedInternal;
+  const setExpanded = onExpandedChange ?? setExpandedInternal;
   const [viewMode, setViewMode] = useState("list");
 
   const fileCountLabel = useMemo(() => {
@@ -260,7 +270,7 @@ export function KudosDriveFileList({
   if (!loading && files.length === 0) return null;
 
   return (
-    <div className={cn("border-b border-border bg-muted/30", className)}>
+    <div className={cn("border-b border-border bg-background", className)}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -269,12 +279,12 @@ export function KudosDriveFileList({
           aria-expanded={expanded}
         >
           {expanded ? (
-            <ChevronDown size={14} className="flex-shrink-0 text-muted-foreground" aria-hidden />
+            <ChevronDown size={14} className="flex-shrink-0 text-foreground/70" aria-hidden />
           ) : (
-            <ChevronRight size={14} className="flex-shrink-0 text-muted-foreground" aria-hidden />
+            <ChevronRight size={14} className="flex-shrink-0 text-foreground/70" aria-hidden />
           )}
           <Folder size={14} className="flex-shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0 truncate text-xs text-muted-foreground">
+          <span className="min-w-0 truncate text-xs text-foreground">
             {loading ? (
               <>
                 Loading{" "}
@@ -315,32 +325,90 @@ export function KudosDriveFileList({
   );
 }
 
+function getDriveFileDisplayLabel(file) {
+  if (file?.label) return file.label;
+  const base = file?.name?.replace(/\.[^.]+$/, "") ?? "";
+  if (!base) return "File";
+  return base
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function KudosDriveContextChip({ file, onRemove, className }) {
   if (!file) return null;
 
+  const displayLabel = getDriveFileDisplayLabel(file);
+
   return (
-    <span
+    <Badge
+      variant="secondary"
+      role="listitem"
+      title={displayLabel}
       className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-muted/60 py-1 pl-2 pr-1 text-xs",
+        "h-7 gap-0.5 rounded-md border-border py-0.5 pl-0.5 pr-0.5",
         className,
       )}
     >
-      <DriveFileFormatBadge file={file} />
-      <span className="truncate font-medium text-foreground">{file.name}</span>
+      <span
+        className="relative size-6 shrink-0 overflow-hidden rounded-[5px] ring-1 ring-border/40"
+        style={{ background: file.thumbBg ?? "var(--muted)" }}
+      >
+        {file.thumbSrc ? (
+          <img
+            src={file.thumbSrc}
+            alt={displayLabel}
+            className="size-full object-cover object-top"
+            draggable={false}
+          />
+        ) : (
+          <span className="flex size-full items-center justify-center">
+            <DriveFileTypeIcon extension={file.extension} className="h-4 min-w-4 text-[8px]" />
+          </span>
+        )}
+      </span>
       {onRemove && (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           onClick={(e) => {
             e.stopPropagation();
             onRemove(file.id);
           }}
-          aria-label={`Remove ${file.name} from prompt context`}
+          aria-label={`Remove ${displayLabel} from prompt context`}
           title="Remove from context"
-          className="flex size-5 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="shrink-0 text-foreground/70"
         >
-          <X size={12} aria-hidden />
-        </button>
+          <X />
+        </Button>
       )}
-    </span>
+    </Badge>
+  );
+}
+
+export function KudosDriveContextStrip({ files, onRemoveFile, className }) {
+  if (!files?.length) return null;
+
+  return (
+    <div
+      className={cn(
+        "border-b border-border bg-background px-2 py-1.5",
+        className,
+      )}
+    >
+      <div
+        role="list"
+        aria-label="Templates attached to your message"
+        className="flex gap-1.5 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {files.map((file) => (
+          <KudosDriveContextChip
+            key={file.id}
+            file={file}
+            onRemove={onRemoveFile}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

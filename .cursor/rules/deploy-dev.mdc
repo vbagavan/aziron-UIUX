@@ -1,0 +1,43 @@
+---
+description: DEV Docker deploy to aziron VM (172.30.47.194)
+alwaysApply: false
+---
+
+# Ultra-simple DEV deployment
+
+When the user says **deploy**, **deploy dev**, **ship dev**, or **docker deploy**:
+
+## On the VM (already SSH'd into aziron-virtual-machine)
+
+From project root (`~/workspace/aziron-UIUX`):
+
+```bash
+./scripts/deploy-on-vm.sh
+```
+
+Or explicitly:
+
+```bash
+docker compose build
+docker compose up -d --no-deps
+```
+
+## From laptop (Cursor / local machine)
+
+1. Ensure `deploy/.env` exists (copy from `deploy/env.example`).
+2. SSH key auth to `aziron@172.30.47.194` must work (`ssh-copy-id` once).
+3. Run:
+
+```bash
+chmod +x scripts/deploy-dev.sh scripts/deploy-on-vm.sh
+./scripts/deploy-dev.sh
+```
+
+Optional: set `RSYNC_BEFORE_DEPLOY=1` in `deploy/.env` to push local files before build.
+
+## Rules
+
+- **Never** commit passwords or put credentials in the repo.
+- Do not change app code unless the user also asked for fixes.
+- After deploy, report URL: `http://172.30.47.194:8080/` (or `APP_PORT` from env).
+- On failure, show `docker compose logs web` from the remote host.

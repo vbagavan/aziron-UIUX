@@ -24,3 +24,7 @@ dist-ssr
 *.sw?
 .claude/worktrees/
 .codex/
+
+# Deploy secrets (host, paths — never commit passwords)
+deploy/.env
+.env.deploy

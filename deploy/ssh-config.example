@@ -1,0 +1,10 @@
+# Add to ~/.ssh/config on your laptop (do NOT commit passwords).
+#
+#   ssh-copy-id aziron@172.30.47.194
+#
+# Then connect with:  ssh aziron-dev
+
+Host aziron-dev
+  HostName 172.30.47.194
+  User aziron
+  IdentityFile ~/.ssh/id_ed25519
