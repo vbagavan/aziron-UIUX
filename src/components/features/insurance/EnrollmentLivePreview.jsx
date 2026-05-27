@@ -80,8 +80,8 @@ export function EnrollmentLivePreview({
 }) {
   const dependentCount = (form.familyDependents ?? []).filter((d) => d.saved).length;
   const floaterPremium = useMemo(
-    () => computeFloaterAnnualPremiumINR(form.coverageLakh, dependentCount),
-    [form.coverageLakh, dependentCount],
+    () => computeFloaterAnnualPremiumINR(form.coverageLakh, dependentCount, form.age),
+    [form.coverageLakh, dependentCount, form.age],
   );
 
   const selfComplete = status.self === "done";

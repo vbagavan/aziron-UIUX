@@ -1,5 +1,10 @@
 /** Pure helpers for enrollment live preview (kept out of the component module for react-refresh). */
 
+import {
+  loadPremiumMatrixFromStorage,
+  lookupPremiumFromMatrix,
+} from "@/lib/premiumMatrix";
+
 /** Floater sum-insured choices (₹N × 1,00,000) — step 1 of enrollment. */
 export const ENROLLMENT_COVERAGE_LAKH_VALUES = [1, 2, 3, 4, 5, 7, 8, 10];
 
@@ -36,14 +41,24 @@ export function premiumTierIdForCoverageLakh(lakh) {
 }
 
 /**
- * Annual premium (₹) for employee + saved dependents on one floater, by sum insured ladder.
- * Extra members add a modest load on top of the employee base.
+ * Annual premium (₹) for employee + saved dependents on one floater.
+ * Uses the saved insurance premium matrix when employee age is known; otherwise legacy ladder.
  */
-export function computeFloaterAnnualPremiumINR(coverageLakh, savedDependentCount) {
+export function computeFloaterAnnualPremiumINR(coverageLakh, savedDependentCount, employeeAge) {
   const n = Number(coverageLakh);
   if (!n || Number.isNaN(n)) return null;
-  const base = COVERAGE_BASE_PREMIUM_INR[n];
-  if (base == null) return null;
+
+  let base = null;
+  const ageN = Number(employeeAge);
+  if (!Number.isNaN(ageN)) {
+    const matrix = loadPremiumMatrixFromStorage();
+    if (matrix) base = lookupPremiumFromMatrix(matrix, ageN, n);
+  }
+  if (base == null) {
+    base = COVERAGE_BASE_PREMIUM_INR[n];
+    if (base == null) return null;
+  }
+
   const deps = Math.max(0, Number(savedDependentCount) || 0);
   const members = 1 + deps;
   const factor = 1 + (members - 1) * 0.16;

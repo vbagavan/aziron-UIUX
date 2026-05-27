@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useCallback, useId } from "react";
+import { useState, useRef, useEffect, useCallback, useId, useMemo, forwardRef } from "react";
 import {
   ChevronRight, Building2, FileText, Upload, Clock,
-  Plus, Trash2, Edit2, Check, X, Save, AlertCircle, CheckCircle2,
+  Plus, Trash2, Edit2, Check, X, Save, AlertCircle, CheckCircle2, ChevronDown,
   FileBadge, FileSpreadsheet, Paperclip, ArrowLeft, ShieldCheck,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
@@ -9,13 +9,43 @@ import Sidebar from "@/components/layout/Sidebar";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_PREMIUM_MATRIX,
+  ageBandsValidationError,
+  clonePremiumMatrix,
+  coverageColumnLabel,
+  coverageColumnsSummary,
+  coverageSumInsuredInr,
+  defaultNewAgeBand,
+  formatMatrixPremiumInr,
+  getPremiumMatrixStatus,
+  loadPremiumMatrixFromStorage,
+  nextCoverageLakh,
+  parseMatrixPremiumInput,
+  parsePremiumMatrixCsv,
+  premiumMatricesEqual,
+  premiumMatrixCsvTemplate,
+  premiumMatrixValidationError,
+  rupeesToLakh,
+  savePremiumMatrixToStorage,
+  SUGGESTED_COVERAGE_LAKHS,
+} from "@/lib/premiumMatrix";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const SECTION_NAV = [
   { id: "section-insurer", label: "Insurer & contacts" },
   { id: "section-default-coverage", label: "Default coverage" },
-  { id: "section-premium", label: "Premium by age" },
+  { id: "section-premium", label: "Premium matrix" },
   { id: "section-windows", label: "Enrollment windows" },
   { id: "section-documents", label: "Supporting documents" },
 ];
@@ -103,38 +133,10 @@ function getPolicyStatusChips(data) {
   ];
 }
 
-function slabsValidationError(slabs) {
-  const sorted = [...slabs].sort((a, b) => Number(a.ageFrom) - Number(b.ageFrom));
-  for (let i = 0; i < sorted.length; i++) {
-    const s = sorted[i];
-    const from = Number(s.ageFrom);
-    const to = Number(s.ageTo);
-    if (Number.isNaN(from) || Number.isNaN(to) || from > to) {
-      return `Age band ${s.ageFrom}–${s.ageTo} is invalid. Minimum age must be less than or equal to maximum.`;
-    }
-    if (Number(s.premium) <= 0) return "Enter a premium greater than ₹0 for each age band.";
-    if (i > 0) {
-      const prev = sorted[i - 1];
-      if (from <= Number(prev.ageTo)) {
-        return `Age band ${from}–${to} overlaps with ${prev.ageFrom}–${prev.ageTo}. Adjust the ranges so they don't overlap.`;
-      }
-      if (from > Number(prev.ageTo) + 1) {
-        const missingFrom = Number(prev.ageTo) + 1;
-        const missingTo = from - 1;
-        if (missingFrom === missingTo) {
-          return `Age ${missingFrom} isn't covered. Extend a band or add a new one.`;
-        }
-        return `Ages ${missingFrom}–${missingTo} aren't covered. Extend a band or add a new one.`;
-      }
-    }
-  }
-  return null;
-}
-
-function computeSetupStatus({ insurer, defaultCoverage, slabs, docs }) {
+function computeSetupStatus({ insurer, defaultCoverage, premiumMatrix, docs }) {
   const insurerOk = !Object.keys(validateInsurer(insurer)).length;
   const defaultOk = Number(defaultCoverage.sumInsured) > 0;
-  const premiumOk = slabs.length > 0 && !slabsValidationError(slabs);
+  const premiumOk = !premiumMatrixValidationError(premiumMatrix);
   const documentsOk = docs.length > 0 && docs.every((d) => d.status === "verified");
   return {
     insurer: insurerOk,
@@ -303,7 +305,7 @@ function SetupProgress({ status }) {
   const items = [
     { key: "insurer", label: "Insurer & contacts" },
     { key: "defaultCoverage", label: "Default coverage" },
-    { key: "premium", label: "Premium by age" },
+    { key: "premium", label: "Premium matrix" },
     { key: "windows", label: "Enrollment windows" },
     {
       key: "documents",
@@ -591,7 +593,7 @@ function DefaultCoverageSection({ onSaved, onDataChange }) {
               If someone doesn&apos;t enroll before the window and grace period end, they get this coverage amount automatically. It&apos;s individual cover, paid by the employer.
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              For employees who do enroll, premiums come from the age table in Premium by age.
+              For employees who do enroll, premiums come from the premium matrix (saved in setup).
             </p>
           </div>
         </div>
@@ -635,214 +637,978 @@ function DefaultCoverageSection({ onSaved, onDataChange }) {
   );
 }
 
-// ─── Premium by age ──────────────────────────────────────────────────────────
+// ─── Premium by age (matrix) ───────────────────────────────────────────────────
 
-const DEFAULT_SLABS = [
-  { id: 1, ageFrom: 18, ageTo: 25, premium: 12000 },
-  { id: 2, ageFrom: 26, ageTo: 35, premium: 18000 },
-  { id: 3, ageFrom: 36, ageTo: 45, premium: 26000 },
-  { id: 4, ageFrom: 46, ageTo: 55, premium: 38000 },
-  { id: 5, ageFrom: 56, ageTo: 65, premium: 54000 },
-  { id: 6, ageFrom: 66, ageTo: 75, premium: 78000 },
-  { id: 7, ageFrom: 76, ageTo: 99, premium: 112000 },
-];
-
-function defaultNewSlab(slabs) {
-  if (!slabs.length) return { ageFrom: "18", ageTo: "25", premium: "12000" };
-  const last = slabs.reduce((a, b) => (a.ageTo >= b.ageTo ? a : b));
-  const ageFrom = last.ageTo + 1;
-  const ageTo = Math.min(ageFrom + 9, 99);
-  if (ageFrom > ageTo) return { ageFrom: "18", ageTo: "25", premium: String(last.premium) };
-  return { ageFrom: String(ageFrom), ageTo: String(ageTo), premium: String(Math.round(last.premium * 1.12)) };
-}
-
-function PremiumSlabsSection({ onDataChange, showToast }) {
-  const [slabs, setSlabs] = useState(DEFAULT_SLABS);
-  const [editingId, setEditingId] = useState(null);
-  const [draft, setDraft] = useState({});
-  const [addMode, setAddMode] = useState(false);
-  const [newSlab, setNewSlab] = useState(() => defaultNewSlab(DEFAULT_SLABS));
-  const [slabError, setSlabError] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const nextId = useRef(DEFAULT_SLABS.length + 1);
-
-  useEffect(() => {
-    onDataChange?.(slabs);
-  }, [slabs, onDataChange]);
-
-  const startEdit = (slab) => {
-    setSlabError("");
-    setEditingId(slab.id);
-    setDraft({ ...slab });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setDraft({});
-    setSlabError("");
-  };
-
-  const saveEdit = () => {
-    const next = slabs.map((r) => (r.id === editingId ? { ...draft, id: editingId, ageFrom: +draft.ageFrom, ageTo: +draft.ageTo, premium: +draft.premium } : r));
-    const err = slabsValidationError(next);
-    if (err) {
-      setSlabError(err);
-      return;
-    }
-    setSlabs(next);
-    setEditingId(null);
-    setSlabError("");
-    showToast?.("Saved: age band updated");
-  };
-
-  const deleteSlab = (id) => {
-    setSlabs((s) => s.filter((r) => r.id !== id));
-    setConfirmDelete(null);
-    showToast?.("Age band removed");
-  };
-
-  const addSlab = () => {
-    const candidate = {
-      ...newSlab,
-      id: nextId.current + 1,
-      ageFrom: +newSlab.ageFrom,
-      ageTo: +newSlab.ageTo,
-      premium: +newSlab.premium,
-    };
-    const next = [...slabs, candidate];
-    const err = slabsValidationError(next);
-    if (err) {
-      setSlabError(err);
-      return;
-    }
-    nextId.current += 1;
-    setSlabs(next);
-    setNewSlab(defaultNewSlab(next));
-    setAddMode(false);
-    setSlabError("");
-    showToast?.("Age band added");
-  };
-
-  const openAddSlab = () => {
-    if (editingId != null) return;
-    setNewSlab(defaultNewSlab(slabs));
-    setSlabError("");
-    setAddMode(true);
-  };
-
-  const numInput = (val, onChange, { id, placeholder, align = "right", ariaLabel }) => (
+function MatrixNumInput({ value, onChange, ariaLabel, placeholder, align = "right", className, disabled, onKeyDown }) {
+  return (
     <input
-      id={id}
       type="number"
-      value={val}
+      value={value ?? ""}
+      disabled={disabled}
       aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       className={cn(
-        "w-full h-8 px-2 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30",
-        align === "right" ? "text-right" : "text-left",
+        "h-8 min-w-[4.5rem] px-2 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60 disabled:cursor-not-allowed",
+        align === "right" ? "text-right w-full" : "text-left",
+        className,
       )}
     />
   );
+}
+
+const MatrixPremiumInput = forwardRef(function MatrixPremiumInput(
+  { value, onChange, ariaLabel, disabled, onEnterDown },
+  ref,
+) {
+  const [focused, setFocused] = useState(false);
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (!focused) {
+      setText(value === "" || value == null ? "" : formatMatrixPremiumInr(value));
+    }
+  }, [value, focused]);
+
+  return (
+    <input
+      ref={ref}
+      type="text"
+      inputMode="numeric"
+      disabled={disabled}
+      aria-label={ariaLabel}
+      value={focused ? text : (value === "" || value == null ? "" : formatMatrixPremiumInr(value))}
+      onFocus={() => {
+        setFocused(true);
+        setText(value === "" || value == null ? "" : String(value));
+      }}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        const parsed = parseMatrixPremiumInput(text);
+        onChange(parsed === "" ? "" : parsed);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onEnterDown?.();
+        }
+      }}
+      placeholder="₹0"
+      className={cn(
+        "h-8 min-w-[4.5rem] w-full px-2 rounded-lg border border-border bg-background text-xs text-foreground text-right tabular-nums placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60 disabled:cursor-not-allowed",
+      )}
+    />
+  );
+});
+
+function MatrixStatusChip({ matrix }) {
+  const { ok, error } = getPremiumMatrixStatus(matrix);
+  if (ok) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-success/10 text-success border border-success/25">
+        <CheckCircle2 size={10} aria-hidden /> Complete
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-destructive/10 text-destructive border border-destructive/25 max-w-[12rem] truncate"
+      title={error ?? undefined}
+    >
+      <AlertCircle size={10} aria-hidden /> Needs attention
+    </span>
+  );
+}
+
+const COVERAGE_CHIP_INLINE_MAX = 3;
+
+function ManageCoveragesDialog({ open, columns, canRemove, onClose, onAdd, onChangeLakh, onRemove }) {
+  const [draftRupees, setDraftRupees] = useState({});
+  const [localError, setLocalError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setDraftRupees(
+        Object.fromEntries(columns.map((c) => [c.id, String(Math.round(Number(c.lakh) * 100000))])),
+      );
+      setLocalError("");
+    }
+  }, [open, columns]);
+
+  const applyRupees = (colId) => {
+    const lakh = rupeesToLakh(draftRupees[colId]);
+    if (!lakh || Number.isNaN(lakh) || lakh <= 0) {
+      setLocalError("Enter a valid sum insured (e.g. 100000 or 1000000).");
+      return;
+    }
+    const seen = new Set();
+    for (const c of columns) {
+      const val = c.id === colId ? lakh : rupeesToLakh(draftRupees[c.id] ?? c.lakh * 100000);
+      if (seen.has(val)) {
+        setLocalError(`${coverageColumnLabel(lakh)} is already used.`);
+        return;
+      }
+      seen.add(val);
+    }
+    setLocalError("");
+    onChangeLakh(colId, lakh);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md gap-0 p-0 sm:max-w-lg" showCloseButton>
+        <div className="border-b border-border px-6 py-4">
+          <DialogTitle className="text-sm font-semibold">Edit sum insured columns</DialogTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter sum insured in rupees. The premium grid columns update to match.
+          </p>
+        </div>
+        <div className="px-6 py-4 max-h-[min(24rem,60vh)] overflow-y-auto">
+          {localError && (
+            <p className="mb-3 text-xs text-destructive" role="alert">{localError}</p>
+          )}
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-[11px] text-muted-foreground">
+                <th className="pb-2 text-left font-semibold">Sum insured (₹)</th>
+                <th className="pb-2 text-left font-semibold">Label</th>
+                <th className="pb-2 w-16"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {columns.map((col) => (
+                <tr key={col.id} className="border-b border-border/60 last:border-0">
+                  <td className="py-2 pr-2">
+                    <input
+                      type="number"
+                      min={100000}
+                      step={100000}
+                      value={draftRupees[col.id] ?? ""}
+                      onChange={(e) => setDraftRupees((d) => ({ ...d, [col.id]: e.target.value }))}
+                      onBlur={() => applyRupees(col.id)}
+                      onKeyDown={(e) => e.key === "Enter" && applyRupees(col.id)}
+                      className="h-8 w-28 px-2 rounded-lg border border-border bg-background text-xs"
+                      aria-label={`Sum insured in rupees for column ${col.id}`}
+                    />
+                  </td>
+                  <td className="py-2 text-xs text-muted-foreground">
+                    {coverageColumnLabel(rupeesToLakh(draftRupees[col.id] ?? col.lakh * 100000) || col.lakh)}
+                  </td>
+                  <td className="py-2 text-right">
+                    {canRemove && (
+                      <button
+                        type="button"
+                        onClick={() => onRemove(col)}
+                        className="size-8 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive inline-flex items-center justify-center"
+                        aria-label={`Remove ${coverageColumnLabel(col.lakh)}`}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex justify-between gap-2 border-t border-border px-6 py-4">
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex items-center gap-1 h-9 px-3 rounded-xl text-xs font-medium border border-border hover:bg-muted"
+          >
+            <Plus size={13} aria-hidden /> Add sum insured
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Done
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Sum insured columns — configured outside the premium grid. */
+function CoverageColumnsBar({
+  columns,
+  matrix,
+  editing,
+  manageOpen,
+  onManageOpenChange,
+  onChangeLakh,
+  onRemove,
+  onAdd,
+  canRemove,
+}) {
+  const usedLakhs = new Set(columns.map((c) => Number(c.lakh)));
+  const useCompact = columns.length > COVERAGE_CHIP_INLINE_MAX;
+
+  return (
+    <>
+      <div className="mb-4 rounded-xl border border-border bg-muted/20 px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold text-foreground">
+                <span className="text-muted-foreground font-medium">Step 1 ·</span>{" "}
+                {columns.length} sum insured {columns.length === 1 ? "amount" : "amounts"}
+              </p>
+              <MatrixStatusChip matrix={matrix} />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate" title={coverageColumnsSummary(columns)}>
+              {coverageColumnsSummary(columns)}
+            </p>
+          </div>
+          {editing && (
+            <div className="flex items-center gap-2 shrink-0">
+              {useCompact && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onManageOpenChange(true)}
+                    className="h-8 px-3 rounded-xl text-xs font-medium border border-border bg-card hover:bg-muted transition-colors"
+                  >
+                    Edit sum insured
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onAdd}
+                    className="flex items-center gap-1 h-8 px-2.5 rounded-xl text-[11px] font-medium text-primary bg-primary/10 border border-primary/20 hover:bg-primary/15"
+                  >
+                    <Plus size={12} aria-hidden /> Add amount
+                  </button>
+                </>
+              )}
+              {!useCompact && (
+                <button
+                  type="button"
+                  onClick={onAdd}
+                  className="flex items-center gap-1 h-8 px-2.5 rounded-xl text-[11px] font-medium text-primary bg-primary/10 border border-primary/20 hover:bg-primary/15"
+                >
+                  <Plus size={12} aria-hidden /> Add amount
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {useCompact ? (
+          <div
+            className="mt-3 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1"
+            role="list"
+            aria-label="Sum insured amounts"
+          >
+            {columns.map((col) => (
+              <span
+                key={col.id}
+                role="listitem"
+                className="shrink-0 px-2.5 py-1 rounded-md border border-border bg-card text-[11px] font-semibold tabular-nums text-foreground"
+                title={coverageSumInsuredInr(col.lakh)}
+              >
+                {coverageColumnLabel(col.lakh)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {columns.map((col) => (
+              <CoverageColumnChip
+                key={col.id}
+                col={col}
+                usedLakhs={usedLakhs}
+                canRemove={canRemove && editing}
+                editing={editing}
+                onChangeLakh={onChangeLakh}
+                onRemove={onRemove}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <ManageCoveragesDialog
+        open={manageOpen}
+        columns={columns}
+        canRemove={canRemove}
+        onClose={() => onManageOpenChange(false)}
+        onAdd={onAdd}
+        onChangeLakh={onChangeLakh}
+        onRemove={(col) => {
+          onRemove(col);
+          if (columns.length <= 2) onManageOpenChange(false);
+        }}
+      />
+    </>
+  );
+}
+
+function CoverageColumnChip({ col, usedLakhs, canRemove, editing, onChangeLakh, onRemove }) {
+  const label = coverageColumnLabel(col.lakh);
+  const sumInsured = coverageSumInsuredInr(col.lakh);
+  const currentLakh = Number(col.lakh);
+  const menuOptions = SUGGESTED_COVERAGE_LAKHS.filter(
+    (lakh) => lakh === currentLakh || !usedLakhs.has(lakh),
+  );
+
+  if (!editing) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-card text-xs shadow-sm"
+        title={sumInsured}
+      >
+        <span className="font-bold tabular-nums">{label}</span>
+        <span className="text-muted-foreground">{sumInsured}</span>
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center rounded-lg border border-border bg-card text-xs shadow-sm">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1 px-2.5 py-1.5 hover:bg-muted/50 rounded-l-lg transition-colors"
+          >
+            <span className="font-bold tabular-nums">{label}</span>
+            <span className="text-muted-foreground">{sumInsured}</span>
+            <ChevronDown size={11} className="text-muted-foreground" aria-hidden />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[10rem]">
+          <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+            Sum insured
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {menuOptions.map((lakh) => (
+            <DropdownMenuItem
+              key={lakh}
+              onSelect={() => onChangeLakh(col.id, lakh)}
+              className={cn(
+                "text-xs justify-between",
+                currentLakh === lakh && "bg-primary/10 text-primary font-semibold",
+              )}
+            >
+              <span>{coverageColumnLabel(lakh)}</span>
+              <span className="text-muted-foreground">{coverageSumInsuredInr(lakh)}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {canRemove && (
+        <button
+          type="button"
+          onClick={() => onRemove(col)}
+          className="flex size-8 items-center justify-center rounded-r-lg border-l border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label={`Remove ${label}`}
+        >
+          <X size={12} aria-hidden />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AgeBandCell({ band, editing, readOnly, dimmed, onStartEdit, onCancel, onSave, onChange, onDoubleClick }) {
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <MatrixNumInput
+          value={band.ageFrom}
+          onChange={(v) => onChange({ ageFrom: v === "" ? "" : Number(v) })}
+          ariaLabel="Minimum age"
+          placeholder="Min"
+          align="left"
+          className="w-12 min-w-0"
+        />
+        <span className="text-xs text-muted-foreground" aria-hidden>–</span>
+        <MatrixNumInput
+          value={band.ageTo}
+          onChange={(v) => onChange({ ageTo: v === "" ? "" : Number(v) })}
+          ariaLabel="Maximum age"
+          placeholder="Max"
+          align="left"
+          className="w-12 min-w-0"
+        />
+        <span className="text-[10px] text-muted-foreground">yrs</span>
+        <button type="button" onClick={onSave} className="size-7 rounded-md bg-success/10 text-success flex items-center justify-center ml-0.5" aria-label="Save age band">
+          <Check size={11} />
+        </button>
+        <button type="button" onClick={onCancel} className="size-7 rounded-md bg-muted text-muted-foreground flex items-center justify-center" aria-label="Cancel">
+          <X size={11} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 min-w-[7rem]",
+        dimmed && "opacity-50",
+      )}
+      onDoubleClick={readOnly ? undefined : onDoubleClick}
+    >
+      <span className="text-xs font-semibold text-foreground tabular-nums whitespace-nowrap">
+        {band.ageFrom}–{band.ageTo} yrs
+      </span>
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onStartEdit}
+          className="size-7 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center justify-center shrink-0"
+          aria-label={`Edit age band ${band.ageFrom}–${band.ageTo}`}
+        >
+          <Edit2 size={11} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PremiumMatrixSection({ onDataChange, onSaved, showToast }) {
+  const initialSaved = useMemo(
+    () => loadPremiumMatrixFromStorage() ?? DEFAULT_PREMIUM_MATRIX,
+    [],
+  );
+  const [saved, setSaved] = useState(initialSaved);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(() => clonePremiumMatrix(initialSaved));
+  const [matrixError, setMatrixError] = useState("");
+  const [addBandMode, setAddBandMode] = useState(false);
+  const [newBand, setNewBand] = useState(() =>
+    defaultNewAgeBand(initialSaved.ageBands, initialSaved.coverageColumns),
+  );
+  const [confirmDeleteBand, setConfirmDeleteBand] = useState(null);
+  const [confirmDeleteColumn, setConfirmDeleteColumn] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState("");
+  const [editingBandId, setEditingBandId] = useState(null);
+  const [bandDraft, setBandDraft] = useState(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [manageCoveragesOpen, setManageCoveragesOpen] = useState(false);
+  const nextBandId = useRef(initialSaved.ageBands.length + 1);
+  const nextColId = useRef(
+    Math.max(0, ...initialSaved.coverageColumns.map((c) => c.id)) + 1,
+  );
+  const premiumFocusRefs = useRef({});
+
+  const matrix = editing ? draft : saved;
+  const { coverageColumns, ageBands } = matrix;
+  const dirty = editing && !premiumMatricesEqual(draft, saved);
+
+  useEffect(() => {
+    onDataChange?.(saved);
+  }, [saved, onDataChange]);
+
+  useEffect(() => {
+    if (!loadPremiumMatrixFromStorage()) {
+      savePremiumMatrixToStorage(initialSaved);
+    }
+  }, [initialSaved]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const t = setTimeout(() => {
+      const err = premiumMatrixValidationError(draft);
+      setMatrixError(err ?? "");
+    }, 300);
+    return () => clearTimeout(t);
+  }, [draft, editing]);
+
+  const setDraftMatrix = (updater) => {
+    setDraft((m) => (typeof updater === "function" ? updater(m) : updater));
+  };
+
+  const applyMatrix = (next, toastMsg) => {
+    const err = premiumMatrixValidationError(next);
+    if (err) {
+      setMatrixError(err);
+      return false;
+    }
+    setDraftMatrix(next);
+    setMatrixError("");
+    if (toastMsg) showToast?.(toastMsg);
+    return true;
+  };
+
+  const startEdit = () => {
+    setDraft(clonePremiumMatrix(saved));
+    setMatrixError("");
+    setEditing(true);
+  };
+
+  const discardEdit = () => {
+    setDraft(clonePremiumMatrix(saved));
+    setEditing(false);
+    setAddBandMode(false);
+    setEditingBandId(null);
+    setBandDraft(null);
+    setMatrixError("");
+    setConfirmCancel(false);
+  };
+
+  const requestCancel = () => {
+    if (dirty) {
+      setConfirmCancel(true);
+      return;
+    }
+    discardEdit();
+  };
+
+  const handleSave = () => {
+    const err = premiumMatrixValidationError(draft);
+    if (err) {
+      setMatrixError(err);
+      return;
+    }
+    const next = clonePremiumMatrix(draft);
+    setSaved(next);
+    savePremiumMatrixToStorage(next);
+    setEditing(false);
+    setAddBandMode(false);
+    setEditingBandId(null);
+    setBandDraft(null);
+    setMatrixError("");
+    setSavedFlash(true);
+    onSaved?.();
+    showToast?.("Saved: premium matrix");
+    setTimeout(() => setSavedFlash(false), 2500);
+  };
+
+  const updatePremium = (bandId, colId, raw) => {
+    if (!editing) return;
+    const val = raw === "" ? "" : Number(raw);
+    setDraftMatrix((m) => ({
+      ...m,
+      ageBands: m.ageBands.map((b) =>
+        b.id === bandId
+          ? { ...b, premiums: { ...b.premiums, [colId]: val === "" ? "" : val } }
+          : b,
+      ),
+    }));
+  };
+
+  const changeColumnLakh = (colId, lakh) => {
+    if (!editing) return;
+    const next = {
+      ...draft,
+      coverageColumns: coverageColumns.map((c) =>
+        c.id === colId ? { ...c, lakh: Number(lakh) } : c,
+      ),
+    };
+    if (next.coverageColumns.filter((c) => Number(c.lakh) === Number(lakh)).length > 1) {
+      setMatrixError(`Duplicate coverage column: ${coverageColumnLabel(lakh)}.`);
+      return;
+    }
+    setDraftMatrix(next);
+    setMatrixError("");
+    showToast?.("Sum insured updated");
+  };
+
+  const focusPremiumBelow = (bandId, colId) => {
+    const bandIdx = ageBands.findIndex((b) => b.id === bandId);
+    if (bandIdx < 0 || bandIdx >= ageBands.length - 1) return;
+    const nextBand = ageBands[bandIdx + 1];
+    const key = `${nextBand.id}-${colId}`;
+    premiumFocusRefs.current[key]?.focus();
+  };
+
+  const addCoverageColumn = () => {
+    const lakh = nextCoverageLakh(coverageColumns);
+    const id = nextColId.current;
+    nextColId.current += 1;
+    const lastColId = coverageColumns[coverageColumns.length - 1]?.id;
+    const next = {
+      coverageColumns: [...coverageColumns, { id, lakh }],
+      ageBands: ageBands.map((b) => ({
+        ...b,
+        premiums: {
+          ...b.premiums,
+          [id]:
+            lastColId != null && b.premiums[lastColId] != null && b.premiums[lastColId] !== ""
+              ? b.premiums[lastColId]
+              : 5000,
+        },
+      })),
+    };
+    setDraftMatrix(next);
+    setMatrixError("");
+    showToast?.("Sum insured column added");
+  };
+
+  const saveBandEdit = () => {
+    if (editingBandId == null || !bandDraft) return;
+    const next = {
+      ...draft,
+      ageBands: ageBands.map((b) =>
+        b.id === editingBandId
+          ? { ...b, ageFrom: +bandDraft.ageFrom, ageTo: +bandDraft.ageTo }
+          : b,
+      ),
+    };
+    const ageErr = ageBandsValidationError(next.ageBands);
+    if (ageErr) {
+      setMatrixError(ageErr);
+      return;
+    }
+    setDraftMatrix(next);
+    setEditingBandId(null);
+    setBandDraft(null);
+    setMatrixError("");
+    showToast?.("Age band updated");
+  };
+
+  const removeCoverageColumn = (colId) => {
+    if (coverageColumns.length <= 1) return;
+    const next = {
+      coverageColumns: coverageColumns.filter((c) => c.id !== colId),
+      ageBands: ageBands.map((b) => {
+        const { [colId]: _removed, ...premiums } = b.premiums ?? {};
+        return { ...b, premiums };
+      }),
+    };
+    applyMatrix(next, "Coverage column removed");
+    setConfirmDeleteColumn(null);
+  };
+
+  const addAgeBand = () => {
+    const id = nextBandId.current + 1;
+    const premiums = {};
+    for (const col of coverageColumns) {
+      premiums[col.id] = newBand.premiums[col.id] === "" ? "" : +newBand.premiums[col.id];
+    }
+    const candidate = {
+      id,
+      ageFrom: +newBand.ageFrom,
+      ageTo: +newBand.ageTo,
+      premiums,
+    };
+    const next = { ...draft, ageBands: [...ageBands, candidate] };
+    const ageErr = ageBandsValidationError(next.ageBands);
+    if (ageErr) {
+      setMatrixError(ageErr);
+      return;
+    }
+    const fullErr = premiumMatrixValidationError(next);
+    if (fullErr) {
+      setMatrixError(fullErr);
+      return;
+    }
+    nextBandId.current = id;
+    setDraftMatrix(next);
+    setNewBand(defaultNewAgeBand(next.ageBands, coverageColumns));
+    setAddBandMode(false);
+    setMatrixError("");
+    showToast?.("Age band added");
+  };
+
+  const removeAgeBand = (id) => {
+    const next = { ...draft, ageBands: ageBands.filter((b) => b.id !== id) };
+    applyMatrix(next, "Age band removed");
+    setConfirmDeleteBand(null);
+  };
+
+  const openImport = () => {
+    if (!editing) startEdit();
+    setImportText(premiumMatrixCsvTemplate(editing ? draft : saved));
+    setImportError("");
+    setImportOpen(true);
+  };
+
+  const runImport = () => {
+    const existingIds = coverageColumns.map((c) => c.id);
+    const result = parsePremiumMatrixCsv(importText, existingIds);
+    if (result.error) {
+      setImportError(result.error);
+      return;
+    }
+    const maxBand = Math.max(0, ...result.matrix.ageBands.map((b) => b.id));
+    const maxCol = Math.max(0, ...result.matrix.coverageColumns.map((c) => c.id));
+    nextBandId.current = maxBand;
+    nextColId.current = maxCol + 1;
+    setDraftMatrix(result.matrix);
+    if (!editing) setEditing(true);
+    setMatrixError("");
+    setImportOpen(false);
+    showToast?.("Premium matrix imported — save to apply");
+  };
 
   return (
     <>
       <SectionCard
         id="section-premium"
         icon={FileSpreadsheet}
-        title="Premium by age"
-        subtitle="Annual premium per employee (₹) by age. Both ends of each range count (e.g. 26–35 includes age 26 and 35)."
+        title="Premium matrix"
+        subtitle="Step 1: Configure sum insured amounts. Step 2: Enter annual premiums (₹) for each age band. Ranges include both endpoints (e.g. 26–35 includes 26 and 35). Employee enrollment uses the saved matrix."
         action={
-          <button
-            type="button"
-            onClick={openAddSlab}
-            disabled={addMode || editingId != null}
-            title={editingId != null ? "Finish editing the current band first" : undefined}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors disabled:opacity-40"
-          >
-            <Plus size={13} aria-hidden /> Add age band
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {editing && (
+              <>
+                <button
+                  type="button"
+                  onClick={openImport}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-muted-foreground border border-border hover:bg-muted transition-colors"
+                >
+                  <Upload size={13} aria-hidden /> Import spreadsheet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManageCoveragesOpen(true)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-medium text-muted-foreground border border-border hover:bg-muted transition-colors"
+                >
+                  Edit sum insured
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBand(defaultNewAgeBand(ageBands, coverageColumns));
+                    setMatrixError("");
+                    setAddBandMode(true);
+                  }}
+                  disabled={addBandMode}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-colors disabled:opacity-40"
+                >
+                  <Plus size={13} aria-hidden /> Add age band
+                </button>
+              </>
+            )}
+            {dirty && (
+              <span className="text-[10px] font-medium text-warning px-2 py-0.5 rounded-full bg-warning/10 border border-warning/25">
+                Unsaved changes
+              </span>
+            )}
+            <EditSaveActions
+              editing={editing}
+              saved={savedFlash}
+              onEdit={startEdit}
+              onCancel={requestCancel}
+              onSave={handleSave}
+              saveDisabled={!!premiumMatrixValidationError(draft)}
+            />
+          </div>
         }
       >
-        {slabError && (
+        {matrixError && editing && (
           <p className="mb-3 text-xs text-destructive flex items-center gap-1.5" role="alert">
-            <AlertCircle size={14} aria-hidden /> {slabError}
+            <AlertCircle size={14} aria-hidden /> {matrixError}
           </p>
         )}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
+
+        <CoverageColumnsBar
+          columns={coverageColumns}
+          matrix={matrix}
+          editing={editing}
+          manageOpen={manageCoveragesOpen}
+          onManageOpenChange={setManageCoveragesOpen}
+          onChangeLakh={changeColumnLakh}
+          onAdd={addCoverageColumn}
+          onRemove={(col) =>
+            setConfirmDeleteColumn({ id: col.id, label: coverageColumnLabel(col.lakh) })
+          }
+          canRemove={coverageColumns.length > 1}
+        />
+
+        <p className="text-[11px] font-medium text-muted-foreground mb-2">
+          <span className="text-foreground">Step 2 ·</span> Premium grid
+        </p>
+
+        <div
+          className="overflow-x-auto rounded-xl border border-border max-h-[min(28rem,55vh)] overflow-y-auto"
+          role="region"
+          aria-label="Premium matrix by age band and coverage"
+        >
+          <table className="w-full text-sm border-collapse">
+            <colgroup>
+              <col className="w-[9.5rem]" />
+              {coverageColumns.map((col) => (
+                <col key={col.id} className="min-w-[5.5rem]" />
+              ))}
+              <col className="w-10" />
+            </colgroup>
+            <thead className="sticky top-0 z-[3]">
+              <tr className="border-b border-border/60 bg-muted/20">
+                <th
+                  rowSpan={2}
+                  scope="col"
+                  className="sticky left-0 z-[4] bg-muted/30 px-4 py-2 text-left text-[11px] font-semibold text-muted-foreground align-middle border-r border-border"
+                >
+                  Age band
+                </th>
+                <th
+                  colSpan={coverageColumns.length}
+                  scope="colgroup"
+                  className="sticky top-0 bg-muted/20 px-3 py-1.5 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                >
+                  Annual premium (₹)
+                </th>
+                <th rowSpan={2} scope="col" className="sticky top-0 w-10 border-l border-border/60 bg-muted/20" aria-hidden />
+              </tr>
               <tr className="border-b border-border bg-muted/30">
-                {["Age band", "Annual premium (₹)", ""].map((h, i) => (
+                {coverageColumns.map((col, idx) => (
                   <th
-                    key={i}
+                    key={col.id}
                     scope="col"
+                    title={`${coverageSumInsuredInr(col.lakh)} sum insured`}
                     className={cn(
-                      "px-4 py-2.5 text-[11px] font-semibold text-muted-foreground whitespace-nowrap",
-                      i === 2 ? "text-right pr-4" : i === 0 ? "text-left" : "text-right",
+                      "sticky top-[1.625rem] bg-muted/30 px-2 py-2 text-center text-xs font-bold text-foreground tabular-nums",
+                      idx > 0 && "border-l border-border/40",
+                      idx % 2 === 1 && "bg-muted/50",
                     )}
                   >
-                    {i === 2 ? <span className="sr-only">Actions</span> : h}
+                    {coverageColumnLabel(col.lakh)}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {slabs.map((slab) => {
-                const isEditing = editingId === slab.id;
+              {ageBands.map((band) => {
+                const rowActive = editingBandId === band.id;
+                const rowDimmed = editingBandId != null && !rowActive;
                 return (
-                  <tr key={slab.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3">
-                      {isEditing ? (
-                        <div className="flex items-center gap-1.5">
-                          {numInput(draft.ageFrom, (v) => setDraft((d) => ({ ...d, ageFrom: v })), { placeholder: "Min age", align: "left", ariaLabel: "Minimum age" })}
-                          <span className="text-xs text-muted-foreground" aria-hidden>–</span>
-                          {numInput(draft.ageTo, (v) => setDraft((d) => ({ ...d, ageTo: v })), { placeholder: "Max age", align: "left", ariaLabel: "Maximum age" })}
-                          <span className="text-xs text-muted-foreground">yrs</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs font-semibold text-foreground">{slab.ageFrom}–{slab.ageTo} yrs</span>
-                      )}
+                  <tr
+                    key={band.id}
+                    className={cn(
+                      "border-b border-border last:border-0 transition-colors group",
+                      rowActive ? "bg-primary/5" : "hover:bg-muted/15",
+                      rowDimmed && "opacity-60",
+                    )}
+                  >
+                    <td className="sticky left-0 z-[1] bg-card group-hover:bg-muted/15 px-3 py-2.5 border-r border-border shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]">
+                      <AgeBandCell
+                        band={rowActive && bandDraft ? bandDraft : band}
+                        editing={rowActive}
+                        readOnly={!editing}
+                        dimmed={rowDimmed}
+                        onStartEdit={() => {
+                          setEditingBandId(band.id);
+                          setBandDraft({ ageFrom: band.ageFrom, ageTo: band.ageTo });
+                        }}
+                        onDoubleClick={() => {
+                          if (!editing) return;
+                          setEditingBandId(band.id);
+                          setBandDraft({ ageFrom: band.ageFrom, ageTo: band.ageTo });
+                        }}
+                        onCancel={() => {
+                          setEditingBandId(null);
+                          setBandDraft(null);
+                        }}
+                        onSave={saveBandEdit}
+                        onChange={(patch) => setBandDraft((d) => ({ ...d, ...patch }))}
+                      />
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      {isEditing
-                        ? numInput(draft.premium, (v) => setDraft((d) => ({ ...d, premium: v })), { placeholder: "Amount", ariaLabel: "Annual premium" })
-                        : <span className="text-xs text-foreground">{fmtINR(slab.premium)}</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {isEditing ? (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button type="button" onClick={saveEdit} aria-label="Save age band" title="Save" className="size-9 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
-                          <button type="button" onClick={cancelEdit} aria-label="Cancel editing" title="Cancel" className="size-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button type="button" onClick={() => startEdit(slab)} aria-label={`Edit age band ${slab.ageFrom}–${slab.ageTo}`} title="Edit" className="size-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors"><Edit2 size={13} /></button>
-                          <button type="button" onClick={() => setConfirmDelete({ id: slab.id, label: `${slab.ageFrom}–${slab.ageTo}` })} aria-label={`Delete age band ${slab.ageFrom}–${slab.ageTo}`} title="Delete" className="size-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors"><Trash2 size={13} /></button>
-                        </div>
+                    {coverageColumns.map((col, colIdx) => (
+                      <td
+                        key={col.id}
+                        className={cn("px-3 py-2.5", colIdx % 2 === 1 && "bg-muted/10")}
+                      >
+                        {editing ? (
+                          <MatrixPremiumInput
+                            ref={(el) => {
+                              premiumFocusRefs.current[`${band.id}-${col.id}`] = el;
+                            }}
+                            value={band.premiums?.[col.id] ?? ""}
+                            onChange={(v) => updatePremium(band.id, col.id, v)}
+                            onEnterDown={() => focusPremiumBelow(band.id, col.id)}
+                            ariaLabel={`Premium for ages ${band.ageFrom}–${band.ageTo}, ${coverageColumnLabel(col.lakh)}`}
+                          />
+                        ) : (
+                          <p className="text-xs text-right tabular-nums text-foreground pr-1">
+                            {formatMatrixPremiumInr(band.premiums?.[col.id]) || "—"}
+                          </p>
+                        )}
+                      </td>
+                    ))}
+                    <td className="px-2 py-2.5 text-right">
+                      {editing && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDeleteBand({
+                              id: band.id,
+                              label: `${band.ageFrom}–${band.ageTo}`,
+                            })
+                          }
+                          aria-label={`Delete age band ${band.ageFrom}–${band.ageTo}`}
+                          title="Delete row"
+                          className="size-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-destructive/10 hover:text-destructive transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       )}
                     </td>
                   </tr>
                 );
               })}
 
-              {addMode && (
+              {addBandMode && (
                 <tr className="border-b border-primary/20 bg-primary/5">
-                  <td className="px-4 py-3">
+                  <td className="sticky left-0 z-[1] bg-primary/5 px-4 py-2.5 border-r border-border">
                     <div className="flex items-center gap-1.5">
-                      {numInput(newSlab.ageFrom, (v) => setNewSlab((d) => ({ ...d, ageFrom: v })), { placeholder: "Min age", align: "left", ariaLabel: "Minimum age for new band" })}
+                      <MatrixNumInput
+                        value={newBand.ageFrom}
+                        onChange={(v) => setNewBand((d) => ({ ...d, ageFrom: v }))}
+                        ariaLabel="Minimum age for new band"
+                        placeholder="Min"
+                        align="left"
+                        className="w-14 min-w-0"
+                      />
                       <span className="text-xs text-muted-foreground" aria-hidden>–</span>
-                      {numInput(newSlab.ageTo, (v) => setNewSlab((d) => ({ ...d, ageTo: v })), { placeholder: "Max age", align: "left", ariaLabel: "Maximum age for new band" })}
-                      <span className="text-xs text-muted-foreground">yrs</span>
+                      <MatrixNumInput
+                        value={newBand.ageTo}
+                        onChange={(v) => setNewBand((d) => ({ ...d, ageTo: v }))}
+                        ariaLabel="Maximum age for new band"
+                        placeholder="Max"
+                        align="left"
+                        className="w-14 min-w-0"
+                      />
+                      <span className="text-[10px] text-muted-foreground">yrs</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {numInput(newSlab.premium, (v) => setNewSlab((d) => ({ ...d, premium: v })), { placeholder: "e.g. 45000", ariaLabel: "Annual premium for new band" })}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button type="button" onClick={addSlab} aria-label="Save new age band" title="Save" className="size-9 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20 transition-colors"><Check size={13} /></button>
-                      <button type="button" onClick={() => { setAddMode(false); setNewSlab(defaultNewSlab(slabs)); setSlabError(""); }} aria-label="Cancel new age band" title="Cancel" className="size-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border transition-colors"><X size={13} /></button>
+                  {coverageColumns.map((col, colIdx) => (
+                    <td key={col.id} className={cn("px-3 py-2.5", colIdx % 2 === 1 && "bg-primary/5")}>
+                      <MatrixPremiumInput
+                        value={newBand.premiums[col.id] ?? ""}
+                        onChange={(v) =>
+                          setNewBand((d) => ({
+                            ...d,
+                            premiums: { ...d.premiums, [col.id]: v },
+                          }))
+                        }
+                        ariaLabel={`Premium for new band, ${coverageColumnLabel(col.lakh)}`}
+                      />
+                    </td>
+                  ))}
+                  <td className="px-2 py-2.5 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={addAgeBand}
+                        aria-label="Save new age band"
+                        className="size-8 rounded-lg bg-success/10 text-success flex items-center justify-center hover:bg-success/20"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddBandMode(false);
+                          setNewBand(defaultNewAgeBand(ageBands, coverageColumns));
+                          setMatrixError("");
+                        }}
+                        aria-label="Cancel new age band"
+                        className="size-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center hover:bg-border"
+                      >
+                        <X size={12} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -850,18 +1616,88 @@ function PremiumSlabsSection({ onDataChange, showToast }) {
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-3">All amounts are annual premiums in Indian rupees (INR).</p>
+
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          All amounts are annual premiums in INR. The 0–35 band includes age 0 where your policy covers newborns. Overlapping age ranges are blocked when you add or change bands. Save to apply rates in employee enrollment.
+        </p>
       </SectionCard>
 
-      {confirmDelete && (
+      {confirmCancel && (
         <ConfirmDialog
-          title="Delete age band?"
-          message={`Remove the age band ${confirmDelete.label}? Employees in that range won't have a premium until you add a new band.`}
-          confirmLabel="Delete"
-          onConfirm={() => deleteSlab(confirmDelete.id)}
-          onCancel={() => setConfirmDelete(null)}
+          {...DISCARD_CHANGES_DIALOG}
+          confirmClass="flex-1 h-10 rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm font-medium transition-colors"
+          onConfirm={discardEdit}
+          onCancel={() => setConfirmCancel(false)}
         />
       )}
+
+      {confirmDeleteBand && (
+        <ConfirmDialog
+          title="Delete age band?"
+          message={`Remove the age band ${confirmDeleteBand.label}? Employees in that range won't have a premium until you add a new band.`}
+          confirmLabel="Delete"
+          onConfirm={() => removeAgeBand(confirmDeleteBand.id)}
+          onCancel={() => setConfirmDeleteBand(null)}
+        />
+      )}
+
+      {confirmDeleteColumn && (
+        <ConfirmDialog
+          title="Remove coverage column?"
+          message={`Remove ${confirmDeleteColumn.label} coverage from the matrix? Premiums in that column will be deleted.`}
+          confirmLabel="Remove"
+          onConfirm={() => removeCoverageColumn(confirmDeleteColumn.id)}
+          onCancel={() => setConfirmDeleteColumn(null)}
+        />
+      )}
+
+      <Dialog open={importOpen} onOpenChange={(open) => !open && setImportOpen(false)}>
+        <DialogContent className="max-w-lg gap-0 p-0 sm:max-w-xl" showCloseButton>
+          <div className="border-b border-border px-6 py-4">
+            <DialogTitle className="text-sm font-semibold">Import premium matrix</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Paste CSV or tab-separated values. Use Age Band (e.g. 0-35) or Age From / Age To, then sum insured in rupees (100000, 200000) or lakhs (1, 2).
+            </p>
+          </div>
+          <div className="px-6 py-4 space-y-3">
+            {importError && (
+              <p className="text-xs text-destructive flex items-center gap-1.5" role="alert">
+                <AlertCircle size={14} aria-hidden /> {importError}
+              </p>
+            )}
+            <textarea
+              value={importText}
+              onChange={(e) => {
+                setImportText(e.target.value);
+                setImportError("");
+              }}
+              rows={10}
+              spellCheck={false}
+              className="w-full font-mono text-xs px-3 py-2.5 rounded-xl border border-border bg-muted/30 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
+              aria-label="Premium matrix CSV"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Example: <code className="text-foreground">0-35,4852,9145,12758</code> for ages 0–35 at ₹1L / ₹2L / ₹3L.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+            <button
+              type="button"
+              onClick={() => setImportOpen(false)}
+              className="h-9 px-4 rounded-xl text-xs font-medium border border-border hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={runImport}
+              className="h-9 px-4 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Import matrix
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -1219,13 +2055,13 @@ export default function InsuranceConfigPage({ onNavigate }) {
   const { toasts, showToast, dismissToast } = useToast();
   const [insurerData, setInsurerData] = useState(DEFAULT_INSURER);
   const [defaultCoverage, setDefaultCoverage] = useState(DEFAULT_FALLBACK_COVERAGE);
-  const [slabs, setSlabs] = useState(DEFAULT_SLABS);
+  const [premiumMatrix, setPremiumMatrix] = useState(DEFAULT_PREMIUM_MATRIX);
   const [docs, setDocs] = useState(DEFAULT_DOCS);
 
   const setupStatus = computeSetupStatus({
     insurer: insurerData,
     defaultCoverage,
-    slabs,
+    premiumMatrix,
     docs,
   });
 
@@ -1291,7 +2127,11 @@ export default function InsuranceConfigPage({ onNavigate }) {
                 onDataChange={setDefaultCoverage}
                 onSaved={() => notifySaved("Saved: default coverage")}
               />
-              <PremiumSlabsSection onDataChange={setSlabs} showToast={showToast} />
+              <PremiumMatrixSection
+                onDataChange={setPremiumMatrix}
+                onSaved={() => notifySaved("Saved: premium matrix")}
+                showToast={showToast}
+              />
               <BatchDurationSection onSaved={() => notifySaved("Saved: enrollment windows")} />
               <DocumentsSection onDataChange={setDocs} showToast={showToast} />
             </div>
