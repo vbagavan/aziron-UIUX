@@ -52,7 +52,8 @@ function TabsTrigger({ value, className, children, ...props }) {
       data-slot="tabs-trigger"
       onClick={() => ctx.onValueChange(value)}
       className={cn(
-        "inline-flex h-7 items-center justify-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-all",
+        "inline-flex h-7 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium transition-all",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
         "disabled:pointer-events-none disabled:opacity-50",
         selected

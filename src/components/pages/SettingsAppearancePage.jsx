@@ -11,6 +11,9 @@ import { TENANTS, SAAS_TIERS, getLimits } from "@/data/adminData";
 import { useTheme } from "@/context/ThemeContext";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import ConnectionsPanel from "@/components/connections/ConnectionsPanel.jsx";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // ─── Settings nav ──────────────────────────────────────────────────────────────
 
@@ -19,7 +22,7 @@ const SETTINGS_NAV = [
   { icon: SwatchBook,  label: "Appearance",   id: "appearance"   },
   { icon: KeyRound,    label: "API Keys",     id: "api-keys"     },
   { icon: Bell,        label: "Notifications",id: "notifications"},
-  { icon: LayoutGrid,  label: "Integrations", id: "integrations" },
+  { icon: LayoutGrid,  label: "Connectors", id: "connectors" },
   { icon: CreditCard,  label: "Subscription", id: "subscription" },
   { icon: HelpCircle,  label: "Support",      id: "support"      },
 ];
@@ -654,44 +657,56 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
             <div className="w-px h-6 bg-border dark:bg-border"/>
-            <nav className="flex items-center gap-[10px]">
-              <span className="text-sm text-muted-foreground dark:text-muted-foreground whitespace-nowrap">Settings</span>
-              <ChevronRight size={14} className="text-muted-foreground dark:text-muted-foreground"/>
-              <span className="text-sm text-foreground dark:text-foreground whitespace-nowrap">{activeLabel}</span>
+            <nav className="flex min-w-0 items-center gap-2 overflow-x-auto">
+              <span className="shrink-0 text-sm text-muted-foreground whitespace-nowrap">Settings</span>
+              <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
+              <span className="truncate text-sm text-foreground">{activeLabel}</span>
             </nav>
           </div>
         </AppHeader>
 
-        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto px-6 py-4 gap-4">
+        <div className="flex flex-col flex-1 min-h-0 overflow-y-auto px-4 py-4 gap-4 sm:px-6">
           <div className="flex flex-col gap-0">
             <h1 className="type-page-title">Settings</h1>
-            <p className="text-sm text-muted-foreground dark:text-muted-foreground leading-5">Manage your preferences</p>
+            <p className="text-sm text-muted-foreground leading-5">Manage your preferences</p>
           </div>
 
-          <div className="flex flex-1 gap-4 items-start min-h-0">
-            {/* Left settings nav */}
-            <div className="flex flex-col gap-1 w-[216px] flex-shrink-0">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-start">
+            {/* Settings nav — horizontal scroll on mobile, sidebar on lg+ */}
+            <nav
+              aria-label="Settings sections"
+              className="flex shrink-0 gap-1 overflow-x-auto pb-1 lg:w-[216px] lg:flex-col lg:overflow-visible lg:pb-0"
+            >
               {SETTINGS_NAV.map(({icon:Icon,label,id})=>{
                 const isActive = activeSection===id;
                 return (
-                  <button key={id} onClick={()=>setActiveSection(id)} aria-current={isActive?"page":undefined}
-                    className={`flex items-center gap-2 pl-1.5 pr-2 h-8 rounded-[6px] text-sm w-full text-left transition-colors border-l-2 ${
+                  <Button
+                    key={id}
+                    type="button"
+                    variant="ghost"
+                    onClick={()=>setActiveSection(id)}
+                    aria-current={isActive?"page":undefined}
+                    className={cn(
+                      "h-8 shrink-0 justify-start gap-2 rounded-md border-l-2 pl-1.5 pr-3 text-sm font-normal lg:w-full lg:pr-2",
                       isActive
-                        ?"bg-primary/15 border-primary text-foreground font-medium"
-                        :"border-transparent text-foreground hover:bg-muted/40"}`}>
-                    <Icon size={16} className={`flex-shrink-0 ${isActive?"text-primary":""}`}/>
-                    <span className="truncate">{label}</span>
-                  </button>
+                        ? "border-primary bg-primary/15 font-medium text-foreground"
+                        : "border-transparent text-foreground hover:bg-muted/40",
+                    )}
+                  >
+                    <Icon className={cn("size-4 shrink-0", isActive && "text-primary")} />
+                    <span className="whitespace-nowrap">{label}</span>
+                  </Button>
                 );
               })}
-            </div>
+            </nav>
 
             {/* Right content card */}
-            <div className="flex-1 min-w-0 bg-card border-2 border-border rounded-xl shadow-2xs p-6">
+            <div className="min-w-0 flex-1 rounded-xl border-2 border-border bg-card p-4 shadow-2xs sm:p-6">
               {activeSection==="appearance"    && <AppearancePanel/>}
               {activeSection==="notifications" && <NotificationsPanel/>}
               {activeSection==="subscription"  && <SubscriptionPanel/>}
-              {!["appearance","notifications","subscription"].includes(activeSection) && <PlaceholderPanel section={activeSection}/>}
+              {activeSection==="connectors"    && <ConnectionsPanel/>}
+              {!["appearance","notifications","subscription","connectors"].includes(activeSection) && <PlaceholderPanel section={activeSection}/>}
             </div>
           </div>
         </div>
