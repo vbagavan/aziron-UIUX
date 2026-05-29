@@ -10,12 +10,20 @@ export const KUDOS_TIMELINE_STEPS = [
     id: 2,
     kind: "action",
     action: "Read",
+    target: "Keka / employee hierarchy",
+    meta: "Reporting managers for CC recipients",
+    code: null,
+  },
+  {
+    id: 3,
+    kind: "action",
+    action: "Read",
     target: "Cloud folder /KudosTemplates",
     meta: "Listing available card layouts",
     code: null,
   },
   {
-    id: 3,
+    id: 4,
     kind: "action",
     action: "Write",
     target: "preview/AppreciationCard",
@@ -26,7 +34,7 @@ export const KUDOS_TIMELINE_STEPS = [
       { num: 3, text: "renderKudosTemplate(template.id, recipients, content);" },
     ],
   },
-  { id: 4, kind: "pondering" },
+  { id: 5, kind: "pondering" },
 ];
 
 export const KUDOS_TEMPLATE_SWITCH_STEPS = [
@@ -189,13 +197,19 @@ export function buildPreviewResultBlocks({
     },
     {
       type: "text",
-      content: `Templates are synced from your cloud folder. Recommended layout: ${templateLabel}. Confirm recipients and pick a different template if you like.`,
+      content: `Your card uses the template attached in the prompt (${templateLabel}). Change it from the prompt box or pick another layout below.`,
+    },
+    {
+      type: "text",
+      content:
+        "Review who will receive the appreciation email before you send. CC includes reporting manager(s) from Keka; BCC includes the default distribution list.",
     },
     {
       type: "kudos_recipients_table",
       recipients: selectedRecipients,
       emailTo: compose.emailTo,
       emailCc: compose.emailCc,
+      emailBcc: compose.emailBcc,
     },
     {
       type: "kudos_template_preview",
@@ -207,7 +221,7 @@ export function buildPreviewResultBlocks({
     {
       type: "text",
       content:
-        "Pick a template below. Color and theme chips update the live card preview on the left when you apply them.",
+        "The preview below matches your prompt attachment. Color and theme chips update the live card on the left.",
     },
   ];
 }

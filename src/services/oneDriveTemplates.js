@@ -3,6 +3,10 @@
  * Replace with Graph API (/me/drive/items) in production.
  */
 import { TEMPLATES } from "@/components/features/kudos/constants";
+import {
+  buildFileOrigin,
+  KUDOS_DEFAULT_ONEDRIVE_CONNECTION,
+} from "@/lib/cloudFileOrigin";
 
 const ONEDRIVE_META = {
   "gold-classic": {
@@ -77,6 +81,18 @@ export function templateToDriveFile(template) {
   const extension = name.includes(".") ? name.split(".").pop().toLowerCase() : "png";
   const thumbFormat = template.thumbSrc?.match(/\.([a-z0-9]+)(?:\?.*)?$/i)?.[1]?.toLowerCase() ?? null;
 
+  const origin =
+    template.origin ??
+    buildFileOrigin({
+      provider: template.source ?? template.cloudProvider ?? "onedrive",
+      connectionId: template.connectionId ?? KUDOS_DEFAULT_ONEDRIVE_CONNECTION.connectionId,
+      connectionLabel:
+        template.connectionLabel ?? KUDOS_DEFAULT_ONEDRIVE_CONNECTION.connectionLabel,
+      folderPath: segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : `/${folder}`,
+      folderLabel: folder,
+      driveItemId: template.driveItemId,
+    });
+
   return {
     id: template.id,
     name,
@@ -89,6 +105,10 @@ export function templateToDriveFile(template) {
     thumbSrc: template.thumbSrc,
     thumbBg: template.thumbBg,
     thumbAccent: template.thumbAccent,
+    origin,
+    source: origin.provider,
+    connectionId: origin.connectionId,
+    connectionLabel: origin.connectionLabel,
   };
 }
 
@@ -98,11 +118,26 @@ export function templatesToDriveFiles(templates) {
 
 export async function fetchTemplatesFromOneDrive() {
   await new Promise((r) => setTimeout(r, 900));
-  return TEMPLATES.map((t) => ({
-    ...t,
-    source: "onedrive",
-    ...ONEDRIVE_META[t.id],
-  }));
+  return TEMPLATES.map((t) => {
+    const meta = ONEDRIVE_META[t.id] ?? {};
+    const path = meta.path ?? `/${KUDOS_DRIVE_FOLDER}/${t.id}.png`;
+    const segments = path.split("/").filter(Boolean);
+    const folderLabel = segments.length > 1 ? segments[segments.length - 2] : KUDOS_DRIVE_FOLDER;
+
+    return {
+      ...t,
+      ...meta,
+      source: "onedrive",
+      origin: buildFileOrigin({
+        provider: "onedrive",
+        connectionId: KUDOS_DEFAULT_ONEDRIVE_CONNECTION.connectionId,
+        connectionLabel: KUDOS_DEFAULT_ONEDRIVE_CONNECTION.connectionLabel,
+        folderPath: segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : `/${KUDOS_DRIVE_FOLDER}`,
+        folderLabel,
+        driveItemId: meta.driveItemId,
+      }),
+    };
+  });
 }
 
 export function recommendTemplate(templates, { recipientCount, category, recognitionType }) {

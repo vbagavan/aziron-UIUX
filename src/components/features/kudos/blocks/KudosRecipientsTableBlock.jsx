@@ -1,4 +1,4 @@
-import { KUDOS_BODY, KUDOS_LABEL } from "../kudosTypography";
+import { KUDOS_BODY, KUDOS_CAPTION, KUDOS_FIELD_LABEL } from "../kudosTypography";
 import { cn } from "@/lib/utils";
 
 function formatRecipientLine(recipient) {
@@ -7,70 +7,96 @@ function formatRecipientLine(recipient) {
   return `${recipient.name} (${recipient.email})`;
 }
 
+function buildEmailLines(emails, recipients) {
+  return (emails ?? []).map((email) => {
+    const match = recipients.find((r) => r.email === email);
+    return match ? formatRecipientLine(match) : email;
+  });
+}
+
+function RecipientReviewRow({ field, lines, isLast = false }) {
+  return (
+    <tr className={cn(!isLast && "border-b border-border")}>
+      <th
+        scope="row"
+        className={cn(
+          "w-11 shrink-0 bg-muted px-3 py-2 text-left align-top",
+          KUDOS_FIELD_LABEL,
+          "font-semibold uppercase tracking-wide text-muted-foreground",
+        )}
+      >
+        {field}
+      </th>
+      <td className="min-w-0 px-3 py-2 text-left align-top text-foreground">
+        {lines.length > 0 ? (
+          <ul className="list-none space-y-0.5">
+            {lines.map((line) => (
+              <li key={`${field}-${line}`} className={cn(KUDOS_BODY, "break-words")}>
+                {line}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className={cn(KUDOS_BODY, "italic text-muted-foreground")}>—</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export default function KudosRecipientsTableBlock({
   recipients = [],
   emailTo = [],
   emailCc = [],
+  emailBcc = [],
 }) {
-  const toRecipients = recipients.filter((r) => emailTo.includes(r.email));
-  const ccRecipients = recipients.filter((r) => emailCc.includes(r.email));
-
-  const toLines = emailTo.map((email) => {
-    const match = toRecipients.find((r) => r.email === email);
-    return match ? formatRecipientLine(match) : email;
-  });
-
-  const ccLines = emailCc.map((email) => {
-    const match = ccRecipients.find((r) => r.email === email);
-    return match ? formatRecipientLine(match) : email;
-  });
+  const toLines = buildEmailLines(emailTo, recipients);
+  const ccLines = buildEmailLines(emailCc, recipients);
+  const bccLines = buildEmailLines(emailBcc, recipients);
 
   return (
-    <div className="w-full border border-border rounded-lg overflow-hidden bg-card">
-      <table className={cn("w-full border-collapse", KUDOS_BODY)}>
-        <tbody>
-          <tr className="border-b border-border">
-            <th
-              scope="row"
-              className={cn("min-w-fit bg-muted px-4 py-3 text-left align-top", KUDOS_LABEL, "font-semibold")}
-            >
-              To
-            </th>
-            <td className="text-left px-4 py-3 text-foreground break-words align-top">
-              {toLines.length > 0 ? (
-                <ul className="list-none space-y-1">
-                  {toLines.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                <span className="text-muted-foreground italic">—</span>
-              )}
-            </td>
-          </tr>
-          {emailCc.length > 0 && (
-            <tr>
+    <div className="w-full overflow-hidden rounded-lg border border-border bg-card">
+      <div className="border-b border-border bg-muted/80 px-3 py-2">
+        <p className={cn(KUDOS_FIELD_LABEL, "font-semibold text-foreground")}>
+          Email recipients
+        </p>
+        <p className={cn(KUDOS_CAPTION, "mt-0.5 text-muted-foreground")}>
+          Verify To, Cc, and Bcc before submitting for approval.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-border bg-muted/50">
               <th
-                scope="row"
-                className={cn("min-w-fit bg-muted px-4 py-3 text-left align-top", KUDOS_LABEL, "font-semibold")}
-              >
-                Cc
-              </th>
-              <td className="text-left px-4 py-3 text-foreground break-words align-top">
-                {ccLines.length > 0 ? (
-                  <ul className="list-none space-y-1">
-                    {ccLines.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="text-muted-foreground italic">—</span>
+                scope="col"
+                className={cn(
+                  "w-11 px-3 py-1.5 text-left",
+                  KUDOS_CAPTION,
+                  "font-semibold uppercase tracking-wide text-muted-foreground",
                 )}
-              </td>
+              >
+                Field
+              </th>
+              <th
+                scope="col"
+                className={cn(
+                  "px-3 py-1.5 text-left",
+                  KUDOS_CAPTION,
+                  "font-semibold uppercase tracking-wide text-muted-foreground",
+                )}
+              >
+                Recipients
+              </th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <RecipientReviewRow field="To" lines={toLines} />
+            <RecipientReviewRow field="Cc" lines={ccLines} />
+            <RecipientReviewRow field="Bcc" lines={bccLines} isLast />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

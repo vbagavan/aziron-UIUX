@@ -128,12 +128,18 @@ export const DEFAULT_CARD_CONTENT = {
   themeMode: null,
 };
 
+/** Appended to BCC when the card is generated (company-wide distribution). */
+export const KUDOS_DEFAULT_BCC_RECIPIENTS = ["all@company.com"];
+
 export const DEFAULT_COMPOSE = {
   message: "",
   emailTo: [],
   emailCc: [],
+  emailBcc: [],
   toInput: "",
   ccInput: "",
+  bccInput: "",
+  scheduledDate: "",
   category: "customer-service",
   recognitionType: "individual",
   occasion: "",

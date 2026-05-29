@@ -2,6 +2,7 @@ import { Mail, Users, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { APPRECIATION_CATEGORIES, RECOGNITION_TYPES } from "./constants";
+import { defaultScheduledDateIso } from "@/lib/kudosRecipientPlanning";
 
 function EmailChipInput({ label, required, tags, inputValue, onInputChange, onAdd, onRemove, placeholder }) {
   const handleKeyDown = (e) => {
@@ -121,6 +122,21 @@ export default function KudosComposeStep({ workflow, onContinue }) {
         placeholder="Optional CC recipients"
       />
 
+      <EmailChipInput
+        label="BCC"
+        tags={compose.emailBcc}
+        inputValue={compose.bccInput}
+        onInputChange={(v) => updateCompose({ bccInput: v })}
+        onAdd={(e) =>
+          updateCompose({
+            emailBcc: compose.emailBcc.includes(e) ? compose.emailBcc : [...compose.emailBcc, e],
+            bccInput: "",
+          })
+        }
+        onRemove={(e) => updateCompose({ emailBcc: compose.emailBcc.filter((x) => x !== e) })}
+        placeholder="Optional BCC recipients"
+      />
+
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-foreground">Category</label>
@@ -150,6 +166,23 @@ export default function KudosComposeStep({ workflow, onContinue }) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="compose-scheduled-date" className="text-xs font-medium text-foreground">
+          Scheduled appreciation date
+        </label>
+        <input
+          id="compose-scheduled-date"
+          type="date"
+          value={compose.scheduledDate || defaultScheduledDateIso()}
+          onChange={(e) => updateCompose({ scheduledDate: e.target.value })}
+          className="h-8 rounded-md border border-border bg-card px-2 text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          CC and BCC are filled from Keka hierarchy and the company distribution list when your card
+          is generated.
+        </p>
       </div>
 
       <div className="flex flex-col gap-1.5">

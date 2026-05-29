@@ -16,6 +16,7 @@ import KudosRecipientsTableBlock from "./blocks/KudosRecipientsTableBlock";
 import KudosApprovalStatusBlock from "./blocks/KudosApprovalStatusBlock";
 import KudosTemplatePreviewBlock from "./blocks/KudosTemplatePreviewBlock";
 import { templatesToDriveFiles } from "@/services/oneDriveTemplates";
+import { resolvePromptTemplateSelection } from "./kudosTemplateSelection";
 import { buildIntroBlocks } from "./kudosConversation";
 import { KudosPromptBox } from "./KudosPromptBox";
 import { KUDOS_BODY, KUDOS_CHIP, KUDOS_PANEL_TITLE } from "./kudosTypography";
@@ -41,12 +42,18 @@ function hydrateKudosBlocks(blocks, ctx) {
   if (!blocks?.length) return blocks;
   return blocks.map((block) => {
     if (block.type === "kudos_template_preview") {
+      const catalog = ctx.onedriveTemplates?.length ? ctx.onedriveTemplates : TEMPLATES;
+      const { templateId, templates } = resolvePromptTemplateSelection(
+        catalog,
+        ctx.promptContextFileIds,
+        ctx.activeTemplate,
+      );
       return {
         ...block,
-        templateId: ctx.activeTemplate,
-        templates: ctx.onedriveTemplates?.length ? ctx.onedriveTemplates : TEMPLATES,
+        templateId,
+        templates,
         recommendedTemplateId: ctx.recommendedTemplateId,
-        recommended: ctx.activeTemplate === ctx.recommendedTemplateId,
+        recommended: templateId === ctx.recommendedTemplateId,
         onSelectTemplate: ctx.selectTemplate ?? ctx.setActiveTemplate,
       };
     }
@@ -56,6 +63,7 @@ function hydrateKudosBlocks(blocks, ctx) {
         recipients: ctx.selectedRecipients,
         emailTo: ctx.compose.emailTo,
         emailCc: ctx.compose.emailCc,
+        emailBcc: ctx.compose.emailBcc,
       };
     }
     if (block.type === "kudos_approval_status") {
@@ -119,6 +127,7 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
       compose,
       lastNotificationChannels,
       handleUpdateApproval,
+      promptContextFileIds,
     }),
     [
       activeTemplate,
@@ -130,6 +139,7 @@ export function KudosConversationBody({ workflow, isExpanded = false }) {
       compose,
       lastNotificationChannels,
       handleUpdateApproval,
+      promptContextFileIds,
     ],
   );
 

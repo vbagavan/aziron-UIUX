@@ -12,10 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { getActiveMention } from "@/lib/kudosEmailUtils";
 
-import {
-  KudosDriveContextStrip,
-  KudosDriveFileList,
-} from "./KudosDriveFileList";
+import { KudosDriveFileList } from "./KudosDriveFileList";
 import { USERS } from "./constants";
 import { UserAvatar } from "./kudosPrimitives";
 import {
@@ -97,7 +94,7 @@ export function KudosPromptBox({
   templatesLoading = false,
 }) {
   const textareaRef = useRef(null);
-  const [driveListExpanded, setDriveListExpanded] = useState(true);
+  const [driveListExpanded, setDriveListExpanded] = useState(false);
   const [pickerIndex, setPickerIndex] = useState(0);
   const listId = "kudos-mention-list";
 
@@ -170,14 +167,6 @@ export function KudosPromptBox({
 
   const canSend = Boolean(value.trim()) && !isSending;
 
-  const promptContextFiles = useMemo(
-    () =>
-      promptContextFileIds
-        .map((id) => driveFiles.find((f) => f.id === id))
-        .filter(Boolean),
-    [driveFiles, promptContextFileIds],
-  );
-
   const showDrivePanel = templatesLoading || driveFiles.length > 0;
 
   return (
@@ -200,25 +189,20 @@ export function KudosPromptBox({
         )}
       >
         {showDrivePanel && (
-          <InputGroupAddon align="block-start" className="w-full cursor-default p-0">
+          <InputGroupAddon
+            align="block-start"
+            className="w-full cursor-default !p-0 [&:has(.border-b)]:!pb-0"
+          >
             <KudosDriveFileList
               files={driveFiles}
               activeFileId={activeTemplateId}
               contextFileIds={promptContextFileIds}
               onSelectFile={onSelectDriveFile}
+              onRemoveFile={onRemoveContextFile}
               loading={templatesLoading}
               expanded={driveListExpanded}
               onExpandedChange={setDriveListExpanded}
-              className="w-full border-0"
-            />
-          </InputGroupAddon>
-        )}
-
-        {promptContextFiles.length > 0 && (
-          <InputGroupAddon align="block-start" className="w-full cursor-default p-0">
-            <KudosDriveContextStrip
-              files={promptContextFiles}
-              onRemoveFile={onRemoveContextFile}
+              compact
               className="w-full border-0"
             />
           </InputGroupAddon>

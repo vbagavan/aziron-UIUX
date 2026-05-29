@@ -3,6 +3,8 @@ import { SparkLogo } from "./kudosPrimitives";
 import KudosTemplatePreview from "./KudosTemplatePreview";
 import KudosIdleGuide from "./KudosIdleGuide";
 import { hasCustomCardStyles } from "@/lib/kudosPreviewUtils";
+import { resolveCanvasTemplateId } from "./kudosTemplateSelection";
+import { TEMPLATES } from "./constants";
 
 const CARD_WIDTH = 700;
 const CARD_HEIGHT = 500;
@@ -36,10 +38,19 @@ export default function KudosPreviewEditor({ workflow }) {
   const {
     stage,
     activeTemplate,
+    promptContextFileIds,
+    recommendedTemplateId,
     selectedRecipients,
     templateContent,
     baselineTemplateContent,
   } = workflow;
+
+  const canvasTemplateId = resolveCanvasTemplateId(
+    promptContextFileIds,
+    activeTemplate,
+    recommendedTemplateId,
+    TEMPLATES[0]?.id,
+  );
   const containerRef = useRef(null);
 
   const isIdle = ["idle", "compose", "empty"].includes(stage);
@@ -89,8 +100,8 @@ export default function KudosPreviewEditor({ workflow }) {
               }}
             >
               <KudosTemplatePreview
-                key={`${activeTemplate}-${styledPreview ? "styled" : "image"}`}
-                templateId={activeTemplate}
+                key={`${canvasTemplateId}-${styledPreview ? "styled" : "image"}`}
+                templateId={canvasTemplateId}
                 recipients={selectedRecipients}
                 content={templateContent}
                 baselineContent={baselineTemplateContent}

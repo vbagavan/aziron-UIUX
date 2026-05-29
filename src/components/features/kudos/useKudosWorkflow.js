@@ -17,6 +17,11 @@ import {
   parseMentionNames,
 } from "@/lib/kudosEmailUtils";
 import { fetchTemplatesFromOneDrive, recommendTemplate } from "@/services/oneDriveTemplates";
+import { fetchKekaHierarchyForRecipients } from "@/services/kekaHierarchy";
+import {
+  mergeHierarchyIntoRecipients,
+  planKudosRecipients,
+} from "@/lib/kudosRecipientPlanning";
 import { parseTemplateStylePrompt } from "@/lib/kudosStylePrompt";
 import { hasCustomCardStyles } from "@/lib/kudosPreviewUtils";
 import {
@@ -135,7 +140,9 @@ export function useKudosWorkflow() {
   }, [inputValue, compose.message, stage]);
 
   useEffect(() => {
-    if (stage === "loading-templates") setLiveStatus("Loading templates from cloud folder");
+    if (stage === "loading-templates") {
+      setLiveStatus("Loading templates and Keka reporting hierarchy");
+    }
     else if (stage === "generating") setLiveStatus("Generating your appreciation card");
     else if (stage === "preview") setLiveStatus("Preview ready for review");
     else setLiveStatus("");
@@ -183,14 +190,27 @@ export function useKudosWorkflow() {
     setPromptContextFileIds((prev) => (prev.includes(fileId) ? prev : [...prev, fileId]));
   }, []);
 
-  const detachDriveFileFromPrompt = useCallback((fileId) => {
-    if (!fileId) return;
-    setPromptContextFileIds((prev) => prev.filter((id) => id !== fileId));
-  }, []);
+  const detachDriveFileFromPrompt = useCallback(
+    (fileId) => {
+      if (!fileId) return;
+      setPromptContextFileIds((prev) => {
+        const next = prev.filter((id) => id !== fileId);
+        if (fileId === activeTemplate) {
+          const nextActive =
+            next[next.length - 1] ?? recommendedTemplateId ?? TEMPLATES[0]?.id ?? "gold-classic";
+          setActiveTemplate(nextActive);
+        }
+        return next;
+      });
+    },
+    [activeTemplate, recommendedTemplateId],
+  );
 
   const handleDriveFileSelect = useCallback(
     (fileId) => {
-      attachDriveFileToPrompt(fileId);
+      if (!promptContextFileIds.includes(fileId)) {
+        attachDriveFileToPrompt(fileId);
+      }
       if (fileId === activeTemplate) return;
       setActiveTemplate(fileId);
       if (stage !== "preview") return;
@@ -208,6 +228,7 @@ export function useKudosWorkflow() {
     [
       activeTemplate,
       attachDriveFileToPrompt,
+      promptContextFileIds,
       stage,
       onedriveTemplates,
       appendChatMessages,
@@ -312,8 +333,27 @@ export function useKudosWorkflow() {
     setStage("loading-templates");
 
     try {
-      const templates = await fetchTemplatesFromOneDrive();
+      const [templates, hierarchyManagers] = await Promise.all([
+        fetchTemplatesFromOneDrive(),
+        fetchKekaHierarchyForRecipients(emailTo),
+      ]);
       setOnedriveTemplates(templates);
+
+      const planned = planKudosRecipients({
+        emailTo,
+        emailCc: compose.emailCc,
+        emailBcc: compose.emailBcc,
+        scheduledDate: compose.scheduledDate,
+        hierarchyManagers,
+      });
+      updateCompose({
+        emailCc: planned.emailCc,
+        emailBcc: planned.emailBcc,
+        scheduledDate: planned.scheduledDate,
+      });
+      setSelectedRecipients((prev) =>
+        mergeHierarchyIntoRecipients(prev, hierarchyManagers),
+      );
 
       const recommended = recommendTemplate(templates, {
         recipientCount,
@@ -323,6 +363,7 @@ export function useKudosWorkflow() {
       });
       setRecommendedTemplateId(recommended);
       setActiveTemplate(recommended);
+      setPromptContextFileIds(recommended ? [recommended] : []);
 
       const nextContent = {
         ...DEFAULT_CARD_CONTENT,
@@ -370,6 +411,8 @@ export function useKudosWorkflow() {
       userMessage,
       emailTo: [...compose.emailTo],
       emailCc: [...compose.emailCc],
+      emailBcc: [...compose.emailBcc],
+      scheduledDate: compose.scheduledDate,
       submittedAt: new Date().toISOString(),
       pspComment: "",
       reviewHistory: [{ at: new Date().toISOString(), action: "submitted", by: "Requester" }],
