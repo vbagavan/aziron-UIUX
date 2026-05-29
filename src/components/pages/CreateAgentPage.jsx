@@ -5,8 +5,9 @@ import {
   Check, Database, Wrench, Lock, Key, ChevronDown,
   FileText, AlertCircle,
   Loader2, MoreVertical, Pencil, Trash2, Link2, ToggleLeft,
-  FolderOpen,
+  FolderOpen, Tag,
 } from "lucide-react";
+import LabelSelector from "@/components/agents/LabelSelector.jsx";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -123,6 +124,7 @@ function listAgentToForm(agent) {
     knowledgeHubFileIds: { ...(agent.knowledgeHubFileIds ?? {}) },
     tools: [...(agent.tools ?? [])],
     toolCategoryAccessTokens: { ...(agent.toolCategoryAccessTokens ?? {}) },
+    labels: [...(agent.labels ?? [])],
   };
 }
 
@@ -143,6 +145,7 @@ function formToAgentPayload(form) {
     knowledgeHubFileIds: { ...(form.knowledgeHubFileIds ?? {}) },
     tools: [...(form.tools ?? [])],
     toolCategoryAccessTokens: { ...(form.toolCategoryAccessTokens ?? {}) },
+    labels: [...(form.labels ?? [])],
   };
 }
 
@@ -490,7 +493,7 @@ function ToolCategoryModal({ category, tools, open, onOpenChange, form, setForm 
             {category}
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Select tools and save access credentials for this integration category.
+            Select tools and save access credentials for this connector category.
           </DialogDescription>
         </DialogHeader>
 
@@ -750,6 +753,16 @@ function Step1({ form, setForm, errors }) {
             rows={3}
             className="resize-none"
           />
+        </Field>
+        <Field label="Labels" hint="optional">
+          <LabelSelector
+            value={form.labels ?? []}
+            onChange={labels => setForm(f => ({ ...f, labels }))}
+            placeholder="Assign labels to categorise this agent…"
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Labels help you filter and organise agents. Create new labels from the dropdown.
+          </p>
         </Field>
       </SectionCard>
 
@@ -1351,7 +1364,7 @@ function Step3({ form, setForm }) {
           Use + (or the pencil when attached) to configure tools and credentials. Enabled tools are indicated on each category card.
         </p>
         <p className="mt-2 text-xs text-muted-foreground dark:text-muted-foreground">
-          Catalog: {TOOLS.length} of {AGENT_TOOLS_METADATA.total_tools} integrations in library ·{" "}
+          Catalog: {TOOLS.length} of {AGENT_TOOLS_METADATA.total_tools} connectors in library ·{" "}
           {AGENT_TOOLS_METADATA.categories.length} category lanes (data, filesystem, communication, …)
         </p>
       </div>
@@ -1590,7 +1603,7 @@ function StepSummary({ form }) {
         )}
       </SectionCard>
 
-      <SectionCard title="Tools" subtitle="Enabled integrations and saved credentials.">
+      <SectionCard title="Tools" subtitle="Enabled connectors and saved credentials.">
         {enabledIds.length === 0 ? (
           <p className="text-sm text-muted-foreground">No tools enabled.</p>
         ) : (
@@ -1903,6 +1916,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent,
     knowledgeHubFileIds: {},
     tools: [],
     toolCategoryAccessTokens: {},
+    labels: [],
   });
   const formRef = useRef(form);
   formRef.current = form;

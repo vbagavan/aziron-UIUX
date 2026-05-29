@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database } from "lucide-react";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database, Tag } from "lucide-react";
+import { useLabelsStore, getLabelColor } from "@/lib/agentLabels.js";
+import { LabelChip } from "@/components/agents/LabelSelector.jsx";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -188,6 +190,18 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
             </Button>
           </div>
           <VisibilityBadge visibility={agent.visibility} />
+          {agent.labels?.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {agent.labels.slice(0, 2).map(id => (
+                <LabelChip key={id} labelId={id} size="xs" />
+              ))}
+              {agent.labels.length > 2 && (
+                <span className="inline-flex items-center px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
+                  +{agent.labels.length - 2}
+                </span>
+              )}
+            </div>
+          )}
           <p
             className={cn(
               "line-clamp-3 text-xs leading-4",
@@ -304,7 +318,15 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
       {/* Agent name */}
       <td className="px-3 py-2.5 min-w-[180px]">
         <p className="text-sm font-medium text-foreground dark:text-foreground truncate max-w-[220px]">{agent.name}</p>
-        <p className="text-xs text-muted-foreground dark:text-muted-foreground truncate max-w-[220px]">{agent.date}</p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">{agent.date}</p>
+          {agent.labels?.slice(0, 2).map(id => (
+            <LabelChip key={id} labelId={id} size="xs" />
+          ))}
+          {agent.labels?.length > 2 && (
+            <span className="text-[10px] text-muted-foreground">+{agent.labels.length - 2}</span>
+          )}
+        </div>
       </td>
 
       {/* Provider / Model */}
@@ -700,6 +722,9 @@ export default function AgentsListPage({
   const [sort, setSort]                 = useState({ key: "name", dir: "asc" });
   /** `null` = all agents; otherwise single segment filter (Flows-style mutual exclusion). */
   const [segmentFilter, setSegmentFilter] = useState(null);
+  /** Active label filters — array of label ids; agents must have ALL (OR logic: any match shows). */
+  const [labelFilters, setLabelFilters] = useState([]);
+  const { labels: allLabels } = useLabelsStore();
   const [internalAgents, setInternalAgents] = useState(INITIAL_AGENTS);
   const agents = agentsProp ?? internalAgents;
   const setAgents = onAgentsChange ?? setInternalAgents;
@@ -817,6 +842,17 @@ export default function AgentsListPage({
     return true;
   };
 
+  /** OR logic: agent matches if it has ANY of the selected label filters. */
+  const matchesLabelFilter = (a) => {
+    if (labelFilters.length === 0) return true;
+    const agentLabels = a.labels ?? [];
+    return labelFilters.some(id => agentLabels.includes(id));
+  };
+
+  const toggleLabelFilter = (id) => {
+    setLabelFilters(prev => prev.includes(id) ? prev.filter(l => l !== id) : [...prev, id]);
+  };
+
   const total = agents.length;
   const activeN = agents.filter((a) => a.status === "active").length;
   const disabledN = agents.filter((a) => a.status === "disabled").length;
@@ -837,6 +873,7 @@ export default function AgentsListPage({
   const filtered = agents
     .filter(matchesSearch)
     .filter(matchesSegmentFilter)
+    .filter(matchesLabelFilter)
     .sort((a, b) => {
       const val = (x) => {
         if (sort.key === "name")     return x.name.toLowerCase();
@@ -852,6 +889,7 @@ export default function AgentsListPage({
     });
 
   const filteredEmpty = agents.length > 0 && filtered.length === 0;
+  const hasAnyFilter = !!searchQuery || !!segmentFilter || labelFilters.length > 0;
 
   return (
     <>
@@ -1029,6 +1067,53 @@ export default function AgentsListPage({
                 </button>
               </div>
 
+              {/* Label filter bar */}
+              {allLabels.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Filter agents by label">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                    <Tag size={12} aria-hidden />
+                    <span>Labels:</span>
+                  </div>
+                  {allLabels.map(label => {
+                    const { hex, light, border } = getLabelColor(label.color)
+                    const active = labelFilters.includes(label.id)
+                    const count = agents.filter(a => (a.labels ?? []).includes(label.id)).length
+                    if (count === 0) return null
+                    return (
+                      <button
+                        key={label.id}
+                        type="button"
+                        onClick={() => toggleLabelFilter(label.id)}
+                        aria-pressed={active}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-all hover:opacity-90"
+                        style={active
+                          ? { color: "#fff", backgroundColor: hex, borderColor: hex }
+                          : { color: hex, backgroundColor: light, borderColor: border }}
+                      >
+                        {label.name}
+                        <span
+                          className="inline-flex items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                          style={active
+                            ? { backgroundColor: "rgba(255,255,255,0.25)", color: "#fff" }
+                            : { backgroundColor: hex + "22", color: hex }}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })}
+                  {labelFilters.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setLabelFilters([])}
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium"
+                    >
+                      Clear labels
+                    </button>
+                  )}
+                </div>
+              )}
+
               {filteredEmpty && (
                 <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                   <p className="text-sm font-medium text-foreground">No agents match your filters</p>
@@ -1042,6 +1127,7 @@ export default function AgentsListPage({
                     onClick={() => {
                       setSearchQuery("");
                       setSegmentFilter(null);
+                      setLabelFilters([]);
                     }}
                   >
                     Clear search and filter
