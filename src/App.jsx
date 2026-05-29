@@ -17,7 +17,7 @@ class ErrorBoundary extends Component {
     if (this.state.error)
       return (
         <div className="whitespace-pre-wrap bg-destructive/10 p-10 font-mono text-sm text-destructive">
-          <strong>LoginPage Error:</strong>
+          <strong>Application Error:</strong>
           {"\n"}
           {this.state.error?.message}
           {"\n\n"}
@@ -37,13 +37,15 @@ function AppInner() {
       </ErrorBoundary>
     );
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <FlowCatalogProvider>
-          <AppRoutes />
-        </FlowCatalogProvider>
-      </div>
-    </SidebarProvider>
+    <ErrorBoundary>
+      <SidebarProvider defaultOpen={false}>
+        <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+          <FlowCatalogProvider>
+            <AppRoutes />
+          </FlowCatalogProvider>
+        </div>
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 }
 

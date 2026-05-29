@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   UploadCloud,
   AlertTriangle,
@@ -25,8 +25,37 @@ import {
   ACCEPTED_FILE_EXTENSIONS,
   ACCEPTED_FILE_TYPES_LABEL,
 } from "@/data/knowledgeHubs";
+import { downloadCloudFileBlob } from "@/lib/knowledgeHubCloudSync";
+import { saveKnowledgeHubFile } from "@/lib/knowledgeHubFileStorage";
+import { CloudConnectorLogoRow } from "./CloudConnectorLogos";
+import { CreateHubStepIndicator } from "./CreateHubStepIndicator";
+import { countSyncStates } from "./hubFileSyncUtils";
+import { getCloudProviderConfig } from "./cloud/cloudProviderConfig";
+import { CloudAddFilesDialog } from "./cloud/CloudAddFilesDialog";
+import { GoogleDriveConnectionWizard } from "./googledrive/GoogleDriveConnectionWizard";
+import { OneDriveConnectionWizard } from "./onedrive/OneDriveConnectionWizard";
+import { CreateHubFilesStep } from "./CreateHubFilesStep";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { DEFAULT_ONEDRIVE_CONNECTION } from "@/data/knowledgeHubs";
+import {
+  attachedRowsToCloudImport,
+  cloudPickerToAttachedRow,
+  mergeAttachedFiles,
+  uploadToAttachedRow,
+} from "./createHubAttachedFiles";
 
 const MAX_BYTES = 10 * 1024 * 1024;
+const TOTAL_STEPS = 3;
+
+function draftBlobKey(rowId) {
+  return `draft-${rowId}`;
+}
 
 function Step1Upload({
   fileTooLarge,
@@ -39,10 +68,11 @@ function Step1Upload({
   onFileChange,
   onUploadClick,
   onRemoveFile,
+  onConnectorSelect,
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex min-h-0 flex-1 flex-wrap items-center justify-center gap-4">
+      <div className="flex min-h-0 flex-1 flex-wrap items-start justify-center gap-6">
         <div className="flex shrink-0 flex-col items-center gap-4">
           <div
             className={cn(
@@ -88,7 +118,7 @@ function Step1Upload({
               }}
             >
               <UploadCloud size={16} />
-              Upload files
+              Upload from computer
             </Button>
             <input
               ref={fileInputRef}
@@ -132,34 +162,51 @@ function Step1Upload({
           )}
         </div>
 
-        <div className="flex max-w-[280px] flex-col justify-center gap-2 px-2 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Cloud connectors</p>
-          <p className="text-xs leading-relaxed">
-            Google Drive, OneDrive, Dropbox, Box, and Atlassian are not available in this
-            prototype. Upload files from your device instead.
-          </p>
-        </div>
+        <CloudConnectorLogoRow
+          className="shrink-0 self-center"
+          onConnectorSelect={onConnectorSelect}
+        />
       </div>
     </div>
   );
 }
 
-function Step2Details({ formData, pendingFiles, onChange }) {
+function Step3NameHub({ formData, attachedFiles, onChange }) {
+  const syncCounts = countSyncStates(attachedFiles);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      {pendingFiles.length > 0 && (
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
-          <p className="text-muted-foreground">
-            {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} to index:
-          </p>
-          <ul className="mt-1 max-h-24 overflow-y-auto">
-            {pendingFiles.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="truncate font-medium text-foreground">
-                {f.name}
+      {attachedFiles.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Attachment summary</CardTitle>
+            <CardDescription>Review before creating your hub.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 text-sm text-muted-foreground">
+            <ul className="flex flex-col gap-1">
+              <li>
+                <span className="font-medium text-foreground">{syncCounts.total}</span> file
+                {syncCounts.total === 1 ? "" : "s"} selected
               </li>
-            ))}
-          </ul>
-        </div>
+              <li>
+                <span className="font-medium text-foreground">{syncCounts.inKnowledgeBase}</span>{" "}
+                in knowledge base
+              </li>
+              {syncCounts.cloudLink > 0 && (
+                <li>
+                  <span className="font-medium text-foreground">{syncCounts.cloudLink}</span>{" "}
+                  OneDrive link{syncCounts.cloudLink === 1 ? "" : "s"} — save after create from hub
+                  page
+                </li>
+              )}
+              {syncCounts.failed > 0 && (
+                <li className="text-destructive">
+                  <span className="font-medium">{syncCounts.failed}</span> failed to save
+                </li>
+              )}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
       <div className="flex flex-col gap-2">
@@ -197,25 +244,60 @@ function Step2Details({ formData, pendingFiles, onChange }) {
   );
 }
 
-export function KnowledgeHubCreateDialog({ open, onOpenChange, onCreated }) {
+export function KnowledgeHubCreateDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  onCloudFileSynced,
+  onCloudFileSyncFailed,
+}) {
   const [dialogStep, setDialogStep] = useState(1);
+  const [contentMode, setContentMode] = useState("upload");
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [cloudMeta, setCloudMeta] = useState(null);
   const [pendingFiles, setPendingFiles] = useState([]);
   const [fileTooLarge, setFileTooLarge] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [filesSortAsc, setFilesSortAsc] = useState(true);
+  const [cloudWizardTitle, setCloudWizardTitle] = useState("Connect cloud storage");
+  const [cloudAddOpen, setCloudAddOpen] = useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const fileInputRef = useRef(null);
+
+  const cloudProvider = cloudMeta?.provider ?? "onedrive";
+  const cloudConfig = getCloudProviderConfig(cloudProvider);
+  const cloudConnection =
+    cloudMeta?.connection ??
+    (cloudProvider === "google-drive"
+      ? { provider: "google-drive", name: "Google Drive connection" }
+      : DEFAULT_ONEDRIVE_CONNECTION);
+  const connectionDisplayName =
+    cloudMeta?.connectionName ?? cloudConnection.name ?? cloudConfig.label;
+  const syncCounts = countSyncStates(attachedFiles);
+
+  const handleCloudWizardStepMeta = useCallback((meta) => {
+    setCloudWizardTitle(meta?.title ?? "Connect cloud storage");
+  }, []);
 
   useEffect(() => {
     if (!open) {
       setDialogStep(1);
+      setContentMode("upload");
       setFormData({ name: "", description: "" });
+      setAttachedFiles([]);
+      setCloudMeta(null);
       setPendingFiles([]);
       setFileTooLarge(false);
       setDragActive(false);
+      setFilesSortAsc(true);
+      setCloudWizardTitle("Connect cloud storage");
+      setCloudAddOpen(false);
+      setIsDownloadingAll(false);
     }
   }, [open]);
 
-  function addFiles(fileList) {
+  function appendUploadFiles(fileList) {
     const incoming = Array.from(fileList ?? []).filter(Boolean);
     if (incoming.length === 0) return;
     const tooBig = incoming.some((f) => f.size > MAX_BYTES);
@@ -224,6 +306,9 @@ export function KnowledgeHubCreateDialog({ open, onOpenChange, onCreated }) {
       return;
     }
     setFileTooLarge(false);
+    const stamp = Date.now();
+    const newRows = incoming.map((f, i) => uploadToAttachedRow(f, stamp + i));
+    setAttachedFiles((prev) => mergeAttachedFiles(prev, newRows));
     setPendingFiles((prev) => {
       const names = new Set(prev.map((f) => f.name));
       const next = [...prev];
@@ -235,26 +320,152 @@ export function KnowledgeHubCreateDialog({ open, onOpenChange, onCreated }) {
       }
       return next;
     });
-    if (dialogStep === 1) setDialogStep(2);
+  }
+
+  function addFiles(fileList) {
+    appendUploadFiles(fileList);
+    if (dialogStep === 1 && contentMode === "upload") setDialogStep(2);
+  }
+
+  function handleCloudComplete(result, provider) {
+    const cloudRows = result.selectedFiles.map((f) => cloudPickerToAttachedRow(f, provider));
+    setCloudMeta({
+      provider,
+      connection: result.connection,
+      connectionName: result.connectionName,
+      authMethod: result.authMethod,
+    });
+    setAttachedFiles((prev) =>
+      mergeAttachedFiles(
+        prev.filter(
+          (r) => !(r.source === "cloud" && (r.cloudProvider ?? "onedrive") === provider),
+        ),
+        cloudRows,
+      ),
+    );
+    setContentMode("upload");
+    setDialogStep(2);
+    if (!formData.name.trim()) {
+      const label = provider === "google-drive" ? "Google Drive" : "OneDrive";
+      const suggested = result.connectionName?.replace(/ connection$/i, "") ?? `${label} Hub`;
+      setFormData((prev) => ({ ...prev, name: prev.name || suggested }));
+    }
+  }
+
+  const downloadAttachedCloudFile = useCallback(
+    async (row) => {
+      if (row.source !== "cloud" || row.syncStatus === "loading") return;
+
+      setAttachedFiles((prev) =>
+        prev.map((f) =>
+          f.id === row.id ? { ...f, syncStatus: "loading", syncError: null } : f,
+        ),
+      );
+
+      try {
+        const blob = await downloadCloudFileBlob(row);
+        const storageId = draftBlobKey(row.id);
+        await saveKnowledgeHubFile(storageId, blob, row.name);
+        setAttachedFiles((prev) =>
+          prev.map((f) =>
+            f.id === row.id
+              ? {
+                  ...f,
+                  syncStatus: "stored",
+                  draftBlobId: storageId,
+                  syncedAt: new Date().toISOString(),
+                  syncError: null,
+                }
+              : f,
+          ),
+        );
+        onCloudFileSynced?.(row.name);
+      } catch (err) {
+        const message = err?.message ?? "Download failed";
+        setAttachedFiles((prev) =>
+          prev.map((f) =>
+            f.id === row.id ? { ...f, syncStatus: "failed", syncError: message } : f,
+          ),
+        );
+        onCloudFileSyncFailed?.(row.name, message);
+      }
+    },
+    [onCloudFileSynced, onCloudFileSyncFailed],
+  );
+
+  const downloadAllLinked = useCallback(
+    async (rows) => {
+      setIsDownloadingAll(true);
+      for (const row of rows) {
+        if (row.syncStatus !== "linked" && row.syncStatus !== "failed") continue;
+        await downloadAttachedCloudFile(row);
+      }
+      setIsDownloadingAll(false);
+    },
+    [downloadAttachedCloudFile],
+  );
+
+  function handleAddFromCloudPicker(selected) {
+    const cloudRows = selected.map((f) => cloudPickerToAttachedRow(f, cloudProvider));
+    if (!cloudMeta) {
+      setCloudMeta({
+        provider: cloudProvider,
+        connection: cloudConnection,
+        connectionName: connectionDisplayName,
+      });
+    }
+    setAttachedFiles((prev) => mergeAttachedFiles(prev, cloudRows));
   }
 
   function handleCreate() {
     if (!formData.name.trim()) return;
+    const uploadFiles = attachedFiles
+      .filter((r) => r.source === "upload" && r.file)
+      .map((r) => r.file);
+    const cloudImport = attachedRowsToCloudImport(attachedFiles, cloudMeta);
+
     onCreated?.({
       name: formData.name,
       description: formData.description,
-      pendingFiles: pendingFiles.length > 0 ? pendingFiles : undefined,
-      pendingFile: pendingFiles[0] ?? null,
+      pendingFiles: uploadFiles.length > 0 ? uploadFiles : undefined,
+      pendingFile: uploadFiles[0] ?? null,
+      cloudImport: cloudImport ?? undefined,
+      oneDriveImport:
+        cloudImport?.provider === "onedrive" ? cloudImport : undefined,
     });
     onOpenChange(false);
   }
+
+  function goToFilesStep() {
+    if (attachedFiles.length > 0 || dialogStep === 1) {
+      setDialogStep(2);
+    }
+  }
+
+  const isCloudWizardStep =
+    (contentMode === "onedrive" || contentMode === "google-drive") && dialogStep === 1;
+
+  const stepLabel = isCloudWizardStep
+    ? cloudWizardTitle
+    : dialogStep === 1
+      ? "Add content"
+      : dialogStep === 2
+        ? "Attached files"
+        : "Name your hub";
+
+  const showDefaultFooter = !isCloudWizardStep;
+  const hasPendingCloudLinks = syncCounts.cloudLink > 0 || syncCounts.failed > 0;
+  const existingExternalIds = attachedFiles
+    .filter((r) => r.pickerFile?.id)
+    .map((r) => r.pickerFile.id);
+  const existingFileNames = attachedFiles.map((r) => r.name);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
-            Step {dialogStep} of 2 — {dialogStep === 1 ? "Add content" : "Name your hub"}
+            Step {dialogStep} of {TOTAL_STEPS} — {stepLabel}
           </p>
           <DialogTitle>Create Knowledge Hub</DialogTitle>
           <DialogDescription>
@@ -263,7 +474,24 @@ export function KnowledgeHubCreateDialog({ open, onOpenChange, onCreated }) {
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          {dialogStep === 1 ? (
+          {dialogStep >= 1 && !isCloudWizardStep && (
+            <CreateHubStepIndicator currentStep={dialogStep} />
+          )}
+          {dialogStep === 1 && contentMode === "onedrive" ? (
+            <OneDriveConnectionWizard
+              onComplete={(result) => handleCloudComplete(result, "onedrive")}
+              onCancel={() => onOpenChange(false)}
+              onBackToUpload={() => setContentMode("upload")}
+              onStepMetaChange={handleCloudWizardStepMeta}
+            />
+          ) : dialogStep === 1 && contentMode === "google-drive" ? (
+            <GoogleDriveConnectionWizard
+              onComplete={(result) => handleCloudComplete(result, "google-drive")}
+              onCancel={() => onOpenChange(false)}
+              onBackToUpload={() => setContentMode("upload")}
+              onStepMetaChange={handleCloudWizardStepMeta}
+            />
+          ) : dialogStep === 1 ? (
             <Step1Upload
               fileTooLarge={fileTooLarge}
               dragActive={dragActive}
@@ -281,58 +509,132 @@ export function KnowledgeHubCreateDialog({ open, onOpenChange, onCreated }) {
                 e.target.value = "";
               }}
               onUploadClick={() => fileInputRef.current?.click()}
-              onRemoveFile={(index) =>
-                setPendingFiles((prev) => prev.filter((_, i) => i !== index))
+              onRemoveFile={(index) => {
+                const removed = pendingFiles[index];
+                setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+                if (removed) {
+                  setAttachedFiles((prev) =>
+                    prev.filter(
+                      (r) => !(r.source === "upload" && r.file === removed),
+                    ),
+                  );
+                }
+              }}
+              onConnectorSelect={(id) => {
+                if (id === "onedrive" || id === "google-drive") setContentMode(id);
+              }}
+            />
+          ) : dialogStep === 2 ? (
+            <CreateHubFilesStep
+              attachedFiles={attachedFiles}
+              connectionName={connectionDisplayName}
+              cloudProvider={cloudProvider}
+              onAddFromCloud={() => setCloudAddOpen(true)}
+              onUploadFromComputer={appendUploadFiles}
+              onRemoveFile={(id) =>
+                setAttachedFiles((prev) => prev.filter((r) => r.id !== id))
               }
+              onDownloadCloudFile={downloadAttachedCloudFile}
+              onDownloadAllLinked={downloadAllLinked}
+              isDownloadingAll={isDownloadingAll}
+              sortAsc={filesSortAsc}
+              onSortToggle={() => setFilesSortAsc((v) => !v)}
             />
           ) : (
-            <Step2Details
+            <Step3NameHub
               formData={formData}
-              pendingFiles={pendingFiles}
+              attachedFiles={attachedFiles}
               onChange={setFormData}
             />
           )}
         </div>
 
-        <DialogFooter className="m-0 shrink-0 gap-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 !mx-0 !mb-0 dark:bg-muted/20">
-          <div className="flex w-full flex-wrap items-center justify-end gap-2">
-            {dialogStep === 1 ? (
-              <>
-                <Button variant="outline" type="button" onClick={() => setDialogStep(2)}>
-                  Skip for now
-                </Button>
-                <Button type="button" className="gap-1.5" onClick={() => setDialogStep(2)}>
-                  Continue
-                  <ArrowRight size={15} />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="gap-1.5"
-                  onClick={() => setDialogStep(1)}
-                >
-                  <ArrowLeft size={15} />
-                  Back
-                </Button>
-                <Button
-                  type="button"
-                  className="gap-1.5"
-                  onClick={handleCreate}
-                  disabled={!formData.name.trim()}
-                >
-                  <Check size={15} />
-                  Create Knowledge Hub
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogFooter>
+        <CloudAddFilesDialog
+          provider={cloudProvider}
+          open={cloudAddOpen}
+          onOpenChange={setCloudAddOpen}
+          connectionName={connectionDisplayName}
+          excludeExternalIds={existingExternalIds}
+          excludeNames={existingFileNames}
+          onConfirm={handleAddFromCloudPicker}
+        />
+
+        {showDefaultFooter && (
+          <DialogFooter className="m-0 shrink-0 gap-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 !mx-0 !mb-0 dark:bg-muted/20">
+            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+              {dialogStep === 1 ? (
+                <>
+                  <Button variant="outline" type="button" onClick={() => setDialogStep(2)}>
+                    Skip for now
+                  </Button>
+                  <Button type="button" className="gap-1.5" onClick={goToFilesStep}>
+                    Continue
+                    <ArrowRight size={15} />
+                  </Button>
+                </>
+              ) : dialogStep === 2 ? (
+                <div className="flex w-full flex-col items-end gap-2">
+                  {hasPendingCloudLinks && (
+                    <p className="w-full text-left text-xs text-muted-foreground" role="status">
+                      {syncCounts.cloudLink + syncCounts.failed} file
+                      {syncCounts.cloudLink + syncCounts.failed === 1 ? "" : "s"} not in the
+                      knowledge base yet. You can save them now or after creating the hub.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="gap-1.5"
+                      onClick={() => {
+                        setDialogStep(1);
+                        setContentMode("upload");
+                      }}
+                    >
+                      <ArrowLeft size={15} />
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      className="gap-1.5"
+                      onClick={() => setDialogStep(3)}
+                    >
+                      Next
+                      <ArrowRight data-icon="inline-end" aria-hidden />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="gap-1.5"
+                    onClick={() => setDialogStep(2)}
+                  >
+                    <ArrowLeft size={15} />
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    className="gap-1.5"
+                    onClick={handleCreate}
+                    disabled={!formData.name.trim()}
+                  >
+                    <Check size={15} />
+                    Create Knowledge Hub
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -38,6 +38,7 @@ export const SEED_KNOWLEDGE_HUBS = [
     updated: "21 Apr 2026",
     usedBy: 0,
     visibility: "private",
+    isUserCreated: true,
   },
   {
     id: 2,
@@ -150,6 +151,148 @@ export function fileToHubRecord(file, hubId) {
   };
 }
 
+/** Parse picker display sizes (e.g. "7.4 MB") into kilobytes for hub inventory. */
+export function parseDisplaySizeToKb(sizeStr) {
+  if (!sizeStr || sizeStr === "—") return 1;
+  const normalized = String(sizeStr).trim().toUpperCase();
+  const num = parseFloat(normalized);
+  if (Number.isNaN(num)) return 1;
+  if (normalized.includes("GB")) return Math.max(1, Math.round(num * 1024 * 1024));
+  if (normalized.includes("MB")) return Math.max(1, Math.round(num * 1024));
+  if (normalized.includes("KB")) return Math.max(1, Math.round(num));
+  return Math.max(1, Math.round(num));
+}
+
+/** Map a cloud picker row (OneDrive, etc.) to a hub file record. */
+export function cloudFileToHubRecord(
+  file,
+  hubId,
+  { provider = "onedrive", connectionId = null, connectionName = null } = {},
+) {
+  const ext = file.name.includes(".")
+    ? file.name.split(".").pop().toLowerCase()
+    : "file";
+  const stored =
+    file.syncStatus === "stored" || Boolean(file.localBlobId || file.draftBlobId);
+  return {
+    id: `kh${hubId}-c-${file.id}-${Math.random().toString(36).slice(2, 6)}`,
+    name: file.name,
+    type: EXT_TO_TYPE[ext] ?? ext.toUpperCase(),
+    sizeKb: parseDisplaySizeToKb(file.size),
+    updated: "Just now",
+    uploadedAt: formatIsoDateToday(),
+    source: "cloud",
+    cloudProvider: provider,
+    connectionId,
+    connectionName,
+    externalFileId: file.id,
+    indexStatus: stored ? "stored" : "linked",
+    syncStatus: stored ? "stored" : "linked",
+    fileStatus: stored ? "success" : "linked",
+    localBlobId: file.localBlobId ?? null,
+    draftBlobId: file.draftBlobId ?? null,
+    syncedAt: file.syncedAt ?? null,
+  };
+}
+
+/** Cloud rows that are not yet downloaded into the local KB. */
+export function isCloudFileLinked(row) {
+  return row?.source === "cloud" && getHubFileStatus(row) === "linked";
+}
+
+export function isCloudFileStoredLocally(row) {
+  return row?.source === "cloud" && getHubFileStatus(row) === "success";
+}
+
+export function migrateCloudFileRecord(file) {
+  if (file?.source !== "cloud") return file;
+  if (file.localBlobId || file.syncStatus === "stored") {
+    return {
+      ...file,
+      syncStatus: "stored",
+      fileStatus: "success",
+      indexStatus: "stored",
+    };
+  }
+  if (file.syncStatus === "loading" || file.syncStatus === "failed") return file;
+  return {
+    ...file,
+    syncStatus: "linked",
+    fileStatus: "linked",
+    indexStatus: "linked",
+    localBlobId: null,
+  };
+}
+
+export function hubRecordsToStats(records) {
+  const list = records ?? [];
+  const storageMB = list.reduce(
+    (sum, row) => sum + Math.max(1, Math.round((row.sizeKb ?? 1) / 1024)),
+    0,
+  );
+  return {
+    added: list.length,
+    storageMB,
+    collectionDelta: list.length > 0 ? 1 : 0,
+  };
+}
+
+export const CLOUD_PROVIDER_LABELS = {
+  onedrive: "OneDrive",
+  "google-drive": "Google Drive",
+};
+
+export function getHubFileSourceLabel(row) {
+  if (row?.source === "cloud" && row.cloudProvider) {
+    return CLOUD_PROVIDER_LABELS[row.cloudProvider] ?? row.cloudProvider;
+  }
+  if (row?.source === "user" || row?.source === "upload") return "Uploaded";
+  return "—";
+}
+
+export const DEFAULT_ONEDRIVE_CONNECTION = {
+  provider: "onedrive",
+  id: "od-default",
+  name: "Elsa's OneDrive connection",
+  connectedBy: "Elsa",
+  connectedAt: "10 Dec 2025 12:00",
+};
+
+export const DEFAULT_GOOGLE_DRIVE_CONNECTION = {
+  provider: "google-drive",
+  id: "gd-default",
+  name: "Elsa's Google Drive connection",
+  connectedBy: "Elsa",
+  connectedAt: "18 Nov 2025 12:00",
+};
+
+/** Starter OneDrive files for empty hubs (prototype demo). */
+export const DEFAULT_ONEDRIVE_PICKER_FILES = [
+  { id: "def-f1", name: "QuantumLeap.pdf", size: "7.4 MB", type: "file" },
+  { id: "def-f2", name: "Onboarding.pdf", size: "1.2 MB", type: "file" },
+  { id: "def-f3", name: "ReleaseNotes.docx", size: "240 KB", type: "file" },
+];
+
+export function buildDefaultCloudContent(hubId) {
+  const connection = { ...DEFAULT_ONEDRIVE_CONNECTION, id: `od-default-${hubId}` };
+  const userFiles = DEFAULT_ONEDRIVE_PICKER_FILES.map((f) => ({
+    ...cloudFileToHubRecord(f, hubId, {
+      provider: "onedrive",
+      connectionId: connection.id,
+      connectionName: connection.name,
+    }),
+    isSampleDemo: true,
+  }));
+  const stats = hubRecordsToStats(userFiles);
+  return {
+    cloudConnections: [connection],
+    userFiles,
+    files: stats.added,
+    collections: stats.collectionDelta,
+    storageMB: stats.storageMB,
+  };
+}
+
 function generatePlaceholderFiles(hub, count, startIndex = 0) {
   const exts = [
     { ext: "pdf", type: "PDF" },
@@ -192,10 +335,10 @@ export function buildHubFileInventory(hub) {
   const hidden = new Set(hub.hiddenFileIds ?? []);
   const userFiles = (hub.userFiles ?? [])
     .filter((f) => !hidden.has(f.id))
-    .map((f) => ({
+    .map((f) => migrateCloudFileRecord({
       ...f,
       source: f.source ?? "user",
-      indexStatus: f.indexStatus ?? "stored",
+      indexStatus: f.indexStatus ?? (f.source === "cloud" ? "linked" : "stored"),
     }));
   const total = hub.files ?? 0;
   const userCreated = hub.isUserCreated === true;
@@ -245,7 +388,7 @@ export function buildHubFileInventory(hub) {
 }
 
 export function isUserHubFile(row) {
-  return row?.source === "user";
+  return row?.source === "user" || row?.source === "cloud";
 }
 
 export function filesToHubStats(files) {
@@ -276,11 +419,23 @@ export function formatHubTotalSizeMb(files) {
   return (kb / 1024).toFixed(2);
 }
 
-/** User uploads always show as ready; demo statuses only when hub has demo rows. */
+/**
+ * File sync status for the hub table icon column.
+ * Cloud: linked → loading → success | failed. Uploads: success.
+ */
 export function getHubFileStatus(row, { includeDemoStatuses = false } = {}) {
-  if (row.source === "user" || row.indexStatus === "stored") return "success";
+  if (row?.source === "user") return "success";
+  if (row?.source === "cloud") {
+    const sync = row.syncStatus ?? row.fileStatus;
+    if (sync === "loading") return "loading";
+    if (sync === "failed") return "failed";
+    if (sync === "stored" || row.localBlobId) return "success";
+    return "linked";
+  }
   if (!includeDemoStatuses) return "success";
-  return row.fileStatus || "success";
+  const demo = row.fileStatus || "success";
+  if (demo === "processing") return "loading";
+  return demo;
 }
 
 /** MM/DD/YYYY for file table date column. */
@@ -320,28 +475,84 @@ export function hubToPickerShape(hub) {
   };
 }
 
+function resolveCloudImport(oneDriveImport, cloudImport) {
+  if (cloudImport?.selectedFiles?.length) return cloudImport;
+  if (oneDriveImport?.selectedFiles?.length) {
+    return { ...oneDriveImport, provider: oneDriveImport.provider ?? "onedrive" };
+  }
+  return null;
+}
+
 export function createHubPayload({
   name,
   description = "",
   pendingFile = null,
   pendingFiles = null,
+  oneDriveImport = null,
+  cloudImport = null,
 }) {
   const today = formatIsoDateToday();
   const id = Date.now();
-  const fileList = pendingFiles?.length
+  const uploadList = pendingFiles?.length
     ? Array.from(pendingFiles)
     : pendingFile
       ? [pendingFile]
       : [];
-  const userFiles = fileList.map((f) => fileToHubRecord(f, id));
-  const stats = filesToHubStats(fileList);
+  const uploadRecords = uploadList.map((f) => fileToHubRecord(f, id));
+
+  const importData = resolveCloudImport(oneDriveImport, cloudImport);
+  const provider = importData?.provider ?? importData?.connection?.provider ?? "onedrive";
+  const providerLabel = CLOUD_PROVIDER_LABELS[provider] ?? provider;
+
+  const cloudPickerFiles = (importData?.selectedFiles ?? []).filter(
+    (f) => f.type !== "folder",
+  );
+  const cloudRecords = cloudPickerFiles.map((f) =>
+    cloudFileToHubRecord(f, id, {
+      provider,
+      connectionId: importData?.connection?.id ?? null,
+      connectionName:
+        importData?.connectionName ?? importData?.connection?.name ?? `${providerLabel} connection`,
+    }),
+  );
+
+  let userFiles = [...uploadRecords, ...cloudRecords];
+  let cloudConnections = importData?.connection
+    ? [
+        {
+          provider,
+          id: importData.connection.id,
+          name:
+            importData.connectionName ??
+            importData.connection.name ??
+            `${providerLabel} connection`,
+          connectedBy: importData.connection.connectedBy ?? null,
+          connectedAt: importData.connection.connectedAt ?? today,
+        },
+      ]
+    : [];
+
+  let files = userFiles.length;
+  let collections = userFiles.length > 0 ? 1 : 0;
+  let storageMB =
+    filesToHubStats(uploadList).storageMB + hubRecordsToStats(cloudRecords).storageMB;
+
+  if (userFiles.length === 0) {
+    const defaults = buildDefaultCloudContent(id);
+    userFiles = defaults.userFiles;
+    cloudConnections = defaults.cloudConnections;
+    files = defaults.files;
+    collections = defaults.collections;
+    storageMB = defaults.storageMB;
+  }
+
   return {
     id,
     name: name.trim(),
     description: description.trim(),
-    files: userFiles.length,
-    collections: userFiles.length > 0 ? 1 : 0,
-    storageMB: stats.storageMB,
+    files,
+    collections,
+    storageMB,
     provider: PROVIDER_LABEL,
     createdOn: today,
     updated: "Just now",
@@ -349,18 +560,40 @@ export function createHubPayload({
     visibility: "private",
     isUserCreated: true,
     userFiles,
-    pendingFileName: fileList[0]?.name ?? null,
+    cloudConnections,
+    pendingFileName: userFiles[0]?.name ?? null,
   };
 }
 
 export const KNOWLEDGE_HUBS_STORAGE_KEY = "aziron_knowledge_hubs_v1";
+
+/** Ensure user-created hubs without files show default OneDrive content. */
+export function normalizeHubs(hubs) {
+  if (!Array.isArray(hubs)) return hubs;
+  return hubs.map((hub) => {
+    let next = hub;
+    if (hub.isUserCreated === true && (hub.userFiles ?? []).length === 0) {
+      const defaults = buildDefaultCloudContent(hub.id);
+      next = {
+        ...hub,
+        userFiles: defaults.userFiles,
+        cloudConnections: defaults.cloudConnections,
+        files: defaults.files,
+        collections: defaults.collections,
+        storageMB: defaults.storageMB,
+      };
+    }
+    const userFiles = (next.userFiles ?? []).map(migrateCloudFileRecord);
+    return userFiles.length > 0 ? { ...next, userFiles } : next;
+  });
+}
 
 export function loadHubsFromStorage() {
   try {
     const raw = localStorage.getItem(KNOWLEDGE_HUBS_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
+    return Array.isArray(parsed) ? normalizeHubs(parsed) : null;
   } catch {
     return null;
   }

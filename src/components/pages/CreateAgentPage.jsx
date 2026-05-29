@@ -164,7 +164,9 @@ function KnowledgeHubFilesModal({
     () =>
       inventory.filter(
         row =>
-          row.source === "user" &&
+          (row.source === "user" ||
+            (row.source === "cloud" &&
+              (row.syncStatus === "stored" || row.localBlobId))) &&
           (!query.trim() ||
             row.name.toLowerCase().includes(query.trim().toLowerCase())),
       ),
@@ -1261,8 +1263,8 @@ function Step2({ form, setForm }) {
       <KnowledgeHubCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onCreated={(payload) => {
-          const hub = addHub(payload);
+        onCreated={async (payload) => {
+          const hub = await addHub(payload);
           setForm(f => ({
             ...f,
             knowledgeHubs: [...(f.knowledgeHubs ?? []), hub.id],

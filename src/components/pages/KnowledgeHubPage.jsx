@@ -294,7 +294,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
   const canDelete = can("knowledge.delete");
-  const { hubs, addHub, updateHub, addFilesToHub, deleteHub, deleteHubs, getHubById } =
+  const { hubs, addHub, updateHub, deleteHub, deleteHubs, getHubById } =
     useKnowledgeHubs();
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -370,23 +370,31 @@ export default function KnowledgeHubPage({ onNavigate }) {
     navigate(`/knowledge/${id}`);
   }
 
-  function handleUploadFiles(hubId, files) {
-    const names = addFilesToHub(hubId, files);
-    if (names.length === 0) return;
+  function handleFilesAdded(names) {
+    if (!names?.length) return;
     showToast(
       names.length === 1
-        ? `“${names[0]}” added to this hub.`
-        : `${names.length} files added to this hub.`,
+        ? `“${names[0]}” added from OneDrive.`
+        : `${names.length} files added from OneDrive.`,
     );
   }
 
-  function handleCreated(payload) {
-    const hub = addHub(payload);
-    const fileCount =
+  async function handleCreated(payload) {
+    const hub = await addHub(payload);
+    const uploadCount =
       payload.pendingFiles?.length ?? (payload.pendingFile ? 1 : 0);
+    const cloudImport = payload.cloudImport ?? payload.oneDriveImport;
+    const cloudCount = cloudImport?.selectedFiles?.length ?? 0;
+    const cloudLabel =
+      cloudImport?.provider === "google-drive" ? "Google Drive" : "OneDrive";
+    const totalFiles = uploadCount + cloudCount;
+    const cloudNote =
+      cloudCount > 0
+        ? ` (${cloudCount} from ${cloudLabel}${uploadCount > 0 ? `, ${uploadCount} uploaded` : ""})`
+        : "";
     showToast(
-      fileCount > 0
-        ? `Knowledge Hub “${hub.name}” created with ${fileCount} file${fileCount === 1 ? "" : "s"}.`
+      totalFiles > 0
+        ? `Knowledge Hub “${hub.name}” created with ${totalFiles} file${totalFiles === 1 ? "" : "s"}${cloudNote}.`
         : `Knowledge Hub “${hub.name}” created.`,
     );
     navigate(`/knowledge/${hub.id}`);
@@ -541,9 +549,19 @@ export default function KnowledgeHubPage({ onNavigate }) {
                   showToast(`Knowledge Hub “${patch.name}” updated.`);
                 }}
                 onDelete={() => requestDelete(detailHub)}
-                onUploadFiles={(files) => handleUploadFiles(detailHub.id, files)}
+                onFilesAdded={handleFilesAdded}
                 onFileDeleted={(name) =>
                   showToast(`“${name}” removed from hub.`)
+                }
+                onCloudFileSynced={(name) =>
+                  showToast(`“${name}” downloaded and stored in this knowledge base.`)
+                }
+                onCloudFileSyncFailed={(name, error) =>
+                  showToast(
+                    error
+                      ? `Could not download “${name}”: ${error}`
+                      : `Could not download “${name}”.`,
+                  )
                 }
               />
             ) : (
@@ -680,6 +698,16 @@ export default function KnowledgeHubPage({ onNavigate }) {
           open={createOpen}
           onOpenChange={setCreateOpen}
           onCreated={handleCreated}
+          onCloudFileSynced={(name) =>
+            showToast(`“${name}” saved to your knowledge base.`)
+          }
+          onCloudFileSyncFailed={(name, error) =>
+            showToast(
+              error
+                ? `Could not save “${name}”: ${error}`
+                : `Could not save “${name}”.`,
+            )
+          }
         />
       )}
 

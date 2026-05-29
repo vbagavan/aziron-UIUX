@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  AlertCircle,
   ArrowUpDown,
   Bot,
-  CheckCircle2,
   HardDrive,
   Info,
-  Loader2,
+  Plus,
   Search,
   Trash2,
-  Upload,
 } from "lucide-react";
+import { HubFileSyncIcon } from "@/components/features/knowledge/HubFileSyncIcon";
+import { HubFileSyncLegend } from "@/components/features/knowledge/HubFileSyncLegend";
+import { HubPendingDownloadBanner } from "@/components/features/knowledge/HubPendingDownloadBanner";
+import { HubSyncCoachMark } from "@/components/features/knowledge/HubSyncCoachMark";
+import {
+  countSyncStates,
+  rowsNeedingDownload,
+} from "@/components/features/knowledge/hubFileSyncUtils";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -45,68 +51,41 @@ import { agentsUsingHub } from "@/lib/agentKnowledge";
 import { useAgents } from "@/context/AgentsContext";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import {
-  ACCEPTED_FILE_EXTENSIONS,
   buildHubFileInventory,
+  CLOUD_PROVIDER_LABELS,
   formatDisplayDate,
   formatFileSizeKb,
   formatFileTableDate,
   formatHubTotalSizeMb,
+  getHubFileSourceLabel,
   getHubFileStatus,
+} from "@/data/knowledgeHubs";
+import { CONNECTOR_LOGOS } from "@/components/features/knowledge/CloudConnectorLogos";
+import { CloudAddFilesDialog } from "@/components/features/knowledge/cloud/CloudAddFilesDialog";
+import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
+import {
+  DEFAULT_GOOGLE_DRIVE_CONNECTION,
+  DEFAULT_ONEDRIVE_CONNECTION,
 } from "@/data/knowledgeHubs";
 import { DETAIL_TITLE } from "@/lib/typography";
 
 const FILES_PAGE_SIZE = 15;
-
-function FileStatusIcon({ status }) {
-  if (status === "processing") {
-    return (
-      <Loader2
-        size={16}
-        className="shrink-0 animate-spin text-muted-foreground"
-        aria-hidden
-      />
-    );
-  }
-  if (status === "failed") {
-    return <AlertCircle size={16} className="shrink-0 text-destructive" aria-hidden />;
-  }
-  return <CheckCircle2 size={16} className="shrink-0 text-success" aria-hidden />;
-}
-
-function FileStatusLegend({ showDemoNote }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-5 py-2 text-xs text-muted-foreground">
-      <span className="flex items-center gap-1.5">
-        <CheckCircle2 size={14} className="text-success" aria-hidden />
-        Ready
-      </span>
-      {showDemoNote && (
-        <>
-          <span className="flex items-center gap-1.5">
-            <Loader2 size={14} className="animate-spin" aria-hidden />
-            Processing (sample)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <AlertCircle size={14} className="text-destructive" aria-hidden />
-            Failed (sample)
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
+const EMPTY_CLOUD_CONNECTIONS = [];
 
 export function KnowledgeHubDetailView({
   hub: hubProp,
   onSave,
   onDelete,
-  onUploadFiles,
+  onFilesAdded,
   onFileDeleted,
+  onCloudFileSynced,
+  onCloudFileSyncFailed,
   onMetadataChange,
   canEdit = true,
   canDelete = true,
 }) {
-  const { getHubById, deleteHubFile } = useKnowledgeHubs();
+  const { getHubById, deleteHubFile, downloadCloudFileToHub, addCloudFilesToHub } =
+    useKnowledgeHubs();
   const liveHub = hubProp ? getHubById(hubProp.id) ?? hubProp : null;
 
   const { agents } = useAgents();
@@ -118,8 +97,11 @@ export function KnowledgeHubDetailView({
   const [selectedFileIds, setSelectedFileIds] = useState(() => new Set());
   const [fileToDelete, setFileToDelete] = useState(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [cloudAddOpen, setCloudAddOpen] = useState(false);
+  const [cloudAddProvider, setCloudAddProvider] = useState("onedrive");
+  const [cloudAddConnection, setCloudAddConnection] = useState(null);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [editingField, setEditingField] = useState(null);
-  const fileInputRef = useRef(null);
   const selectAllFilesRef = useRef(null);
   useEffect(() => {
     if (!liveHub) return;
@@ -175,6 +157,70 @@ export function KnowledgeHubDetailView({
   const totalSizeMb = formatHubTotalSizeMb(allFiles);
   const showDemoStatuses = inventoryPack?.hasDemoRows ?? false;
   const filteredCount = sortedFiles.length;
+  const cloudConnections =
+    liveHub?.cloudConnections?.length > 0
+      ? liveHub.cloudConnections
+      : EMPTY_CLOUD_CONNECTIONS;
+  const oneDriveConnection =
+    cloudConnections.find((c) => c.provider === "onedrive") ?? DEFAULT_ONEDRIVE_CONNECTION;
+  const googleDriveConnection =
+    cloudConnections.find((c) => c.provider === "google-drive") ??
+    DEFAULT_GOOGLE_DRIVE_CONNECTION;
+  const providerConnections = useMemo(() => {
+    const fromHub = cloudConnections.filter((c) => c.provider === cloudAddProvider);
+    if (fromHub.length > 0) return fromHub;
+    return getCloudProviderConfig(cloudAddProvider).mockConnections ?? [];
+  }, [liveHub?.id, liveHub?.cloudConnections, cloudAddProvider]);
+
+  function openCloudAdd(provider) {
+    setCloudAddProvider(provider);
+    const fromHub = cloudConnections.filter((c) => c.provider === provider);
+    const defaults = getCloudProviderConfig(provider).mockConnections ?? [];
+    const options = fromHub.length > 0 ? fromHub : defaults;
+    const initial =
+      options.find((c) => c.id === (provider === "google-drive" ? googleDriveConnection.id : oneDriveConnection.id)) ??
+      options[0] ??
+      null;
+    setCloudAddConnection(initial);
+    setCloudAddOpen(true);
+  }
+  const hasCloudFiles = allFiles.some((row) => row.source === "cloud");
+  const hasSampleDemoFiles = allFiles.some((row) => row.isSampleDemo);
+  const fileSyncCounts = countSyncStates(allFiles);
+  const pendingDownloadRows = useMemo(() => rowsNeedingDownload(allFiles), [allFiles]);
+  const existingExternalIds = useMemo(
+    () =>
+      allFiles
+        .map((f) => f.externalFileId)
+        .filter(Boolean),
+    [allFiles],
+  );
+  const existingFileNames = useMemo(() => allFiles.map((f) => f.name), [allFiles]);
+
+  const handleDownloadCloudFile = useCallback(
+    async (row) => {
+      if (!liveHub || row.source !== "cloud") return;
+      const status = getHubFileStatus(row);
+      if (status !== "linked" && status !== "failed") return;
+
+      const result = await downloadCloudFileToHub(liveHub.id, row.id);
+      if (result.ok) {
+        onCloudFileSynced?.(result.fileName ?? row.name);
+      } else if (result.error !== "Already downloading") {
+        onCloudFileSyncFailed?.(row.name, result.error);
+      }
+    },
+    [liveHub, downloadCloudFileToHub, onCloudFileSynced, onCloudFileSyncFailed],
+  );
+
+  const handleDownloadAllLinked = useCallback(async () => {
+    if (!liveHub) return;
+    setIsDownloadingAll(true);
+    for (const row of pendingDownloadRows) {
+      await handleDownloadCloudFile(row);
+    }
+    setIsDownloadingAll(false);
+  }, [liveHub, pendingDownloadRows, handleDownloadCloudFile]);
 
   useEffect(() => {
     onMetadataChange?.({
@@ -265,18 +311,6 @@ export function KnowledgeHubDetailView({
       </div>
       {canEdit && (
         <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            multiple
-            accept={ACCEPTED_FILE_EXTENSIONS}
-            onChange={(e) => {
-              const files = e.target.files;
-              if (files?.length) onUploadFiles?.(files);
-              e.target.value = "";
-            }}
-          />
           {selectedFileIds.size > 0 && (
             <Button
               type="button"
@@ -291,12 +325,25 @@ export function KnowledgeHubDetailView({
           )}
           <Button
             type="button"
+            variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => openCloudAdd("google-drive")}
+            title="From Google Drive"
           >
-            <Upload size={14} />
-            Upload files
+            <Plus data-icon="inline-start" aria-hidden />
+            Add from Google Drive
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => openCloudAdd("onedrive")}
+            title="From Microsoft OneDrive"
+          >
+            <Plus data-icon="inline-start" aria-hidden />
+            Add from OneDrive
           </Button>
         </>
       )}
@@ -313,6 +360,65 @@ export function KnowledgeHubDetailView({
             upload, edit, or delete content.
           </AlertDescription>
         </Alert>
+      )}
+
+      {hasSampleDemoFiles && (
+        <Alert>
+          <Info className="size-4" />
+          <AlertDescription>
+            This hub includes sample OneDrive files for demo purposes. Save them to your
+            knowledge base or remove them and add your own files.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <HubSyncCoachMark visible={hasCloudFiles && fileSyncCounts.cloudLink > 0} />
+
+      <HubPendingDownloadBanner
+        pendingCount={pendingDownloadRows.length}
+        loadingCount={fileSyncCounts.loading}
+        isDownloadingAll={isDownloadingAll}
+        onDownloadAll={pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined}
+      />
+
+      {cloudConnections.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Cloud connections</CardTitle>
+            <CardDescription>
+              Files linked from connected drives appear in the inventory below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 pt-0">
+            {cloudConnections.map((conn) => {
+              const logo =
+                conn.provider === "onedrive"
+                  ? CONNECTOR_LOGOS.onedrive
+                  : conn.provider === "google-drive"
+                    ? CONNECTOR_LOGOS.googleDrive
+                    : null;
+              const label = CLOUD_PROVIDER_LABELS[conn.provider] ?? conn.provider;
+              return (
+                <div
+                  key={conn.id ?? `${conn.provider}-${conn.name}`}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3"
+                >
+                  {logo ? (
+                    <img src={logo} alt="" className="size-10 object-contain" draggable={false} />
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{conn.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {label}
+                      {conn.connectedBy ? ` · Connected by ${conn.connectedBy}` : ""}
+                      {conn.connectedAt ? `, ${conn.connectedAt}` : ""}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       )}
 
       {detailsDirty && canEdit && (
@@ -468,21 +574,33 @@ export function KnowledgeHubDetailView({
             <HardDrive size={32} className="text-muted-foreground" aria-hidden />
             <p className="text-center text-sm text-muted-foreground">
               No files attached yet.
-              {canEdit ? " Upload documents to use them with your agents." : ""}
+              {canEdit ? " Add files from Google Drive or OneDrive." : ""}
             </p>
             {canEdit && (
-              <Button
-                size="sm"
-                className="gap-1.5"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload size={14} />
-                Upload files
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => openCloudAdd("google-drive")}
+                >
+                  <Plus data-icon="inline-start" aria-hidden />
+                  Add from Google Drive
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => openCloudAdd("onedrive")}
+                >
+                  <Plus data-icon="inline-start" aria-hidden />
+                  Add from OneDrive
+                </Button>
+              </div>
             )}
           </div>
         ) : (
-          <>
+          <TooltipProvider delay={300}>
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -512,6 +630,7 @@ export function KnowledgeHubDetailView({
                     </button>
                   </TableHead>
                   <TableHead className="w-[100px]">File Size</TableHead>
+                  <TableHead className="w-[100px]">Source</TableHead>
                   <TableHead className="w-[110px]">Date</TableHead>
                   {canEdit && (
                     <TableHead className="w-[72px] text-right">Action</TableHead>
@@ -522,7 +641,7 @@ export function KnowledgeHubDetailView({
                 {filePagination.items.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={canEdit ? 5 : 3}
+                      colSpan={canEdit ? 6 : 4}
                       className="py-8 text-center text-muted-foreground"
                     >
                       No files match your search.
@@ -544,10 +663,18 @@ export function KnowledgeHubDetailView({
                       )}
                       <TableCell className="max-w-0 font-medium">
                         <div className="flex min-w-0 items-center gap-2">
-                          <FileStatusIcon
+                          <HubFileSyncIcon
                             status={getHubFileStatus(row, {
                               includeDemoStatuses: showDemoStatuses,
                             })}
+                            fileName={row.name}
+                            canActivate={
+                              canEdit &&
+                              row.source === "cloud" &&
+                              (getHubFileStatus(row) === "linked" ||
+                                getHubFileStatus(row) === "failed")
+                            }
+                            onActivate={() => handleDownloadCloudFile(row)}
                           />
                           <span className="truncate" title={row.name}>
                             {row.name}
@@ -556,6 +683,9 @@ export function KnowledgeHubDetailView({
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                         {formatFileSizeKb(row.sizeKb)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {getHubFileSourceLabel(row)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatFileTableDate(row, liveHub)}
@@ -578,7 +708,14 @@ export function KnowledgeHubDetailView({
                 )}
               </TableBody>
             </Table>
-            {totalFiles > 0 && <FileStatusLegend showDemoNote={showDemoStatuses} />}
+            {totalFiles > 0 && (
+              <HubFileSyncLegend className="border-t border-border px-5 py-2" />
+            )}
+            {showDemoStatuses && (
+              <p className="border-t border-border px-5 py-2 text-xs text-muted-foreground">
+                Demo seed rows may show sample processing states.
+              </p>
+            )}
             {sortedFiles.length > FILES_PAGE_SIZE && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5">
                 <p className="text-xs text-muted-foreground">
@@ -637,7 +774,7 @@ export function KnowledgeHubDetailView({
                 </Pagination>
               </div>
             )}
-          </>
+          </TooltipProvider>
         )}
 
         {inventoryPack?.hasDemoRows && (
@@ -674,6 +811,27 @@ export function KnowledgeHubDetailView({
           confirmLabel="Delete"
           onConfirm={executeBulkDelete}
           onCancel={() => setBulkDeleteOpen(false)}
+        />
+      )}
+
+      {canEdit && (
+        <CloudAddFilesDialog
+          provider={cloudAddProvider}
+          open={cloudAddOpen}
+          onOpenChange={setCloudAddOpen}
+          connections={providerConnections}
+          activeConnection={cloudAddConnection}
+          onActiveConnectionChange={setCloudAddConnection}
+          connectionName={cloudAddConnection?.name}
+          excludeExternalIds={existingExternalIds}
+          excludeNames={existingFileNames}
+          onConfirm={(selected, connection) => {
+            const conn = connection ?? cloudAddConnection;
+            const names = addCloudFilesToHub(liveHub.id, selected, conn);
+            if (names.length > 0) {
+              onFilesAdded?.(names);
+            }
+          }}
         />
       )}
 

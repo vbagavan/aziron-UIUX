@@ -23,7 +23,7 @@ export function KnowledgeHubPicker({
     h.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const trimmed = newHubName.trim();
     if (!trimmed) {
       setError("Name cannot be empty.");
@@ -33,7 +33,7 @@ export function KnowledgeHubPicker({
       setError("A hub with this name already exists.");
       return;
     }
-    const created = ctx.addHub({ name: trimmed, description: "" });
+    const created = await ctx.addHub({ name: trimmed, description: "" });
     const pickerShape = {
       id: created.id,
       name: created.name,
