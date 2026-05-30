@@ -813,7 +813,7 @@ export default function TenantListPage({ onNavigate, onViewTenant, onEditTenant,
                   <div className="grid grid-cols-2 gap-3 mt-3 flex-1">
                     <MetricCard icon={GitBranch} label="Total Workflows"      value={totalWorkflowsAll.toLocaleString()}    sub="Active workflow definitions" color="var(--chart-chart-4)" />
                     <MetricCard icon={Database}  label="Total Vector DBs"     value={totalVectorDbsAll.toLocaleString()}    sub="Knowledge hub stores"        color="var(--info)" />
-                    <MetricCard icon={Plug2}     label="Total Providers"      value={totalProvidersAll.toLocaleString()}    sub="Connected integrations"      color="var(--warning)" />
+                    <MetricCard icon={Plug2}     label="Total Providers"      value={totalProvidersAll.toLocaleString()}    sub="Connected connectors"      color="var(--warning)" />
                     <MetricCard icon={BarChart2} label="Avg Members / Tenant" value={avgMembersPerTenant.toLocaleString()}  sub="Mean across all tenants"     color="var(--success)" />
                   </div>
                 </div>

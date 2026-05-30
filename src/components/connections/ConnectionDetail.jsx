@@ -8,12 +8,14 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Empty,
   EmptyDescription,
@@ -21,6 +23,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import ProviderAvatar from './ProviderAvatar.jsx'
@@ -29,11 +33,19 @@ import { useConnectionsStore } from '@/lib/connections/store.js'
 import { CATALOG_PROVIDERS } from '@/lib/connections/constants.js'
 import { cn } from '@/lib/utils'
 
-function Sparkbar({ values = [], className = '' }) {
+function SectionLabel({ children, className }) {
+  return (
+    <h3 className={cn('type-section-eyebrow', className)}>
+      {children}
+    </h3>
+  )
+}
+
+function Sparkbar({ values = [], className }) {
   if (!values.length) return null
   const max = Math.max(...values, 1)
   return (
-    <div className={`flex h-10 items-end gap-0.5 ${className}`}>
+    <div className={cn('flex h-10 items-end gap-0.5', className)}>
       {values.map((v, i) => (
         <motion.div
           key={i}
@@ -41,7 +53,10 @@ function Sparkbar({ values = [], className = '' }) {
           animate={{ scaleY: 1 }}
           transition={{ delay: i * 0.05, duration: 0.3, ease: 'easeOut' }}
           style={{ originY: '100%', height: `${Math.max(4, (v / max) * 100)}%` }}
-          className={`flex-1 rounded-sm ${i === values.length - 1 ? 'bg-primary' : 'bg-primary/30'}`}
+          className={cn(
+            'flex-1 rounded-sm',
+            i === values.length - 1 ? 'bg-primary' : 'bg-accent',
+          )}
         />
       ))}
     </div>
@@ -52,16 +67,16 @@ function HealthChecks({ checks = [] }) {
   return (
     <div className="flex flex-col gap-1.5">
       {checks.map((check, i) => (
-        <div key={i} className="flex items-start gap-2.5 [&_svg]:size-3.5 [&_svg]:shrink-0">
+        <div key={i} className="flex items-start gap-2.5">
           {check.ok ? (
-            <CheckCircle2 className="mt-0.5 text-success" />
+            <CheckCircle2 className="mt-0.5 shrink-0 text-success" />
           ) : (
-            <XCircle className="mt-0.5 text-destructive" />
+            <XCircle className="mt-0.5 shrink-0 text-destructive" />
           )}
           <div className="min-w-0">
             <p className="text-xs font-medium text-foreground">{check.check}</p>
             {check.detail && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{check.detail}</p>
+              <p className="type-caption mt-0.5">{check.detail}</p>
             )}
           </div>
         </div>
@@ -70,13 +85,15 @@ function HealthChecks({ checks = [] }) {
   )
 }
 
-function MetricCard({ label, value, sub, className }) {
+function MetricCard({ label, value, sub }) {
   return (
-    <Card className={cn('border-border/40 bg-muted/40 py-0 shadow-none', className)}>
+    <Card className="border-border bg-muted py-0 shadow-none">
       <CardContent className="flex flex-col gap-0.5 p-3">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className={`text-lg font-bold tabular-nums text-foreground ${className ?? ''}`}>{value}</p>
-        {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
+        <CardDescription className="font-medium uppercase tracking-wide">
+          {label}
+        </CardDescription>
+        <p className="text-lg font-bold tabular-nums text-foreground">{value}</p>
+        {sub && <p className="type-caption">{sub}</p>}
       </CardContent>
     </Card>
   )
@@ -90,12 +107,14 @@ function OverviewTab({ conn }) {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Health checks</h3>
+          <SectionLabel>Health checks</SectionLabel>
           <ConnectionStatusBadge status={conn.status} size="default" />
         </div>
-        <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
-          <HealthChecks checks={conn.health} />
-        </div>
+        <Card className="border-border bg-muted py-0 shadow-none">
+          <CardContent className="p-3">
+            <HealthChecks checks={conn.health} />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -105,28 +124,33 @@ function OverviewTab({ conn }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">7-day call volume</h3>
-        <div className="rounded-lg border border-border/40 bg-muted/30 p-3">
-          <Sparkbar values={conn.callsWeek} />
-          <div className="mt-1.5 flex justify-between">
-            {days.map((d, i) => (
-              <span key={i} className="flex-1 text-center text-[9px] text-muted-foreground">{d}</span>
-            ))}
-          </div>
-        </div>
+        <SectionLabel>7-day call volume</SectionLabel>
+        <Card className="border-border bg-muted py-0 shadow-none">
+          <CardContent className="p-3">
+            <Sparkbar values={conn.callsWeek} />
+            <div className="mt-1.5 flex justify-between">
+              {days.map((d, i) => (
+                <span key={i} className="type-caption flex-1 text-center">{d}</span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Details</h3>
+      <div className="flex flex-col gap-0">
+        <SectionLabel className="mb-2">Details</SectionLabel>
         {[
           { label: 'Added', value: conn.addedAt },
           { label: 'Added by', value: conn.addedBy },
           { label: 'Scope', value: conn.scope ?? '—' },
           { label: 'Visibility', value: conn.isPrivate ? 'Private' : 'Workspace' },
-        ].map(({ label, value }) => (
-          <div key={label} className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0">
-            <span className="text-xs text-muted-foreground">{label}</span>
-            <span className="text-xs font-medium capitalize text-foreground">{value}</span>
+        ].map(({ label, value }, i, arr) => (
+          <div key={label}>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-xs text-muted-foreground">{label}</span>
+              <span className="text-xs font-medium capitalize text-foreground">{value}</span>
+            </div>
+            {i < arr.length - 1 && <Separator />}
           </div>
         ))}
       </div>
@@ -153,7 +177,7 @@ function UsedInFlowsTab({ conn }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="mb-1 text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Used in {conn.usedIn.length} flow{conn.usedIn.length !== 1 ? 's' : ''} / agent{conn.usedIn.length !== 1 ? 's' : ''}
       </p>
       {conn.usedIn.map(name => (
@@ -162,8 +186,8 @@ function UsedInFlowsTab({ conn }) {
           variant="outline"
           className="h-auto w-full justify-start gap-3 p-3"
         >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 [&_svg]:size-3.5">
-            <Workflow className="text-primary" />
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+            <Workflow />
           </span>
           <span className="min-w-0 flex-1 truncate text-left text-sm font-medium">{name}</span>
           <ArrowRight className="shrink-0 text-muted-foreground" />
@@ -175,25 +199,25 @@ function UsedInFlowsTab({ conn }) {
 
 function UsageStatsTab({ conn }) {
   const totalWeek = conn.callsWeek?.reduce((a, b) => a + b, 0) ?? 0
+  const max = Math.max(...(conn.callsWeek ?? [1]))
+
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-2">
         <MetricCard label="Calls today" value={conn.callsToday.toLocaleString()} />
         <MetricCard label="Calls / week" value={totalWeek.toLocaleString()} />
       </div>
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Daily breakdown</h3>
+      <div className="flex flex-col gap-3">
+        <SectionLabel>Daily breakdown</SectionLabel>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
           const val = conn.callsWeek?.[i] ?? 0
-          const max = Math.max(...(conn.callsWeek ?? [1]))
-          const pct = max ? (val / max) * 100 : 0
           return (
-            <div key={day} className="flex items-center gap-2">
-              <span className="w-7 text-[10px] text-muted-foreground">{day}</span>
-              <div className="h-1.5 flex-1 rounded-full bg-muted/60">
-                <div className="h-full rounded-full bg-primary/70" style={{ width: `${pct}%` }} />
-              </div>
-              <span className="w-10 text-right text-[11px] tabular-nums text-muted-foreground">{val.toLocaleString()}</span>
+            <div key={day} className="flex items-center gap-3">
+              <span className="type-caption w-7">{day}</span>
+              <Progress value={val} max={max} className="h-1.5 flex-1" />
+              <span className="type-caption w-10 text-right tabular-nums">
+                {val.toLocaleString()}
+              </span>
             </div>
           )
         })}
@@ -208,24 +232,34 @@ function PermissionsTab({ conn }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Granted scopes</h3>
+      <div className="flex flex-col gap-0">
+        <SectionLabel className="mb-2">Granted scopes</SectionLabel>
         {scopes.length === 0 && (
           <p className="py-4 text-center text-sm text-muted-foreground">No scope information available</p>
         )}
-        {scopes.map(scope => (
-          <div key={scope} className="flex items-center gap-2.5 border-b border-border/30 py-1.5 last:border-0 [&_svg]:size-3.5 [&_svg]:shrink-0">
-            <Shield className="text-primary" />
-            <span className="min-w-0 break-all font-mono text-xs text-foreground">{scope}</span>
-            <span className="ml-auto text-[10px] text-muted-foreground">granted</span>
+        {scopes.map((scope, i) => (
+          <div key={scope}>
+            <div className="flex items-center gap-2.5 py-2">
+              <Shield className="shrink-0 text-primary" />
+              <span className="min-w-0 break-all font-mono text-xs text-foreground">{scope}</span>
+              <Badge variant="secondary" className="ml-auto shrink-0">
+                granted
+              </Badge>
+            </div>
+            {i < scopes.length - 1 && <Separator />}
           </div>
         ))}
         {conn.type === 'api_key' && (
-          <div className="flex items-center gap-2.5 py-1.5 [&_svg]:size-3.5 [&_svg]:shrink-0">
-            <Shield className="text-primary" />
-            <span className="text-xs text-foreground">API key authentication</span>
-            <span className="ml-auto text-[10px] text-muted-foreground">full access</span>
-          </div>
+          <>
+            {scopes.length > 0 && <Separator />}
+            <div className="flex items-center gap-2.5 py-2">
+              <Shield className="shrink-0 text-primary" />
+              <span className="text-xs text-foreground">API key authentication</span>
+              <Badge variant="secondary" className="ml-auto shrink-0">
+                full access
+              </Badge>
+            </div>
+          </>
         )}
       </div>
 
@@ -245,17 +279,19 @@ function PermissionsTab({ conn }) {
 function SharingTab({ conn }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-border/40 bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">Visibility</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {conn.isPrivate ? 'Only you can use this connection' : 'All workspace members can use this connection'}
-          </p>
-        </div>
-        <Badge variant="outline" className="w-fit shrink-0 self-start sm:self-auto">
-          {conn.isPrivate ? 'Private' : 'Workspace'}
-        </Badge>
-      </div>
+      <Card className="py-0 shadow-none">
+        <CardHeader className="flex flex-col gap-3 border-b-0 p-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="text-sm">Visibility</CardTitle>
+            <CardDescription className="mt-0.5">
+              {conn.isPrivate ? 'Only you can use this connection' : 'All workspace members can use this connection'}
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="w-fit shrink-0">
+            {conn.isPrivate ? 'Private' : 'Workspace'}
+          </Badge>
+        </CardHeader>
+      </Card>
       <Alert>
         <AlertDescription>
           Connection credentials are managed through Aziron Vault and are never shared directly. Visibility only controls whether other workspace members can reference this connection in their flows.
@@ -274,19 +310,27 @@ const MOCK_AUDIT = [
 
 function AuditLogTab() {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0">
       {MOCK_AUDIT.map((entry, i) => (
-        <div key={i} className="flex flex-col gap-1 border-b border-border/30 py-2.5 last:border-0 sm:flex-row sm:items-start sm:gap-2.5">
-          <div className="flex min-w-0 flex-1 items-start gap-2.5">
-            <div className={`mt-1.5 size-1.5 shrink-0 rounded-full ${entry.ok ? 'bg-success' : 'bg-destructive'}`} />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground">{entry.action}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                by <span className="font-medium">{entry.actor}</span>
-              </p>
+        <div key={i}>
+          <div className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-start sm:gap-2.5">
+            <div className="flex min-w-0 flex-1 items-start gap-2.5">
+              <div
+                className={cn(
+                  'mt-1.5 size-1.5 shrink-0 rounded-full',
+                  entry.ok ? 'bg-success' : 'bg-destructive',
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-foreground">{entry.action}</p>
+                <p className="type-caption mt-0.5">
+                  by <span className="font-medium text-foreground">{entry.actor}</span>
+                </p>
+              </div>
             </div>
+            <span className="type-caption pl-3.5 sm:shrink-0 sm:pl-0">{entry.time}</span>
           </div>
-          <span className="pl-3.5 text-[11px] text-muted-foreground sm:shrink-0 sm:pl-0">{entry.time}</span>
+          {i < MOCK_AUDIT.length - 1 && <Separator />}
         </div>
       ))}
     </div>
@@ -319,60 +363,56 @@ export default function ConnectionDetail() {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={v => { if (!v) closeDetail() }}>
+      <Dialog
+        open={open && !confirmDelete}
+        onOpenChange={v => { if (!v) closeDetail() }}
+      >
         <DialogContent
           showCloseButton
-          className="flex max-h-[min(92dvh,800px)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[720px]"
+          className="flex max-h-[min(92dvh,800px)] w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
         >
           {conn ? (
             <>
-              <DialogTitle className="sr-only">{conn.name} connection details</DialogTitle>
-              <DialogDescription className="sr-only">
-                View health, usage, permissions, and audit history for this connector.
-              </DialogDescription>
-
-              <div className="flex shrink-0 flex-col gap-3 border-b border-border/40 p-4 pr-12 sm:flex-row sm:items-start sm:gap-3 sm:p-5 sm:pr-14">
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <ProviderAvatar providerId={conn.providerId} size="lg" className="shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-foreground">{conn.name}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <ConnectionTypeBadge type={conn.type} size="default" />
-                      <ConnectionStatusBadge status={conn.status} size="default" />
+              <DialogHeader className="relative shrink-0 border-b border-border px-5 pt-5 pb-4 pr-14 sm:px-6 sm:pt-6 sm:pr-16">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <ProviderAvatar providerId={conn.providerId} size="lg" className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <DialogTitle className="truncate text-left text-base font-semibold sm:text-lg">
+                        {conn.name}
+                      </DialogTitle>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <ConnectionTypeBadge type={conn.type} size="default" />
+                        <ConnectionStatusBadge status={conn.status} size="default" />
+                      </div>
                     </div>
                   </div>
+                  <div className="flex shrink-0 items-center gap-1 self-end sm:self-start">
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => testConnection(conn.id)}
+                      aria-label="Test connection"
+                    >
+                      <RefreshCw />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => setConfirmDelete(true)}
+                      aria-label="Delete connection"
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1 self-end sm:self-start">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => testConnection(conn.id)}
-                    aria-label="Test connection"
-                  >
-                    <RefreshCw />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => setConfirmDelete(true)}
-                    aria-label="Delete connection"
-                    className="hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
+              </DialogHeader>
 
               <Tabs value={activeTab} onValueChange={setDetailTab} className="flex min-h-0 flex-1 flex-col gap-0">
-                <div className="overflow-x-auto border-b">
-                  <TabsList className="inline-flex h-auto w-max min-w-full shrink-0 justify-start rounded-none border-0 bg-transparent p-0 px-4 sm:min-w-0 sm:w-full sm:px-5">
+                <div className="shrink-0 overflow-x-auto px-4 py-3 sm:px-6">
+                  <TabsList className="inline-flex h-auto w-max min-w-full sm:min-w-0 sm:w-full">
                     {DETAIL_TABS.map(({ key, label, shortLabel, icon: Icon }) => (
-                      <TabsTrigger
-                        key={key}
-                        value={key}
-                        aria-label={label}
-                        className="shrink-0 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 py-3 text-xs sm:px-3 sm:text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                      >
+                      <TabsTrigger key={key} value={key} aria-label={label}>
                         <Icon />
                         <span className="sm:hidden">{shortLabel}</span>
                         <span className="hidden sm:inline">{label}</span>
@@ -381,7 +421,9 @@ export default function ConnectionDetail() {
                   </TabsList>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+                <Separator />
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
                   <TabsContent value="overview" className="mt-0">
                     <OverviewTab conn={conn} />
                   </TabsContent>
@@ -404,22 +446,28 @@ export default function ConnectionDetail() {
               </Tabs>
 
               {(conn.status === 'expired' || conn.status === 'error') && (
-                <div className="shrink-0 border-t border-border/40 bg-muted/30 p-4 sm:px-5">
-                  <Button className="w-full">
+                <DialogFooter className="shrink-0 sm:justify-stretch">
+                  <Button className="w-full sm:w-auto">
                     {conn.status === 'expired' ? 'Re-authenticate' : 'Retry connection'}
                   </Button>
-                </div>
+                </DialogFooter>
               )}
             </>
           ) : (
-            <div className="p-6">
-              <Empty className="border-none">
-                <EmptyHeader>
-                  <EmptyTitle>Connection not found</EmptyTitle>
-                  <EmptyDescription>The selected connector may have been removed.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </div>
+            <>
+              <DialogHeader className="border-b border-border px-5 py-5 sm:px-6">
+                <DialogTitle>Connection not found</DialogTitle>
+                <DialogDescription>The selected connector may have been removed.</DialogDescription>
+              </DialogHeader>
+              <div className="p-6">
+                <Empty className="border-none">
+                  <EmptyHeader>
+                    <EmptyTitle>No connector selected</EmptyTitle>
+                    <EmptyDescription>Choose a connector from the list to view its details.</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

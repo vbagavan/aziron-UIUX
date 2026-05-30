@@ -64,7 +64,7 @@ export const PERMISSIONS = {
     // Settings
     "settings.org":      true,
     "settings.billing":  true,
-    "settings.integrations": true,
+    "settings.connectors": true,
     "settings.audit_log":    true,
   },
 
@@ -120,7 +120,7 @@ export const PERMISSIONS = {
     // Settings
     "settings.org":      true,
     "settings.billing":  true,    // own org billing
-    "settings.integrations": true,
+    "settings.connectors": true,
     "settings.audit_log":    true,
   },
 
@@ -176,7 +176,7 @@ export const PERMISSIONS = {
     // Settings
     "settings.org":      false,
     "settings.billing":  false,
-    "settings.integrations": false,
+    "settings.connectors": false,
     "settings.audit_log":    false,
   },
 };

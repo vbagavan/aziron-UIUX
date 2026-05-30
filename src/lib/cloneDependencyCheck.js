@@ -222,7 +222,7 @@ function buildAgentChecks(source, permissions) {
     {
       id: "tools-category-credentials",
       category: "tools",
-      label: "Tool integration credentials configured",
+      label: "Tool connector credentials configured",
       resolveHint: "Configure tool credentials",
       resolveTarget: "settings",
       evaluate: () => {
@@ -263,7 +263,7 @@ function buildAgentChecks(source, permissions) {
     {
       id: "vault-integration-secrets",
       category: "vault",
-      label: "Integration & webhook secrets",
+      label: "Connector & webhook secrets",
       resolveHint: "Set up vault secrets",
       resolveTarget: "vault",
       evaluate: () => {

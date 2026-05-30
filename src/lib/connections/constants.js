@@ -18,18 +18,18 @@ export const CONNECTION_STATUS = {
 // ─── Badge styling ─────────────────────────────────────────────────────────────
 
 export const STATUS_CONFIG = {
-  active:   { label: 'Active',   dot: 'bg-success',     text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800' },
-  expiring: { label: 'Expiring', dot: 'bg-warning',     text: 'text-amber-700 dark:text-amber-400',   bg: 'bg-amber-50 dark:bg-amber-900/20',    border: 'border-amber-200 dark:border-amber-800'   },
-  expired:  { label: 'Expired',  dot: 'bg-destructive', text: 'text-red-700 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-900/20',        border: 'border-red-200 dark:border-red-800'       },
-  error:    { label: 'Error',    dot: 'bg-destructive', text: 'text-red-700 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-900/20',        border: 'border-red-200 dark:border-red-800'       },
-  pending:  { label: 'Pending',  dot: 'bg-muted-foreground', text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40', border: 'border-slate-200 dark:border-slate-700'  },
+  active:   { label: 'Active',   dot: 'bg-success-foreground', text: 'text-success-foreground', bg: 'bg-success', border: 'border-success-ring' },
+  expiring: { label: 'Expiring', dot: 'bg-warning-foreground', text: 'text-warning-foreground', bg: 'bg-warning', border: 'border-warning-ring' },
+  expired:  { label: 'Expired',  dot: 'bg-destructive-foreground', text: 'text-destructive-foreground', bg: 'bg-destructive', border: 'border-destructive' },
+  error:    { label: 'Error',    dot: 'bg-destructive-foreground', text: 'text-destructive-foreground', bg: 'bg-destructive', border: 'border-destructive' },
+  pending:  { label: 'Pending',  dot: 'bg-muted-foreground', text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
 }
 
 export const TYPE_CONFIG = {
-  oauth:      { label: 'OAuth',      text: 'text-blue-700 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-900/20',     border: 'border-blue-200 dark:border-blue-800'     },
-  api_key:    { label: 'API Key',    text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-200 dark:border-amber-800'   },
-  mcp_server: { label: 'MCP Server', text: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800' },
-  custom:     { label: 'Custom',     text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40',  border: 'border-slate-200 dark:border-slate-700'   },
+  oauth:      { label: 'OAuth',      text: 'text-primary-foreground', bg: 'bg-primary', border: 'border-primary' },
+  api_key:    { label: 'API Key',    text: 'text-warning-foreground', bg: 'bg-warning', border: 'border-warning-ring' },
+  mcp_server: { label: 'MCP Server', text: 'text-secondary-foreground', bg: 'bg-secondary', border: 'border-border' },
+  custom:     { label: 'Custom',     text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
 }
 
 // ─── Provider catalog ──────────────────────────────────────────────────────────

@@ -694,7 +694,7 @@ function SettingsSection({ tenant, onNavigate }) {
   return (
     <div className="col-span-12 max-w-2xl space-y-4">
       <p className="text-sm text-muted-foreground">
-        Organisation defaults and integrations. Appearance is in your personal settings.
+        Organisation defaults and connectors. Appearance is in your personal settings.
       </p>
       <Button variant="outline" onClick={() => onNavigate?.("settings")}>
         Open appearance & profile

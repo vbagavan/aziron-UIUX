@@ -23,6 +23,7 @@ export const PRIMARY_SIDEBAR_PAGES = new Set([
   "tenants",
   "pricing-plans",
   "insurance-management",
+  "employee-insurance",
   // FINANCE — Invoice Management
   "invoice-reports",
   "invoice-invoices",

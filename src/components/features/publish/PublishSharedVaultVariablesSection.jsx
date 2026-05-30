@@ -11,8 +11,7 @@ function VaultPublicationBadge({ marketplacePublished }) {
   if (marketplacePublished) {
     return (
       <Badge
-        variant="outline"
-        className="h-5 shrink-0 border-success/30 bg-success/10 px-1.5 text-[10px] font-medium text-success"
+        className="h-5 shrink-0 border-success-ring bg-success px-1.5 text-xs font-medium text-success-foreground"
       >
         Published
       </Badge>
@@ -20,8 +19,7 @@ function VaultPublicationBadge({ marketplacePublished }) {
   }
   return (
     <Badge
-      variant="outline"
-      className="h-5 shrink-0 border-amber-500/30 bg-amber-500/10 px-1.5 text-[10px] font-medium text-warning-foreground dark:text-amber-200"
+      className="h-5 shrink-0 border-warning-ring bg-warning px-1.5 text-xs font-medium text-warning-foreground"
     >
       Not published
     </Badge>
@@ -52,7 +50,7 @@ export default function PublishSharedVaultVariablesSection({
     <>
       <Separator className="my-3" />
       <div className="flex gap-3">
-        <Vault className="mt-0.5 h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+        <Vault className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
         <div className="min-w-0 flex-1 text-left">
           <p className="font-medium text-foreground">
             Shared vault variables
@@ -67,11 +65,8 @@ export default function PublishSharedVaultVariablesSection({
           ) : (
             <>
               {unpublishedCount > 0 && (
-                <div className="mt-2 flex gap-2 rounded-md border border-amber-500/25 bg-amber-500/8 px-2.5 py-2 dark:bg-amber-950/40">
-                  <AlertTriangle
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning dark:text-amber-400"
-                    aria-hidden
-                  />
+                <div className="mt-2 flex gap-2 rounded-md border border-warning-ring bg-muted px-2.5 py-2">
+                  <AlertTriangle className="mt-0.5 shrink-0 text-warning" aria-hidden />
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-medium text-foreground">
                       {unpublishedCount} variable{unpublishedCount !== 1 ? "s" : ""} not published
@@ -97,20 +92,19 @@ export default function PublishSharedVaultVariablesSection({
                       : ""}
                   </span>
                   <ChevronDown
-                    size={12}
                     className={cn("transition-transform", vaultExpanded && "rotate-180")}
                   />
                 </button>
               )}
               {vaultExpanded && (
-                <ul id={listId} className="mt-1.5 space-y-2.5 text-xs leading-relaxed">
+                <ul id={listId} className="mt-1.5 flex flex-col gap-2.5 text-xs leading-relaxed">
                   {variables.map(({ label, key, variableRef, marketplacePublished, secretType }) => (
                     <li key={key} className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="font-medium text-foreground">{label}</span>
                         <VaultPublicationBadge marketplacePublished={marketplacePublished} />
                         {secretType ? (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal">
+                          <Badge variant="secondary" className="h-5 px-1.5 text-xs font-normal">
                             {VAULT_SCOPE_LABELS[secretType] ?? secretType}
                           </Badge>
                         ) : null}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useId, useMemo, forwardRef } 
 import {
   ChevronRight, Building2, FileText, Upload, Clock,
   Plus, Trash2, Edit2, Check, X, Save, AlertCircle, CheckCircle2, ChevronDown,
-  FileBadge, FileSpreadsheet, Paperclip, ArrowLeft, ShieldCheck,
+  FileBadge, FileSpreadsheet, Paperclip, ShieldCheck,
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -1459,7 +1459,7 @@ function PremiumMatrixSection({ onDataChange, onSaved, showToast }) {
                     scope="col"
                     title={`${coverageSumInsuredInr(col.lakh)} sum insured`}
                     className={cn(
-                      "sticky top-[1.625rem] bg-muted/30 px-2 py-2 text-center text-xs font-bold text-foreground tabular-nums",
+                      "sticky top-[1.625rem] bg-muted/30 px-3 py-2 text-right text-xs font-bold text-foreground tabular-nums",
                       idx > 0 && "border-l border-border/40",
                       idx % 2 === 1 && "bg-muted/50",
                     )}
@@ -1508,7 +1508,7 @@ function PremiumMatrixSection({ onDataChange, onSaved, showToast }) {
                     {coverageColumns.map((col, colIdx) => (
                       <td
                         key={col.id}
-                        className={cn("px-3 py-2.5", colIdx % 2 === 1 && "bg-muted/10")}
+                        className={cn("px-3 py-2.5 text-right tabular-nums", colIdx % 2 === 1 && "bg-muted/10")}
                       >
                         {editing ? (
                           <MatrixPremiumInput
@@ -1521,9 +1521,9 @@ function PremiumMatrixSection({ onDataChange, onSaved, showToast }) {
                             ariaLabel={`Premium for ages ${band.ageFrom}–${band.ageTo}, ${coverageColumnLabel(col.lakh)}`}
                           />
                         ) : (
-                          <p className="text-xs text-right tabular-nums text-foreground pr-1">
+                          <span className="text-xs text-foreground">
                             {formatMatrixPremiumInr(band.premiums?.[col.id]) || "—"}
-                          </p>
+                          </span>
                         )}
                       </td>
                     ))}
@@ -2070,7 +2070,7 @@ export default function InsuranceConfigPage({ onNavigate }) {
   }, [showToast]);
 
   return (
-    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-config" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
@@ -2091,28 +2091,18 @@ export default function InsuranceConfigPage({ onNavigate }) {
           </div>
         </AppHeader>
 
-        <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-[1280px] flex-col px-6 pt-5 pb-10">
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div className="min-w-0">
-                <button
-                  type="button"
-                  onClick={() => onNavigate?.("insurance-management")}
-                  className="flex items-center gap-1.5 mb-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <ArrowLeft size={13} aria-hidden />
-                  Back to insurance
-                </button>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="type-page-title">Insurance setup</h1>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">
-                    Plan year 2026
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Set up your group policy, premiums, enrollment windows, and documents so employees can enroll.
-                </p>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+          <div className="flex flex-col gap-4 px-6 py-4 pb-10">
+            <div className="flex flex-col gap-0.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="type-page-title">Insurance setup</h1>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/15 text-primary border border-primary/25">
+                  Plan year 2026
+                </span>
               </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Set up your group policy, premiums, enrollment windows, and documents so employees can enroll.
+              </p>
             </div>
 
             <SectionJumpNav />

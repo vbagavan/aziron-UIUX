@@ -42,7 +42,7 @@ function WizardStepper({ step }) {
 
   return (
     <div
-      className="-mx-4 flex flex-col gap-3 border-b border-border/40 px-4 py-4 sm:-mx-6 sm:px-6"
+      className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-4 sm:px-6"
       aria-label={`Step ${step} of ${WIZARD_STEPS.length}: ${currentLabel}`}
     >
       <div className="flex items-center">
@@ -54,14 +54,14 @@ function WizardStepper({ step }) {
             <div key={label} className="flex min-w-0 flex-1 items-center last:flex-none">
               <div
                 className={cn(
-                  'flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-colors',
+                  'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors',
                   done && 'bg-primary text-primary-foreground',
-                  current && !done && 'bg-primary text-primary-foreground ring-4 ring-primary/15',
+                  current && !done && 'bg-primary text-primary-foreground ring-4 ring-ring',
                   !done && !current && 'bg-muted text-muted-foreground',
                 )}
                 aria-hidden
               >
-                {done ? <Check className="size-3.5" strokeWidth={3} /> : n}
+                {done ? <Check strokeWidth={3} /> : n}
               </div>
               {i < WIZARD_STEPS.length - 1 && (
                 <div
@@ -150,14 +150,14 @@ function Step1Catalog() {
             variant="outline"
             className={cn(
               'flex h-auto flex-col items-center gap-2 p-3',
-              wizard.selectedProvider?.id === provider.id && 'border-primary bg-primary/5',
+              wizard.selectedProvider?.id === provider.id && 'border-primary bg-accent text-accent-foreground',
             )}
             onClick={() => selectProvider(provider)}
           >
             <ProviderAvatar providerId={provider.id} size="md" />
             <div className="min-w-0 w-full text-center">
               <p className="truncate text-xs font-semibold">{provider.name}</p>
-              <p className="mt-0.5 text-[10px] capitalize text-muted-foreground">
+              <p className="type-caption mt-0.5 capitalize">
                 {provider.type.replace('_', ' ')}
               </p>
             </div>
@@ -179,7 +179,7 @@ function Step2Configure() {
         <DialogDescription>Name this connection and set its visibility</DialogDescription>
       </DialogHeader>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border/40 bg-muted/50 p-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-3 sm:flex-row sm:items-center">
         <ProviderAvatar providerId={provider?.id} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground">{provider?.name}</p>
@@ -201,8 +201,8 @@ function Step2Configure() {
         </Field>
       </FieldGroup>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-border/40 bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3 sm:items-center [&_svg]:size-4 [&_svg]:shrink-0">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3 sm:items-center">
           {wizard.isPrivate ? <Lock className="mt-0.5 sm:mt-0" /> : <Users className="mt-0.5 sm:mt-0" />}
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
@@ -276,12 +276,12 @@ function Step3Scope() {
               disabled={disabled}
               className={cn(
                 'flex h-auto items-start justify-start gap-3 p-3.5 text-left',
-                selected && 'border-primary bg-primary/5',
+                selected && 'border-primary bg-accent text-accent-foreground',
               )}
               onClick={() => !disabled && setWizardField('scope', id)}
             >
               <span className={cn(
-                'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4',
+                'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg',
                 selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
               )}>
                 <Icon />
@@ -290,14 +290,14 @@ function Step3Scope() {
                 <span className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{label}</span>
                   {tag && (
-                    <Badge variant={tag === 'Recommended' ? 'secondary' : 'outline'} className="text-[10px]">
+                    <Badge variant={tag === 'Recommended' ? 'secondary' : 'outline'}>
                       {tag}
                     </Badge>
                   )}
                 </span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{desc}</span>
               </span>
-              {selected && <Check className="mt-1 size-3.5 shrink-0 text-primary" strokeWidth={2.5} />}
+              {selected && <Check className="mt-1 shrink-0 text-primary" strokeWidth={2.5} />}
             </Button>
           )
         })}
@@ -413,9 +413,9 @@ function Step4Credentials() {
             </Button>
 
             {wizard.testStatus === 'success' && (
-              <Alert className="w-full min-w-0 flex-1 border-success/30 bg-success/10 py-2 sm:w-auto [&>svg]:text-success">
+              <Alert className="w-full min-w-0 flex-1 border-success-ring bg-success py-2 text-success-foreground sm:w-auto">
                 <CheckCircle2 />
-                <AlertDescription className="text-success">{wizard.testMessage}</AlertDescription>
+                <AlertDescription>{wizard.testMessage}</AlertDescription>
               </Alert>
             )}
             {wizard.testStatus === 'error' && (
@@ -449,14 +449,14 @@ function Step5Success() {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
-        className="flex size-20 items-center justify-center rounded-full bg-success/15"
+        className="flex size-20 items-center justify-center rounded-full bg-muted"
       >
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', damping: 10, stiffness: 260, delay: 0.25 }}
         >
-          <CheckCircle2 className="size-10 text-success" strokeWidth={1.5} />
+          <CheckCircle2 className="text-success" strokeWidth={1.5} />
         </motion.div>
       </motion.div>
 
@@ -468,7 +468,7 @@ function Step5Success() {
         </DialogDescription>
       </DialogHeader>
 
-      <div className="w-full divide-y divide-border/40 rounded-lg border border-border/40 bg-card">
+      <div className="w-full divide-y divide-border rounded-lg border border-border bg-card">
         {[
           { label: 'Provider', value: provider?.name },
           { label: 'Name', value: newConn?.name ?? provider?.name },
@@ -554,7 +554,7 @@ function WizardFooter() {
   }
 
   return (
-    <DialogFooter className="mt-2 -mx-4 -mb-4 flex shrink-0 flex-row items-center justify-between gap-2 rounded-b-xl border-t border-border/40 bg-muted/30 px-4 py-3.5 sm:-mx-6 sm:-mb-5 sm:px-6">
+    <DialogFooter className="flex shrink-0 flex-row items-center justify-between gap-2 sm:justify-between">
       <Button
         type="button"
         variant="outline"
@@ -586,15 +586,17 @@ export default function ConnectionWizard() {
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) resetWizard() }}>
       <DialogContent
-        showCloseButton={false}
-        className="flex max-h-[min(92dvh,720px)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-4 sm:max-w-[640px] sm:p-6"
+        showCloseButton
+        className="flex max-h-[min(92dvh,720px)] w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
       >
-        <DialogTitle className="sr-only">New connector</DialogTitle>
-        <DialogDescription className="sr-only">
-          Step {step} of {WIZARD_STEPS.length} — add a new external connection
-        </DialogDescription>
+        <DialogHeader className="sr-only">
+          <DialogTitle>New connector</DialogTitle>
+          <DialogDescription>
+            Step {step} of {WIZARD_STEPS.length} — add a new external connection
+          </DialogDescription>
+        </DialogHeader>
         {step < 5 && <WizardStepper step={step} />}
-        <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
           <AnimatedStep step={step} direction={direction} />
         </div>
         <WizardFooter />

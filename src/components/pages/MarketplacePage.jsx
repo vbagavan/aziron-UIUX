@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import { AgentLabelsRow } from "@/components/agents/LabelSelector.jsx";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
 import { Toast, useToast } from "@/components/ui/Toast";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { forkAgent } from "@/lib/marketplaceApi";
+import { isAgentMarketplaceListed } from "@/lib/agentPublishScope";
 import { cn } from "@/lib/utils";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -334,6 +336,10 @@ function PreviewModal({
         <div className="space-y-4 px-6 py-4">
           <p className="text-sm leading-relaxed text-muted-foreground">{item.blurb}</p>
 
+          {isAgent && (item.labels?.length > 0 || item.tags?.length > 0) && (
+            <AgentLabelsRow labelIds={item.labels} tags={item.tags} />
+          )}
+
           {!isAgent && previewSteps.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -479,16 +485,7 @@ function AgentCard({ agent, isForked, onFork, onOpenForked, onPreview, canFork, 
           <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{agent.blurb}</p>
         </div>
 
-        <div className="flex min-h-[1.625rem] shrink-0 flex-wrap gap-1.5">
-          {(agent.tags ?? []).slice(0, 4).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        <AgentLabelsRow labelIds={agent.labels} tags={agent.tags} />
 
         <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <UsesMetric count={agent.installs} />
@@ -560,16 +557,7 @@ function FlowCard({ flow, onForkFlow, onOpenForked, onPreview, isForked, canFork
           <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">{flow.blurb}</p>
         </div>
 
-        <div className="flex min-h-[1.625rem] shrink-0 flex-wrap gap-1.5">
-          {(flow.tags ?? []).slice(0, 4).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        <AgentLabelsRow tags={flow.tags} />
 
         <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <UsesMetric count={flow.installs} />
@@ -649,8 +637,7 @@ function WorkspaceAgentCard({ agent, onManage, onUnpublish }) {
           </p>
         </div>
 
-        {/* no tags row — keep height consistent */}
-        <div className="min-h-[1.625rem]" />
+        <AgentLabelsRow labelIds={agent.labels} />
 
         <div className="mt-auto flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3 text-xs">
           <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -765,7 +752,7 @@ export default function MarketplacePage({ onNavigate, workspaceAgents, onUnpubli
   }, [focusSearch]);
 
   const publishedWorkspaceAgents = useMemo(
-    () => (workspaceAgents ?? []).filter((a) => a.visibility === "public"),
+    () => (workspaceAgents ?? []).filter((a) => isAgentMarketplaceListed(a)),
     [workspaceAgents],
   );
 

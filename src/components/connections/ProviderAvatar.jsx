@@ -28,7 +28,7 @@ export default function ProviderAvatar({ providerId, size = 'md', className = ''
         <AvatarImage src={logoSrc} alt="" className="rounded-md object-contain p-0.5" />
       ) : null}
       <AvatarFallback
-        className="rounded-md text-[10px] font-bold text-primary-foreground"
+        className="rounded-md text-xs font-bold text-primary-foreground"
         style={{ backgroundColor: color }}
       >
         {initials}

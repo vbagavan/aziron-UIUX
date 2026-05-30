@@ -8,7 +8,9 @@ import {
   Pencil,
   MoreVertical,
   Settings2,
+  Tag,
 } from "lucide-react";
+import { LabelChip } from "@/components/agents/LabelSelector.jsx";
 
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -487,6 +489,15 @@ export default function AgentDetailPage({ agent, onNavigate, onEditAgent }) {
                   </div>
 
                   <p className="max-w-3xl text-sm leading-6 text-muted-foreground dark:text-muted-foreground">{currentAgent.description}</p>
+
+                  {currentAgent.labels?.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Tag className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      {currentAgent.labels.map(id => (
+                        <LabelChip key={id} labelId={id} size="xs" />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -56,7 +56,7 @@ function detectAgentVariables(source) {
     /email|crm|slack|webhook|integration/i.test(desc);
 
   if (usesIntegrations || tools.length > 0) {
-    variables.push(makeVariable("INTEGRATION_SECRET", "Integration credential", "credential"));
+    variables.push(makeVariable("INTEGRATION_SECRET", "Connector credential", "credential"));
   }
 
   if (source.ragMode || source.vectorSearch) {

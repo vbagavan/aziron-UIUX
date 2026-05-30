@@ -21,6 +21,7 @@ import {
   loadAgentsFromStorage,
   saveAgentsToStorage,
 } from "@/data/agentsCatalog";
+import { agentPublishScopePatch } from "@/lib/agentPublishScope";
 import { AgentsProvider } from "@/context/AgentsContext";
 import { KnowledgeHubProvider } from "@/context/KnowledgeHubContext";
 import { VaultProvider } from "@/context/VaultContext";
@@ -109,6 +110,22 @@ function FlowViewRoute() {
   );
 }
 
+function InsuranceAdminRoute({ children }) {
+  const { auth } = useAuth();
+  if (auth.role !== "superadmin" && auth.role !== "tenantadmin") {
+    return <Navigate to="/my-profile" replace />;
+  }
+  return children;
+}
+
+function EmployeeInsuranceRoute({ onNavigate }) {
+  const { auth } = useAuth();
+  if (auth.role !== "superadmin" && auth.role !== "tenantadmin" && auth.role !== "tenantuser") {
+    return <Navigate to="/new-chat" replace />;
+  }
+  return <EmployeeInsurancePage onNavigate={onNavigate} />;
+}
+
 /** Creates a draft via catalog and lands on `/flows/:id` (edit intent). */
 function TenantCreateRoute({ onNavigate, onTenantCreated }) {
   const { can } = usePermissions();
@@ -129,7 +146,7 @@ function MarketplaceRoute({ onNavigate, agents, patchAgent, navigate }) {
       onNavigate={onNavigate}
       workspaceAgents={agents}
       onUnpublishAgent={(agentId) => {
-        patchAgent(agentId, { visibility: "private" });
+        patchAgent(agentId, agentPublishScopePatch("private"));
         navigate("/agents");
       }}
     />
@@ -273,6 +290,7 @@ export default function AppRoutes() {
             agents={agents}
             onPatchAgent={patchAgent}
             onAddAgent={addAgent}
+            onAgentsChange={setAgents}
           />
         }
       />
@@ -284,6 +302,7 @@ export default function AppRoutes() {
             agents={agents}
             onPatchAgent={patchAgent}
             onAddAgent={addAgent}
+            onAgentsChange={setAgents}
           />
         }
       />
@@ -384,9 +403,23 @@ export default function AppRoutes() {
         }
       />
       <Route path="/pricing-plans" element={<PricingPlansPage onNavigate={onNavigate} />} />
-      <Route path="/insurance-management" element={<InsuranceManagementPage onNavigate={onNavigate} />} />
-      <Route path="/insurance-config"     element={<InsuranceConfigPage     onNavigate={onNavigate} />} />
-      <Route path="/employee-insurance"   element={<EmployeeInsurancePage   onNavigate={onNavigate} />} />
+      <Route
+        path="/insurance-management"
+        element={
+          <InsuranceAdminRoute>
+            <InsuranceManagementPage onNavigate={onNavigate} />
+          </InsuranceAdminRoute>
+        }
+      />
+      <Route
+        path="/insurance-config"
+        element={
+          <InsuranceAdminRoute>
+            <InsuranceConfigPage onNavigate={onNavigate} />
+          </InsuranceAdminRoute>
+        }
+      />
+      <Route path="/employee-insurance" element={<EmployeeInsuranceRoute onNavigate={onNavigate} />} />
       <Route path="/tenant-users" element={<TenantUsersPage onNavigate={onNavigate} />} />
 
       <Route path="/my-profile" element={<MyProfilePage onNavigate={onNavigate} />} />

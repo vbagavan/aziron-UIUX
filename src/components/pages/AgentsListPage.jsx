@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Users, Database, Tag } from "lucide-react";
-import { useLabelsStore, getLabelColor } from "@/lib/agentLabels.js";
-import { LabelChip } from "@/components/agents/LabelSelector.jsx";
+import { Plus, MoreVertical, Bot, Pencil, Copy, GitFork, Trash2, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown, ChevronRight, Eye, Cpu, X, Send, Maximize2, Minimize2, ThumbsUp, ThumbsDown, RotateCcw, Paperclip, Globe, Lock, Loader2, Database, Tag } from "lucide-react";
+import { useLabelsStore } from "@/lib/agentLabels.js";
+import { agentMatchesSearch, agentMatchesLabelFilter } from "@/lib/agentLabelUtils.js";
+import { LabelChip, LabelFilterButton, AgentLabelsRow } from "@/components/agents/LabelSelector.jsx";
+import LabelManageDialog from "@/components/agents/LabelManageDialog.jsx";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import ProviderLogo from "@/components/common/ProviderLogo";
@@ -23,12 +25,31 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import { INITIAL_AGENTS } from "@/data/agentsCatalog";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
+import { ROLE_SCOPE } from "@/config/rbac";
+import {
+  agentPublishScopePatch,
+  getAgentPublishScope,
+  isAgentPublished,
+  publishSuccessMessage,
+  PUBLISH_SCOPES,
+  unpublishScopeMessage,
+} from "@/lib/agentPublishScope";
+import PublishScopePicker from "@/components/features/publish/PublishScopePicker";
 import { useKudosWorkflow } from "@/components/features/kudos/useKudosWorkflow";
 import KudosConversationPanel from "@/components/features/kudos/KudosConversationPanel";
 import KudosPreviewEditor from "@/components/features/kudos/KudosPreviewEditor";
@@ -130,7 +151,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
   const statusCfg  = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
   const btnRef     = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
+  const visibilityActionLabel = isAgentPublished(agent) ? "Unpublish" : "Publish";
   const hasDescription = Boolean(agent.description?.trim());
   const { can } = usePermissions();
 
@@ -189,19 +210,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
               <MoreVertical className="size-3.5" />
             </Button>
           </div>
-          <VisibilityBadge visibility={agent.visibility} />
-          {agent.labels?.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {agent.labels.slice(0, 2).map(id => (
-                <LabelChip key={id} labelId={id} size="xs" />
-              ))}
-              {agent.labels.length > 2 && (
-                <span className="inline-flex items-center px-1.5 py-0 text-[10px] font-medium text-muted-foreground">
-                  +{agent.labels.length - 2}
-                </span>
-              )}
-            </div>
-          )}
+          <VisibilityBadge agent={agent} visibility={agent.visibility} />
           <p
             className={cn(
               "line-clamp-3 text-xs leading-4",
@@ -212,6 +221,10 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
           </p>
         </div>
       </div>
+
+      {agent.labels?.length > 0 && (
+        <AgentLabelsRow labelIds={agent.labels} />
+      )}
 
       <Separator className="mt-auto" />
 
@@ -256,7 +269,7 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
               onClick={(e) => { e.stopPropagation(); setOpenMenu(null); onRequestVisibilityChange(agent); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted transition-colors"
             >
-              {agent.visibility === "public"
+              {isAgentPublished(agent)
                 ? <Lock size={14} className="text-muted-foreground dark:text-muted-foreground" />
                 : <Globe size={14} className="text-muted-foreground dark:text-muted-foreground" />
               }
@@ -286,7 +299,7 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
   const [hovered, setHovered] = useState(false);
   const rowBtnRef   = useRef(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-  const visibilityActionLabel = agent.visibility === "public" ? "Unpublish" : "Publish";
+  const visibilityActionLabel = isAgentPublished(agent) ? "Unpublish" : "Publish";
   const { can } = usePermissions();
 
   const handleMenuToggle = (e) => {
@@ -324,7 +337,9 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
             <LabelChip key={id} labelId={id} size="xs" />
           ))}
           {agent.labels?.length > 2 && (
-            <span className="text-[10px] text-muted-foreground">+{agent.labels.length - 2}</span>
+            <Badge variant="secondary" className="h-5 text-xs">
+              +{agent.labels.length - 2}
+            </Badge>
           )}
         </div>
       </td>
@@ -715,19 +730,27 @@ export default function AgentsListPage({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { auth } = useAuth();
   const { can } = usePermissions();
+  const orgName = ROLE_SCOPE[auth.role]?.sublabel ?? "your organization";
   const [searchQuery, setSearchQuery]   = useState("");
   const [openMenu, setOpenMenu]         = useState(null);
   const [viewMode, setViewMode]         = useState("grid");
   const [sort, setSort]                 = useState({ key: "name", dir: "asc" });
   /** `null` = all agents; otherwise single segment filter (Flows-style mutual exclusion). */
   const [segmentFilter, setSegmentFilter] = useState(null);
-  /** Active label filters — array of label ids; agents must have ALL (OR logic: any match shows). */
+  /** Active label filters — OR (any) or AND (all) when multiple selected. */
   const [labelFilters, setLabelFilters] = useState([]);
-  const { labels: allLabels } = useLabelsStore();
+  const [labelFilterMode, setLabelFilterMode] = useState("any");
+  const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
+  const { labels: allLabels, getLabel } = useLabelsStore();
   const [internalAgents, setInternalAgents] = useState(INITIAL_AGENTS);
   const agents = agentsProp ?? internalAgents;
   const setAgents = onAgentsChange ?? setInternalAgents;
+
+  useEffect(() => {
+    setLabelFilters(prev => prev.filter(id => allLabels.some(l => l.id === id)));
+  }, [allLabels]);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [isConversationExpanded, setIsConversationExpanded] = useState(false);
   const kudosWorkflow = useKudosWorkflow();
@@ -740,6 +763,7 @@ export default function AgentsListPage({
   const [agentPendingDelete, setAgentPendingDelete] = useState(null);
   const [agentPendingFork, setAgentPendingFork] = useState(null);
   const [agentPendingPublish, setAgentPendingPublish] = useState(null);
+  const [publishScopeChoice, setPublishScopeChoice] = useState(PUBLISH_SCOPES.ORG);
   const [agentPendingUnpublish, setAgentPendingUnpublish] = useState(null);
   const [publishBusy, setPublishBusy] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
@@ -764,12 +788,21 @@ export default function AgentsListPage({
     );
   };
 
-  const handleSetVisibility = (agentId, visibility) => {
+  useEffect(() => {
+    if (!agentPendingPublish) return;
+    const currentScope = getAgentPublishScope(agentPendingPublish);
+    setPublishScopeChoice(
+      currentScope === PUBLISH_SCOPES.MARKETPLACE ? PUBLISH_SCOPES.MARKETPLACE : PUBLISH_SCOPES.ORG,
+    );
+  }, [agentPendingPublish]);
+
+  const handleSetPublishScope = (agentId, scope) => {
+    const patch = agentPublishScopePatch(scope);
     setAgents((prevAgents) =>
-      prevAgents.map((agent) => (agent.id === agentId ? { ...agent, visibility } : agent))
+      prevAgents.map((agent) => (agent.id === agentId ? { ...agent, ...patch } : agent))
     );
     setSelectedAgent((prevSelected) =>
-      prevSelected?.id === agentId ? { ...prevSelected, visibility } : prevSelected
+      prevSelected?.id === agentId ? { ...prevSelected, ...patch } : prevSelected
     );
   };
 
@@ -798,6 +831,7 @@ export default function AgentsListPage({
       name,
       description: desc,
       visibility: "private",
+      publishScope: "private",
       date: formatCatalogDate(),
       status: "idle",
       lastRun: "Never",
@@ -809,7 +843,7 @@ export default function AgentsListPage({
   };
 
   const handleRequestVisibilityChange = (agent) => {
-    if (agent.visibility === "public") {
+    if (isAgentPublished(agent)) {
       setAgentPendingUnpublish(agent);
       return;
     }
@@ -831,23 +865,18 @@ export default function AgentsListPage({
     setIsConversationExpanded(false);
   };
 
-  const matchesSearch = (a) => a.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesSearch = (a) => agentMatchesSearch(a, searchQuery, getLabel);
 
   const matchesSegmentFilter = (a) => {
     if (!segmentFilter) return true;
     if (segmentFilter === "active") return a.status === "active";
     if (segmentFilter === "disabled") return a.status === "disabled";
-    if (segmentFilter === "public") return a.visibility === "public";
-    if (segmentFilter === "private") return a.visibility === "private";
+    if (segmentFilter === "public") return isAgentPublished(a);
+    if (segmentFilter === "private") return !isAgentPublished(a);
     return true;
   };
 
-  /** OR logic: agent matches if it has ANY of the selected label filters. */
-  const matchesLabelFilter = (a) => {
-    if (labelFilters.length === 0) return true;
-    const agentLabels = a.labels ?? [];
-    return labelFilters.some(id => agentLabels.includes(id));
-  };
+  const matchesLabelFilter = (a) => agentMatchesLabelFilter(a, labelFilters, labelFilterMode);
 
   const toggleLabelFilter = (id) => {
     setLabelFilters(prev => prev.includes(id) ? prev.filter(l => l !== id) : [...prev, id]);
@@ -856,8 +885,8 @@ export default function AgentsListPage({
   const total = agents.length;
   const activeN = agents.filter((a) => a.status === "active").length;
   const disabledN = agents.filter((a) => a.status === "disabled").length;
-  const publicN = agents.filter((a) => a.visibility === "public").length;
-  const privateN = agents.filter((a) => a.visibility === "private").length;
+  const publicN = agents.filter((a) => isAgentPublished(a)).length;
+  const privateN = agents.filter((a) => !isAgentPublished(a)).length;
 
   const statChipClass = (key) =>
     cn(
@@ -890,6 +919,13 @@ export default function AgentsListPage({
 
   const filteredEmpty = agents.length > 0 && filtered.length === 0;
   const hasAnyFilter = !!searchQuery || !!segmentFilter || labelFilters.length > 0;
+
+  function clearAllFilters() {
+    setSearchQuery("");
+    setSegmentFilter(null);
+    setLabelFilters([]);
+    setLabelFilterMode("any");
+  }
 
   return (
     <>
@@ -956,7 +992,7 @@ export default function AgentsListPage({
                   layoutId="agents-search"
                 >
                   <ExpandableSearch.Action />
-                  <ExpandableSearch.Input placeholder="Search agents…" className="w-[240px]" />
+                  <ExpandableSearch.Input placeholder="Search name, description, labels…" className="w-[240px]" />
                 </ExpandableSearch.Provider>
 
                 <div className={cn("flex items-center rounded-lg border border-border bg-card p-0.5", TOOLBAR_CONTROL_CLASS)}>
@@ -990,6 +1026,16 @@ export default function AgentsListPage({
                     Create Agent
                   </Button>
                 )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                  onClick={() => setManageLabelsOpen(true)}
+                >
+                  <Tag className="size-4" />
+                  Manage labels
+                </Button>
               </PageHeader>
 
               {/* Segment filters — matches FlowsPage stat chip pattern */}
@@ -1069,70 +1115,90 @@ export default function AgentsListPage({
 
               {/* Label filter bar */}
               {allLabels.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Filter agents by label">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-                    <Tag size={12} aria-hidden />
-                    <span>Labels:</span>
-                  </div>
-                  {allLabels.map(label => {
-                    const { hex, light, border } = getLabelColor(label.color)
-                    const active = labelFilters.includes(label.id)
-                    const count = agents.filter(a => (a.labels ?? []).includes(label.id)).length
-                    if (count === 0) return null
-                    return (
-                      <button
-                        key={label.id}
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Filter agents by label">
+                    <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      <Tag aria-hidden />
+                      <span>Labels:</span>
+                    </div>
+                    {allLabels.map(label => {
+                      const count = agents.filter(a => (a.labels ?? []).includes(label.id)).length
+                      return (
+                        <LabelFilterButton
+                          key={label.id}
+                          label={label}
+                          active={labelFilters.includes(label.id)}
+                          count={count}
+                          unused={count === 0}
+                          onClick={() => toggleLabelFilter(label.id)}
+                        />
+                      )
+                    })}
+                    {labelFilters.length > 0 && (
+                      <Button
                         type="button"
-                        onClick={() => toggleLabelFilter(label.id)}
-                        aria-pressed={active}
-                        className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-all hover:opacity-90"
-                        style={active
-                          ? { color: "#fff", backgroundColor: hex, borderColor: hex }
-                          : { color: hex, backgroundColor: light, borderColor: border }}
+                        variant="link"
+                        size="sm"
+                        onClick={() => setLabelFilters([])}
+                        className="h-auto px-0 text-xs"
                       >
-                        {label.name}
-                        <span
-                          className="inline-flex items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                          style={active
-                            ? { backgroundColor: "rgba(255,255,255,0.25)", color: "#fff" }
-                            : { backgroundColor: hex + "22", color: hex }}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    )
-                  })}
+                        Clear labels
+                      </Button>
+                    )}
+                  </div>
                   {labelFilters.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setLabelFilters([])}
-                      className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium"
+                    <div
+                      className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+                      role="group"
+                      aria-label="Label filter match mode"
                     >
-                      Clear labels
-                    </button>
+                      <span>Match:</span>
+                      <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant={labelFilterMode === "any" ? "secondary" : "ghost"}
+                          aria-pressed={labelFilterMode === "any"}
+                          onClick={() => setLabelFilterMode("any")}
+                        >
+                          Any label
+                        </Button>
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant={labelFilterMode === "all" ? "secondary" : "ghost"}
+                          aria-pressed={labelFilterMode === "all"}
+                          onClick={() => setLabelFilterMode("all")}
+                          disabled={labelFilters.length < 2}
+                        >
+                          All labels
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
 
               {filteredEmpty && (
-                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                  <p className="text-sm font-medium text-foreground">No agents match your filters</p>
-                  <p className="text-xs text-muted-foreground">
-                    Try a different search term or clear the segment filter.
-                  </p>
+                <Empty className="border-none py-12">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Tag />
+                    </EmptyMedia>
+                    <EmptyTitle>No agents match your filters</EmptyTitle>
+                    <EmptyDescription>
+                      Try a different search term, segment, or label filter.
+                    </EmptyDescription>
+                  </EmptyHeader>
                   <Button
                     type="button"
                     variant="link"
                     className="h-auto p-0 text-sm"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSegmentFilter(null);
-                      setLabelFilters([]);
-                    }}
+                    onClick={clearAllFilters}
                   >
-                    Clear search and filter
+                    Clear search and filters
                   </Button>
-                </div>
+                </Empty>
               )}
 
               {/* Agent grid / list */}
@@ -1300,16 +1366,13 @@ export default function AgentsListPage({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mx-6 mb-4 mt-4 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
-              <div className="flex gap-3 rounded-md bg-primary/8 border border-primary/20 px-3 py-2.5 -mx-1">
-                <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="font-semibold text-foreground">Visible to all users</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                    Anyone logged in can find and run this agent from the Agents page.
-                  </p>
-                </div>
-              </div>
+            <div className="mx-6 mb-4 mt-4 space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm">
+              <PublishScopePicker
+                value={publishScopeChoice}
+                onChange={setPublishScopeChoice}
+                orgName={orgName}
+                canPublishMarketplace={can("marketplace.publish")}
+              />
               {agentPendingPublish ? (
                 <PublishAgentMarketplaceDetails agent={agentPendingPublish} />
               ) : null}
@@ -1334,9 +1397,16 @@ export default function AgentsListPage({
                 if (!agentPendingPublish) return;
                 setPublishBusy(true);
                 try {
-                  handleSetVisibility(agentPendingPublish.id, "public");
+                  const scope = can("marketplace.publish")
+                    ? publishScopeChoice
+                    : PUBLISH_SCOPES.ORG;
+                  handleSetPublishScope(agentPendingPublish.id, scope);
+                  const agentName = agentPendingPublish.name;
                   setAgentPendingPublish(null);
-                  onNavigate?.("marketplace");
+                  showToast(publishSuccessMessage(agentName, scope, orgName));
+                  if (scope === PUBLISH_SCOPES.MARKETPLACE) {
+                    onNavigate?.("marketplace");
+                  }
                 } finally {
                   setPublishBusy(false);
                 }
@@ -1365,7 +1435,9 @@ export default function AgentsListPage({
               Unpublish "{agentPendingUnpublish?.name || "this agent"}"?
             </DialogTitle>
             <DialogDescription className="text-balance pt-2 text-center text-sm leading-relaxed text-muted-foreground">
-              {agentPendingUnpublish?.name || "This agent"} will be hidden from other users and no longer listed as public.
+              {agentPendingUnpublish
+                ? unpublishScopeMessage(agentPendingUnpublish, orgName)
+                : "This agent will be hidden from other users and no longer listed as public."}
             </DialogDescription>
           </div>
           <div className="flex shrink-0 gap-2 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
@@ -1387,7 +1459,7 @@ export default function AgentsListPage({
                 if (!agentPendingUnpublish) return;
                 setPublishBusy(true);
                 try {
-                  handleSetVisibility(agentPendingUnpublish.id, "private");
+                  handleSetPublishScope(agentPendingUnpublish.id, PUBLISH_SCOPES.PRIVATE);
                   showToast(`"${agentPendingUnpublish.name}" unpublished — status set to Private.`);
                   setAgentPendingUnpublish(null);
                 } finally {
@@ -1400,6 +1472,12 @@ export default function AgentsListPage({
           </div>
         </DialogContent>
       </Dialog>
+      <LabelManageDialog
+        open={manageLabelsOpen}
+        onOpenChange={setManageLabelsOpen}
+        agents={agents}
+        onAgentsChange={setAgents}
+      />
       {toasts.map((t) => (
         <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
       ))}

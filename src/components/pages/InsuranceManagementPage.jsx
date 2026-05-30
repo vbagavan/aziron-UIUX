@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/common/MetricCard";
@@ -1705,44 +1706,40 @@ export default function InsuranceManagementPage({ onNavigate }) {
   };
 
   return (
-    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
+    <main className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
       <Sidebar activePage="insurance-management" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate} />
 
-        <div className="flex flex-1 min-h-0 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full min-h-0 max-w-[1280px] flex-col px-6 pt-5 pb-8">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+          <div className="flex flex-col gap-4 px-6 py-4 pb-8">
 
-            {/* Page header */}
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div>
-                <h1 className="type-page-title">Insurance Management</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Open Enrollment 2026 · Track enrollment and premium across batches</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  aria-busy={isRefreshing}
-                >
-                  <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-                  {isRefreshing ? "Refreshing…" : "Refresh"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => onNavigate?.("insurance-config")}
-                >
-                  <Settings size={13} />
-                  Configuration
-                </Button>
-              </div>
-            </div>
+            <PageHeader
+              title="Insurance Management"
+              description="Open Enrollment 2026 · Track enrollment and premium across batches"
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-busy={isRefreshing}
+              >
+                <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+                {isRefreshing ? "Refreshing…" : "Refresh"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => onNavigate?.("insurance-config")}
+              >
+                <Settings size={13} />
+                Configuration
+              </Button>
+            </PageHeader>
 
             <EnrollmentFilterBar
               filterMode={filterMode}
@@ -1756,7 +1753,7 @@ export default function InsuranceManagementPage({ onNavigate }) {
               employeeCount={filteredEmployeeCount}
             />
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-0">
                 {TABS.map(tab => (
                   <TabsTrigger key={tab.id} value={tab.id}>

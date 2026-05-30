@@ -963,7 +963,7 @@ function ConfirmationView({ firstName, onProceed }) {
       <div className="pointer-events-none absolute -top-40 right-0 size-96 rounded-full bg-primary/20 blur-3xl" aria-hidden />
       <div className="pointer-events-none absolute top-[22rem] -left-32 size-96 rounded-full bg-chart-chart-4/20 blur-3xl" aria-hidden />
 
-      <div className="relative z-10 flex w-full flex-1 flex-col gap-4 px-4 py-4 lg:flex-row lg:items-stretch lg:gap-5 lg:px-6 lg:py-4">
+      <div className="relative z-10 flex w-full flex-1 flex-col gap-4 px-6 py-4 lg:flex-row lg:items-stretch lg:gap-5">
 
         {/* ── LEFT PANEL (fixed conversation / policy) ───────────────── */}
         <div
@@ -3003,7 +3003,7 @@ function EnrollView({ auth, onSuccess }) {
       : "";
 
   return (
-    <div className="mx-auto max-w-[1320px] space-y-4 px-3 pb-24 pt-4 sm:px-4 sm:pb-20 sm:pt-6 md:px-6">
+    <div className="w-full space-y-4 px-6 py-4 pb-24 sm:pb-20">
 
       {/* Header */}
       <header>
@@ -3417,7 +3417,7 @@ function SubmittedDashboardView({ firstName, submission, onUpdateSubmission, onP
 
   return (
     <div className="relative flex w-full flex-1 flex-col min-h-0 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--muted)_70%,var(--background))_0%,var(--background)_32%)]">
-      <div className="mx-auto w-full max-w-5xl px-4 py-5 pb-28 sm:px-6 sm:py-6">
+      <div className="w-full px-6 py-5 pb-28 sm:py-6">
           <EmployeeInsuranceDashboard
             firstName={firstName}
             isApproved={isApproved}
@@ -3509,15 +3509,15 @@ export function InsuranceContent({ onNavigate: _onNavigate }) {
 
 export default function EmployeeInsurancePage({ onNavigate }) {
   return (
-    <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
-      <Sidebar activePage="my-profile" onNavigate={onNavigate} />
+    <main className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <Sidebar activePage="employee-insurance" onNavigate={onNavigate} />
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
           <div className="flex items-center gap-2 ml-1">
-            <div className="w-px h-6 bg-border" />
+            <div className="w-px h-6 bg-border" aria-hidden />
             <span className="text-sm text-muted-foreground">My Profile</span>
-            <ChevronRight size={14} className="text-muted-foreground" />
+            <ChevronRight size={14} className="text-muted-foreground" aria-hidden />
             <span className="text-sm text-foreground font-medium">Insurance</span>
           </div>
         </AppHeader>

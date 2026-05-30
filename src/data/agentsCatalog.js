@@ -33,10 +33,15 @@ export const INITIAL_AGENTS = [
  */
 function migrateStoredAgent(stored) {
   const seed = INITIAL_AGENTS.find(s => s.id === stored.id);
+  const publishScope =
+    stored.publishScope ??
+    (stored.visibility === "public" ? "org" : "private");
   return {
     labels: seed?.labels ?? [],   // backfill labels from seed if not yet stored
     ...stored,                    // stored values always win
     labels: stored.labels ?? seed?.labels ?? [],  // explicit override to handle undefined
+    publishScope,
+    visibility: publishScope === "private" ? "private" : "public",
   };
 }
 

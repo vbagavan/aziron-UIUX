@@ -7,7 +7,8 @@ import {
   Loader2, MoreVertical, Pencil, Trash2, Link2, ToggleLeft,
   FolderOpen, Tag,
 } from "lucide-react";
-import LabelSelector from "@/components/agents/LabelSelector.jsx";
+import LabelSelector, { LabelChip } from "@/components/agents/LabelSelector.jsx";
+import LabelManageDialog from "@/components/agents/LabelManageDialog.jsx";
 import { AnimatePresence, motion } from "motion/react";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -710,7 +711,7 @@ function ToggleCard({ icon: Icon, iconColor, title, description, checked, onChan
 
 // ─── Step 1 – Agent Details ───────────────────────────────────────────────────
 
-function Step1({ form, setForm, errors }) {
+function Step1({ form, setForm, errors, onManageLabels }) {
   const [providerOpen, setProviderOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [tokenOpen, setTokenOpen] = useState(false);
@@ -754,15 +755,16 @@ function Step1({ form, setForm, errors }) {
             className="resize-none"
           />
         </Field>
-        <Field label="Labels" hint="optional">
+        <Field
+          label="Labels"
+          hint="Organise agents with shared workspace labels. Create new labels here or manage existing ones from the dropdown."
+        >
           <LabelSelector
             value={form.labels ?? []}
             onChange={labels => setForm(f => ({ ...f, labels }))}
             placeholder="Assign labels to categorise this agent…"
+            onManageLabels={onManageLabels}
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Labels help you filter and organise agents. Create new labels from the dropdown.
-          </p>
         </Field>
       </SectionCard>
 
@@ -1536,6 +1538,17 @@ function StepSummary({ form }) {
           <SummaryRow label="Description">
             <span className="whitespace-pre-wrap">{form.description?.trim() || "—"}</span>
           </SummaryRow>
+          <SummaryRow label="Labels">
+            {(form.labels ?? []).length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {form.labels.map(id => (
+                  <LabelChip key={id} labelId={id} size="xs" />
+                ))}
+              </div>
+            ) : (
+              "—"
+            )}
+          </SummaryRow>
         </dl>
       </SectionCard>
 
@@ -1891,7 +1904,7 @@ const NEXT_LABELS_EDIT = [
   "Save changes",
 ];
 
-export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent, onAddAgent }) {
+export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent, onAddAgent, onAgentsChange }) {
   const navigate = useNavigate();
   const { agentId } = useParams();
   const isEdit = agentId !== undefined && agentId !== "";
@@ -1906,6 +1919,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent,
   );
 
   const [step, setStep] = useState(1);
+  const [manageLabelsOpen, setManageLabelsOpen] = useState(false);
   const [form, setForm] = useState({
     name: "", description: "", systemPrompt: "",
     provider: "anthropic", model: "claude-sonnet-4-6", apiTokenId: "",
@@ -1986,7 +2000,7 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent,
               <AnimatePresence mode="wait">
                 {step === 1 && (
                   <motion.div key="s1" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.18 }}>
-                    <Step1 form={form} setForm={setForm} errors={errors} />
+                    <Step1 form={form} setForm={setForm} errors={errors} onManageLabels={() => setManageLabelsOpen(true)} />
                   </motion.div>
                 )}
                 {step === 2 && (
@@ -2039,6 +2053,14 @@ export default function CreateAgentPage({ onNavigate, agents = [], onPatchAgent,
           hideBack={step === 5}
         />
       </div>
+      {onAgentsChange && (
+        <LabelManageDialog
+          open={manageLabelsOpen}
+          onOpenChange={setManageLabelsOpen}
+          agents={agents}
+          onAgentsChange={onAgentsChange}
+        />
+      )}
     </div>
   );
 }

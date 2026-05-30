@@ -106,7 +106,7 @@ function ConnectionRow({ conn }) {
           <ProviderAvatar providerId={conn.providerId} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-foreground">{provider?.name ?? conn.providerId}</p>
-            <p className="text-[10px] capitalize text-muted-foreground">{provider?.category}</p>
+            <p className="type-caption capitalize">{provider?.category}</p>
           </div>
         </div>
       </TableCell>
@@ -114,7 +114,7 @@ function ConnectionRow({ conn }) {
       <TableCell className="min-w-[8rem]">
         <p className="truncate text-xs font-medium text-foreground">{conn.name}</p>
         {conn.isPrivate && (
-          <p className="mt-0.5 text-[10px] text-muted-foreground">Private</p>
+          <p className="type-caption mt-0.5">Private</p>
         )}
       </TableCell>
 
@@ -155,7 +155,7 @@ function ConnectionMobileCard({ conn }) {
     <div
       role="button"
       tabIndex={0}
-      className="flex cursor-pointer flex-col gap-3 rounded-xl border border-border/40 bg-card p-4 transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex cursor-pointer flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       onClick={() => openDetail(conn.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -170,7 +170,7 @@ function ConnectionMobileCard({ conn }) {
           <p className="truncate text-sm font-semibold text-foreground">{conn.name}</p>
           <p className="truncate text-xs text-muted-foreground">{provider?.name ?? conn.providerId}</p>
           {conn.isPrivate && (
-            <p className="mt-0.5 text-[10px] text-muted-foreground">Private</p>
+            <p className="type-caption mt-0.5">Private</p>
           )}
         </div>
         <div onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
@@ -190,7 +190,7 @@ function ConnectionMobileCard({ conn }) {
         )}
       </div>
 
-      <p className="text-[11px] tabular-nums text-muted-foreground">Added {conn.addedAt}</p>
+      <p className="type-caption tabular-nums">Added {conn.addedAt}</p>
     </div>
   )
 }
@@ -199,7 +199,7 @@ function MobileSkeletonCards() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-3 rounded-xl border border-border/40 p-4">
+        <div key={i} className="flex flex-col gap-3 rounded-xl border border-border p-4">
           <div className="flex gap-3">
             <Skeleton className="size-8 rounded-md" />
             <div className="flex flex-1 flex-col gap-2">
@@ -287,7 +287,7 @@ function StatusFilterSelect({ value, onChange, className }) {
         size="sm"
         className={cn(
           'w-full min-w-[7.5rem] sm:w-[7.5rem] [&_svg:not([class*="size-"])]:size-3.5',
-          active && 'border-primary/40 bg-primary/5 text-primary',
+          active && 'border-primary bg-accent text-accent-foreground',
           className,
         )}
       >
@@ -363,7 +363,7 @@ export default function ConnectionsPanel() {
                 >
                   {label}
                   {count > 0 && (
-                    <Badge variant={typeTab === key ? 'default' : 'secondary'} className="ml-1.5 h-[18px] min-w-[18px] px-1 text-[10px]">
+                    <Badge variant={typeTab === key ? 'default' : 'secondary'} className="ml-1.5 h-[18px] min-w-[18px] px-1 text-xs">
                       {count}
                     </Badge>
                   )}
@@ -414,12 +414,12 @@ export default function ConnectionsPanel() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden rounded-xl border border-border/40 md:block">
+      <div className="hidden rounded-xl border border-border md:block">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
+            <TableRow className="bg-muted hover:bg-muted">
               {['Provider', 'Connection Name', 'Type', 'Added', 'Status', ''].map(h => (
-                <TableHead key={h || 'actions'} className="text-[10px] uppercase tracking-wider">
+                <TableHead key={h || 'actions'} className="type-section-eyebrow">
                   {h}
                 </TableHead>
               ))}
