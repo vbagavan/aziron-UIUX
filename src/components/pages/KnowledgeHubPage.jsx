@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  Plus,
-  MoreVertical,
-  Trash2,
-  Search,
+  Bot,
   ChevronRight,
+  Database,
+  FileText,
+  Grid2x2,
+  LayoutList,
+  MoreVertical,
+  Plus,
+  Search,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -47,6 +52,14 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAgents } from "@/context/AgentsContext";
 import { agentsUsingHub, countAgentsUsingHub } from "@/lib/agentKnowledge";
 import { PageHeader } from "@/components/common/PageHeader";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
 
@@ -127,6 +140,61 @@ const SORT_OPTIONS = [
   { id: "newest", label: "Newest first" },
   { id: "files", label: "Most files" },
 ];
+
+const HUB_TAG_COLORS = [
+  "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+];
+
+function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {hubs.map((hub, i) => {
+        const accent = HUB_TAG_COLORS[i % HUB_TAG_COLORS.length];
+        return (
+          <button
+            key={hub.id}
+            type="button"
+            onClick={() => onOpenHub(hub.id)}
+            className="group relative flex flex-col rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+          >
+            <div className={cn("mb-3 flex size-10 items-center justify-center rounded-lg", accent)}>
+              <Database className="size-5" aria-hidden />
+            </div>
+            <p className="truncate text-sm font-semibold text-foreground">{hub.name}</p>
+            {hub.description && (
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{hub.description}</p>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <FileText className="size-3" />
+                {hub.files ?? 0} files
+              </span>
+              <span className="flex items-center gap-1">
+                <Bot className="size-3" />
+                {hub.usedBy ?? 0} agents
+              </span>
+              <span>{hub.storageMB ?? 0} MB</span>
+            </div>
+            {canDelete && (
+              <button
+                type="button"
+                aria-label={`Delete ${hub.name}`}
+                onClick={(e) => { e.stopPropagation(); onDeleteRequest(hub); }}
+                className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function EmptyState({ onAdd }) {
   return (
@@ -306,6 +374,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [detailDraft, setDetailDraft] = useState({ name: null, detailsDirty: false });
+  const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
   const menuRef = useRef(null);
 
   const detailHub = hubId ? getHubById(hubId) : null;
@@ -370,12 +439,24 @@ export default function KnowledgeHubPage({ onNavigate }) {
     navigate(`/knowledge/${id}`);
   }
 
-  function handleFilesAdded(names) {
+  function handleFilesAdded(names, provider) {
     if (!names?.length) return;
+    const label =
+      provider === "google-drive"
+        ? "Google Drive"
+        : provider === "onedrive"
+          ? "OneDrive"
+          : provider === "upload"
+            ? "upload"
+            : "source";
     showToast(
       names.length === 1
-        ? `“${names[0]}” added from OneDrive.`
-        : `${names.length} files added from OneDrive.`,
+        ? label === "upload"
+          ? `"${names[0]}" uploaded.`
+          : `"${names[0]}" added from ${label}.`
+        : label === "upload"
+          ? `${names.length} files uploaded.`
+          : `${names.length} files added from ${label}.`,
     );
   }
 
@@ -535,9 +616,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
           )}
         </AppHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
-            {detailHub ? (
+        <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
+          {detailHub ? (
               <KnowledgeHubDetailView
                 hub={detailHub}
                 canEdit={canEdit}
@@ -564,7 +644,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
                   )
                 }
               />
-            ) : (
+          ) : (
+            <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
               <>
                 <PageHeader
                   title="Knowledge Hub"
@@ -615,6 +696,26 @@ export default function KnowledgeHubPage({ onNavigate }) {
                             ))}
                           </SelectContent>
                         </Select>
+                        <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+                          <button
+                            type="button"
+                            aria-label="Table view"
+                            onClick={() => setViewMode("table")}
+                            className={cn("flex size-7 items-center justify-center rounded-md transition-colors",
+                              viewMode === "table" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                          >
+                            <LayoutList className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Grid view"
+                            onClick={() => setViewMode("grid")}
+                            className={cn("flex size-7 items-center justify-center rounded-md transition-colors",
+                              viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
+                          >
+                            <Grid2x2 className="size-3.5" />
+                          </button>
+                        </div>
                       </>
                     )}
                     {canCreate && (
@@ -648,9 +749,29 @@ export default function KnowledgeHubPage({ onNavigate }) {
                 {isEmpty ? (
                   <EmptyState onAdd={canCreate ? () => setCreateOpen(true) : undefined} />
                 ) : filteredSorted.length === 0 ? (
-                  <p className="py-12 text-center text-sm text-muted-foreground">
-                    No Knowledge Hubs match your search.
-                  </p>
+                  <Empty className="border border-dashed py-12">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <Database aria-hidden />
+                      </EmptyMedia>
+                      <EmptyTitle>No Knowledge Hubs match your search</EmptyTitle>
+                      <EmptyDescription>
+                        Try a different term or clear your search to see all hubs.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setListSearch("")}>
+                        Clear search
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
+                ) : viewMode === "grid" ? (
+                  <HubCardGrid
+                    hubs={filteredSorted}
+                    onOpenHub={openHub}
+                    onDeleteRequest={requestDelete}
+                    canDelete={canDelete}
+                  />
                 ) : (
                   <>
                     {!isEmpty && canDelete && (
@@ -688,8 +809,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
                   </>
                 )}
               </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,4 +1,5 @@
-import { CONNECTOR_LOGOS } from "@/components/features/knowledge/CloudConnectorLogos";
+import { CONNECTOR_LOGOS } from "@/components/features/knowledge/connectorLogos";
+import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import {
   getMockOneDriveFilesForConnection,
   getOneDriveConnections,
@@ -39,5 +40,19 @@ export const CLOUD_PROVIDER_CONFIG = {
 };
 
 export function getCloudProviderConfig(provider) {
-  return CLOUD_PROVIDER_CONFIG[provider] ?? CLOUD_PROVIDER_CONFIG.onedrive;
+  if (CLOUD_PROVIDER_CONFIG[provider]) {
+    return CLOUD_PROVIDER_CONFIG[provider];
+  }
+  const hubProvider = getKnowledgeHubCloudProvider(provider);
+  return {
+    id: provider,
+    label: hubProvider?.label ?? provider,
+    logo: hubProvider?.logo,
+    connectorLogo: hubProvider?.logo,
+    defaultConnectionName: hubProvider?.label ?? "Cloud storage",
+    mockFiles: [],
+    mockConnections: [],
+    signInTitle: `Connect ${hubProvider?.label ?? "cloud storage"}`,
+    accountPickerTitle: `Connect ${hubProvider?.label ?? "cloud storage"}`,
+  };
 }

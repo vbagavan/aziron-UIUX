@@ -46,13 +46,17 @@ export const MOCK_GOOGLE_EXISTING_CONNECTIONS = [
 ];
 
 export const MOCK_GOOGLE_DRIVE_FILES = [
-  { id: "gd-f1", name: "ProductRoadmap.gslides", size: "2.1 MB", type: "file" },
-  { id: "gd-f2", name: "CustomerFAQ.docx", size: "340 KB", type: "file" },
-  { id: "gd-f3", name: "Shared with team", size: "—", type: "folder" },
-  { id: "gd-f4", name: "BrandAssets", size: "—", type: "folder" },
-  { id: "gd-f5", name: "PricingSheet.xlsx", size: "890 KB", type: "file" },
-  { id: "gd-f6", name: "Engineering", size: "—", type: "folder" },
-  { id: "gd-f7", name: "SecurityPolicy.pdf", size: "4.8 MB", type: "file" },
+  { id: "gd-f1", name: "ProductRoadmap.gslides", size: "2.1 MB", type: "file", parentId: null },
+  { id: "gd-f2", name: "CustomerFAQ.docx", size: "340 KB", type: "file", parentId: null },
+  { id: "gd-f3", name: "Shared with team", size: "—", type: "folder", parentId: null },
+  { id: "gd-f3a", name: "WeeklySyncNotes.docx", size: "88 KB", type: "file", parentId: "gd-f3" },
+  { id: "gd-f3b", name: "ActionItems.xlsx", size: "120 KB", type: "file", parentId: "gd-f3" },
+  { id: "gd-f4", name: "BrandAssets", size: "—", type: "folder", parentId: null },
+  { id: "gd-f5", name: "PricingSheet.xlsx", size: "890 KB", type: "file", parentId: "gd-f4" },
+  { id: "gd-f4a", name: "LogoPack.zip", size: "12 MB", type: "file", parentId: "gd-f4" },
+  { id: "gd-f6", name: "Engineering", size: "—", type: "folder", parentId: null },
+  { id: "gd-f7", name: "SecurityPolicy.pdf", size: "4.8 MB", type: "file", parentId: "gd-f6" },
+  { id: "gd-f6a", name: "API-Design.md", size: "156 KB", type: "file", parentId: "gd-f6" },
 ];
 
 export function formatGoogleConnectionLabel(connectionName, accountEmail) {

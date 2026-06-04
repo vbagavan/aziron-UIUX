@@ -14,6 +14,9 @@ import {
 } from "@/data/knowledgeHubs";
 import { countAgentsUsingHub } from "@/lib/agentKnowledge";
 import { downloadCloudFileBlob } from "@/lib/knowledgeHubCloudSync";
+import { createPendingHubFileMetadata } from "@/components/features/knowledge/hubFileMetadata";
+import { createPendingSourceGuide } from "@/components/features/knowledge/hubSourceGuide";
+import { enrichStoredHubFile, enrichStoredHubFiles } from "@/components/features/knowledge/hubFileEnrichment";
 import {
   deleteKnowledgeHubFile,
   getKnowledgeHubFile,
@@ -46,6 +49,25 @@ export function KnowledgeHubProvider({ children }) {
     [hubs, agents],
   );
 
+  const updateHub = useCallback((id, patch) => {
+    setHubs((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, ...patch, updated: "Just now" } : h)),
+    );
+  }, []);
+
+  const updateHubFile = useCallback((hubId, fileId, patch) => {
+    const numericHubId = Number(hubId);
+    setHubs((prev) =>
+      prev.map((h) => {
+        if (Number(h.id) !== numericHubId) return h;
+        const userFiles = (h.userFiles ?? []).map((f) =>
+          f.id === fileId ? { ...f, ...patch, updated: "Just now" } : f,
+        );
+        return { ...h, userFiles, updated: "Just now" };
+      }),
+    );
+  }, []);
+
   const addHub = useCallback(async (payload) => {
     const hub = createHubPayload(payload);
     const userFiles = [...(hub.userFiles ?? [])];
@@ -68,6 +90,7 @@ export function KnowledgeHubProvider({ children }) {
             fileStatus: "success",
             indexStatus: "stored",
           };
+          void enrichStoredHubFile(hub.id, userFiles[i], updateHubFile);
         }
       } catch {
         /* keep draft reference; user can retry on hub page */
@@ -77,25 +100,7 @@ export function KnowledgeHubProvider({ children }) {
     const { pendingFileName: _drop, ...stored } = { ...hub, userFiles };
     setHubs((prev) => [...prev, stored]);
     return attachUsedBy(stored, agents);
-  }, [agents]);
-
-  const updateHub = useCallback((id, patch) => {
-    setHubs((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, ...patch, updated: "Just now" } : h)),
-    );
-  }, []);
-
-  const updateHubFile = useCallback((hubId, fileId, patch) => {
-    setHubs((prev) =>
-      prev.map((h) => {
-        if (h.id !== hubId) return h;
-        const userFiles = (h.userFiles ?? []).map((f) =>
-          f.id === fileId ? { ...f, ...patch, updated: "Just now" } : f,
-        );
-        return { ...h, userFiles, updated: "Just now" };
-      }),
-    );
-  }, []);
+  }, [agents, updateHubFile]);
 
   const downloadCloudFileToHub = useCallback(
     async (hubId, fileId) => {
@@ -127,6 +132,11 @@ export function KnowledgeHubProvider({ children }) {
           syncedAt: new Date().toISOString(),
           syncError: null,
         });
+        void enrichStoredHubFile(
+          hubId,
+          { ...file, localBlobId: storageId },
+          updateHubFile,
+        );
         return { ok: true, fileName: file.name };
       } catch (err) {
         const message = err?.message ?? "Download failed";
@@ -231,11 +241,21 @@ export function KnowledgeHubProvider({ children }) {
       }),
     );
 
+    const recordsWithMeta = records.map((record) =>
+      record.localBlobId
+        ? {
+            ...record,
+            metadata: createPendingHubFileMetadata(record.name),
+            sourceGuide: createPendingSourceGuide(),
+          }
+        : record,
+    );
+
     const stats = filesToHubStats(valid);
     setHubs((prev) =>
       prev.map((h) => {
         if (Number(h.id) !== hubId) return h;
-        const userFiles = [...(h.userFiles ?? []), ...records];
+        const userFiles = [...(h.userFiles ?? []), ...recordsWithMeta];
         const fileStats = hubRecordsToStats(userFiles);
         return {
           ...h,
@@ -248,8 +268,13 @@ export function KnowledgeHubProvider({ children }) {
         };
       }),
     );
-    return { added: valid.map((f) => f.name), rejected };
-  }, []);
+
+    queueMicrotask(() => {
+      enrichStoredHubFiles(hubId, recordsWithMeta, updateHubFile);
+    });
+
+    return { added: valid.map((f) => f.name), rejected, records: recordsWithMeta };
+  }, [updateHubFile]);
 
   const deleteHubFile = useCallback((hubId, fileId) => {
     setHubs((prev) =>

@@ -144,7 +144,7 @@ export function fileToHubRecord(file, hubId) {
     type: EXT_TO_TYPE[ext] ?? ext.toUpperCase(),
     sizeKb: Math.max(1, Math.round(file.size / 1024)),
     updated: "Just now",
-    uploadedAt: formatIsoDateToday(),
+    uploadedAt: new Date().toISOString(),
     source: "user",
     indexStatus: "stored",
     fileStatus: "success",
@@ -240,6 +240,8 @@ export function hubRecordsToStats(records) {
 export const CLOUD_PROVIDER_LABELS = {
   onedrive: "OneDrive",
   "google-drive": "Google Drive",
+  dropbox: "Dropbox",
+  box: "Box",
 };
 
 export function getHubFileSourceLabel(row) {

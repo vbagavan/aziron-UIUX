@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { MOCK_CONNECTIONS } from './constants.js'
+import { CATALOG_PROVIDERS, MOCK_CONNECTIONS } from './constants.js'
 
 // ─── Initial wizard state ─────────────────────────────────────────────────────
 // Credentials are NEVER stored here — they POST directly to the API layer.
@@ -60,6 +60,18 @@ export const useConnectionsStore = create((set, get) => ({
   // ── Wizard actions ─────────────────────────────────────────────────────────
   openWizard: () =>
     set({ wizard: { ...INITIAL_WIZARD, open: true } }),
+
+  openWizardWithProvider: (providerId) => {
+    const selectedProvider = CATALOG_PROVIDERS.find((p) => p.id === providerId) ?? null
+    set({
+      wizard: {
+        ...INITIAL_WIZARD,
+        open: true,
+        step: selectedProvider ? 2 : 1,
+        selectedProvider,
+      },
+    })
+  },
 
   closeWizard: () =>
     set({ wizard: { ...INITIAL_WIZARD, open: false } }),

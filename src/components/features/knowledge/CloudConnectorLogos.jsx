@@ -1,5 +1,7 @@
+import { createElement } from "react";
 import { Cloud } from "lucide-react";
 
+import { KNOWLEDGE_HUB_CLOUD_PROVIDERS } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,14 +10,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CONNECTOR_LOGOS } from "@/components/features/knowledge/connectorLogos";
 import { cn } from "@/lib/utils";
 
-export const CONNECTOR_LOGOS = {
-  googleDrive: "/logos/connectors/google-drive.svg",
-  onedrive: "/logos/connectors/onedrive.svg",
-  dropbox: "/logos/connectors/dropbox.svg",
-  box: "/logos/connectors/box.svg",
-};
+export { CONNECTOR_LOGOS };
 
 function BrandLogo({ src, className }) {
   return (
@@ -60,15 +58,25 @@ function AtlassianLogo({ className }) {
   );
 }
 
+const LOGO_BY_PROVIDER = {
+  "google-drive": GoogleDriveLogo,
+  onedrive: OneDriveLogo,
+  dropbox: DropboxLogo,
+  box: BoxLogo,
+};
+
 const CONNECTORS = [
-  { id: "google-drive", label: "Google Drive", Logo: GoogleDriveLogo, enabled: true },
-  { id: "onedrive", label: "OneDrive", Logo: OneDriveLogo, enabled: true, recommended: true },
-  { id: "dropbox", label: "Dropbox", Logo: DropboxLogo, enabled: false },
-  { id: "box", label: "Box", Logo: BoxLogo, enabled: false },
-  { id: "atlassian", label: "Atlassian", Logo: AtlassianLogo, enabled: false },
+  ...KNOWLEDGE_HUB_CLOUD_PROVIDERS.map((p) => ({
+    id: p.id,
+    label: p.label,
+    icon: LOGO_BY_PROVIDER[p.id],
+    enabled: p.enabled,
+    recommended: p.recommended,
+  })),
+  { id: "atlassian", label: "Atlassian", icon: AtlassianLogo, enabled: false },
 ];
 
-function ConnectorTile({ id, label, Logo, enabled, recommended, onSelect }) {
+function ConnectorTile({ id, label, icon, enabled, recommended, onSelect }) {
   if (enabled && onSelect) {
     return (
       <li className="flex flex-col items-center gap-1.5">
@@ -79,7 +87,7 @@ function ConnectorTile({ id, label, Logo, enabled, recommended, onSelect }) {
           onClick={() => onSelect(id)}
           aria-label={`Connect ${label}${recommended ? " (recommended)" : ""}`}
         >
-          <Logo />
+          {icon ? createElement(icon) : null}
         </Button>
         {recommended && (
           <Badge variant="secondary" className="text-[10px]">
@@ -99,11 +107,11 @@ function ConnectorTile({ id, label, Logo, enabled, recommended, onSelect }) {
               className="flex size-[72px] cursor-not-allowed items-center justify-center rounded-xl border border-border bg-background p-3 opacity-60 shadow-sm"
               tabIndex={0}
               aria-label={`${label} — coming soon`}
-            />
+            >
+              {icon ? createElement(icon) : null}
+            </div>
           }
-        >
-          <Logo />
-        </TooltipTrigger>
+        />
         <TooltipContent>{label} — coming soon</TooltipContent>
       </Tooltip>
     </li>
@@ -129,8 +137,8 @@ export function CloudConnectorLogoRow({ className, onConnectorSelect }) {
               Cloud connectors
             </h3>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Import files from Google Drive or Microsoft OneDrive. OneDrive is recommended for
-              most teams.
+              Import files from your cloud drives. OneDrive is recommended for most teams; more
+              connectors are rolling out.
             </p>
           </div>
         </div>
@@ -139,12 +147,12 @@ export function CloudConnectorLogoRow({ className, onConnectorSelect }) {
           className="flex flex-wrap items-start justify-center gap-3 px-4 py-4"
           aria-label="Cloud storage connectors"
         >
-          {CONNECTORS.map(({ id, label, Logo, enabled, recommended }) => (
+          {CONNECTORS.map(({ id, label, icon, enabled, recommended }) => (
             <ConnectorTile
               key={id}
               id={id}
               label={label}
-              Logo={Logo}
+              icon={icon}
               enabled={enabled}
               recommended={recommended}
               onSelect={onConnectorSelect}
@@ -155,8 +163,7 @@ export function CloudConnectorLogoRow({ className, onConnectorSelect }) {
         <p className="border-t border-border bg-muted/25 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
           {onConnectorSelect ? (
             <>
-              <span className="font-medium text-foreground">Google Drive</span> or{" "}
-              <span className="font-medium text-foreground">OneDrive</span> (recommended), or{" "}
+              Pick an enabled cloud drive above, or{" "}
               <span className="font-medium text-foreground">upload from computer</span> on the left.
             </>
           ) : (

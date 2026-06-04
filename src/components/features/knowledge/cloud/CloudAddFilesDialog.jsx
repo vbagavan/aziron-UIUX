@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,18 +16,11 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CAPTION } from "@/lib/typography";
 
 import { CloudConnectionSwitcher } from "./CloudConnectionSwitcher";
+import { CloudFilePickerTable } from "./CloudFilePickerTable";
 import { getCloudProviderConfig } from "./cloudProviderConfig";
 
 export function CloudAddFilesDialog({
@@ -77,15 +70,19 @@ export function CloudAddFilesDialog({
     [excludeNames],
   );
 
-  const availableFiles = useMemo(
+  const pickerItems = useMemo(
     () =>
       sourceFiles.filter(
         (f) =>
-          f.type !== "folder" &&
-          !excludeIdSet.has(f.id) &&
-          !excludeNameSet.has(f.name.toLowerCase()),
+          f.type === "folder" ||
+          (!excludeIdSet.has(f.id) && !excludeNameSet.has(f.name.toLowerCase())),
       ),
     [sourceFiles, excludeIdSet, excludeNameSet],
+  );
+
+  const selectableFiles = useMemo(
+    () => pickerItems.filter((f) => f.type === "file"),
+    [pickerItems],
   );
 
   useEffect(() => {
@@ -105,15 +102,6 @@ export function CloudAddFilesDialog({
     return () => window.clearTimeout(timer);
   }, [open, activeConnectionProp?.id, connectionIdsKey]);
 
-  const filtered = useMemo(() => {
-    const q = fileSearch.trim().toLowerCase();
-    if (!q) return availableFiles;
-    return availableFiles.filter((f) => f.name.toLowerCase().includes(q));
-  }, [availableFiles, fileSearch]);
-
-  const allSelected =
-    filtered.length > 0 && filtered.every((f) => selectedIds.has(f.id));
-
   function handleToggle(id) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -125,7 +113,7 @@ export function CloudAddFilesDialog({
 
   function handleToggleAll(e) {
     if (e.target.checked) {
-      setSelectedIds(new Set(filtered.map((f) => f.id)));
+      setSelectedIds(new Set(selectableFiles.map((f) => f.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -142,7 +130,7 @@ export function CloudAddFilesDialog({
   }
 
   function handleAdd() {
-    const selected = availableFiles.filter((f) => selectedIds.has(f.id));
+    const selected = selectableFiles.filter((f) => selectedIds.has(f.id));
     if (selected.length === 0) return;
     onConfirm?.(selected, activeConnection);
     onOpenChange(false);
@@ -181,7 +169,7 @@ export function CloudAddFilesDialog({
                 Fetching files from {displayConnection}…
               </p>
             </div>
-          ) : availableFiles.length === 0 ? (
+          ) : selectableFiles.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">
               All available files from this connection are already in the hub.
             </p>
@@ -199,64 +187,13 @@ export function CloudAddFilesDialog({
                 />
               </InputGroup>
 
-              <div className="overflow-hidden rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <input
-                          type="checkbox"
-                          role="checkbox"
-                          aria-label="Select all files"
-                          checked={allSelected}
-                          onChange={handleToggleAll}
-                          className="size-4 rounded border-input accent-primary"
-                        />
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="text-right">Size</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">
-                          No files match your search.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filtered.map((file) => (
-                        <TableRow
-                          key={file.id}
-                          data-state={selectedIds.has(file.id) ? "selected" : undefined}
-                        >
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              role="checkbox"
-                              aria-label={`Select ${file.name}`}
-                              checked={selectedIds.has(file.id)}
-                              onChange={() => handleToggle(file.id)}
-                              className="size-4 rounded border-input accent-primary"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <FileText className="text-muted-foreground" aria-hidden />
-                              <span className="truncate font-medium text-foreground">
-                                {file.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {file.size}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+              <CloudFilePickerTable
+                files={pickerItems}
+                selectedIds={selectedIds}
+                search={fileSearch}
+                onToggleFile={handleToggle}
+                onToggleAll={handleToggleAll}
+              />
             </div>
           )}
         </div>

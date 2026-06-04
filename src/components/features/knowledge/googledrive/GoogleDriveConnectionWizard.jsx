@@ -4,8 +4,6 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronRight,
-  FileText,
-  Folder,
   Info,
   Plus,
   Search,
@@ -38,14 +36,7 @@ import {
 } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { CloudFilePickerTable } from "@/components/features/knowledge/cloud/CloudFilePickerTable";
 import { cn } from "@/lib/utils";
 import { CAPTION } from "@/lib/typography";
 
@@ -394,16 +385,6 @@ function FilePickerStep({
   onToggleFile,
   onToggleAll,
 }) {
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return files;
-    return files.filter((f) => f.name.toLowerCase().includes(q));
-  }, [files, search]);
-
-  const selectable = filtered.filter((f) => f.type === "file");
-  const allSelected =
-    selectable.length > 0 && selectable.every((f) => selectedIds.has(f.id));
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5">
@@ -426,58 +407,13 @@ function FilePickerStep({
         />
       </InputGroup>
 
-      <div className="overflow-hidden rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <input
-                  type="checkbox"
-                  role="checkbox"
-                  aria-label="Select all files"
-                  checked={allSelected}
-                  onChange={onToggleAll}
-                  className="size-4 rounded border-input accent-primary"
-                />
-              </TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead className="text-right">Size</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((file) => {
-              const isFolder = file.type === "folder";
-              const checked = selectedIds.has(file.id);
-              return (
-                <TableRow key={file.id} data-state={checked ? "selected" : undefined}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      role="checkbox"
-                      aria-label={`Select ${file.name}`}
-                      checked={checked}
-                      disabled={isFolder}
-                      onChange={() => onToggleFile(file.id)}
-                      className="size-4 rounded border-input accent-primary disabled:opacity-40"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {isFolder ? (
-                        <Folder className="text-muted-foreground" aria-hidden />
-                      ) : (
-                        <FileText className="text-muted-foreground" aria-hidden />
-                      )}
-                      <span className="truncate font-medium text-foreground">{file.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{file.size}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <CloudFilePickerTable
+        files={files}
+        selectedIds={selectedIds}
+        search={search}
+        onToggleFile={onToggleFile}
+        onToggleAll={onToggleAll}
+      />
 
       {selectedIds.size > 0 && (
         <Alert>

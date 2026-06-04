@@ -1,7 +1,7 @@
 /**
  * @param {string} fileName
  * @param {string} [mimeType]
- * @returns {'image' | 'pdf' | 'docx' | 'doc-legacy' | 'unsupported'}
+ * @returns {'image' | 'pdf' | 'docx' | 'doc-legacy' | 'markdown' | 'text' | 'csv' | 'unsupported'}
  */
 export function getDocumentPreviewKind(fileName, mimeType = "") {
   const lower = (fileName ?? "").toLowerCase();
@@ -19,10 +19,27 @@ export function getDocumentPreviewKind(fileName, mimeType = "") {
   if (
     mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     mime.includes("wordprocessingml") ||
-    mime.includes("officedocument") ||
     lower.endsWith(".docx")
   ) {
     return "docx";
+  }
+  if (
+    lower.endsWith(".md") ||
+    lower.endsWith(".markdown") ||
+    mime === "text/markdown"
+  ) {
+    return "markdown";
+  }
+  if (lower.endsWith(".csv") || mime === "text/csv") {
+    return "csv";
+  }
+  if (
+    mime.startsWith("text/") ||
+    lower.endsWith(".txt") ||
+    lower.endsWith(".log") ||
+    lower.endsWith(".json")
+  ) {
+    return "text";
   }
   return "unsupported";
 }

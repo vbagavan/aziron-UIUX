@@ -49,13 +49,17 @@ export const MOCK_EXISTING_CONNECTIONS = [
 ];
 
 export const MOCK_ONEDRIVE_FILES = [
-  { id: "f1", name: "QuantumLeap.pdf", size: "7.4 MB", type: "file" },
-  { id: "f2", name: "NebulaNova.txt", size: "12 KB", type: "file" },
-  { id: "f3", name: "Processing", size: "—", type: "folder" },
-  { id: "f4", name: "Team Runbooks", size: "—", type: "folder" },
-  { id: "f5", name: "ReleaseNotes.docx", size: "240 KB", type: "file" },
-  { id: "f6", name: "Architecture", size: "—", type: "folder" },
-  { id: "f7", name: "Onboarding.pdf", size: "1.2 MB", type: "file" },
+  { id: "f1", name: "QuantumLeap.pdf", size: "7.4 MB", type: "file", parentId: null },
+  { id: "f2", name: "NebulaNova.txt", size: "12 KB", type: "file", parentId: null },
+  { id: "f3", name: "Processing", size: "—", type: "folder", parentId: null },
+  { id: "f3a", name: "BatchJobs.log", size: "48 KB", type: "file", parentId: "f3" },
+  { id: "f3b", name: "QueueStatus.json", size: "6 KB", type: "file", parentId: "f3" },
+  { id: "f4", name: "Team Runbooks", size: "—", type: "folder", parentId: null },
+  { id: "f5", name: "ReleaseNotes.docx", size: "240 KB", type: "file", parentId: "f4" },
+  { id: "f4a", name: "Incident-Response.md", size: "92 KB", type: "file", parentId: "f4" },
+  { id: "f6", name: "Architecture", size: "—", type: "folder", parentId: null },
+  { id: "f7", name: "Onboarding.pdf", size: "1.2 MB", type: "file", parentId: "f6" },
+  { id: "f6a", name: "SystemDiagram.png", size: "820 KB", type: "file", parentId: "f6" },
 ];
 
 /** Personal Microsoft account — default picker set. */
@@ -63,12 +67,16 @@ export const MOCK_ONEDRIVE_FILES_PERSONAL = MOCK_ONEDRIVE_FILES;
 
 /** Work Microsoft account — different folder listing. */
 export const MOCK_ONEDRIVE_FILES_WORK = [
-  { id: "w-f1", name: "Compliance-2025.pdf", size: "4.8 MB", type: "file" },
-  { id: "w-f2", name: "TeamOKRs.xlsx", size: "1.1 MB", type: "file" },
-  { id: "w-f3", name: "Legal", size: "—", type: "folder" },
-  { id: "w-f4", name: "BoardDeck.pptx", size: "6.2 MB", type: "file" },
-  { id: "w-f5", name: "HR Policies", size: "—", type: "folder" },
-  { id: "w-f6", name: "VendorContracts.zip", size: "18 MB", type: "file" },
+  { id: "w-f1", name: "Compliance-2025.pdf", size: "4.8 MB", type: "file", parentId: null },
+  { id: "w-f2", name: "TeamOKRs.xlsx", size: "1.1 MB", type: "file", parentId: null },
+  { id: "w-f3", name: "Legal", size: "—", type: "folder", parentId: null },
+  { id: "w-f3a", name: "MSA-Template.docx", size: "320 KB", type: "file", parentId: "w-f3" },
+  { id: "w-f3b", name: "Privacy-Addendum.pdf", size: "1.4 MB", type: "file", parentId: "w-f3" },
+  { id: "w-f4", name: "BoardDeck.pptx", size: "6.2 MB", type: "file", parentId: null },
+  { id: "w-f5", name: "HR Policies", size: "—", type: "folder", parentId: null },
+  { id: "w-f5a", name: "Leave-Policy.pdf", size: "540 KB", type: "file", parentId: "w-f5" },
+  { id: "w-f5b", name: "Remote-Work.pdf", size: "410 KB", type: "file", parentId: "w-f5" },
+  { id: "w-f6", name: "VendorContracts.zip", size: "18 MB", type: "file", parentId: null },
 ];
 
 export const MOCK_ONEDRIVE_FILES_BY_CONNECTION = {
