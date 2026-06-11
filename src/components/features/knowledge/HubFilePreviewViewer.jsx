@@ -143,8 +143,9 @@ export function HubFilePreviewViewer({
           return;
         }
 
+        const isMedia = kind === "video" || kind === "audio";
         let extracted = null;
-        if (kind !== "image") {
+        if (kind !== "image" && !isMedia) {
           try {
             extracted = await extractDocumentMarkdown(blob, file.name, mime);
           } catch {
@@ -152,7 +153,7 @@ export function HubFilePreviewViewer({
           }
         }
 
-        if (kind === "image" || kind === "pdf") {
+        if (kind === "image" || kind === "pdf" || kind === "video" || kind === "audio") {
           const url = URL.createObjectURL(blob);
           previewUrlRef.current = url;
           downloadUrlRef.current = url;
@@ -175,7 +176,7 @@ export function HubFilePreviewViewer({
         } else {
           setGuideLoading(true);
           const guide = await generateSourceGuide({
-            text: extracted ?? (await blob.text().catch(() => "")),
+            text: extracted ?? (isMedia ? "" : (await blob.text().catch(() => ""))),
             fileName: file.name,
             metadata: file.metadata,
             allFiles,

@@ -55,7 +55,7 @@ export function CloudFilePickerTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    <div className="max-h-[min(52vh,480px)] overflow-auto rounded-lg border border-border overscroll-y-contain">
       <Table>
         <TableHeader>
           <TableRow>

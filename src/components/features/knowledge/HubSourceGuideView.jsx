@@ -330,6 +330,16 @@ export function HubSourceGuideView({
                 alt={file.name}
                 className="max-h-[560px] w-full rounded-lg border border-border object-contain"
               />
+            ) : previewKind === "video" && previewSrc ? (
+              <video
+                src={previewSrc}
+                controls
+                className="max-h-[560px] w-full rounded-lg border border-border bg-black"
+              >
+                <track kind="captions" />
+              </video>
+            ) : previewKind === "audio" && previewSrc ? (
+              <audio src={previewSrc} controls className="w-full" />
             ) : markdownContent ? (
               <div className="rounded-lg border border-border bg-background p-6">
                 <HubMarkdownPreview content={markdownContent} />

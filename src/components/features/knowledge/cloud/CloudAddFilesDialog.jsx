@@ -22,6 +22,10 @@ import { CAPTION } from "@/lib/typography";
 import { CloudConnectionSwitcher } from "./CloudConnectionSwitcher";
 import { CloudFilePickerTable } from "./CloudFilePickerTable";
 import { getCloudProviderConfig } from "./cloudProviderConfig";
+import {
+  HUB_DIALOG_BODY_SCROLL,
+  HUB_DIALOG_CONTENT_XL,
+} from "@/components/features/knowledge/hubDialogSizes";
 
 export function CloudAddFilesDialog({
   provider = "onedrive",
@@ -141,7 +145,7 @@ export function CloudAddFilesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(85vh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className={HUB_DIALOG_CONTENT_XL}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle>Add more files</DialogTitle>
           <DialogDescription>
@@ -149,7 +153,7 @@ export function CloudAddFilesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
           <CloudConnectionSwitcher
             logo={config.logo}
             connections={connectionOptions}

@@ -6,9 +6,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { GoogleDriveConnectionWizard } from "@/components/features/knowledge/googledrive/GoogleDriveConnectionWizard";
 import { OneDriveConnectionWizard } from "@/components/features/knowledge/onedrive/OneDriveConnectionWizard";
 import { getKnowledgeHubCloudProviderLabel } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
+import {
+  HUB_DIALOG_BODY_SCROLL,
+  HUB_DIALOG_CONTENT_XL,
+} from "@/components/features/knowledge/hubDialogSizes";
 
 /**
  * Runs the full cloud connector flow (auth → scope → file picker) when adding
@@ -46,7 +51,7 @@ export function HubAddSourceDialog({ open, onOpenChange, provider, onComplete })
         onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+      <DialogContent className={HUB_DIALOG_CONTENT_XL}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
             {wizardTitle}
@@ -57,7 +62,7 @@ export function HubAddSourceDialog({ open, onOpenChange, provider, onComplete })
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
           {provider === "onedrive" ? (
             <OneDriveConnectionWizard
               onComplete={handleWizardComplete}

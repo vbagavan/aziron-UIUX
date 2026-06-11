@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Info } from "lucide-react";
+import { Info, Library, LayoutDashboard } from "lucide-react";
 import { HubSyncCoachMark } from "@/components/features/knowledge/HubSyncCoachMark";
 import { HubAddSourceDialog } from "@/components/features/knowledge/HubAddSourceDialog";
 import {
@@ -7,20 +7,35 @@ import {
   rowsNeedingDownload,
 } from "@/components/features/knowledge/hubFileSyncUtils";
 import { KnowledgeHubWorkspaceView } from "@/components/features/knowledge/KnowledgeHubWorkspaceView";
+import { HubLibraryView } from "@/components/features/knowledge/HubLibraryView";
 import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import ConnectionWizard from "@/components/connections/ConnectionWizard.jsx";
 import { useConnectionsStore } from "@/lib/connections/store.js";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePreviewViewer";
 import { agentsUsingHub } from "@/lib/agentKnowledge";
 import { useAgents } from "@/context/AgentsContext";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import {
+  ACCEPTED_FILE_EXTENSIONS,
   buildHubFileInventory,
   getHubFileStatus,
 } from "@/data/knowledgeHubs";
 import { useHubFileUploads } from "@/components/features/knowledge/useHubFileUploads";
+import { cn } from "@/lib/utils";
+
+const VIEW_MODES = [
+  { id: "library",   label: "Library",   icon: Library },
+  { id: "workspace", label: "Workspace", icon: LayoutDashboard },
+];
 
 export function KnowledgeHubDetailView({
   hub: hubProp,
@@ -46,11 +61,18 @@ export function KnowledgeHubDetailView({
   );
 
   const { agents } = useAgents();
+  const [viewMode, setViewMode] = useState("library");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [fileQuery, setFileQuery] = useState("");
   const [uploadHighlightId, setUploadHighlightId] = useState(null);
   const [fileToDelete, setFileToDelete] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
+
+  // Library view preserved state
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [libraryFilterType, setLibraryFilterType] = useState("all");
+  const [librarySortBy, setLibrarySortBy] = useState("recent");
   const [addSourceWizardOpen, setAddSourceWizardOpen] = useState(false);
   const [addSourceProvider, setAddSourceProvider] = useState(null);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
@@ -65,8 +87,10 @@ export function KnowledgeHubDetailView({
       const latest = records[records.length - 1];
       if (latest?.id) {
         setUploadHighlightId(latest.id);
-        setFileQuery("");
       }
+      setFileQuery("");
+      setLibrarySearch("");
+      setLibraryFilterType("all");
       if (records.length > 0) {
         onFilesAdded?.(records.map((r) => r.name), "upload");
       }
@@ -241,48 +265,98 @@ export function KnowledgeHubDetailView({
 
       <HubSyncCoachMark visible={hasCloudFiles && fileSyncCounts.cloudLink > 0} />
 
-      <KnowledgeHubWorkspaceView
-        hubId={liveHub.id}
-        hubName={name.trim() || liveHub.name}
-        hubDescription={description.trim() || liveHub.description}
-        settingsName={name}
-        settingsDescription={description}
-        onSettingsNameChange={setName}
-        onSettingsDescriptionChange={setDescription}
-        onSaveSettings={handleSaveDetails}
-        onDeleteHub={canDelete ? onDelete : undefined}
-        settingsDirty={!!detailsDirty}
-        onSettingsBlur={handleSettingsBlur}
-        allFiles={sortedFiles}
-        canEdit={canEdit}
-        showDemoStatuses={showDemoStatuses}
-        onRefreshSources={handleDownloadAllLinked}
-        sourceQuery={fileQuery}
-        onSourceQueryChange={setFileQuery}
-        onConnectCloudProvider={openHubConnectorWizard}
-        onConnectCatalogProvider={openIntegrationsWizardWithProvider}
-        onBrowseAllConnectors={openIntegrationsWizard}
-        onCustomConnector={openIntegrationsWizardWithProvider}
-        onUploadFiles={() => uploadInputRef.current?.click()}
-        onDownloadCloudFile={handleDownloadCloudFile}
-        onDeleteFile={canEdit ? setFileToDelete : undefined}
-        pendingDownloadCount={pendingDownloadRows.length}
-        onDownloadAllPending={
-          pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined
-        }
-        isDownloadingAll={isDownloadingAll}
-        linkedAgents={linkedAgents}
-        pendingUploads={pendingUploads}
-        onCancelUpload={cancelUpload}
-        uploadHighlightId={uploadHighlightId}
-        onUploadHighlightSeen={() => setUploadHighlightId(null)}
-        onAddStudioToSources={canEdit ? handleAddStudioToSources : undefined}
-      />
+      {/* ── View Switcher ── */}
+      <div className="flex shrink-0 items-center justify-center">
+        <div className="flex rounded-xl border border-border bg-muted/40 p-0.5">
+          {VIEW_MODES.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setViewMode(id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium transition-all",
+                viewMode === id
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
+      {/* ── Library View ── */}
+      {viewMode === "library" && (
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/40 bg-background shadow-elevation-sm">
+          <HubLibraryView
+            hubId={liveHub.id}
+            hubName={name.trim() || liveHub.name}
+            allFiles={sortedFiles}
+            canEdit={canEdit}
+            onUploadFiles={() => uploadInputRef.current?.click()}
+            onDeleteFile={canEdit ? setFileToDelete : undefined}
+            onPreviewFile={setPreviewFile}
+            searchQuery={librarySearch}
+            onSearchQueryChange={setLibrarySearch}
+            filterType={libraryFilterType}
+            onFilterTypeChange={setLibraryFilterType}
+            sortBy={librarySortBy}
+            onSortByChange={setLibrarySortBy}
+            highlightFileId={uploadHighlightId}
+            onHighlightSeen={() => setUploadHighlightId(null)}
+          />
+        </div>
+      )}
+
+      {/* ── Workspace View ── */}
+      {viewMode === "workspace" && (
+        <KnowledgeHubWorkspaceView
+          hubId={liveHub.id}
+          hubName={name.trim() || liveHub.name}
+          hubDescription={description.trim() || liveHub.description}
+          settingsName={name}
+          settingsDescription={description}
+          onSettingsNameChange={setName}
+          onSettingsDescriptionChange={setDescription}
+          onSaveSettings={handleSaveDetails}
+          onDeleteHub={canDelete ? onDelete : undefined}
+          settingsDirty={!!detailsDirty}
+          onSettingsBlur={handleSettingsBlur}
+          allFiles={sortedFiles}
+          canEdit={canEdit}
+          showDemoStatuses={showDemoStatuses}
+          onRefreshSources={handleDownloadAllLinked}
+          sourceQuery={fileQuery}
+          onSourceQueryChange={setFileQuery}
+          onConnectCloudProvider={openHubConnectorWizard}
+          onConnectCatalogProvider={openIntegrationsWizardWithProvider}
+          onBrowseAllConnectors={openIntegrationsWizard}
+          onCustomConnector={openIntegrationsWizardWithProvider}
+          onUploadFiles={() => uploadInputRef.current?.click()}
+          onDownloadCloudFile={handleDownloadCloudFile}
+          onDeleteFile={canEdit ? setFileToDelete : undefined}
+          pendingDownloadCount={pendingDownloadRows.length}
+          onDownloadAllPending={
+            pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined
+          }
+          isDownloadingAll={isDownloadingAll}
+          linkedAgents={linkedAgents}
+          pendingUploads={pendingUploads}
+          onCancelUpload={cancelUpload}
+          uploadHighlightId={uploadHighlightId}
+          onUploadHighlightSeen={() => setUploadHighlightId(null)}
+          onAddStudioToSources={canEdit ? handleAddStudioToSources : undefined}
+        />
+      )}
+
+      {/* Shared: hidden file input, delete confirm, and source dialogs */}
       <input
         ref={uploadInputRef}
         type="file"
         multiple
+        accept={ACCEPTED_FILE_EXTENSIONS}
         className="sr-only"
         onChange={handleUploadFilesPick}
         aria-hidden
@@ -291,15 +365,36 @@ export function KnowledgeHubDetailView({
       {fileToDelete && (
         <ConfirmDialog
           title="Delete file?"
-          message={`Remove “${fileToDelete.name}” from this hub?`}
+          message={`Remove "${fileToDelete.name}" from this hub?`}
           confirmLabel="Delete"
           onConfirm={() => {
             deleteHubFile(liveHub.id, fileToDelete.id);
             onFileDeleted?.(fileToDelete.name);
+            if (previewFile?.id === fileToDelete.id) setPreviewFile(null);
             setFileToDelete(null);
           }}
           onCancel={() => setFileToDelete(null)}
         />
+      )}
+
+      {previewFile && liveHub && (
+        <Dialog open onOpenChange={(open) => { if (!open) setPreviewFile(null); }}>
+          <DialogContent className="flex h-[min(88vh,calc(100dvh-2rem))] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
+            <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
+              <DialogTitle className="truncate text-base">{previewFile.name}</DialogTitle>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <HubFilePreviewViewer
+                hubId={liveHub.id}
+                file={previewFile}
+                allFiles={sortedFiles}
+                showDemoStatuses={showDemoStatuses}
+                onRequestDownload={() => handleDownloadCloudFile(previewFile)}
+                className="h-full"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {canEdit && (

@@ -3,27 +3,98 @@
 export const PROVIDER_LABEL = "Managed vector store";
 
 export const ACCEPTED_FILE_TYPES_LABEL =
-  "PDF, Word, Excel, CSV, text, or images — max 10 MB each";
+  "Documents up to 10 MB · Video, audio, and EPUB up to 100 MB";
 
-export const ACCEPTED_FILE_EXTENSIONS =
-  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.jpg,.jpeg,.png";
+/** Allow any file type in the picker; size is validated separately. */
+export const ACCEPTED_FILE_EXTENSIONS = "*/*";
 
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export { MAX_DOCUMENT_BYTES as MAX_FILE_BYTES } from "@/lib/hubUploadLimits";
 
 const EXT_TO_TYPE = {
   pdf: "PDF",
   doc: "Word",
   docx: "Word",
+  rtf: "Word",
+  odt: "Word",
   xls: "Excel",
   xlsx: "Excel",
   csv: "CSV",
   txt: "Text",
   md: "Markdown",
+  markdown: "Markdown",
   html: "HTML",
+  htm: "HTML",
+  json: "Text",
+  xml: "Text",
+  log: "Text",
+  ppt: "PowerPoint",
+  pptx: "PowerPoint",
+  key: "PowerPoint",
   jpg: "Image",
   jpeg: "Image",
   png: "Image",
+  gif: "Image",
+  webp: "Image",
+  bmp: "Image",
+  svg: "Image",
+  heic: "Image",
+  tiff: "Image",
+  tif: "Image",
+  epub: "eBook",
+  mobi: "eBook",
+  azw: "eBook",
+  azw3: "eBook",
+  mp4: "Video",
+  mov: "Video",
+  webm: "Video",
+  mkv: "Video",
+  avi: "Video",
+  m4v: "Video",
+  mpg: "Video",
+  mpeg: "Video",
+  wmv: "Video",
+  mp3: "Audio",
+  wav: "Audio",
+  m4a: "Audio",
+  aac: "Audio",
+  ogg: "Audio",
+  flac: "Audio",
+  wma: "Audio",
+  aiff: "Audio",
+  opus: "Audio",
 };
+
+const MIME_TO_TYPE = {
+  "application/pdf": "PDF",
+  "application/epub+zip": "eBook",
+  "text/html": "HTML",
+  "text/csv": "CSV",
+  "text/markdown": "Markdown",
+  "text/plain": "Text",
+};
+
+function getFileExtension(fileName) {
+  if (!fileName || !fileName.includes(".")) return "";
+  return fileName.split(".").pop().toLowerCase();
+}
+
+/** Resolve hub library type label from filename and optional MIME type. */
+export function inferHubFileType(fileName, mimeType = "") {
+  const ext = getFileExtension(fileName);
+  if (ext && EXT_TO_TYPE[ext]) return EXT_TO_TYPE[ext];
+
+  const mime = (mimeType ?? "").toLowerCase();
+  if (MIME_TO_TYPE[mime]) return MIME_TO_TYPE[mime];
+  if (mime.startsWith("video/")) return "Video";
+  if (mime.startsWith("audio/")) return "Audio";
+  if (mime.startsWith("image/")) return "Image";
+  if (mime.includes("wordprocessingml") || mime.includes("msword")) return "Word";
+  if (mime.includes("spreadsheetml") || mime.includes("ms-excel")) return "Excel";
+  if (mime.includes("presentationml") || mime.includes("ms-powerpoint")) return "PowerPoint";
+
+  if (ext) return ext.toUpperCase();
+  return "File";
+}
 
 export const SEED_KNOWLEDGE_HUBS = [
   {
@@ -135,13 +206,10 @@ export const SEED_KNOWLEDGE_HUBS = [
 
 /** Map a browser File to a hub file row (stored locally in this prototype). */
 export function fileToHubRecord(file, hubId) {
-  const ext = file.name.includes(".")
-    ? file.name.split(".").pop().toLowerCase()
-    : "file";
   return {
     id: `kh${hubId}-u${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name: file.name,
-    type: EXT_TO_TYPE[ext] ?? ext.toUpperCase(),
+    type: inferHubFileType(file.name, file.type),
     sizeKb: Math.max(1, Math.round(file.size / 1024)),
     updated: "Just now",
     uploadedAt: new Date().toISOString(),
@@ -169,15 +237,12 @@ export function cloudFileToHubRecord(
   hubId,
   { provider = "onedrive", connectionId = null, connectionName = null } = {},
 ) {
-  const ext = file.name.includes(".")
-    ? file.name.split(".").pop().toLowerCase()
-    : "file";
   const stored =
     file.syncStatus === "stored" || Boolean(file.localBlobId || file.draftBlobId);
   return {
     id: `kh${hubId}-c-${file.id}-${Math.random().toString(36).slice(2, 6)}`,
     name: file.name,
-    type: EXT_TO_TYPE[ext] ?? ext.toUpperCase(),
+    type: inferHubFileType(file.name, file.mimeType ?? file.type),
     sizeKb: parseDisplaySizeToKb(file.size),
     updated: "Just now",
     uploadedAt: formatIsoDateToday(),

@@ -32,6 +32,10 @@ import { CreateHubStepIndicator } from "./CreateHubStepIndicator";
 import { countSyncStates } from "./hubFileSyncUtils";
 import { getCloudProviderConfig } from "./cloud/cloudProviderConfig";
 import { CloudAddFilesDialog } from "./cloud/CloudAddFilesDialog";
+import {
+  HUB_DIALOG_BODY_SCROLL,
+  HUB_DIALOG_CONTENT_XL,
+} from "@/components/features/knowledge/hubDialogSizes";
 import { GoogleDriveConnectionWizard } from "./googledrive/GoogleDriveConnectionWizard";
 import { OneDriveConnectionWizard } from "./onedrive/OneDriveConnectionWizard";
 import { CreateHubFilesStep } from "./CreateHubFilesStep";
@@ -50,7 +54,7 @@ import {
   uploadToAttachedRow,
 } from "./createHubAttachedFiles";
 
-const MAX_BYTES = 10 * 1024 * 1024;
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 const TOTAL_STEPS = 3;
 
 function draftBlobKey(rowId) {
@@ -157,7 +161,9 @@ function Step1Upload({
             <Alert variant="destructive" className="w-full max-w-[344px]">
               <AlertTriangle className="size-4" />
               <AlertTitle>File is too large</AlertTitle>
-              <AlertDescription>Maximum file size is 10 MB per file.</AlertDescription>
+              <AlertDescription>
+                Documents must be 10 MB or smaller. Video, audio, and EPUB files can be up to 100 MB.
+              </AlertDescription>
             </Alert>
           )}
         </div>
@@ -300,19 +306,19 @@ export function KnowledgeHubCreateDialog({
   function appendUploadFiles(fileList) {
     const incoming = Array.from(fileList ?? []).filter(Boolean);
     if (incoming.length === 0) return;
-    const tooBig = incoming.some((f) => f.size > MAX_BYTES);
-    if (tooBig) {
-      setFileTooLarge(true);
+    const { valid, rejected } = partitionUploadFiles(incoming);
+    if (valid.length === 0) {
+      setFileTooLarge(rejected.length > 0);
       return;
     }
-    setFileTooLarge(false);
+    setFileTooLarge(rejected.length > 0);
     const stamp = Date.now();
-    const newRows = incoming.map((f, i) => uploadToAttachedRow(f, stamp + i));
+    const newRows = valid.map((f, i) => uploadToAttachedRow(f, stamp + i));
     setAttachedFiles((prev) => mergeAttachedFiles(prev, newRows));
     setPendingFiles((prev) => {
       const names = new Set(prev.map((f) => f.name));
       const next = [...prev];
-      for (const f of incoming) {
+      for (const f of valid) {
         if (!names.has(f.name)) {
           next.push(f);
           names.add(f.name);
@@ -324,7 +330,6 @@ export function KnowledgeHubCreateDialog({
 
   function addFiles(fileList) {
     appendUploadFiles(fileList);
-    if (dialogStep === 1 && contentMode === "upload") setDialogStep(2);
   }
 
   function handleCloudComplete(result, provider) {
@@ -462,7 +467,7 @@ export function KnowledgeHubCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+      <DialogContent className={HUB_DIALOG_CONTENT_XL}>
         <DialogHeader className="border-b border-border px-6 py-4">
           <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
             Step {dialogStep} of {TOTAL_STEPS} — {stepLabel}
@@ -473,7 +478,7 @@ export function KnowledgeHubCreateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
           {dialogStep >= 1 && !isCloudWizardStep && (
             <CreateHubStepIndicator currentStep={dialogStep} />
           )}
@@ -531,9 +536,15 @@ export function KnowledgeHubCreateDialog({
               cloudProvider={cloudProvider}
               onAddFromCloud={() => setCloudAddOpen(true)}
               onUploadFromComputer={appendUploadFiles}
-              onRemoveFile={(id) =>
-                setAttachedFiles((prev) => prev.filter((r) => r.id !== id))
-              }
+              onRemoveFile={(id) => {
+                setAttachedFiles((prev) => {
+                  const removed = prev.find((r) => r.id === id);
+                  if (removed?.file) {
+                    setPendingFiles((pf) => pf.filter((f) => f !== removed.file));
+                  }
+                  return prev.filter((r) => r.id !== id);
+                });
+              }}
               onDownloadCloudFile={downloadAttachedCloudFile}
               onDownloadAllLinked={downloadAllLinked}
               isDownloadingAll={isDownloadingAll}
@@ -568,7 +579,9 @@ export function KnowledgeHubCreateDialog({
                     Skip for now
                   </Button>
                   <Button type="button" className="gap-1.5" onClick={goToFilesStep}>
-                    Continue
+                    {pendingFiles.length > 0
+                      ? `Continue (${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"})`
+                      : "Continue"}
                     <ArrowRight size={15} />
                   </Button>
                 </>

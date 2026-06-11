@@ -1,14 +1,34 @@
 /**
  * @param {string} fileName
  * @param {string} [mimeType]
- * @returns {'image' | 'pdf' | 'docx' | 'doc-legacy' | 'markdown' | 'text' | 'csv' | 'unsupported'}
+ * @returns {'image' | 'pdf' | 'docx' | 'doc-legacy' | 'markdown' | 'text' | 'csv' | 'html' | 'video' | 'audio' | 'epub' | 'unsupported'}
  */
 export function getDocumentPreviewKind(fileName, mimeType = "") {
   const lower = (fileName ?? "").toLowerCase();
   const mime = (mimeType ?? "").toLowerCase();
 
-  if (mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(lower)) {
+  if (
+    mime === "application/epub+zip" ||
+    mime.includes("epub") ||
+    lower.endsWith(".epub")
+  ) {
+    return "epub";
+  }
+
+  if (mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg|heic|tiff?)$/i.test(lower)) {
     return "image";
+  }
+  if (
+    mime.startsWith("video/") ||
+    /\.(mp4|mov|webm|mkv|avi|m4v|mpg|mpeg|wmv)$/i.test(lower)
+  ) {
+    return "video";
+  }
+  if (
+    mime.startsWith("audio/") ||
+    /\.(mp3|wav|m4a|aac|ogg|flac|wma|aiff|opus)$/i.test(lower)
+  ) {
+    return "audio";
   }
   if (mime === "application/pdf" || mime.includes("pdf") || lower.endsWith(".pdf")) {
     return "pdf";
@@ -33,6 +53,9 @@ export function getDocumentPreviewKind(fileName, mimeType = "") {
   if (lower.endsWith(".csv") || mime === "text/csv") {
     return "csv";
   }
+  if (mime === "text/html" || lower.endsWith(".html") || lower.endsWith(".htm")) {
+    return "html";
+  }
   if (
     mime.startsWith("text/") ||
     lower.endsWith(".txt") ||
@@ -47,7 +70,7 @@ export function getDocumentPreviewKind(fileName, mimeType = "") {
 /** Whether we can create an immediate object URL for in-browser preview. */
 export function supportsObjectUrlPreview(fileName, mimeType = "") {
   const kind = getDocumentPreviewKind(fileName, mimeType);
-  return kind === "image" || kind === "pdf";
+  return kind === "image" || kind === "pdf" || kind === "video" || kind === "audio";
 }
 
 /** Normalize blob MIME for viewers when the browser reports octet-stream. */

@@ -1,4 +1,5 @@
 import { extractDocumentMarkdown } from "@/components/features/knowledge/hubDocumentExtraction";
+import { getDocumentPreviewKind } from "@/lib/projectDocumentPreview";
 import {
   createPendingHubFileMetadata,
   enrichHubFileMetadata,
@@ -53,11 +54,20 @@ export async function enrichStoredHubFile(hubId, fileRecord, updateHubFile) {
       file: fileRecord,
     });
 
+    const previewKind = getDocumentPreviewKind(fileRecord.name, mime);
+    const isBinary =
+      previewKind === "video" ||
+      previewKind === "audio" ||
+      previewKind === "image" ||
+      previewKind === "epub";
+
     let text = "";
-    try {
-      text = (await extractDocumentMarkdown(stored.blob, fileRecord.name, mime)) ?? "";
-    } catch {
-      text = await stored.blob.text().catch(() => "");
+    if (!isBinary) {
+      try {
+        text = (await extractDocumentMarkdown(stored.blob, fileRecord.name, mime)) ?? "";
+      } catch {
+        text = await stored.blob.text().catch(() => "");
+      }
     }
 
     const sourceGuide = await generateSourceGuide({

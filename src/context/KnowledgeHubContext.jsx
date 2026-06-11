@@ -6,7 +6,6 @@ import {
   fileToHubRecord,
   filesToHubStats,
   hubRecordsToStats,
-  MAX_FILE_BYTES,
   hubToPickerShape,
   loadHubsFromStorage,
   normalizeHubs,
@@ -23,6 +22,7 @@ import {
   knowledgeHubBlobKey,
   saveKnowledgeHubFile,
 } from "@/lib/knowledgeHubFileStorage";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 import { useAgentsOptional } from "@/context/AgentsContext";
 
 const KnowledgeHubContext = createContext(null);
@@ -71,26 +71,56 @@ export function KnowledgeHubProvider({ children }) {
   const addHub = useCallback(async (payload) => {
     const hub = createHubPayload(payload);
     const userFiles = [...(hub.userFiles ?? [])];
+    const uploadList = payload.pendingFiles?.length
+      ? Array.from(payload.pendingFiles)
+      : payload.pendingFile
+        ? [payload.pendingFile]
+        : [];
+    const pendingUploads = [...uploadList];
 
     for (let i = 0; i < userFiles.length; i += 1) {
       const row = userFiles[i];
-      const draftId = row.draftBlobId;
+
+      if (row.source === "user" && !row.localBlobId && !row.draftBlobId) {
+        const fileIndex = pendingUploads.findIndex((f) => f.name === row.name);
+        if (fileIndex >= 0) {
+          const file = pendingUploads.splice(fileIndex, 1)[0];
+          const blobKey = knowledgeHubBlobKey(hub.id, row.id);
+          try {
+            await saveKnowledgeHubFile(blobKey, file, file.name);
+            userFiles[i] = {
+              ...row,
+              localBlobId: blobKey,
+              syncStatus: "stored",
+              fileStatus: "success",
+              indexStatus: "stored",
+              metadata: createPendingHubFileMetadata(row.name),
+              sourceGuide: createPendingSourceGuide(),
+            };
+          } catch {
+            /* metadata row kept; user can re-upload on hub page */
+          }
+        }
+      }
+
+      const draftId = userFiles[i].draftBlobId;
       if (!draftId) continue;
       try {
         const record = await getKnowledgeHubFile(draftId);
         if (record) {
-          const finalId = `kh-${hub.id}-${row.id}`;
+          const finalId = knowledgeHubBlobKey(hub.id, userFiles[i].id);
           await saveKnowledgeHubFile(finalId, record.blob, record.fileName);
           await deleteKnowledgeHubFile(draftId);
           userFiles[i] = {
-            ...row,
+            ...userFiles[i],
             localBlobId: finalId,
             draftBlobId: undefined,
             syncStatus: "stored",
             fileStatus: "success",
             indexStatus: "stored",
+            metadata: userFiles[i].metadata ?? createPendingHubFileMetadata(userFiles[i].name),
+            sourceGuide: userFiles[i].sourceGuide ?? createPendingSourceGuide(),
           };
-          void enrichStoredHubFile(hub.id, userFiles[i], updateHubFile);
         }
       } catch {
         /* keep draft reference; user can retry on hub page */
@@ -99,6 +129,14 @@ export function KnowledgeHubProvider({ children }) {
 
     const { pendingFileName: _drop, ...stored } = { ...hub, userFiles };
     setHubs((prev) => [...prev, stored]);
+
+    const enrichedRows = userFiles.filter((f) => f.localBlobId);
+    if (enrichedRows.length > 0) {
+      queueMicrotask(() => {
+        enrichStoredHubFiles(hub.id, enrichedRows, updateHubFile);
+      });
+    }
+
     return attachUsedBy(stored, agents);
   }, [agents, updateHubFile]);
 
@@ -216,8 +254,8 @@ export function KnowledgeHubProvider({ children }) {
   const addFilesToHub = useCallback(async (id, fileList) => {
     const hubId = Number(id);
     const incoming = Array.from(fileList ?? []);
-    const valid = incoming.filter((f) => f.size <= MAX_FILE_BYTES);
-    const rejected = incoming.length - valid.length;
+    const { valid, rejected: rejectedFiles } = partitionUploadFiles(incoming);
+    const rejected = rejectedFiles.length;
     if (valid.length === 0) {
       return { added: [], rejected };
     }

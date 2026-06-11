@@ -15,6 +15,10 @@ import {
   HUB_CUSTOM_CONNECTOR_CATALOG_ID,
   HUB_POPULAR_CONNECTORS,
 } from "@/components/features/knowledge/hubAddSourceConnectors";
+import {
+  HUB_DIALOG_BODY_STATIC,
+  HUB_DIALOG_CONTENT_MD,
+} from "@/components/features/knowledge/hubDialogSizes";
 import { cn } from "@/lib/utils";
 
 function deferAfterClose(action) {
@@ -97,7 +101,7 @@ export function HubAddSourcesMenu({
       ) : null}
 
       <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
-        <DialogContent className="flex max-h-[min(85vh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogContent className={HUB_DIALOG_CONTENT_MD}>
           <DialogHeader className="px-6 py-4">
             <DialogTitle>Choose source type</DialogTitle>
             <DialogDescription>
@@ -108,7 +112,7 @@ export function HubAddSourcesMenu({
 
           <Separator />
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          <div className={cn(HUB_DIALOG_BODY_STATIC, "px-6 py-4")}>
             <div className="flex flex-col gap-4">
               <SourceOptionRow
                 icon={Upload}

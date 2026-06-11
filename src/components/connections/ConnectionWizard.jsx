@@ -587,7 +587,7 @@ export default function ConnectionWizard() {
     <Dialog open={open} onOpenChange={v => { if (!v) resetWizard() }}>
       <DialogContent
         showCloseButton
-        className="flex max-h-[min(92dvh,720px)] w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
+        className="flex h-[min(92vh,calc(100dvh-2rem))] max-h-[min(92vh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>New connector</DialogTitle>

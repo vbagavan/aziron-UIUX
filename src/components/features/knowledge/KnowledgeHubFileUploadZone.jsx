@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import {
   ACCEPTED_FILE_EXTENSIONS,
   ACCEPTED_FILE_TYPES_LABEL,
-  MAX_FILE_BYTES,
 } from "@/data/knowledgeHubs";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 
 /**
  * @param {{ compact?: boolean, multiple?: boolean, onFilesAccepted: (files: File[]) => void }} props
@@ -25,9 +25,8 @@ export function KnowledgeHubFileUploadZone({
   function processFiles(fileList) {
     const all = Array.from(fileList ?? []);
     if (all.length === 0) return;
-    const valid = all.filter((f) => f.size <= MAX_FILE_BYTES);
-    const rejected = all.length - valid.length;
-    setFileTooLarge(rejected > 0);
+    const { valid, rejected } = partitionUploadFiles(all);
+    setFileTooLarge(rejected.length > 0);
     if (valid.length === 0) return;
     setLastQueued(valid.map((f) => f.name));
     onFilesAccepted(valid);
@@ -116,7 +115,9 @@ export function KnowledgeHubFileUploadZone({
         <Alert variant="destructive">
           <AlertTriangle className="size-4" />
           <AlertTitle>Some files were skipped</AlertTitle>
-          <AlertDescription>Each file must be 10 MB or smaller.</AlertDescription>
+          <AlertDescription>
+            Documents must be 10 MB or smaller. Video, audio, and EPUB files can be up to 100 MB.
+          </AlertDescription>
         </Alert>
       )}
     </div>

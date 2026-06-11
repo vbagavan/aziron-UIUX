@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { MAX_FILE_BYTES } from "@/data/knowledgeHubs";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 import { createPendingUploadEntry } from "@/components/features/knowledge/hubUploadProgress";
 
 const MIN_UPLOAD_MS = 700;
@@ -65,9 +65,9 @@ export function useHubFileUploads({ hubId, addFilesToHub, onFilesAdded, onUpload
   const uploadFiles = useCallback(
     async (fileList) => {
       const incoming = Array.from(fileList ?? []).filter(Boolean);
-      const valid = incoming.filter((f) => f.size <= MAX_FILE_BYTES);
+      const { valid, rejected: rejectedFiles } = partitionUploadFiles(incoming);
       if (valid.length === 0 || !hubId) {
-        return { added: [], rejected: incoming.length };
+        return { added: [], rejected: rejectedFiles.length || incoming.length };
       }
 
       const entries = valid.map((file, index) => createPendingUploadEntry(file, index));
@@ -76,7 +76,7 @@ export function useHubFileUploads({ hubId, addFilesToHub, onFilesAdded, onUpload
       const results = await Promise.all(entries.map((entry) => uploadSingleFile(entry)));
       const added = results.flatMap((r) => r?.added ?? []);
       const uploadedRecords = results.flatMap((r) => r?.records ?? []);
-      const rejected = incoming.length - valid.length;
+      const rejected = rejectedFiles.length;
 
       if (added.length > 0) {
         onFilesAdded?.(added);

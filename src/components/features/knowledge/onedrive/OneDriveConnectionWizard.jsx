@@ -642,7 +642,7 @@ export function OneDriveConnectionWizard({
   const showSignInOverlay = step === STEPS.SIGN_IN;
 
   return (
-    <div className="relative flex min-h-[360px] flex-col">
+    <div className="relative flex min-h-[min(68vh,640px)] flex-col">
       {step === STEPS.INTRO && (
         <IntroStep authMethod={authMethod} onAuthMethodChange={setAuthMethod} />
       )}
