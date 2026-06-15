@@ -1,16 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  UploadCloud,
-  X,
-  Check,
-  AlertTriangle,
-  Plus,
-  ArrowLeft,
-  Cloud,
-  FileText,
-  FolderOpen,
-  Search,
-} from "lucide-react";
+import { UploadCloud, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,19 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Spinner } from "@/components/ui/spinner";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_TYPES_LABEL } from "@/data/knowledgeHubs";
 import { partitionUploadFiles } from "@/lib/hubUploadLimits";
-import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
-import { CloudConnectionSwitcher } from "@/components/features/knowledge/cloud/CloudConnectionSwitcher";
-import { CloudFilePickerTable } from "@/components/features/knowledge/cloud/CloudFilePickerTable";
 import { HubAddSourceDialog } from "@/components/features/knowledge/HubAddSourceDialog";
 import { HubAddSourcesMenu } from "@/components/features/knowledge/HubAddSourcesMenu";
 import {
@@ -46,20 +25,25 @@ import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_XL,
 } from "@/components/features/knowledge/hubDialogSizes";
-import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+import { SelectedSourcesTable } from "@/components/features/knowledge/SelectedSourcesTable";
+import {
+  CloudConnectionsPanel,
+  CloudFilePickerPanel,
+} from "@/components/features/knowledge/cloud/CloudFilePickerPanel";
+import {
+  HubSourceUploadRow,
+  HubUploadProgressSummary,
+} from "@/components/features/knowledge/HubSourceUploadRow";
+import { useSourceUploadProgress } from "@/components/features/knowledge/useSourceUploadProgress";
+import {
+  KNOWLEDGE_TERMS,
+  addSourcesConfirmLabel,
+  addSourcesDialogTitle,
+} from "@/lib/knowledgeTerminology";
 import {
   getAllUploadConnections,
   saveUploadSessionConnection,
 } from "@/lib/cloudUploadConnections";
-
-function providerLabel(provider) {
-  return provider === "google-drive" ? "Google Drive" : "OneDrive";
-}
-
-// ─── Local upload panel (left) ────────────────────────────────────────────────
 
 function LocalUploadPanel({
   pendingCount,
@@ -71,51 +55,55 @@ function LocalUploadPanel({
   onDrop,
   onFileChange,
   onUploadClick,
+  disabled = false,
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          From your computer
+          {KNOWLEDGE_TERMS.fromComputer}
         </p>
         <div
           className={cn(
-            "flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-5 transition-colors",
-            dragActive
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-muted/30",
+            "flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-5 transition-colors",
+            disabled
+              ? "cursor-not-allowed opacity-60"
+              : "cursor-pointer hover:border-primary/50 hover:bg-muted/30",
+            dragActive ? "border-primary bg-primary/5" : "border-border",
           )}
-          onDragEnter={onDragEnter}
-          onDragLeave={onDragLeave}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={onDrop}
-          onClick={onUploadClick}
+          onDragEnter={disabled ? undefined : onDragEnter}
+          onDragLeave={disabled ? undefined : onDragLeave}
+          onDragOver={(e) => !disabled && e.preventDefault()}
+          onDrop={disabled ? undefined : onDrop}
+          onClick={disabled ? undefined : onUploadClick}
           role="button"
-          tabIndex={0}
+          tabIndex={disabled ? -1 : 0}
           onKeyDown={(e) => {
+            if (disabled) return;
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               onUploadClick();
             }
           }}
           aria-label="Upload files from computer"
+          aria-disabled={disabled}
         >
           <UploadCloud size={40} className="text-muted-foreground" strokeWidth={1.5} />
           <div className="text-center">
-            <p className="text-sm font-medium text-foreground">Select files or drag and drop</p>
+            <p className="text-sm font-medium text-foreground">{KNOWLEDGE_TERMS.selectFilesPrompt}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{ACCEPTED_FILE_TYPES_LABEL}</p>
           </div>
           <Button
             size="sm"
             type="button"
-            className="gap-1.5"
+            disabled={disabled}
             onClick={(e) => {
               e.stopPropagation();
               onUploadClick();
             }}
           >
-            <UploadCloud size={16} />
-            Browse files
+            <UploadCloud data-icon="inline-start" aria-hidden />
+            {KNOWLEDGE_TERMS.browseFiles}
           </Button>
           <input
             ref={fileInputRef}
@@ -125,6 +113,7 @@ function LocalUploadPanel({
             className="sr-only"
             onChange={onFileChange}
             tabIndex={-1}
+            disabled={disabled}
           />
           {pendingCount > 0 ? (
             <p className="text-xs text-muted-foreground">
@@ -147,319 +136,58 @@ function LocalUploadPanel({
   );
 }
 
-// ─── Cloud connections panel (right) ─────────────────────────────────────────
+function UploadCompletePanel({ result, isHubTarget, onViewInDocuments, onClose }) {
+  const count = result?.added?.length ?? 0;
+  const skipped = result?.rejected ?? 0;
+  const recordIds = (result?.records ?? [])
+    .map((r) => r.id ?? r.libraryDocumentId)
+    .filter(Boolean);
 
-function ConnectionRow({ connection, onBrowse }) {
-  const config = getCloudProviderConfig(connection.provider);
   return (
-    <button
-      type="button"
-      onClick={() => onBrowse(connection)}
-      className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-muted/40"
-    >
-      <img src={config.logo} alt="" className="size-8 shrink-0 object-contain" />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{connection.name}</p>
-        <p className="truncate text-[11px] text-muted-foreground">
-          {providerLabel(connection.provider)}
-          {connection.accountEmail ? ` · ${connection.accountEmail}` : ""}
+    <div className="flex flex-col items-center gap-4 py-8 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full bg-success/10">
+        <CheckCircle2 className="size-6 text-success" aria-hidden />
+      </div>
+      <div>
+        <p className="text-base font-semibold text-foreground">{KNOWLEDGE_TERMS.uploadComplete}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {count > 0
+            ? `${count} source${count === 1 ? "" : "s"} added${isHubTarget ? " to hub and library" : " to your library"}.${skipped > 0 ? ` ${skipped} skipped.` : ""}`
+            : KNOWLEDGE_TERMS.uploadCompleteDescription}
         </p>
       </div>
-      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
-        <FolderOpen className="size-3.5" />
-        Browse
-      </span>
-    </button>
-  );
-}
-
-function CloudConnectionsPanel({ connections, onBrowseConnection, onAddConnection }) {
-  return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-start gap-2.5 border-b border-border bg-muted/40 px-4 py-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-background">
-          <Cloud className="size-4 text-muted-foreground" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">Cloud storage</h3>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Browse files from connected accounts or add a new cloud connection.
-          </p>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        {connections.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">
-            No cloud connections yet. Add one below to import files.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Connected accounts
-            </p>
-            {connections.map((conn) => (
-              <ConnectionRow
-                key={`${conn.provider}-${conn.id}`}
-                connection={conn}
-                onBrowse={onBrowseConnection}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-border bg-muted/25 p-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={onAddConnection}
-        >
-          <Plus className="size-4" />
-          Add new cloud connection
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function CloudFilePickerPanel({
-  provider,
-  connection,
-  connections,
-  excludeExternalIds,
-  excludeNames,
-  onBack,
-  onAddConnection,
-  onAddFiles,
-}) {
-  const config = getCloudProviderConfig(provider);
-  const connectionOptions = useMemo(
-    () =>
-      (connections ?? []).filter((c) => c.provider === provider).length > 0
-        ? connections.filter((c) => c.provider === provider)
-        : config.mockConnections ?? [],
-    [connections, provider, config.mockConnections],
-  );
-
-  const [activeConnection, setActiveConnection] = useState(
-    () => connection ?? connectionOptions[0] ?? null,
-  );
-  const [phase, setPhase] = useState("loading");
-  const [fileSearch, setFileSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
-
-  const sourceFiles = useMemo(() => {
-    if (config.getMockFilesForConnection && activeConnection?.id) {
-      return config.getMockFilesForConnection(activeConnection.id);
-    }
-    return config.mockFiles;
-  }, [config, activeConnection?.id]);
-
-  const excludeIdSet = useMemo(() => new Set(excludeExternalIds), [excludeExternalIds]);
-  const excludeNameSet = useMemo(
-    () => new Set(excludeNames.map((n) => n.toLowerCase())),
-    [excludeNames],
-  );
-
-  const pickerItems = useMemo(
-    () =>
-      sourceFiles.filter(
-        (f) =>
-          f.type === "folder" ||
-          (!excludeIdSet.has(f.id) && !excludeNameSet.has(f.name.toLowerCase())),
-      ),
-    [sourceFiles, excludeIdSet, excludeNameSet],
-  );
-
-  const selectableFiles = useMemo(
-    () => pickerItems.filter((f) => f.type === "file"),
-    [pickerItems],
-  );
-
-  useEffect(() => {
-    setActiveConnection(connection ?? connectionOptions[0] ?? null);
-    setPhase("loading");
-    setFileSearch("");
-    setSelectedIds(new Set());
-    const timer = window.setTimeout(() => setPhase("picker"), 700);
-    return () => window.clearTimeout(timer);
-  }, [connection?.id, provider]);
-
-  function handleToggle(id) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function handleToggleAll(e) {
-    if (e.target.checked) {
-      setSelectedIds(new Set(selectableFiles.map((f) => f.id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  }
-
-  function handleSwitchConnection(conn) {
-    if (conn.id === activeConnection?.id) return;
-    setActiveConnection(conn);
-    setSelectedIds(new Set());
-    setFileSearch("");
-    setPhase("loading");
-    window.setTimeout(() => setPhase("picker"), 700);
-  }
-
-  function handleAddSelected() {
-    const selected = selectableFiles.filter((f) => selectedIds.has(f.id));
-    if (selected.length === 0) return;
-    onAddFiles(selected, activeConnection);
-    setSelectedIds(new Set());
-  }
-
-  const accountsLabel =
-    provider === "google-drive" ? "Google Drive accounts" : "OneDrive accounts";
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back">
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            Browse {config.label}
-          </p>
-          <p className="truncate text-[11px] text-muted-foreground">
-            Select files to add to your upload
-          </p>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <CloudConnectionSwitcher
-          logo={config.logo}
-          connections={connectionOptions}
-          activeConnection={activeConnection}
-          onSelectConnection={handleSwitchConnection}
-          onAddConnection={onAddConnection}
-          accountsLabel={accountsLabel}
-          className="mb-3"
-        />
-
-        {phase === "loading" ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-12">
-            <Spinner className="size-8" />
-            <p className="text-sm text-muted-foreground">Loading files…</p>
-          </div>
-        ) : selectableFiles.length === 0 ? (
-          <p className="py-8 text-center text-xs text-muted-foreground">
-            No files available from this connection.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <InputGroup>
-              <InputGroupAddon>
-                <Search aria-hidden className="size-4" />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="Search files"
-                value={fileSearch}
-                onChange={(e) => setFileSearch(e.target.value)}
-                aria-label={`Search ${config.label} files`}
-              />
-            </InputGroup>
-            <CloudFilePickerTable
-              files={pickerItems}
-              selectedIds={selectedIds}
-              search={fileSearch}
-              onToggleFile={handleToggle}
-              onToggleAll={handleToggleAll}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/25 px-3 py-2.5">
-        <span className="text-xs text-muted-foreground">
-          {selectedIds.size > 0
-            ? `${selectedIds.size} file${selectedIds.size === 1 ? "" : "s"} selected`
-            : "Select files to import"}
-        </span>
-        <Button
-          type="button"
-          size="sm"
-          disabled={phase !== "picker" || selectedIds.size === 0}
-          onClick={handleAddSelected}
-        >
-          Add to selection
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Attached files summary ───────────────────────────────────────────────────
-
-function AttachedFilesSummary({ attachedFiles, onRemove }) {
-  if (attachedFiles.length === 0) return null;
-
-  const localCount = attachedFiles.filter((r) => r.source === "upload").length;
-  const cloudCount = attachedFiles.filter((r) => r.source === "cloud").length;
-
-  return (
-    <div className="rounded-xl border border-border bg-muted/20 px-4 py-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-foreground">
-          Selected for upload
-          <span className="ml-1.5 font-normal text-muted-foreground">
-            ({attachedFiles.length} total
-            {localCount > 0 ? ` · ${localCount} local` : ""}
-            {cloudCount > 0 ? ` · ${cloudCount} cloud` : ""})
-          </span>
-        </p>
-      </div>
-      <ul className="flex max-h-28 flex-col gap-1 overflow-y-auto">
-        {attachedFiles.map((row) => (
-          <li
-            key={row.id}
-            className="flex items-center gap-2 rounded-md bg-background/80 px-2 py-1.5"
+      <div className="flex flex-wrap justify-center gap-2">
+        {!isHubTarget && recordIds.length > 0 && onViewInDocuments ? (
+          <Button
+            type="button"
+            onClick={() => {
+              onViewInDocuments(recordIds);
+              onClose();
+            }}
           >
-            {row.source === "cloud" ? (
-              <Cloud className="size-3.5 shrink-0 text-sky-500" />
-            ) : (
-              <Check className="size-3.5 shrink-0 text-emerald-500" />
-            )}
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground">{row.name}</span>
-            <Badge variant="outline" className="shrink-0 text-[10px]">
-              {row.source === "cloud" ? "Cloud" : "Local"}
-            </Badge>
-            <button
-              type="button"
-              onClick={() => onRemove(row.id)}
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-              aria-label={`Remove ${row.name}`}
-            >
-              <X className="size-3.5" />
-            </button>
-          </li>
-        ))}
-      </ul>
+            {KNOWLEDGE_TERMS.viewInDocuments}
+          </Button>
+        ) : null}
+        <Button type="button" variant={recordIds.length && !isHubTarget ? "outline" : "default"} onClick={onClose}>
+          Done
+        </Button>
+      </div>
     </div>
   );
 }
-
-// ─── Main dialog ──────────────────────────────────────────────────────────────
 
 export function DocumentsUploadDialog({
   open,
   onOpenChange,
-  onFilesAdded,
+  onUpload,
+  onUploadComplete,
+  onViewInDocuments,
   hubId = null,
   hubName = null,
+  cloudConnections = null,
+  initialBrowseConnection = null,
+  excludeExternalIds = [],
+  excludeNames = [],
 }) {
   const isHubTarget = hubId != null;
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -468,7 +196,9 @@ export function DocumentsUploadDialog({
   const [dragActive, setDragActive] = useState(false);
   const [fileTooLarge, setFileTooLarge] = useState(false);
   const [skippedLocalCount, setSkippedLocalCount] = useState(0);
-  const [savedConnections, setSavedConnections] = useState(() => getAllUploadConnections());
+  const [savedConnections, setSavedConnections] = useState(() =>
+    cloudConnections?.length ? cloudConnections : getAllUploadConnections(),
+  );
 
   const [rightPanelMode, setRightPanelMode] = useState("connections");
   const [pickerConnection, setPickerConnection] = useState(null);
@@ -481,11 +211,32 @@ export function DocumentsUploadDialog({
   const dragCounterRef = useRef(0);
   const filePickerOpenRef = useRef(false);
 
+  const {
+    phase: uploadPhase,
+    items: uploadItems,
+    result: uploadResult,
+    runUpload,
+    retryFailed,
+    reset: resetUpload,
+  } = useSourceUploadProgress({ onUpload });
+
+  const isUploading = uploadPhase === "uploading";
+  const isComplete = uploadPhase === "done" || uploadPhase === "error";
+
   const existingExternalIds = useMemo(
     () => attachedFiles.filter((r) => r.pickerFile?.id).map((r) => r.pickerFile.id),
     [attachedFiles],
   );
   const existingFileNames = useMemo(() => attachedFiles.map((r) => r.name), [attachedFiles]);
+
+  const mergedExcludeExternalIds = useMemo(
+    () => [...existingExternalIds, ...excludeExternalIds],
+    [existingExternalIds, excludeExternalIds],
+  );
+  const mergedExcludeNames = useMemo(
+    () => [...existingFileNames, ...excludeNames],
+    [existingFileNames, excludeNames],
+  );
 
   function resetDialog() {
     setAttachedFiles([]);
@@ -501,7 +252,10 @@ export function DocumentsUploadDialog({
     setChooseConnectorOpen(false);
     setAddSourceWizardOpen(false);
     setAddSourceProvider(null);
-    setSavedConnections(getAllUploadConnections());
+    setSavedConnections(
+      cloudConnections?.length ? cloudConnections : getAllUploadConnections(),
+    );
+    resetUpload();
   }
 
   function handleClose() {
@@ -512,7 +266,22 @@ export function DocumentsUploadDialog({
     if (!open) resetDialog();
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    setSavedConnections(
+      cloudConnections?.length ? cloudConnections : getAllUploadConnections(),
+    );
+  }, [open, cloudConnections]);
+
+  useEffect(() => {
+    if (!open || !initialBrowseConnection?.provider || isUploading || isComplete) return;
+    setPickerProvider(initialBrowseConnection.provider);
+    setPickerConnection(initialBrowseConnection);
+    setRightPanelMode("picker");
+  }, [open, initialBrowseConnection?.id, initialBrowseConnection?.provider, isUploading, isComplete]);
+
   function openFilePicker() {
+    if (isUploading || isComplete) return;
     filePickerOpenRef.current = true;
     window.requestAnimationFrame(() => {
       fileInputRef.current?.click();
@@ -586,18 +355,6 @@ export function DocumentsUploadDialog({
     setAddSourceWizardOpen(true);
   }
 
-  function handleConnectCatalogProvider() {
-    // Catalog connectors save connections only — not wired to document import in this flow.
-  }
-
-  function handleBrowseAllConnectors() {
-    // Hidden when showCatalogConnectors is false on HubAddSourcesMenu.
-  }
-
-  function handleCustomConnector() {
-    // Hidden when showCatalogConnectors is false on HubAddSourcesMenu.
-  }
-
   function handleAddFromPicker(selected, connection) {
     const provider = connection?.provider ?? pickerProvider;
     const cloudRows = selected.map((f) => cloudPickerToAttachedRow(f, provider));
@@ -606,7 +363,7 @@ export function DocumentsUploadDialog({
       [provider]: prev[provider] ?? {
         provider,
         connection,
-        connectionName: connection?.name ?? `${providerLabel(provider)} connection`,
+        connectionName: connection?.name ?? `${provider === "google-drive" ? "Google Drive" : "OneDrive"} connection`,
       },
     }));
     setAttachedFiles((prev) => mergeAttachedFiles(prev, cloudRows));
@@ -618,16 +375,7 @@ export function DocumentsUploadDialog({
     setRightPanelMode("picker");
   }
 
-  function handleAddNewConnection() {
-    setChooseConnectorOpen(true);
-  }
-
-  function handlePickerAddConnection() {
-    setAddSourceProvider(pickerProvider);
-    setAddSourceWizardOpen(true);
-  }
-
-  function handleConfirm() {
+  async function handleConfirm() {
     const uploadFiles = attachedFiles
       .filter((r) => (r.source === "upload" || r.source === "user") && r.file)
       .map((r) => r.file);
@@ -639,18 +387,21 @@ export function DocumentsUploadDialog({
           ? [...pendingFiles]
           : [];
 
-    if (fallbackUploads.length === 0 && attachedFiles.filter((r) => r.source === "cloud").length === 0) {
+    if (
+      fallbackUploads.length === 0 &&
+      attachedFiles.filter((r) => r.source === "cloud").length === 0
+    ) {
       return;
     }
 
     const cloudImports = attachedRowsToCloudImports(attachedFiles, cloudMetas);
-
-    onFilesAdded?.({
+    const finalResult = await runUpload({
       files: fallbackUploads,
       cloudImports,
       skippedLocal: skippedLocalCount,
     });
-    handleClose();
+
+    onUploadComplete?.(finalResult);
   }
 
   const importableCount = useMemo(() => {
@@ -659,19 +410,24 @@ export function DocumentsUploadDialog({
     return Math.max(counted, fallback);
   }, [attachedFiles, cloudMetas, pendingFiles.length]);
 
-  const canUpload = importableCount > 0;
+  const canUpload = importableCount > 0 && !isUploading && !isComplete;
 
   const rightPanel = (() => {
+    if (isUploading || isComplete) return null;
+
     if (rightPanelMode === "picker") {
       return (
         <CloudFilePickerPanel
           provider={pickerProvider}
           connection={pickerConnection}
           connections={savedConnections}
-          excludeExternalIds={existingExternalIds}
-          excludeNames={existingFileNames}
+          excludeExternalIds={mergedExcludeExternalIds}
+          excludeNames={mergedExcludeNames}
           onBack={() => setRightPanelMode("connections")}
-          onAddConnection={handlePickerAddConnection}
+          onAddConnection={() => {
+            setAddSourceProvider(pickerProvider);
+            setAddSourceWizardOpen(true);
+          }}
           onAddFiles={handleAddFromPicker}
         />
       );
@@ -681,7 +437,7 @@ export function DocumentsUploadDialog({
       <CloudConnectionsPanel
         connections={savedConnections}
         onBrowseConnection={handleBrowseConnection}
-        onAddConnection={handleAddNewConnection}
+        onAddConnection={() => setChooseConnectorOpen(true)}
       />
     );
   })();
@@ -696,79 +452,132 @@ export function DocumentsUploadDialog({
             filePickerOpenRef.current = false;
             return;
           }
+          if (isUploading) return;
           handleClose();
         }}
       >
-      <DialogContent className={HUB_DIALOG_CONTENT_XL}>
-        <DialogHeader className="border-b border-border px-6 py-4">
-          <DialogTitle>
-            {isHubTarget ? `Add sources to ${KNOWLEDGE_TERMS.hubSingular.toLowerCase()}` : `Upload ${KNOWLEDGE_TERMS.documents}`}
-          </DialogTitle>
-          <DialogDescription>
-            {isHubTarget ? (
-              <>
-                Upload files to{" "}
-                <span className="font-medium text-foreground">{hubName ?? "this hub"}</span>.
-                Documents are saved to your central library and linked to this hub automatically — one
-                copy, visible in both Documents and Knowledge Hub.
-              </>
+        <DialogContent className={HUB_DIALOG_CONTENT_XL}>
+          <DialogHeader className="border-b border-border px-6 py-4">
+            <DialogTitle>
+              {isComplete && uploadResult?.success
+                ? KNOWLEDGE_TERMS.uploadComplete
+                : isUploading
+                  ? KNOWLEDGE_TERMS.uploadingSources
+                  : addSourcesDialogTitle({
+                      hubName: isHubTarget ? (hubName ?? KNOWLEDGE_TERMS.hubSingular) : null,
+                    })}
+            </DialogTitle>
+            <DialogDescription>
+              {isUploading || isComplete ? (
+                isComplete && uploadResult?.hasError && !uploadResult?.success
+                  ? KNOWLEDGE_TERMS.uploadFailedDescription
+                  : "Please wait while your sources are processed."
+              ) : isHubTarget ? (
+                <>
+                  Add files to{" "}
+                  <span className="font-medium text-foreground">{hubName ?? "this hub"}</span>.{" "}
+                  {KNOWLEDGE_TERMS.addSourcesDescriptionHub}
+                </>
+              ) : (
+                KNOWLEDGE_TERMS.addSourcesDescriptionLibrary
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
+            {isComplete ? (
+              uploadResult?.success ? (
+                <UploadCompletePanel
+                  result={uploadResult}
+                  isHubTarget={isHubTarget}
+                  onViewInDocuments={onViewInDocuments}
+                  onClose={handleClose}
+                />
+              ) : (
+                <div className="flex flex-col gap-4 py-4">
+                  <Alert variant="destructive">
+                    <AlertTriangle className="size-4" />
+                    <AlertTitle>{KNOWLEDGE_TERMS.uploadFailed}</AlertTitle>
+                    <AlertDescription>{KNOWLEDGE_TERMS.uploadFailedDescription}</AlertDescription>
+                  </Alert>
+                  <ul className="flex flex-col gap-1">
+                    {uploadItems.map((item) => (
+                      <HubSourceUploadRow
+                        key={item.id}
+                        upload={item}
+                        onRetry={() => retryFailed()}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              )
+            ) : isUploading ? (
+              <div className="flex flex-col gap-3 py-2">
+                <HubUploadProgressSummary uploads={uploadItems} />
+                <ul className="flex flex-col gap-1">
+                  {uploadItems.map((item) => (
+                    <HubSourceUploadRow key={item.id} upload={item} />
+                  ))}
+                </ul>
+              </div>
             ) : (
-              <>
-                Add files to your document library from your computer or connected cloud storage.
-                Link documents to Knowledge Hubs anytime from the Documents page or reader view.
-              </>
+              <div className="flex flex-col gap-5">
+                <div className="grid min-h-[360px] grid-cols-1 gap-5 lg:grid-cols-2">
+                  <LocalUploadPanel
+                    pendingCount={pendingFiles.length}
+                    dragActive={dragActive}
+                    fileTooLarge={fileTooLarge}
+                    fileInputRef={fileInputRef}
+                    disabled={isUploading}
+                    onDragEnter={() => {
+                      dragCounterRef.current += 1;
+                      setDragActive(true);
+                    }}
+                    onDragLeave={() => {
+                      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+                      if (dragCounterRef.current === 0) setDragActive(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      dragCounterRef.current = 0;
+                      setDragActive(false);
+                      appendUploadFiles(e.dataTransfer.files);
+                    }}
+                    onFileChange={(e) => {
+                      filePickerOpenRef.current = false;
+                      appendUploadFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                    onUploadClick={openFilePicker}
+                  />
+                  {rightPanel}
+                </div>
+                <SelectedSourcesTable
+                  attachedFiles={attachedFiles}
+                  onRemove={handleRemoveAttached}
+                  maxHeightClass="max-h-52"
+                />
+              </div>
             )}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
-          <div className="flex flex-col gap-5">
-            <div className="grid min-h-[360px] grid-cols-1 gap-5 lg:grid-cols-2">
-              <LocalUploadPanel
-                pendingCount={pendingFiles.length}
-                dragActive={dragActive}
-                fileTooLarge={fileTooLarge}
-                fileInputRef={fileInputRef}
-                onDragEnter={() => {
-                  dragCounterRef.current += 1;
-                  setDragActive(true);
-                }}
-                onDragLeave={() => {
-                  dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
-                  if (dragCounterRef.current === 0) setDragActive(false);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  dragCounterRef.current = 0;
-                  setDragActive(false);
-                  appendUploadFiles(e.dataTransfer.files);
-                }}
-                onFileChange={(e) => {
-                  filePickerOpenRef.current = false;
-                  appendUploadFiles(e.target.files);
-                  e.target.value = "";
-                }}
-                onUploadClick={openFilePicker}
-              />
-              {rightPanel}
-            </div>
-            <AttachedFilesSummary attachedFiles={attachedFiles} onRemove={handleRemoveAttached} />
           </div>
-        </div>
 
-        <div className="flex items-center justify-between border-t border-border px-6 py-4">
-          <Button variant="ghost" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={!canUpload}>
-            {importableCount > 0
-              ? isHubTarget
-                ? `Add ${importableCount} source${importableCount > 1 ? "s" : ""} to hub`
-                : `Upload ${importableCount} document${importableCount > 1 ? "s" : ""}`
-              : "Select files to upload"}
-          </Button>
-        </div>
-      </DialogContent>
+          {!isComplete && (
+            <div className="flex items-center justify-between border-t border-border px-6 py-4">
+              <Button variant="ghost" onClick={handleClose} disabled={isUploading}>
+                Cancel
+              </Button>
+              {isUploading ? (
+                <Button disabled>Adding…</Button>
+              ) : uploadPhase === "error" ? (
+                <Button onClick={() => retryFailed()}>Retry failed</Button>
+              ) : (
+                <Button onClick={handleConfirm} disabled={!canUpload}>
+                  {addSourcesConfirmLabel(importableCount, { hub: isHubTarget })}
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
       </Dialog>
 
       <HubAddSourcesMenu
@@ -778,9 +587,9 @@ export function DocumentsUploadDialog({
         showCatalogConnectors={false}
         hideUploadOption
         onConnectHubProvider={openHubConnectorWizard}
-        onConnectCatalogProvider={handleConnectCatalogProvider}
-        onBrowseAllConnectors={handleBrowseAllConnectors}
-        onCustomConnector={handleCustomConnector}
+        onConnectCatalogProvider={() => {}}
+        onBrowseAllConnectors={() => {}}
+        onCustomConnector={() => {}}
         onUploadFiles={openFilePicker}
       />
 

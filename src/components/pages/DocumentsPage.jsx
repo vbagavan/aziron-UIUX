@@ -17,7 +17,39 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +63,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { usePermissions } from "@/hooks/usePermissions";
-import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
 import { FileSyncStatusIndicator } from "@/components/features/knowledge/FileSyncStatusIndicator";
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
@@ -53,9 +84,19 @@ import {
 import { PageHeader } from "@/components/common/PageHeader";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { getHubLinksForDocument } from "@/data/documentLibrary";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
+import { paginateSlice } from "@/lib/pagination";
+import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const DOCS_PAGE_SIZE = 20;
+const DOCS_VIEW_KEY = "documents_view_mode";
 
 function docKey(doc) {
   if (doc.isLibraryDocument) return `lib:${doc.id}`;
@@ -66,6 +107,170 @@ function formatFileSize(kb) {
   if (!kb) return null;
   if (kb < 1024) return `${Math.round(kb)} KB`;
   return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function getDocDisplayName(file) {
+  return file?.metadata?.title ?? file?.name ?? "Untitled";
+}
+
+function truncateMiddle(str, maxLen = 36) {
+  if (!str || str.length <= maxLen) return str;
+  const half = Math.floor((maxLen - 1) / 2);
+  return `${str.slice(0, half)}…${str.slice(-half)}`;
+}
+
+function loadSavedViewMode() {
+  try {
+    const saved = localStorage.getItem(DOCS_VIEW_KEY);
+    if (saved === "grid" || saved === "list") return saved;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/** Table footer pagination — matches Knowledge Hub list. */
+function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
+  if (totalItems === 0) return null;
+  const currentPage = Math.min(page, totalPages);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      <Separator />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+        {totalPages > 1 ? (
+          <>
+            {totalItems} document{totalItems !== 1 ? "s" : ""} · page {currentPage} of {totalPages}
+          </>
+        ) : (
+          <>
+            {totalItems} document{totalItems !== 1 ? "s" : ""}
+          </>
+        )}
+      </p>
+      {totalPages > 1 && (
+        <Pagination className="mx-0 w-auto">
+          <PaginationContent className="gap-0.5">
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPageChange(Math.max(1, currentPage - 1));
+                }}
+                className={cn(
+                  "h-7 cursor-pointer text-xs",
+                  currentPage === 1 && "pointer-events-none opacity-40",
+                )}
+                aria-disabled={currentPage === 1}
+                text="Prev"
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+              <PaginationItem key={pg}>
+                <PaginationLink
+                  isActive={pg === currentPage}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onPageChange(pg);
+                  }}
+                  className="h-7 w-7 cursor-pointer text-xs"
+                >
+                  {pg}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={(e) => {
+                  e.preventDefault();
+                  onPageChange(Math.min(totalPages, currentPage + 1));
+                }}
+                className={cn(
+                  "h-7 cursor-pointer text-xs",
+                  currentPage === totalPages && "pointer-events-none opacity-40",
+                )}
+                aria-disabled={currentPage === totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+      </div>
+    </div>
+  );
+}
+
+function ActiveFilterChips({
+  searchQuery,
+  filterSource,
+  filterType,
+  filterStatus,
+  sourceOptions,
+  typeOptions,
+  onClearSearch,
+  onClearSource,
+  onClearType,
+  onClearStatus,
+  onClearAll,
+}) {
+  const chips = [];
+
+  if (searchQuery.trim()) {
+    chips.push({ key: "search", label: `Search: "${searchQuery.trim()}"`, onClear: onClearSearch });
+  }
+  if (filterSource !== "all") {
+    const label = sourceOptions.find((o) => o.id === filterSource)?.label ?? filterSource;
+    chips.push({ key: "source", label: `Source: ${label}`, onClear: onClearSource });
+  }
+  if (filterType !== "all") {
+    const label = typeOptions.find((o) => o.id === filterType)?.label ?? filterType;
+    chips.push({ key: "type", label: `Type: ${label}`, onClear: onClearType });
+  }
+  if (filterStatus) {
+    const statusLabels = {
+      local: "Local",
+      ready: "Ready",
+      synced: "Synced",
+      processing: "Processing",
+      "sync-failed": "Failed",
+      warning: "Attention",
+      "out-of-sync": "Out of sync",
+      "cloud-reference": "Cloud references",
+    };
+    chips.push({
+      key: "status",
+      label: `Status: ${statusLabels[filterStatus] ?? filterStatus}`,
+      onClear: onClearStatus,
+    });
+  }
+
+  if (chips.length === 0) return null;
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {chips.map((chip) => (
+        <Badge key={chip.key} variant="outline" className="gap-1 pr-1">
+          {chip.label}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="size-4"
+            onClick={chip.onClear}
+            aria-label={`Remove ${chip.label} filter`}
+          >
+            <X aria-hidden />
+          </Button>
+        </Badge>
+      ))}
+      {chips.length > 1 && (
+        <Button type="button" variant="link" size="sm" className="h-auto px-0 text-xs" onClick={onClearAll}>
+          Clear all
+        </Button>
+      )}
+    </div>
+  );
 }
 
 const SORT_OPTIONS = [
@@ -83,39 +288,54 @@ const SOURCE_FILTER_OPTIONS = [
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
+function formatHubDisplayName(hubName) {
+  return (hubName ?? "").replace(/\s*\(Draft\)\s*$/i, "").trim();
+}
+
 function HubBadge({ hubName }) {
+  const displayName = formatHubDisplayName(hubName);
   return (
-    <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
-      <Database className="size-2.5 shrink-0" />
-      <span className="truncate max-w-[96px]">{hubName}</span>
-    </span>
+    <Badge variant="outline" className="max-w-[120px]">
+      <Database data-icon="inline-start" aria-hidden />
+      <span className="truncate">{displayName}</span>
+    </Badge>
   );
 }
 
 function HubLinksBadge({ hubLinks = [] }) {
   if (hubLinks.length === 0) {
-    return (
-      <span className="inline-flex shrink-0 items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-        Standalone
-      </span>
-    );
+    return <Badge variant="secondary">Standalone</Badge>;
   }
+
+  const names = hubLinks.map((link) => formatHubDisplayName(link.hubName)).filter(Boolean);
+
   if (hubLinks.length === 1) {
-    return <HubBadge hubName={hubLinks[0].hubName} />;
+    return <HubBadge hubName={names[0]} />;
   }
+
+  const linkedSummary = names.join(", ");
+
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
-      <Database className="size-2.5 shrink-0" />
-      {hubLinks.length} hubs
-    </span>
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex min-w-0 max-w-full items-center gap-1" />}>
+        <HubBadge hubName={names[0]} />
+        <Badge variant="secondary" className="shrink-0">
+          +{hubLinks.length - 1}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        Linked to {hubLinks.length} hubs: {linkedSummary}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
 // ─── File card (grid view) ────────────────────────────────────────────────────
 
-function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, onToggleSelect, onOpen, canEdit, onSyncFile }) {
+function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlighted, onToggleSelect, onOpen, canEdit, onSyncFile }) {
   const cfg = getFileTypeConfig(file.type);
   const sizeLabel = formatFileSize(file.sizeKb);
+  const displayName = getDocDisplayName(file);
 
   function handleActivate() {
     if (selectionMode) onToggleSelect(docKey(file));
@@ -123,12 +343,12 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, onToggleS
   }
 
   return (
-    <article
+    <Card
+      data-doc-id={file.id}
       className={cn(
-        "group relative flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-1 pb-2 transition-all duration-150",
-        selectionMode && selected
-          ? "border-primary bg-primary/5 ring-2 ring-primary/25"
-          : "border-transparent hover:border-border hover:bg-muted/40",
+        "group cursor-pointer border-transparent py-0 shadow-none transition-all duration-150 hover:border-border hover:bg-muted/40",
+        selectionMode && selected && "border-primary bg-primary/5 ring-2 ring-primary/25",
+        highlighted && "border-primary ring-2 ring-primary/40 animate-pulse",
       )}
       onClick={handleActivate}
       role="button"
@@ -141,7 +361,7 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, onToggleS
       }}
       aria-pressed={selectionMode ? selected : undefined}
     >
-      {/* Thumbnail — compact cover, centered in grid cell */}
+      <CardContent className="flex flex-col items-center gap-2 p-2 pb-3">
       <div className="relative mx-auto aspect-[3/4] w-[92px] overflow-hidden rounded-lg sm:w-[104px]">
         <HubFileThumbnail
           hubId={hubId}
@@ -151,7 +371,19 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, onToggleS
           imgClassName="p-1"
         />
 
-        {/* Selection indicator — visible in selection mode */}
+        {!selectionMode && (
+          <div className="absolute right-1.5 top-1.5 z-10">
+            <FileSyncStatusIndicator
+              file={file}
+              fileName={displayName}
+              compact
+              iconOnly
+              canActivate={canEdit && file.source === "cloud"}
+              onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
+            />
+          </div>
+        )}
+
         {selectionMode && (
           <div
             className={cn(
@@ -167,38 +399,72 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, onToggleS
         )}
       </div>
 
-      {/* File info */}
       <div className="min-w-0 w-full px-0.5 text-center">
-        <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground" title={file.name}>
-          {file.name}
+        <p className="text-xs font-medium leading-snug text-foreground" title={displayName}>
+          {truncateMiddle(displayName, 28)}
         </p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {cfg.label}{sizeLabel ? ` · ${sizeLabel}` : ""}
         </p>
-        <div className="mt-1.5 flex min-w-0 flex-col items-center gap-1.5">
-          <div className="flex min-w-0 flex-wrap justify-center gap-1">
-            <FileSourceBadge file={file} size="sm" />
-            <HubLinksBadge hubLinks={hubLinks} />
-          </div>
-          <FileSyncStatusIndicator
-            file={file}
-            compact
-            canActivate={canEdit && file.source === "cloud"}
-            onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
-            className="justify-center"
-          />
+        <div className="mt-1.5 flex min-w-0 justify-center">
+          <HubLinksBadge hubLinks={hubLinks} />
         </div>
       </div>
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
 // ─── File row (list view) ─────────────────────────────────────────────────────
 
-function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, onToggleSelect, onOpen, canEdit, onSyncFile }) {
+function DocumentsListTable({
+  docs,
+  selectionMode,
+  selectedKeys,
+  highlightedIds,
+  canEdit,
+  onToggleSelect,
+  onOpen,
+  onSyncFile,
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          {selectionMode ? <TableHead className="w-10" /> : null}
+          <TableHead>Name</TableHead>
+          <TableHead className="hidden sm:table-cell">Hubs</TableHead>
+          <TableHead className="hidden w-12 text-center sm:table-cell">Status</TableHead>
+          <TableHead className="hidden sm:table-cell">Type</TableHead>
+          <TableHead className="hidden text-right sm:table-cell">Size</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {docs.map((doc) => (
+          <DocFileRow
+            key={docKey(doc)}
+            hubId={doc.hubId}
+            file={doc}
+            hubLinks={doc.hubLinks}
+            selectionMode={selectionMode}
+            selected={selectedKeys.has(docKey(doc))}
+            highlighted={highlightedIds?.has(doc.id) || highlightedIds?.has(doc.libraryDocumentId)}
+            onToggleSelect={onToggleSelect}
+            onOpen={onOpen}
+            canEdit={canEdit}
+            onSyncFile={onSyncFile}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighted, onToggleSelect, onOpen, canEdit, onSyncFile }) {
   const cfg = getFileTypeConfig(file.type);
   const Icon = cfg.icon;
   const sizeLabel = formatFileSize(file.sizeKb);
+  const displayName = getDocDisplayName(file);
 
   function handleActivate() {
     if (selectionMode) onToggleSelect(docKey(file));
@@ -206,74 +472,83 @@ function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, onToggleSe
   }
 
   return (
-    <div
-      className={cn(
-        "group flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-150",
-        selectionMode && selected
-          ? "border-primary/40 bg-primary/5 ring-1 ring-primary/25"
-          : "border-transparent hover:border-border hover:bg-muted/40",
-      )}
+    <TableRow
+      data-doc-id={file.id}
+      data-state={selected ? "selected" : undefined}
+      className={cn("cursor-pointer", highlighted && "bg-primary/5 ring-2 ring-inset ring-primary/40")}
       onClick={handleActivate}
-      role="button"
-      tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
           handleActivate();
         }
       }}
+      tabIndex={0}
       aria-pressed={selectionMode ? selected : undefined}
     >
-      {/* Checkbox — visible in selection mode */}
-      {selectionMode && (
-        <div
-          className={cn(
-            "flex size-4 shrink-0 items-center justify-center rounded border transition-all duration-150",
-            selected
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border/60 bg-background",
-          )}
-          aria-hidden
-        >
-          {selected && <Check className="size-2.5" strokeWidth={3} />}
-        </div>
-      )}
+      {selectionMode ? (
+        <TableCell className="w-10">
+          <div
+            className={cn(
+              "flex size-4 items-center justify-center rounded border",
+              selected
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border/60 bg-background",
+            )}
+            aria-hidden
+          >
+            {selected && <Check className="size-2.5" strokeWidth={3} />}
+          </div>
+        </TableCell>
+      ) : null}
 
-      {/* Type icon */}
-      <div
-        className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm ring-1 ring-black/[0.04]",
-          cfg.bg,
-        )}
-      >
-        <Icon className={cn("size-3.5", cfg.fg)} strokeWidth={1.75} />
-      </div>
-
-      {/* Name + badges */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-1">
-          <FileSourceBadge file={file} size="sm" />
-          <HubLinksBadge hubLinks={hubLinks} />
+      <TableCell>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm ring-1 ring-border/60 sm:hidden", cfg.bg)}>
+            <Icon className={cn("size-3.5", cfg.fg)} strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground" title={displayName}>
+              {truncateMiddle(displayName, 48)}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
+              <HubLinksBadge hubLinks={hubLinks} />
+              <FileSyncStatusIndicator
+                file={file}
+                fileName={displayName}
+                compact
+                iconOnly
+                canActivate={canEdit && file.source === "cloud"}
+                onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
+              />
+            </div>
+          </div>
         </div>
-        <div className="mt-1">
+      </TableCell>
+
+      <TableCell className="hidden sm:table-cell">
+        <HubLinksBadge hubLinks={hubLinks} />
+      </TableCell>
+
+      <TableCell className="hidden text-center sm:table-cell">
+        <div className="flex justify-center">
           <FileSyncStatusIndicator
             file={file}
+            fileName={displayName}
             compact
+            iconOnly
             canActivate={canEdit && file.source === "cloud"}
             onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
           />
         </div>
-      </div>
+      </TableCell>
 
-      {/* Meta — right side */}
-      <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
-        {sizeLabel && <span className="hidden sm:block">{sizeLabel}</span>}
-        <span className="hidden rounded-md bg-muted px-1.5 py-0.5 text-[10px] md:block">
-          {cfg.label}
-        </span>
-      </div>
-    </div>
+      <TableCell className="hidden text-muted-foreground sm:table-cell">{cfg.label}</TableCell>
+
+      <TableCell className="hidden text-right text-muted-foreground sm:table-cell">
+        {sizeLabel ?? "—"}
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -292,46 +567,40 @@ function BulkActionBar({
 }) {
   return (
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 pointer-events-none">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-2.5 shadow-2xl ring-1 ring-black/[0.08]">
-        {/* Count pill */}
+      <Card className="pointer-events-auto border-border py-0 shadow-2xl">
+        <CardContent className="flex items-center gap-2 px-4 py-2.5">
         <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-          <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          <Badge className="size-5 justify-center rounded-full p-0 text-xs">
             {count}
-          </span>
+          </Badge>
           {count === 1 ? "file" : "files"} selected
         </span>
 
-        <div className="mx-1.5 h-4 w-px bg-border" />
+        <Separator orientation="vertical" className="mx-1 h-4" />
 
-        <button
-          type="button"
-          onClick={onClearSelection}
-          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <X className="size-3" />
+        <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={onClearSelection}>
+          <X data-icon="inline-start" aria-hidden />
           Clear
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
           onClick={onCreateHub}
           disabled={!canCreateHub}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Plus className="size-3.5" />
+          <Plus data-icon="inline-start" aria-hidden />
           Create Knowledge Hub
-        </button>
+        </Button>
 
         {canEdit ? (
           <>
             {linkTargetHub ? (
-              <button
-                type="button"
-                onClick={() => onAddToHub(linkTargetHub.id)}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-              >
+              <Button type="button" size="sm" className="h-8 text-xs" onClick={() => onAddToHub(linkTargetHub.id)}>
                 Link to {linkTargetHub.name}
-              </button>
+              </Button>
             ) : (
               <KnowledgeHubSearchPicker
                 hubs={hubs}
@@ -340,30 +609,23 @@ function BulkActionBar({
                 onSelect={(hub) => onAddToHub(hub.id)}
                 onRequestCreate={canCreateHub ? onCreateHub : undefined}
                 renderTrigger={({ toggle }) => (
-                  <button
-                    type="button"
-                    onClick={toggle}
-                    className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-                  >
-                    <Database className="size-3.5" />
+                  <Button type="button" size="sm" className="h-8 text-xs" onClick={toggle}>
+                    <Database data-icon="inline-start" aria-hidden />
                     Add to Hub
-                    <ChevronDown className="size-3 opacity-70" />
-                  </button>
+                    <ChevronDown data-icon="inline-end" className="opacity-70" aria-hidden />
+                  </Button>
                 )}
               />
             )}
 
-            <button
-              type="button"
-              onClick={onRemove}
-              className="flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15"
-            >
-              <Trash2 className="size-3.5" />
+            <Button type="button" variant="destructive" size="sm" className="h-8 text-xs" onClick={onRemove}>
+              <Trash2 data-icon="inline-start" aria-hidden />
               Remove
-            </button>
+            </Button>
           </>
         ) : null}
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -372,22 +634,22 @@ function BulkActionBar({
 
 function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 py-20">
-      <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
-        <Files className="size-8 text-muted-foreground" />
-      </div>
-      <div className="text-center">
-        <p className="text-sm font-semibold text-foreground">No documents yet</p>
-        <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+    <Empty className="flex-1 border border-dashed py-16">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Files aria-hidden />
+        </EmptyMedia>
+        <EmptyTitle>No documents yet</EmptyTitle>
+        <EmptyDescription>
           Upload from your computer or import from cloud storage. Link documents to{" "}
           {KNOWLEDGE_TERMS.hubs.toLowerCase()} anytime.
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-2">
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
         {canUpload ? (
-          <Button size="sm" onClick={onUpload} className="gap-1.5">
-            <Upload className="size-4" />
-            Upload {KNOWLEDGE_TERMS.documents}
+          <Button size="sm" onClick={onUpload}>
+            <Upload data-icon="inline-start" aria-hidden />
+            {KNOWLEDGE_TERMS.addSources}
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -399,8 +661,8 @@ function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
             Create {KNOWLEDGE_TERMS.hubSingular}
           </Button>
         ) : null}
-      </div>
-    </div>
+      </EmptyContent>
+    </Empty>
   );
 }
 
@@ -410,6 +672,11 @@ export default function DocumentsPage({ onNavigate }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkHubId = searchParams.get("linkHub");
+  const highlightParam = searchParams.get("highlight");
+  const highlightIds = useMemo(() => {
+    if (!highlightParam) return new Set();
+    return new Set(highlightParam.split(",").map((id) => id.trim()).filter(Boolean));
+  }, [highlightParam]);
   const { can } = usePermissions();
   const {
     hubs,
@@ -430,11 +697,13 @@ export default function DocumentsPage({ onNavigate }) {
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
 
-  const [viewMode, setViewMode]         = useState("grid");
+  const [viewMode, setViewMode]         = useState(() => loadSavedViewMode() ?? "list");
+  const [docsPage, setDocsPage]         = useState(1);
   const [searchQuery, setSearchQuery]   = useState("");
   const [sortBy, setSortBy]             = useState("recent");
   const [filterSource, setFilterSource] = useState("all");
   const [filterType, setFilterType]     = useState("all");
+  const [filterStatus, setFilterStatus] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [readerDoc, setReaderDoc]       = useState(null);
@@ -453,6 +722,10 @@ export default function DocumentsPage({ onNavigate }) {
     setReaderDoc(null);
     setSelectionMode(true);
   }, [linkHubId, linkTargetHub]);
+
+  useEffect(() => {
+    setDocsPage(1);
+  }, [searchQuery, filterSource, filterType, filterStatus, sortBy]);
 
   // ── Flat document list: library + legacy hub-only files ───────────────────
 
@@ -487,6 +760,21 @@ export default function DocumentsPage({ onNavigate }) {
     return docs;
   }, [documents, hubs]);
 
+  useEffect(() => {
+    if (loadSavedViewMode() !== null) return;
+    if (allDocs.length === 0) return;
+    setViewMode(allDocs.length > 20 ? "list" : "grid");
+  }, [allDocs.length]);
+
+  function handleViewModeChange(mode) {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(DOCS_VIEW_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const typeOptions = useMemo(() => {
     const types = new Set(allDocs.map((d) => d.type).filter(Boolean));
     return [
@@ -502,11 +790,28 @@ export default function DocumentsPage({ onNavigate }) {
     const q = searchQuery.trim().toLowerCase();
     let list = allDocs.filter((d) => {
       const hubLabel = d.hubLinks?.map((l) => l.hubName).join(" ") ?? "";
-      if (q && !d.name?.toLowerCase().includes(q) && !hubLabel.toLowerCase().includes(q))
+      const displayName = getDocDisplayName(d).toLowerCase();
+      if (
+        q
+        && !displayName.includes(q)
+        && !d.name?.toLowerCase().includes(q)
+        && !hubLabel.toLowerCase().includes(q)
+      ) {
         return false;
+      }
       if (filterSource === "local" && d.source !== "user" && d.source !== "upload") return false;
       if (filterSource === "cloud" && d.source !== "cloud") return false;
       if (filterType !== "all" && d.type !== filterType) return false;
+      if (filterStatus) {
+        const status = resolveFileLifecycleStatus(d);
+        if (filterStatus === "local") {
+          if (d.source !== "user" && d.source !== "upload") return false;
+        } else if (filterStatus === "processing") {
+          if (status !== "processing" && status !== "syncing") return false;
+        } else if (status !== filterStatus) {
+          return false;
+        }
+      }
       return true;
     });
     return [...list].sort((a, b) => {
@@ -521,7 +826,56 @@ export default function DocumentsPage({ onNavigate }) {
       }
       return (b.uploadedAt ?? b.created ?? "").localeCompare(a.uploadedAt ?? a.created ?? "");
     });
-  }, [allDocs, searchQuery, filterSource, filterType, sortBy]);
+  }, [allDocs, searchQuery, filterSource, filterType, filterStatus, sortBy]);
+
+  const docsPagination = useMemo(
+    () => paginateSlice(filteredDocs, docsPage, DOCS_PAGE_SIZE),
+    [filteredDocs, docsPage],
+  );
+
+  useEffect(() => {
+    if (highlightIds.size === 0) return undefined;
+
+    const firstHighlighted = filteredDocs.find(
+      (doc) => highlightIds.has(doc.id) || highlightIds.has(doc.libraryDocumentId),
+    );
+    if (firstHighlighted) {
+      const index = filteredDocs.findIndex(
+        (doc) => doc.id === firstHighlighted.id,
+      );
+      if (index >= 0) {
+        const targetPage = Math.floor(index / DOCS_PAGE_SIZE) + 1;
+        setDocsPage(targetPage);
+      }
+      window.requestAnimationFrame(() => {
+        document
+          .querySelector(`[data-doc-id="${firstHighlighted.id}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+
+    const timer = window.setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("highlight");
+      setSearchParams(next, { replace: true });
+    }, 6000);
+
+    return () => window.clearTimeout(timer);
+  }, [highlightParam, filteredDocs, searchParams, setSearchParams, highlightIds.size]);
+
+  const hasActiveFilters =
+    Boolean(searchQuery.trim())
+    || filterSource !== "all"
+    || filterType !== "all"
+    || filterStatus !== null;
+
+  function clearAllFilters() {
+    setSearchQuery("");
+    setFilterSource("all");
+    setFilterType("all");
+    setFilterStatus(null);
+    setDocsPage(1);
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -576,36 +930,36 @@ export default function DocumentsPage({ onNavigate }) {
     setSelectionMode(true);
   }
 
-  async function handleFilesAdded({ files = [], cloudImport, cloudImports, skippedLocal = 0 } = {}) {
-    try {
-      const result = await addDocumentsToLibrary({ files, cloudImport, cloudImports });
-      const count = result?.added?.length ?? 0;
-      const skipped = (result?.rejected ?? 0) + (skippedLocal ?? 0);
-      if (count === 0) {
-        showToast({
-          title: skipped > 0 ? "Nothing uploaded" : "Nothing uploaded",
-          description:
-            skipped > 0
-              ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (invalid or too large).`
-              : "No valid files were added to your library.",
-          variant: skipped > 0 ? "destructive" : "default",
-        });
-        return;
-      }
-      const skipNote =
-        skipped > 0 ? ` ${skipped} file${skipped === 1 ? "" : "s"} skipped (too large or invalid).` : "";
+  async function handleUploadComplete(result) {
+    const count = result?.added?.length ?? 0;
+    const skipped = result?.rejected ?? 0;
+    if (count === 0) {
       showToast({
-        title: "Documents uploaded",
-        description: `${count} document${count === 1 ? "" : "s"} added to your library.${skipNote}`,
-        variant: "success",
+        title: "Nothing added",
+        description:
+          skipped > 0
+            ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (invalid or too large).`
+            : "No valid files were added to your library.",
+        variant: skipped > 0 ? "destructive" : "default",
       });
-    } catch {
-      showToast({
-        title: "Upload failed",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
+      return;
     }
+    const skipNote =
+      skipped > 0 ? ` ${skipped} file${skipped === 1 ? "" : "s"} skipped (too large or invalid).` : "";
+    showToast({
+      title: KNOWLEDGE_TERMS.uploadComplete,
+      description: `${count} source${count === 1 ? "" : "s"} added to your library.${skipNote}`,
+      variant: "success",
+    });
+  }
+
+  function handleViewInDocuments(recordIds = []) {
+    const ids = recordIds.filter(Boolean);
+    if (ids.length === 0) {
+      navigate("/documents");
+      return;
+    }
+    navigate(`/documents?highlight=${ids.join(",")}`);
   }
 
   async function handleAddToHub(hubId) {
@@ -939,9 +1293,9 @@ export default function DocumentsPage({ onNavigate }) {
               description={KNOWLEDGE_TERMS.documentsPageDescription}
             >
               {canCreate && (
-                <Button size="sm" onClick={() => setUploadOpen(true)} className="gap-1.5">
-                  <Upload className="size-4" />
-                  Upload
+                <Button size="sm" onClick={() => setUploadOpen(true)}>
+                  <Upload data-icon="inline-start" aria-hidden />
+                  {KNOWLEDGE_TERMS.addSources}
                 </Button>
               )}
             </PageHeader>
@@ -952,26 +1306,27 @@ export default function DocumentsPage({ onNavigate }) {
           {!readerDoc && (
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-y border-border bg-muted/20 px-6 py-2">
 
-            {/* Search */}
-            <div className="relative min-w-[180px] flex-1 max-w-[280px]">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className={cn(TOOLBAR_CONTROL_CLASS, "pl-8")}
+            <InputGroup className={cn("min-w-[180px] flex-1 max-w-[280px]", TOOLBAR_CONTROL_CLASS)}>
+              <InputGroupAddon>
+                <Search aria-hidden />
+              </InputGroupAddon>
+              <InputGroupInput
                 placeholder="Search documents…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label="Clear search"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
+              {searchQuery ? (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    size="icon-xs"
+                    aria-label="Clear search"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X aria-hidden />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              ) : null}
+            </InputGroup>
 
             {/* Source filter */}
             <DropdownMenu>
@@ -981,14 +1336,16 @@ export default function DocumentsPage({ onNavigate }) {
                 <ChevronDown className="size-3 opacity-60" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
-                {SOURCE_FILTER_OPTIONS.map((o) => (
-                  <DropdownMenuItem key={o.id} onClick={() => setFilterSource(o.id)} className="gap-2">
-                    {filterSource === o.id
-                      ? <Check className="size-3.5 text-primary" />
-                      : <span className="size-3.5" />}
-                    {o.label}
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuGroup>
+                  {SOURCE_FILTER_OPTIONS.map((o) => (
+                    <DropdownMenuItem key={o.id} onClick={() => setFilterSource(o.id)} className="gap-2">
+                      {filterSource === o.id
+                        ? <Check className="size-3.5 text-primary" />
+                        : <span className="size-3.5" />}
+                      {o.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1000,14 +1357,16 @@ export default function DocumentsPage({ onNavigate }) {
                 <ChevronDown className="size-3 opacity-60" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="max-h-60 w-44 overflow-y-auto">
-                {typeOptions.map((o) => (
-                  <DropdownMenuItem key={o.id} onClick={() => setFilterType(o.id)} className="gap-2">
-                    {filterType === o.id
-                      ? <Check className="size-3.5 text-primary" />
-                      : <span className="size-3.5" />}
-                    {o.label}
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuGroup>
+                  {typeOptions.map((o) => (
+                    <DropdownMenuItem key={o.id} onClick={() => setFilterType(o.id)} className="gap-2">
+                      {filterType === o.id
+                        ? <Check className="size-3.5 text-primary" />
+                        : <span className="size-3.5" />}
+                      {o.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1019,14 +1378,16 @@ export default function DocumentsPage({ onNavigate }) {
                 <ChevronDown className="size-3 opacity-60" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-40">
-                {SORT_OPTIONS.map((o) => (
-                  <DropdownMenuItem key={o.id} onClick={() => setSortBy(o.id)} className="gap-2">
-                    {sortBy === o.id
-                      ? <Check className="size-3.5 text-primary" />
-                      : <span className="size-3.5" />}
-                    {o.label}
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuGroup>
+                  {SORT_OPTIONS.map((o) => (
+                    <DropdownMenuItem key={o.id} onClick={() => setSortBy(o.id)} className="gap-2">
+                      {sortBy === o.id
+                        ? <Check className="size-3.5 text-primary" />
+                        : <span className="size-3.5" />}
+                      {o.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -1056,27 +1417,23 @@ export default function DocumentsPage({ onNavigate }) {
               )}
 
               {!readerDoc && (
-              <div className="flex items-center rounded-full border border-border/60 bg-background p-0.5 shadow-sm">
+              <div className="flex items-center rounded-lg border border-border/60 bg-background p-0.5">
                 {[
                   { id: "grid", icon: LayoutGrid, label: "Grid view" },
-                  { id: "list", icon: List,       label: "List view" },
+                  { id: "list", icon: List, label: "List view" },
                 ].map(({ id, icon: Icon, label }) => (
-                  <button
+                  <Button
                     key={id}
                     type="button"
+                    variant={viewMode === id ? "secondary" : "ghost"}
+                    size="icon-sm"
                     title={label}
                     aria-label={label}
                     aria-pressed={viewMode === id}
-                    onClick={() => setViewMode(id)}
-                    className={cn(
-                      "flex size-7 items-center justify-center rounded-full transition-all duration-150",
-                      viewMode === id
-                        ? "bg-muted text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
+                    onClick={() => handleViewModeChange(id)}
                   >
-                    <Icon className="size-3.5" strokeWidth={viewMode === id ? 2.25 : 1.75} />
-                  </button>
+                    <Icon aria-hidden />
+                  </Button>
                 ))}
               </div>
               )}
@@ -1104,13 +1461,15 @@ export default function DocumentsPage({ onNavigate }) {
                   Select all
                 </Button>
               )}
-              <button
+              <Button
                 type="button"
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-7 px-2 text-xs"
                 onClick={exitSelectionMode}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           )}
 
@@ -1142,13 +1501,40 @@ export default function DocumentsPage({ onNavigate }) {
               ) : (
             <div
               className={cn(
-                "flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-5",
+                "flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-6 py-5",
                 selectionMode && selectedCount > 0 && "pb-24",
               )}
             >
               {allDocs.length > 0 ? (
-                <FileStatusSummaryBar files={allDocs} title="Documents" className="mb-5 shrink-0" />
+                <FileStatusSummaryBar
+                  files={allDocs}
+                  title="Documents"
+                  compact
+                  hideTotalCount
+                  excludeSourceMetrics
+                  hideWhenHealthy
+                  className="mb-4 shrink-0"
+                  activeFilter={filterStatus}
+                  onFilter={setFilterStatus}
+                />
               ) : null}
+
+              {hasActiveFilters ? (
+                <ActiveFilterChips
+                  searchQuery={searchQuery}
+                  filterSource={filterSource}
+                  filterType={filterType}
+                  filterStatus={filterStatus}
+                  sourceOptions={SOURCE_FILTER_OPTIONS}
+                  typeOptions={typeOptions}
+                  onClearSearch={() => setSearchQuery("")}
+                  onClearSource={() => setFilterSource("all")}
+                  onClearType={() => setFilterType("all")}
+                  onClearStatus={() => setFilterStatus(null)}
+                  onClearAll={clearAllFilters}
+                />
+              ) : null}
+
               {allDocs.length === 0 ? (
                 <EmptyDocuments
                   canUpload={canCreate}
@@ -1157,51 +1543,69 @@ export default function DocumentsPage({ onNavigate }) {
                   onBrowseHubs={() => navigate("/knowledge")}
                 />
               ) : filteredDocs.length === 0 ? (
-                <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
-                  <p className="text-sm text-muted-foreground">No documents match your filters.</p>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="mt-1"
-                    onClick={() => { setSearchQuery(""); setFilterSource("all"); setFilterType("all"); }}
-                  >
-                    Clear filters
-                  </Button>
-                </div>
+                <Empty className="flex-1 border border-dashed py-12">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Filter aria-hidden />
+                    </EmptyMedia>
+                    <EmptyTitle>No documents match your filters</EmptyTitle>
+                    <EmptyDescription>
+                      Try adjusting your search or filters to see more documents.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button type="button" size="sm" variant="outline" onClick={clearAllFilters}>
+                      Clear filters
+                    </Button>
+                  </EmptyContent>
+                </Empty>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-                  {filteredDocs.map((doc) => (
-                    <DocFileCard
-                      key={docKey(doc)}
-                      hubId={doc.hubId}
-                      file={doc}
-                      hubLinks={doc.hubLinks}
-                      selectionMode={selectionMode}
-                      selected={selectedKeys.has(docKey(doc))}
-                      onToggleSelect={toggleSelect}
-                      onOpen={handleOpenDoc}
-                      canEdit={canEdit}
-                      onSyncFile={handleSyncFile}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5">
+                    {docsPagination.items.map((doc) => (
+                      <DocFileCard
+                        key={docKey(doc)}
+                        hubId={doc.hubId}
+                        file={doc}
+                        hubLinks={doc.hubLinks}
+                        selectionMode={selectionMode}
+                        selected={selectedKeys.has(docKey(doc))}
+                        highlighted={
+                          highlightIds.has(doc.id) || highlightIds.has(doc.libraryDocumentId)
+                        }
+                        onToggleSelect={toggleSelect}
+                        onOpen={handleOpenDoc}
+                        canEdit={canEdit}
+                        onSyncFile={handleSyncFile}
+                      />
+                    ))}
+                  </div>
+                  <DocsTablePagination
+                    page={docsPagination.currentPage}
+                    totalPages={docsPagination.totalPages}
+                    totalItems={docsPagination.totalItems}
+                    onPageChange={setDocsPage}
+                  />
+                </>
               ) : (
-                <div className="flex flex-col gap-1">
-                  {filteredDocs.map((doc) => (
-                    <DocFileRow
-                      key={docKey(doc)}
-                      hubId={doc.hubId}
-                      file={doc}
-                      hubLinks={doc.hubLinks}
-                      selectionMode={selectionMode}
-                      selected={selectedKeys.has(docKey(doc))}
-                      onToggleSelect={toggleSelect}
-                      onOpen={handleOpenDoc}
-                      canEdit={canEdit}
-                      onSyncFile={handleSyncFile}
-                    />
-                  ))}
-                </div>
+                <>
+                  <DocumentsListTable
+                    docs={docsPagination.items}
+                    selectionMode={selectionMode}
+                    selectedKeys={selectedKeys}
+                    highlightedIds={highlightIds}
+                    canEdit={canEdit}
+                    onToggleSelect={toggleSelect}
+                    onOpen={handleOpenDoc}
+                    onSyncFile={handleSyncFile}
+                  />
+                  <DocsTablePagination
+                    page={docsPagination.currentPage}
+                    totalPages={docsPagination.totalPages}
+                    totalItems={docsPagination.totalItems}
+                    onPageChange={setDocsPage}
+                  />
+                </>
               )}
             </div>
             )}
@@ -1228,7 +1632,19 @@ export default function DocumentsPage({ onNavigate }) {
       <DocumentsUploadDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onFilesAdded={handleFilesAdded}
+        onUpload={addDocumentsToLibrary}
+        onUploadComplete={(result) => {
+          if (result?.hasError && !result?.success) {
+            showToast({
+              title: KNOWLEDGE_TERMS.uploadFailed,
+              description: KNOWLEDGE_TERMS.uploadFailedDescription,
+              variant: "destructive",
+            });
+            return;
+          }
+          handleUploadComplete(result);
+        }}
+        onViewInDocuments={handleViewInDocuments}
       />
 
       <KnowledgeHubCreateDialog

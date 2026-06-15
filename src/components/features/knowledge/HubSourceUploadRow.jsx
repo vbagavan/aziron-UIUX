@@ -5,8 +5,9 @@ import {
   fileNameToTypeIcon,
 } from "@/components/features/knowledge/hubUploadProgress";
 
-export function HubSourceUploadRow({ upload, onCancel }) {
+export function HubSourceUploadRow({ upload, onCancel, onRetry }) {
   const isError = upload.status === "error";
+  const isDone = upload.status === "done";
 
   return (
     <li>
@@ -33,11 +34,26 @@ export function HubSourceUploadRow({ upload, onCancel }) {
               </div>
               <p className="text-[10px] tabular-nums text-muted-foreground">
                 {isError
-                  ? "Upload failed. Try again."
-                  : `${formatUploadBytes(upload.loaded)} of ${formatUploadBytes(upload.total)}`}
+                  ? "Upload failed."
+                  : isDone
+                    ? "Added"
+                    : upload.isCloudBatch
+                      ? "Importing from cloud…"
+                      : `${formatUploadBytes(upload.loaded)} of ${formatUploadBytes(upload.total)}`}
               </p>
             </div>
           </div>
+          {isError && onRetry ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              className="shrink-0"
+              onClick={() => onRetry(upload.id)}
+            >
+              Retry
+            </Button>
+          ) : null}
           {onCancel && upload.status === "uploading" ? (
             <Button
               type="button"

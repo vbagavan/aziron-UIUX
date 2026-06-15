@@ -12,6 +12,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Pagination,
   PaginationContent,
@@ -65,6 +66,12 @@ import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
 
 const HUB_LIST_PAGE_SIZE = 20;
+
+/** Strip a trailing "(Draft)" label from hub names and return whether it was present. */
+function parseHubName(name = "") {
+  const match = name.match(/^(.*)\s+\(Draft\)\s*$/i);
+  return match ? { displayName: match[1].trim(), isDraft: true } : { displayName: name, isDraft: false };
+}
 
 /** Table footer pagination — matches InsuranceManagementPage / shadcn Pagination. */
 function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageChange }) {
@@ -165,9 +172,14 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
             <div className={cn("mb-3 flex size-10 items-center justify-center rounded-lg", accent)}>
               <Database className="size-5" aria-hidden />
             </div>
-            <p className="truncate text-sm font-semibold text-foreground">{hub.name}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="truncate text-sm font-semibold text-foreground">{parseHubName(hub.name).displayName}</p>
+              {parseHubName(hub.name).isDraft && (
+                <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
+              )}
+            </div>
             {hub.description && (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{hub.description}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground" title={hub.description}>{hub.description}</p>
             )}
             <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -291,9 +303,17 @@ function HubTable({
                 />
               </TableCell>
               <TableCell>
-                <span className="font-medium text-foreground">{hub.name}</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-foreground">{parseHubName(hub.name).displayName}</span>
+                  {parseHubName(hub.name).isDraft && (
+                    <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
+                  )}
+                </div>
                 {hub.description && (
-                  <p className="mt-0.5 hidden max-w-[240px] truncate text-xs text-muted-foreground sm:block">
+                  <p
+                    className="mt-0.5 hidden max-w-[240px] truncate text-xs text-muted-foreground sm:block"
+                    title={hub.description}
+                  >
                     {hub.description}
                   </p>
                 )}
@@ -477,7 +497,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
     navigate(`/knowledge/${id}`);
   }
 
-  function handleFilesAdded(names, provider) {
+  function handleFilesAdded(names, provider, { skipped = 0 } = {}) {
     if (provider === "published") {
       showToast("Knowledge Hub published and available to agents and workflows.");
       return;
@@ -491,14 +511,16 @@ export default function KnowledgeHubPage({ onNavigate }) {
           : provider === "upload"
             ? "upload"
             : "source";
+    const skipNote =
+      skipped > 0 ? ` ${skipped} file${skipped === 1 ? "" : "s"} skipped (too large or invalid).` : "";
     showToast(
       names.length === 1
         ? label === "upload"
-          ? `"${names[0]}" added to hub and document library.`
-          : `"${names[0]}" added from ${label}.`
+          ? `"${names[0]}" added to hub and document library.${skipNote}`
+          : `"${names[0]}" added from ${label}.${skipNote}`
         : label === "upload"
-          ? `${names.length} files added to hub and document library.`
-          : `${names.length} files added from ${label}.`,
+          ? `${names.length} sources added to hub and document library.${skipNote}`
+          : `${names.length} files added from ${label}.${skipNote}`,
     );
   }
 
@@ -675,8 +697,10 @@ export default function KnowledgeHubPage({ onNavigate }) {
                     error
                       ? `Could not download “${name}”: ${error}`
                       : `Could not download “${name}”.`,
+                    { variant: "destructive" },
                   )
                 }
+                onNotify={(payload) => showToast(payload)}
               />
           ) : (
             <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
@@ -755,7 +779,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
                     {canCreate && (
                       <Button
                         onClick={() => setCreateOpen(true)}
-                        className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                        className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
                       >
                         <Plus size={16} />
                         Add Knowledge Hub

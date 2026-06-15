@@ -27,12 +27,14 @@ export function KnowledgeHubHeaderBreadcrumb({
     { label: KNOWLEDGE_TERMS.hubs, onClick: onKnowledgeHubClick },
   ];
 
+  const displayHubName = hubName.replace(/\s*\(Draft\)\s*$/i, "").trim();
+
   if (libraryFileName) {
-    segments.push({ label: hubName, onClick: onHubClick });
+    segments.push({ label: displayHubName, onClick: onHubClick });
     segments.push({ label: libraryFileName, current: true });
   } else {
     segments.push({
-      label: hubName,
+      label: displayHubName,
       current: true,
       suffix: detailsDirty ? "(unsaved)" : null,
     });

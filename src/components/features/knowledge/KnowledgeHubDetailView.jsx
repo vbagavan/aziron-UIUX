@@ -9,22 +9,15 @@ import {
 } from "@/components/features/knowledge/hubFileSyncUtils";
 import { KnowledgeHubControlCenter } from "@/components/features/knowledge/control-center/KnowledgeHubControlCenter";
 import { HubLibraryView } from "@/components/features/knowledge/HubLibraryView";
-import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePreviewViewer";
+import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
 import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import ConnectionWizard from "@/components/connections/ConnectionWizard.jsx";
 import { useConnectionsStore } from "@/lib/connections/store.js";
 import { HubAddSourcesMenu } from "@/components/features/knowledge/HubAddSourcesMenu";
-import { CloudAddFilesDialog } from "@/components/features/knowledge/cloud/CloudAddFilesDialog";
 import { HubSettingsSheet } from "@/components/features/knowledge/HubSettingsSheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { buildHubFileInventory, getHubFileStatus } from "@/data/knowledgeHubs";
@@ -39,6 +32,7 @@ export function KnowledgeHubDetailView({
   onFileDeleted,
   onCloudFileSynced,
   onCloudFileSyncFailed,
+  onNotify,
   onMetadataChange,
   hubNavRequest = null,
   onHubNavHandled,
@@ -59,9 +53,8 @@ export function KnowledgeHubDetailView({
   const [addSourceWizardOpen, setAddSourceWizardOpen] = useState(false);
   const [addSourceProvider, setAddSourceProvider] = useState(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadBrowseConnection, setUploadBrowseConnection] = useState(null);
   const [chooseSourceOpen, setChooseSourceOpen] = useState(false);
-  const [cloudPickerOpen, setCloudPickerOpen] = useState(false);
-  const [cloudPickerConnection, setCloudPickerConnection] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [hubSurface, setHubSurface] = useState("control-center");
@@ -74,6 +67,10 @@ export function KnowledgeHubDetailView({
   const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
   const navigate = useNavigate();
 
+  // Only fire when the hub ID changes (navigating to a different hub), not on every
+  // hub-data refresh. Without this, recordHubAccess() → context update → liveHub new
+  // reference → effect re-fires → access counter inflates on every tab switch.
+  const liveHubId = liveHub?.id ?? null;
   useEffect(() => {
     if (!liveHub) return;
     setName(liveHub.name ?? "");
@@ -82,7 +79,8 @@ export function KnowledgeHubDetailView({
     setHubSurface("control-center");
     setLibraryFileId(null);
     setPreviewFile(null);
-  }, [liveHub, recordHubAccess]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveHubId, recordHubAccess]);
 
   const inventoryPack = useMemo(
     () => (liveHub ? buildHubFileInventory(liveHub) : null),
@@ -128,18 +126,34 @@ export function KnowledgeHubDetailView({
   }
 
   function openUploadDialog() {
+    setUploadBrowseConnection(null);
     setUploadDialogOpen(true);
   }
 
-  async function handleHubUpload({ files = [], cloudImport, cloudImports, skippedLocal = 0 } = {}) {
-    try {
-      const result = await addDocumentsToHub(liveHub.id, { files, cloudImport, cloudImports });
-      const count = result?.added?.length ?? 0;
-      if (count === 0) return;
-      onFilesAdded?.(result.added, "upload");
-    } catch {
-      onFilesAdded?.([], "upload");
+  function handleUploadComplete(result) {
+    const count = result?.added?.length ?? 0;
+    const skipped = result?.rejected ?? 0;
+    if (count === 0) {
+      onNotify?.({
+        title: "Nothing added",
+        description:
+          skipped > 0
+            ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (invalid or too large).`
+            : "No valid files were added to this hub.",
+        variant: skipped > 0 ? "destructive" : "default",
+      });
+      return;
     }
+    const names = result.added.map((f) => (typeof f === "string" ? f : f?.name)).filter(Boolean);
+    onFilesAdded?.(names.length ? names : [`${count} sources`], "upload", { skipped });
+  }
+
+  function handleUploadError() {
+    onNotify?.({
+      title: "Could not add sources",
+      description: "Something went wrong. Please try again.",
+      variant: "destructive",
+    });
   }
 
   const hasCloudFiles = allFiles.some((row) => row.source === "cloud");
@@ -216,8 +230,8 @@ export function KnowledgeHubDetailView({
   }
 
   function openLibraryFile(fileId) {
-    setLibraryFileId(fileId);
-    setHubSurface("library");
+    const file = allFiles.find((f) => f.id === fileId);
+    if (file) setPreviewFile(file);
   }
 
   function backToControlCenter() {
@@ -227,15 +241,8 @@ export function KnowledgeHubDetailView({
 
   function openCloudFilePicker(connection) {
     if (!connection?.provider) return;
-    setCloudPickerConnection(connection);
-    setCloudPickerOpen(true);
-  }
-
-  async function handleAddFromCloudPicker(selectedFiles, connection) {
-    const names = await addCloudFilesToHub(liveHub.id, selectedFiles, connection);
-    if (names.length > 0) {
-      onFilesAdded?.(names, connection?.provider ?? "cloud");
-    }
+    setUploadBrowseConnection(connection);
+    setUploadDialogOpen(true);
   }
 
   return (
@@ -260,7 +267,23 @@ export function KnowledgeHubDetailView({
 
       <HubSyncCoachMark visible={hasCloudFiles && fileSyncCounts.cloudLink > 0} />
 
-      {hubSurface === "library" ? (
+      {previewFile ? (
+        <DocumentReaderDrawer
+          file={{ ...previewFile, hubId: previewFile.hubId ?? liveHub.id, isLibraryDocument: false }}
+          hubLinks={[{ hubId: liveHub.id, hubFileId: previewFile.id, hubName: name.trim() || liveHub.name }]}
+          hubs={hubs}
+          canEdit={canEdit}
+          canCreate={false}
+          onNavigateToHub={(hId) => navigate(`/knowledge/${hId}`)}
+          onRemoveHubFile={(hId, fId) => {
+            deleteHubFile(hId, fId);
+            setPreviewFile(null);
+            onFileDeleted?.(previewFile.name);
+          }}
+          onClose={() => setPreviewFile(null)}
+          onNotify={(msg) => onNotify?.(msg)}
+        />
+      ) : hubSurface === "library" ? (
         <HubLibraryView
           hubId={liveHub.id}
           hubName={name.trim() || liveHub.name}
@@ -308,10 +331,24 @@ export function KnowledgeHubDetailView({
       {canEdit && (
         <DocumentsUploadDialog
           open={uploadDialogOpen}
-          onOpenChange={setUploadDialogOpen}
+          onOpenChange={(nextOpen) => {
+            setUploadDialogOpen(nextOpen);
+            if (!nextOpen) setUploadBrowseConnection(null);
+          }}
           hubId={liveHub.id}
           hubName={name.trim() || liveHub.name}
-          onFilesAdded={handleHubUpload}
+          cloudConnections={cloudConnections}
+          initialBrowseConnection={uploadBrowseConnection}
+          excludeExternalIds={cloudPickerExcludeExternalIds}
+          excludeNames={cloudPickerExcludeNames}
+          onUpload={(payload) => addDocumentsToHub(liveHub.id, payload)}
+          onUploadComplete={(result) => {
+            if (result?.hasError && !result?.success) {
+              handleUploadError();
+              return;
+            }
+            handleUploadComplete(result);
+          }}
         />
       )}
 
@@ -331,25 +368,6 @@ export function KnowledgeHubDetailView({
         />
       )}
 
-      {previewFile && liveHub ? (
-        <Dialog open onOpenChange={(open) => { if (!open) setPreviewFile(null); }}>
-          <DialogContent className="flex h-[min(88vh,calc(100dvh-2rem))] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
-            <DialogHeader className="shrink-0 border-b border-border px-5 py-4">
-              <DialogTitle className="truncate text-base">{previewFile.name}</DialogTitle>
-            </DialogHeader>
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <HubFilePreviewViewer
-                hubId={liveHub.id}
-                file={previewFile}
-                allFiles={allFiles}
-                showDemoStatuses={showDemoStatuses}
-                onRequestDownload={() => handleDownloadCloudFile(previewFile)}
-                className="h-full"
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
 
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
         <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
@@ -388,25 +406,6 @@ export function KnowledgeHubDetailView({
         onCustomConnector={openIntegrationsWizardWithProvider}
         onUploadFiles={openUploadDialog}
       />
-
-      {canEdit && cloudPickerConnection ? (
-        <CloudAddFilesDialog
-          provider={cloudPickerConnection.provider}
-          open={cloudPickerOpen}
-          onOpenChange={(open) => {
-            setCloudPickerOpen(open);
-            if (!open) setCloudPickerConnection(null);
-          }}
-          connectionName={cloudPickerConnection.name}
-          connections={cloudConnections.filter(
-            (c) => c.provider === cloudPickerConnection.provider,
-          )}
-          activeConnection={cloudPickerConnection}
-          excludeExternalIds={cloudPickerExcludeExternalIds}
-          excludeNames={cloudPickerExcludeNames}
-          onConfirm={handleAddFromCloudPicker}
-        />
-      ) : null}
 
       {canEdit && addSourceProvider ? (
         <HubAddSourceDialog

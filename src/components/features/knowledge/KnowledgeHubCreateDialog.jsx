@@ -31,7 +31,7 @@ import { CloudConnectorLogoRow } from "./CloudConnectorLogos";
 import { CreateHubStepIndicator } from "./CreateHubStepIndicator";
 import { countSyncStates } from "./hubFileSyncUtils";
 import { getCloudProviderConfig } from "./cloud/cloudProviderConfig";
-import { CloudAddFilesDialog } from "./cloud/CloudAddFilesDialog";
+import { CloudFilePickerPanel } from "./cloud/CloudFilePickerPanel";
 import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_XL,
@@ -560,15 +560,31 @@ export function KnowledgeHubCreateDialog({
           )}
         </div>
 
-        <CloudAddFilesDialog
-          provider={cloudProvider}
-          open={cloudAddOpen}
-          onOpenChange={setCloudAddOpen}
-          connectionName={connectionDisplayName}
-          excludeExternalIds={existingExternalIds}
-          excludeNames={existingFileNames}
-          onConfirm={handleAddFromCloudPicker}
-        />
+        <Dialog open={cloudAddOpen} onOpenChange={setCloudAddOpen}>
+          <DialogContent className={HUB_DIALOG_CONTENT_XL}>
+            <DialogHeader className="border-b border-border px-6 py-4">
+              <DialogTitle>Add files from {cloudConfig.label}</DialogTitle>
+              <DialogDescription>
+                Select additional files from {connectionDisplayName}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
+              <CloudFilePickerPanel
+                provider={cloudProvider}
+                connection={cloudConnection}
+                connections={[cloudConnection]}
+                excludeExternalIds={existingExternalIds}
+                excludeNames={existingFileNames}
+                onAddFiles={(selected) => {
+                  handleAddFromCloudPicker(selected);
+                  setCloudAddOpen(false);
+                }}
+                showBackButton={false}
+                embedded
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {showDefaultFooter && (
           <DialogFooter className="m-0 shrink-0 gap-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 !mx-0 !mb-0 dark:bg-muted/20">

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
 import { HubFileSyncIcon, hubSyncStatusForRow } from "@/components/features/knowledge/HubFileSyncIcon";
 import { HubFileSyncLegend } from "@/components/features/knowledge/HubFileSyncLegend";
@@ -26,6 +27,9 @@ import { HubSyncCoachMark } from "@/components/features/knowledge/HubSyncCoachMa
 import { countSyncStates, rowsNeedingDownload } from "@/components/features/knowledge/hubFileSyncUtils";
 import { totalAttachedSizeMb } from "@/components/features/knowledge/createHubAttachedFiles";
 import { ACCEPTED_FILE_EXTENSIONS } from "@/data/knowledgeHubs";
+import { getAttachedRowTypeLabel } from "@/components/features/knowledge/SelectedSourcesTable";
+import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
+import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
 
 export function CreateHubFilesStep({
   attachedFiles,
@@ -175,6 +179,8 @@ export function CreateHubFilesStep({
                     </button>
                   </TableHead>
                   <TableHead className="w-[100px]">File size</TableHead>
+                  <TableHead className="w-[88px]">Type</TableHead>
+                  <TableHead className="w-[100px]">Source</TableHead>
                   <TableHead className="w-[110px]">Date</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -185,6 +191,9 @@ export function CreateHubFilesStep({
                   const canDownload =
                     row.source === "cloud" &&
                     (syncStatus === "linked" || syncStatus === "failed");
+                  const typeLabel = getAttachedRowTypeLabel(row);
+                  const typeConfig = getFileTypeConfig(typeLabel);
+                  const TypeIcon = typeConfig.icon;
                   return (
                     <TableRow key={row.id}>
                       <TableCell>
@@ -217,6 +226,18 @@ export function CreateHubFilesStep({
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.sizeLabel}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <TypeIcon className={cn("size-3.5 shrink-0", typeConfig.fg)} aria-hidden />
+                          {typeConfig.label}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <FileSourceBadge
+                          file={{ source: row.source === "cloud" ? "cloud" : "user" }}
+                          size="sm"
+                        />
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{row.date}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

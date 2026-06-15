@@ -278,37 +278,430 @@ const CONTENT_MAP = {
   },
 };
 
+// ─── Synthetic chapter generator ─────────────────────────────────────────────
+// Produces readable placeholder chapters for any document that isn't in
+// CONTENT_MAP, keyed loosely on the filename and type.
+
+function inferTopicFromName(name = "") {
+  const stem = name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").trim();
+
+  const lower = stem.toLowerCase();
+  if (lower.includes("policy") || lower.includes("polic")) return { topic: stem, domain: "policy" };
+  if (lower.includes("onboard") || lower.includes("welcome")) return { topic: stem, domain: "onboarding" };
+  if (lower.includes("report") || lower.includes("quarterly") || lower.includes("annual")) return { topic: stem, domain: "report" };
+  if (lower.includes("manual") || lower.includes("guide") || lower.includes("handbook")) return { topic: stem, domain: "guide" };
+  if (lower.includes("release") || lower.includes("changelog") || lower.includes("notes")) return { topic: stem, domain: "release-notes" };
+  if (lower.includes("contract") || lower.includes("agreement") || lower.includes("sla")) return { topic: stem, domain: "contract" };
+  if (lower.includes("research") || lower.includes("study") || lower.includes("analysis")) return { topic: stem, domain: "research" };
+  if (lower.includes("spec") || lower.includes("requirement") || lower.includes("prd")) return { topic: stem, domain: "spec" };
+  if (lower.includes("finance") || lower.includes("budget") || lower.includes("forecast")) return { topic: stem, domain: "finance" };
+  if (lower.includes("training") || lower.includes("course") || lower.includes("learn")) return { topic: stem, domain: "training" };
+  return { topic: stem, domain: "general" };
+}
+
+const DOMAIN_CHAPTERS = {
+  policy: (topic) => [
+    {
+      title: "Purpose & Scope",
+      readMins: 2,
+      summary: `This policy establishes the principles and expectations governing ${topic.toLowerCase()}. It applies to all employees, contractors, and stakeholders operating under the organisation's remit.`,
+      body: `This document sets out the framework for ${topic.toLowerCase()} within the organisation. It defines the responsibilities of individuals, teams, and leadership to ensure consistent, compliant, and effective practices across all functions.\n\nThe policy applies to all permanent employees, fixed-term contractors, agency staff, and third-party vendors who interact with organisational systems, data, or processes. Exceptions must be approved in writing by the relevant policy owner.\n\nThis version supersedes all previous iterations. The policy owner is responsible for reviewing and updating this document on an annual basis or following any material change in regulatory requirements.`,
+    },
+    {
+      title: "Key Principles",
+      readMins: 3,
+      summary: `The policy is underpinned by five core principles: accountability, transparency, fairness, proportionality, and continuous improvement. Each principle guides how the policy is applied in practice.`,
+      body: `**Accountability** — Every individual is responsible for understanding and adhering to this policy. Managers are accountable for ensuring their teams are trained and compliant.\n\n**Transparency** — Decision-making processes must be documented and accessible to relevant stakeholders. Audit trails are maintained for all policy-governed activities.\n\n**Fairness** — The policy is applied consistently, without bias or preferential treatment. Escalation mechanisms ensure any perceived unfairness can be addressed promptly.\n\n**Proportionality** — Controls and consequences are proportionate to the risk or severity of any breach. Minor deviations are handled through guidance; material breaches through formal procedures.\n\n**Continuous Improvement** — Policy effectiveness is measured through periodic reviews, incident reports, and stakeholder feedback. Lessons learned are incorporated into subsequent revisions.`,
+    },
+    {
+      title: "Roles & Responsibilities",
+      readMins: 2,
+      summary: `Clear ownership of policy obligations is assigned across three tiers: the Policy Owner (strategic), Line Managers (operational), and Individual Contributors (compliance).`,
+      body: `**Policy Owner** — Maintains the document, coordinates the annual review cycle, and escalates systemic issues to the relevant governance committee.\n\n**Line Managers** — Ensure team members understand their obligations, complete required training, and report any incidents or near-misses in a timely manner.\n\n**Individual Contributors** — Read, understand, and comply with this policy. Raise concerns through the designated channel without fear of retaliation.\n\n**Compliance & Legal** — Provide guidance on regulatory interpretation, review proposed changes, and maintain records of policy sign-offs.`,
+    },
+    {
+      title: "Procedures & Controls",
+      readMins: 3,
+      summary: `Operational procedures translate policy principles into specific, repeatable steps. Controls are designed to prevent breaches before they occur and detect them promptly when they do.`,
+      body: `Procedures associated with this policy are maintained in the operational runbook linked from the policy register. The following controls are in force:\n\n1. **Access controls** — Permissions are granted on a least-privilege basis and reviewed quarterly.\n2. **Audit logging** — All material actions are logged with timestamp, user identity, and action taken. Logs are retained for a minimum of 24 months.\n3. **Training requirements** — All in-scope personnel must complete the mandatory training module within 30 days of hire and annually thereafter.\n4. **Incident reporting** — Any suspected breach must be reported within 24 hours using the incident management portal. A root-cause analysis is required for all confirmed breaches.\n5. **Third-party assessments** — Vendors handling in-scope data or processes are subject to an annual risk assessment.`,
+    },
+    {
+      title: "Review & Enforcement",
+      readMins: 2,
+      summary: `The policy is subject to annual review and may be updated mid-cycle in response to regulatory changes. Breaches are subject to disciplinary action proportionate to severity.`,
+      body: `**Review Schedule** — This policy is reviewed annually by the Policy Owner in collaboration with Legal and Compliance. An extraordinary review may be triggered by a material regulatory change, a significant breach, or a strategic business change.\n\n**Enforcement** — Breaches of this policy may result in disciplinary action up to and including termination of employment or contract, and referral to relevant regulatory authorities where required by law.\n\n**Appeals** — Individuals subject to formal enforcement action may appeal through the standard HR process. The appeal must be submitted within 10 working days of the decision.\n\n**Document History** — Version history is maintained in the policy register. All changes are reviewed and approved by the Policy Owner before publication.`,
+    },
+  ],
+  onboarding: (topic) => [
+    {
+      title: "Welcome & Overview",
+      readMins: 2,
+      summary: `A warm introduction to the organisation — its mission, values, and what new team members can expect in their first days and weeks.`,
+      body: `Welcome to the team. This document is designed to help you settle in quickly, understand how we work, and start contributing with confidence.\n\nOur organisation's mission is simple: to build products and services that genuinely improve the lives of the people we serve. That mission shapes every decision — from how we hire, to how we build, to how we support each other.\n\nOver the coming pages, you'll find practical guidance on your first week, how to set up your tools, who to reach out to, and what success looks like in your role. Don't try to absorb everything at once — your manager and onboarding buddy are here to help.`,
+    },
+    {
+      title: "Your First Week",
+      readMins: 3,
+      summary: `A structured week-one schedule covering IT setup, team introductions, mandatory compliance training, and a clear understanding of your initial goals.`,
+      body: `**Day 1** — Collect your access credentials from IT. Attend the all-hands new-hire orientation. Meet your onboarding buddy for lunch. Complete the welcome survey.\n\n**Day 2–3** — Shadow key team members to understand current projects. Complete the mandatory compliance training modules. Set up your development environment (if applicable).\n\n**Day 4** — 1-on-1 with your manager to discuss 30/60/90-day goals. Review team OKRs and understand where your role contributes.\n\n**Day 5** — Join the weekly team standup. Write your first brief (a short document describing your understanding of your role and immediate priorities). Share with your manager for feedback.\n\nBy end of week one, you should know who the key stakeholders are, have access to all essential tools, and have a clear picture of your first project.`,
+    },
+    {
+      title: "Tools & Systems",
+      readMins: 2,
+      summary: `An overview of the standard toolset — communication, project management, documentation, and access management — including setup instructions and best practices.`,
+      body: `**Communication** — We use Slack for day-to-day messaging. Keep your status up to date. Prefer async communication for non-urgent matters. Use @mentions sparingly.\n\n**Project Management** — All work is tracked in Linear. Your manager will add you to the relevant teams. Use labels and due dates consistently.\n\n**Documentation** — Notion is our single source of truth for team knowledge. Search before creating to avoid duplication. Every project should have a brief and a decision log.\n\n**Access Management** — Access is managed through the IT portal. Request additional tools via the standard request form. All requests require manager approval and a business justification.`,
+    },
+    {
+      title: "Culture & Values",
+      readMins: 2,
+      summary: `The values that define how the team works — collaboration, ownership, transparency, and continuous learning — and what they look like in practice.`,
+      body: `**Collaboration** — We work best when we work together. Share work in progress early. Give feedback kindly and receive it openly. The best ideas come from diverse perspectives.\n\n**Ownership** — Take responsibility for your work from start to finish. Don't wait to be asked — if you see a problem, address it. Escalate when you're stuck, but try first.\n\n**Transparency** — Share context freely. Write decisions down. If you're unsure whether something should be shared, it probably should be.\n\n**Continuous Learning** — We grow by doing and by reflecting. Mistakes are learning opportunities. Every team member has access to a learning budget — use it.`,
+    },
+    {
+      title: "Benefits & Support",
+      readMins: 2,
+      summary: `An overview of the benefits package, mental health support, learning budget, and how to access the HR team for guidance throughout your time here.`,
+      body: `**Benefits** — Full details of your benefits package are available in the HR portal. Key highlights include comprehensive health coverage, an annual wellness allowance, and flexible working arrangements.\n\n**Mental Health** — We take mental health seriously. All employees have access to confidential counselling through our Employee Assistance Programme. Your wellbeing comes first.\n\n**Learning Budget** — Each employee receives an annual learning budget. Approved uses include online courses, conferences, books, and certifications. Submit requests through the L&D portal.\n\n**HR Support** — The People team is available for any questions about your employment, benefits, or workplace concerns. Reach them via the internal Slack channel or in person during their drop-in hours.`,
+    },
+  ],
+  report: (topic) => [
+    {
+      title: "Executive Summary",
+      readMins: 2,
+      summary: `A high-level overview of the period's key findings, headline metrics, and strategic implications. The summary is designed for senior stakeholders who need the essential picture quickly.`,
+      body: `This report covers the performance, findings, and strategic context for the period under review. The headline metrics show progress against plan, with notable outperformance in core operational areas and some headwinds in external market conditions.\n\nKey findings:\n• Revenue and volume metrics were ahead of target by 8%, driven by strong performance in the primary segment.\n• Operating costs were within plan; efficiency initiatives delivered £1.2M in savings ahead of schedule.\n• Customer satisfaction scores improved for the third consecutive period, reaching an all-time high of 78 NPS.\n• One material risk was identified relating to supply chain dependencies; mitigation actions are underway.\n\nThe recommendations in this report focus on accelerating the efficiency programme, deepening investment in the highest-performing segment, and resolving the supply chain risk within the next quarter.`,
+    },
+    {
+      title: "Performance Analysis",
+      readMins: 4,
+      summary: `Detailed analysis of performance against plan, including revenue, cost, customer, and operational metrics. Variances are explained and root causes identified.`,
+      body: `**Revenue Performance**\nTotal revenue for the period was £24.8M, 8% ahead of plan (£23.0M). Growth was driven primarily by volume expansion in the enterprise segment (+14%) and price increases in the mid-market segment (+3%). Consumer segment revenue was flat versus plan.\n\n**Cost Analysis**\nTotal operating costs were £18.1M, 2% below plan. Savings were concentrated in procurement (£0.8M) and facilities (£0.4M). These were partially offset by higher-than-planned headcount costs in product and engineering, reflecting accelerated hiring to support the growth strategy.\n\n**Customer Metrics**\nNet Promoter Score: 78 (+6 vs prior period). Customer retention rate: 94.2% (+1.1pp). Average revenue per customer: £4,200 (+5% vs prior period). Time to first value for new customers: 18 days (−4 days vs plan).\n\n**Operational KPIs**\nSLA compliance: 99.4%. Incident rate: 0.8 per 1,000 customer interactions (−15% vs prior period). Deployment frequency: 14 per week (target: 12). Mean time to recovery: 23 minutes (target: 30).`,
+    },
+    {
+      title: "Market & Competitive Context",
+      readMins: 3,
+      summary: `An assessment of the external environment — market conditions, competitor activity, and macro factors — that contextualises performance and informs forward-looking strategy.`,
+      body: `The market environment during the period was characterised by continued demand growth in enterprise segments, offset by pricing pressure in the mid-market driven by increased competitive activity from two new entrants.\n\n**Competitive Landscape**\nThree main competitors made material moves in the period: Competitor A launched a lower-priced tier targeting the mid-market; Competitor B announced a strategic partnership with a major cloud provider; Competitor C exited a non-core product line, potentially releasing customers to the market.\n\n**Macro Factors**\nInflationary pressures on wages and infrastructure costs are expected to persist for at least two further quarters. Currency fluctuations had a marginal negative impact on reported revenue (−0.4%). Regulatory change in the primary market is anticipated in H2; legal and compliance teams are monitoring closely.\n\n**Strategic Implications**\nThe competitive dynamic reinforces the importance of moving up-market where differentiation is stronger and price sensitivity lower. The Competitor C exit represents a short-term acquisition opportunity.`,
+    },
+    {
+      title: "Risks & Issues",
+      readMins: 2,
+      summary: `A review of the material risks identified in the period, their likelihood and impact, and the mitigation actions in progress or planned.`,
+      body: `**Risk Register Summary**\n\n| Risk | Likelihood | Impact | Owner | Status |\n|------|-----------|--------|-------|--------|\n| Supply chain dependency (Tier 1 vendor) | Medium | High | COO | Mitigation in progress |\n| Regulatory change H2 | High | Medium | General Counsel | Monitoring |\n| Key person dependency (CTO) | Low | High | CEO | Succession plan in place |\n| Cybersecurity (third-party access) | Medium | High | CISO | Audit scheduled Q3 |\n\n**Material Issue — Supply Chain**\nThe Tier 1 vendor supplying critical infrastructure components notified us of potential capacity constraints for Q3. A dual-sourcing strategy is being implemented with an alternative vendor approved and onboarded. Contingency stock has been procured to cover a 6-week gap if needed.`,
+    },
+    {
+      title: "Outlook & Recommendations",
+      readMins: 2,
+      summary: `Forward-looking guidance for the next period, including revised targets, strategic priorities, and specific recommendations for leadership action.`,
+      body: `**Revised Guidance**\nBased on current trading and pipeline, guidance for the next period is as follows: Revenue £25.5–26.5M (previous plan: £25.0M). Operating costs £18.5M (unchanged). EBITDA margin 25–27% (previous plan: 26%).\n\n**Strategic Priorities**\n1. Accelerate enterprise segment expansion — increase enterprise sales headcount by 4 in Q3.\n2. Launch mid-market retention programme — targeted pricing and success packages to defend against competitive pressure.\n3. Resolve supply chain risk — dual-sourcing fully operational by end of Q3.\n4. Prepare for regulatory change — submit consultation response by deadline; update compliance framework.\n\n**Board Recommendations**\n• Approve incremental enterprise headcount.\n• Commission independent cyber audit.\n• Receive update on supply chain mitigation at next board meeting.`,
+    },
+  ],
+  "release-notes": (topic) => [
+    {
+      title: "Release Overview",
+      readMins: 2,
+      summary: `An overview of the release — what changed, why, and what customers and developers need to know before upgrading.`,
+      body: `This release delivers a set of improvements, bug fixes, and new capabilities across the platform. The changes reflect feedback collected from customers, internal product reviews, and performance monitoring.\n\nAll changes are backward-compatible unless explicitly noted in the Breaking Changes section. Customers on managed cloud deployments will receive this update automatically during the next maintenance window. Self-hosted customers should review the upgrade guide before proceeding.\n\nHighlights:\n• Performance improvements across core API endpoints (p95 latency −18%).\n• New configuration options for advanced deployment scenarios.\n• Eight bug fixes, including two high-priority issues reported by customers.\n• One deprecation notice for a legacy API method (end-of-life in 6 months).`,
+    },
+    {
+      title: "New Features",
+      readMins: 3,
+      summary: `Detailed descriptions of all new capabilities included in this release, including usage guidance and configuration options.`,
+      body: `**Feature 1 — Enhanced Search**\nSearch results now incorporate semantic ranking in addition to keyword matching. Relevance scores are exposed via the API for custom ranking logic. No configuration required; opt-out available via feature flag.\n\n**Feature 2 — Bulk Operations API**\nA new batch endpoint allows up to 500 operations per request, significantly reducing API call overhead for high-volume integrations. See the API reference for request format and rate limits.\n\n**Feature 3 — Webhook Retry Logic**\nWebhooks now retry failed deliveries up to 5 times with exponential backoff. Retry status and delivery logs are visible in the dashboard. Configurable per endpoint.\n\n**Feature 4 — Custom Metadata Fields**\nAdministrators can now define up to 20 custom metadata fields per resource type. Fields support string, number, boolean, and date types. Searchable via the query API.`,
+    },
+    {
+      title: "Bug Fixes",
+      readMins: 2,
+      summary: `A full list of bugs resolved in this release, including severity, affected versions, and any workarounds that were previously in use.`,
+      body: `**Critical**\n• Fixed: Race condition in concurrent write operations could result in data loss in rare circumstances. Affected versions: 3.1.0–3.4.2. Customers who experienced this issue should contact support.\n\n**High**\n• Fixed: Export function silently failed for datasets > 50,000 rows. Now returns a clear error and triggers an async job.\n• Fixed: API rate limit counter was not reset correctly at the top of each hour, causing false throttling for some customers.\n\n**Medium**\n• Fixed: Timezone handling in scheduled reports used server timezone instead of user-configured timezone.\n• Fixed: Pagination token expired after 1 hour instead of the documented 24 hours.\n• Fixed: Search filters were not applied when using the keyboard shortcut to submit.\n\n**Low**\n• Fixed: Minor visual alignment issue in the settings sidebar on narrow viewports.\n• Fixed: Tooltip text was truncated on file name fields longer than 40 characters.`,
+    },
+    {
+      title: "Breaking Changes & Deprecations",
+      readMins: 2,
+      summary: `Actions required for customers upgrading from previous versions, including deprecated methods, changed defaults, and removed endpoints.`,
+      body: `**Breaking Change — Default Sort Order**\nThe default sort order for list endpoints has changed from creation date (ascending) to last-modified date (descending) to align with common usage patterns. Clients that rely on the previous default must now pass sort=created_at:asc explicitly.\n\n**Deprecation — Legacy Authentication Header**\nThe X-API-Key header is deprecated in favour of Bearer token authentication. The header will continue to work for 6 months; it will be removed in version 4.0.0. Migrate to Authorization: Bearer <token> at your earliest convenience.\n\n**Removed — v1 Search Endpoint**\nThe /v1/search endpoint was deprecated 12 months ago and has now been removed. All clients must use /v2/search. The v2 endpoint is a superset of v1; no functionality has been lost.\n\n**Changed Default — TLS Version**\nMinimum TLS version is now 1.2 (previously 1.0). Clients using TLS 1.0 or 1.1 must upgrade.`,
+    },
+    {
+      title: "Upgrade Guide",
+      readMins: 2,
+      summary: `Step-by-step instructions for upgrading from the previous version, including pre-flight checks, the upgrade sequence, and post-upgrade verification steps.`,
+      body: `**Cloud (Managed) Customers**\nNo action required. The upgrade is applied automatically during the next maintenance window (see your account dashboard for the scheduled time). A notification will be sent 48 hours in advance.\n\n**Self-Hosted Customers**\n\n1. Back up your database before starting.\n2. Review the breaking changes section above and assess impact on your integration.\n3. Pull the new image: docker pull platform:latest\n4. Run database migrations: ./scripts/migrate.sh\n5. Restart all services: docker-compose up -d\n6. Verify health: curl https://your-domain/health should return HTTP 200.\n\n**Rollback**\nIf you encounter issues post-upgrade, roll back by pulling the previous image tag and restoring your database backup. Detailed rollback instructions are in the operations runbook.\n\n**Support**\nEnterprise customers have access to a dedicated upgrade support channel. All customers can raise issues via the standard support portal.`,
+    },
+  ],
+  guide: (topic) => [
+    {
+      title: "Introduction",
+      readMins: 2,
+      summary: `An overview of what this guide covers, who it's for, and how to get the most out of it.`,
+      body: `This guide is designed to help you understand and apply ${topic.toLowerCase()} effectively. Whether you're approaching this topic for the first time or looking to deepen an existing understanding, this document provides the context, procedures, and best practices you need.\n\nThe guide is structured to be read sequentially, though individual sections can be referenced independently. Practical examples are included throughout to illustrate key points. Where relevant, links to related documentation and additional resources are provided.\n\nIf you encounter an issue not covered here, or if guidance becomes outdated, please raise it through the standard feedback channel so the document can be updated.`,
+    },
+    {
+      title: "Getting Started",
+      readMins: 3,
+      summary: `Prerequisites, initial setup, and the first steps needed to begin working with the subject matter effectively.`,
+      body: `Before you begin, ensure you have:\n• The necessary access permissions (contact your manager or IT if unsure)\n• Completed any prerequisite training modules\n• Reviewed the relevant policy documents that govern this area\n\n**Initial Setup**\n1. Access the relevant system using your standard credentials.\n2. Complete the initial configuration steps as documented in the setup checklist.\n3. Verify your configuration by running the validation procedure described in Section 3.\n4. If you encounter errors during setup, consult the troubleshooting section or raise a ticket with the support team.\n\n**First Steps**\nStart with the most common use case before exploring advanced scenarios. The worked examples in Section 4 are designed to give you hands-on experience in a low-risk environment before working with live data or systems.`,
+    },
+    {
+      title: "Core Concepts",
+      readMins: 4,
+      summary: `A clear explanation of the fundamental concepts, terminology, and mental models that underpin this subject area.`,
+      body: `Understanding the core concepts will help you apply this guide correctly across different scenarios. The following terms and ideas are foundational.\n\n**Key Concepts**\n\n*Concept 1: Structure and Organisation* — The subject matter is organised hierarchically. Top-level elements govern the behaviour of sub-elements. Changes at the top level cascade downwards unless overridden.\n\n*Concept 2: Lifecycle Management* — Every artefact in this domain has a lifecycle: created, active, deprecated, archived. Understanding where something is in its lifecycle determines what operations are valid.\n\n*Concept 3: Permissions and Ownership* — Access is governed by the permissions model. Ownership determines who can modify or delete a resource. Permissions are inherited by default and can be overridden at any level.\n\n*Concept 4: Audit and Traceability* — All material changes are logged. The audit trail is immutable. This is both a compliance requirement and a practical debugging tool.`,
+    },
+    {
+      title: "Step-by-Step Procedures",
+      readMins: 4,
+      summary: `Detailed, numbered procedures for the most common tasks — each designed to be followed sequentially with clear decision points.`,
+      body: `**Procedure 1: Standard Workflow**\n1. Initiate the process by selecting the appropriate option from the main menu.\n2. Complete the required fields. Fields marked with an asterisk (*) are mandatory.\n3. Attach any supporting documentation in the formats specified.\n4. Submit for review. You will receive a confirmation notification within 2 working hours.\n5. Once approved, the system will automatically proceed to the next stage. If rejected, review the feedback provided and resubmit.\n\n**Procedure 2: Exception Handling**\n1. Identify the exception type using the classification table.\n2. Follow the exception-specific procedure documented in Appendix A.\n3. Log the exception in the incident register with full details.\n4. Notify the relevant stakeholder within the required timeframe.\n\n**Procedure 3: Escalation**\n1. If a standard procedure cannot resolve the issue, escalate to Tier 2 support.\n2. Provide a clear description of the problem, steps already taken, and any error messages.\n3. Track the escalation ticket until resolution and confirm the issue is resolved before closing.`,
+    },
+    {
+      title: "Troubleshooting & FAQs",
+      readMins: 3,
+      summary: `Answers to the most frequently asked questions and solutions to the most common problems encountered when working in this area.`,
+      body: `**Q: I can't access the system even with valid credentials.**\nA: First, confirm your account is active and your permissions haven't expired. Check with IT that your role includes the necessary access group. If the issue persists, raise an IT access request.\n\n**Q: I submitted something incorrectly. Can I reverse it?**\nA: Reversals are possible within the first 30 minutes of submission. Use the "withdraw" option in your pending items view. After 30 minutes, contact the process owner directly.\n\n**Q: I'm not receiving notifications.**\nA: Check your notification settings in your profile. Ensure your email address is up to date. If email notifications are enabled and you're still not receiving them, check your spam folder and whitelist the notification sender address.\n\n**Q: The system shows different data than what I'd expect.**\nA: Data is refreshed on a schedule (typically every 15–30 minutes). If stale data persists beyond an hour, raise a support ticket with the specific record reference so the team can investigate.\n\n**Q: Who do I contact for help beyond this guide?**\nA: The first point of contact is your line manager. For technical issues, raise a ticket via the IT helpdesk. For policy questions, contact the relevant policy owner listed in the policy register.`,
+    },
+  ],
+  spec: (topic) => [
+    {
+      title: "Overview & Objectives",
+      readMins: 2,
+      summary: `The purpose of this specification, the problem it solves, and the measurable outcomes that will indicate success.`,
+      body: `This document specifies the requirements for ${topic.toLowerCase()}. It serves as the authoritative reference for design, engineering, and QA teams throughout the development and delivery lifecycle.\n\n**Problem Statement**\nThe current state presents a gap between user expectations and available capabilities. This specification defines the scope and requirements to close that gap in a way that is technically feasible, commercially viable, and aligned with product strategy.\n\n**Success Metrics**\n• User task completion rate ≥ 92%\n• Time-on-task reduction of ≥ 25% vs baseline\n• Zero Sev-1 incidents in the first 30 days post-launch\n• NPS uplift of ≥ 5 points in the affected user segment\n\n**Out of Scope**\nThis specification does not cover adjacent systems unless explicitly called out. Dependencies on out-of-scope systems are documented in the dependencies section.`,
+    },
+    {
+      title: "User Stories & Acceptance Criteria",
+      readMins: 4,
+      summary: `A structured set of user stories capturing the needs of each user persona, each paired with clear, testable acceptance criteria.`,
+      body: `**Persona 1: Power User**\n\n*Story 1.1* — As a power user, I want to perform bulk operations on multiple records simultaneously, so that I can complete high-volume tasks without repetitive manual work.\n*Acceptance Criteria:*\n- User can select up to 500 records via checkbox or "Select All"\n- Bulk actions available: edit, archive, export, assign\n- Operation completes within 5 seconds for 500 records\n- Success/failure summary displayed on completion\n\n**Persona 2: Administrator**\n\n*Story 2.1* — As an administrator, I want to configure role-based access at a granular level, so that I can enforce least-privilege access across my organisation.\n*Acceptance Criteria:*\n- Roles can be created, edited, and deleted by admins with the IAM permission\n- Permissions are configurable at the resource type level (read/write/delete)\n- Changes take effect within 60 seconds without requiring user re-authentication\n\n**Persona 3: Read-Only Viewer**\n\n*Story 3.1* — As a viewer, I want to export data in standard formats, so that I can analyse it in my preferred tools.\n*Acceptance Criteria:*\n- Export available in CSV, JSON, and XLSX\n- Export respects the viewer's data access permissions\n- Files available for download for 48 hours after generation`,
+    },
+    {
+      title: "Technical Requirements",
+      readMins: 3,
+      summary: `Non-functional requirements covering performance, scalability, security, and reliability targets that the implementation must meet.`,
+      body: `**Performance**\n• API endpoints must respond within 300ms at p95 under expected load\n• Page load time (LCP) must not exceed 2.5 seconds on a standard broadband connection\n• Database queries must complete within 100ms at p99 under normal load\n\n**Scalability**\n• The system must handle 10× current peak load without degradation\n• Auto-scaling must trigger within 60 seconds of a threshold breach\n• State must not be held in memory in a way that prevents horizontal scaling\n\n**Security**\n• All data in transit encrypted with TLS 1.2 or higher\n• At-rest encryption using AES-256\n• Authentication via SSO (SAML 2.0 / OIDC). MFA mandatory for admin roles\n• Penetration test required before production launch\n\n**Reliability**\n• Target uptime: 99.9% (excluding scheduled maintenance)\n• RTO: 1 hour; RPO: 15 minutes\n• Circuit breakers implemented for all third-party dependencies`,
+    },
+    {
+      title: "Design Specifications",
+      readMins: 3,
+      summary: `UI/UX design requirements, component specifications, and interaction patterns — linking to design artefacts where relevant.`,
+      body: `Design artefacts are maintained in the Figma project linked from the project brief. This section captures the key design requirements and constraints for engineering reference.\n\n**Layout Principles**\n• All new surfaces must comply with the design system (component library v3.x)\n• Responsive breakpoints: 320px (mobile), 768px (tablet), 1024px (desktop), 1440px (wide)\n• Minimum touch target size: 44×44px\n• Colour contrast: WCAG 2.1 AA minimum (AAA preferred for critical UI)\n\n**Key Interaction Patterns**\n• Optimistic UI updates: assume success, revert on error with toast notification\n• Empty states: every list/table must have a designed empty state with a clear CTA\n• Loading states: skeleton screens preferred over spinners for content areas\n• Error states: inline errors for form validation; modal for blocking errors; toast for non-blocking\n\n**Accessibility**\n• Full keyboard navigation required\n• Screen reader compatibility tested with NVDA (Windows) and VoiceOver (macOS/iOS)\n• Focus order must follow logical reading order`,
+    },
+    {
+      title: "Dependencies & Risks",
+      readMins: 2,
+      summary: `External dependencies that could affect delivery, along with the key risks and mitigation strategies.`,
+      body: `**Dependencies**\n\n| Dependency | Owner | Risk | Mitigation |\n|-----------|-------|------|------------|\n| Auth service API v3 | Platform team | Release scheduled Q3 | Parallel track; fallback to v2 if delayed |\n| Design system v3.2 | Design team | In progress | Use v3.1 components; upgrade post-launch |\n| Third-party geocoding API | Vendor | SLA 99.5% | Cache responses; graceful degradation |\n| Legal review — data exports | Legal | 2-week turnaround | Submit request immediately |\n\n**Key Risks**\n\n*Risk 1: Scope creep* — The requirements in this document have been agreed with stakeholders. Changes after sign-off require a formal change request and impact assessment.\n\n*Risk 2: Performance at scale* — Load testing must be completed in staging before production launch. If targets are not met, launch must be delayed.\n\n*Risk 3: Third-party API reliability* — See dependency table. Graceful degradation paths are documented in the technical design.`,
+    },
+  ],
+  finance: (topic) => [
+    {
+      title: "Financial Summary",
+      readMins: 2,
+      summary: `A concise summary of the financial position, headline figures, and key movements for the period under review.`,
+      body: `This document presents the financial analysis for the period under review. All figures are presented in the functional currency unless otherwise stated. Comparatives are provided against the prior period and against the approved plan.\n\n**Headline Figures**\n• Revenue: £24.8M (Plan: £23.0M, +8% vs plan; Prior period: £22.1M, +12% YoY)\n• Gross Margin: 62.4% (Plan: 61.0%; Prior period: 60.8%)\n• EBITDA: £6.2M (Plan: £5.5M; Prior period: £5.1M)\n• Cash and Equivalents: £18.4M (unchanged from prior period)\n• Headcount: 187 FTE (Plan: 182; Prior period: 174)\n\nThe period was characterised by strong top-line growth exceeding plan, driven by enterprise segment performance. Cost control remained disciplined, resulting in above-plan margin delivery.`,
+    },
+    {
+      title: "Revenue Analysis",
+      readMins: 3,
+      summary: `A breakdown of revenue by segment, product, and geography, with variance analysis against plan and prior period.`,
+      body: `**By Segment**\n• Enterprise: £14.2M (+14% vs plan) — Driven by 8 new enterprise wins and expansion in existing accounts\n• Mid-Market: £7.6M (flat vs plan) — Price increases offset volume softness from competitive activity\n• SMB/Consumer: £3.0M (−5% vs plan) — Deliberate reduction in investment; segment is being repositioned\n\n**By Product Line**\n• Core Platform: £18.9M (76% of total revenue)\n• Professional Services: £3.8M (15%)\n• Add-On Modules: £2.1M (9%)\n\n**By Geography**\n• Domestic: £16.2M (65%)\n• International: £8.6M (35%) — International growth of 18% YoY reflects successful expansion in two new markets\n\n**ARR and Retention**\n• Annual Recurring Revenue: £28.4M (+16% YoY)\n• Net Revenue Retention: 112%\n• Gross Revenue Retention: 94.2%`,
+    },
+    {
+      title: "Cost Analysis",
+      readMins: 3,
+      summary: `A detailed review of operating costs, including headcount, infrastructure, and discretionary spend, with variance analysis.`,
+      body: `**Total Operating Costs: £18.6M (Plan: £17.5M, +6.3%)**\n\nThe variance to plan is primarily driven by accelerated hiring in Engineering and Product ahead of a major product release. This investment is expected to drive revenue uplift from Q3 onwards.\n\n**Cost of Revenue: £9.4M (38% gross margin impact)**\n• Infrastructure: £4.2M — Scaling with revenue growth; efficiency work in flight\n• Hosting and third-party: £2.1M\n• Customer Success headcount: £3.1M\n\n**Operational Expenditure: £9.2M**\n• Engineering and Product: £5.1M (55% of OpEx)\n• Sales and Marketing: £2.4M (26%)\n• G&A: £1.7M (19%)\n\n**Headcount Costs**\nTotal headcount costs were £11.8M, representing 63% of total operating costs. Average cost per FTE was £63K (Plan: £62K). Headcount additions during the period: 13 (8 Engineering, 3 Sales, 2 Customer Success).`,
+    },
+    {
+      title: "Cash Flow & Balance Sheet",
+      readMins: 2,
+      summary: `Cash flow statement highlights, working capital movements, and a summary of the balance sheet position at period end.`,
+      body: `**Cash Flow Summary**\n• Opening cash: £17.9M\n• Operating cash inflow: £5.8M\n• Investing outflows: −£3.2M (primarily product development capitalisation and equipment)\n• Financing activities: £0 (no new debt or equity in the period)\n• Closing cash: £20.5M\n\n**Working Capital**\n• Accounts Receivable: £4.2M (DSO: 38 days vs target 35 days)\n• Deferred Revenue: £6.8M (+12% vs prior period, reflecting prepaid annual contracts)\n• Accounts Payable: £1.9M (DPO: 28 days, within terms)\n\n**Balance Sheet Highlights**\n• Total Assets: £34.8M\n• Total Liabilities: £8.2M\n• Net Assets: £26.6M\n\nThe balance sheet remains strong with no debt and a cash runway well in excess of 24 months at current burn rate.`,
+    },
+    {
+      title: "Forecast & Outlook",
+      readMins: 2,
+      summary: `Updated financial forecasts for the remainder of the financial year, with key assumptions and sensitivities.`,
+      body: `**Updated Full-Year Forecast**\n• Revenue: £98.5M–102.0M (original plan: £95.0M)\n• EBITDA: £24.0M–26.0M (original plan: £22.5M)\n• Headcount (year-end): 205 FTE (original plan: 195)\n• Capital expenditure: £12.0M (unchanged)\n\n**Key Assumptions**\n1. Enterprise momentum continues; pipeline conversion rate holds at 32%\n2. No material deterioration in mid-market competitive environment\n3. Product release in Q3 achieves planned adoption within 90 days of launch\n4. No material FX headwinds beyond current spot rates\n\n**Sensitivities**\n• Revenue ±5% impact if enterprise conversion rate changes by ±5pp\n• EBITDA ±£1.5M impact if headcount additions are accelerated or deferred by one quarter\n• Revenue ±2% impact from a 5% adverse movement in the primary foreign exchange rate\n\n**Next Steps**\nThe CFO will present a detailed reforecast to the Board at the next meeting, incorporating H2 assumptions and any updated macro factors.`,
+    },
+  ],
+  training: (topic) => [
+    {
+      title: "Learning Objectives",
+      readMins: 2,
+      summary: `A clear statement of what participants will know and be able to do upon completing this training module.`,
+      body: `This training module is designed to build the knowledge and skills needed to perform effectively in this area. By the end of this module, participants will be able to:\n\n1. Explain the key concepts and terminology associated with ${topic.toLowerCase()}.\n2. Apply the correct procedures to the most common scenarios encountered in their role.\n3. Identify when a situation requires escalation and follow the correct escalation path.\n4. Use the relevant tools and systems confidently to complete tasks independently.\n5. Recognise compliance obligations and explain the consequences of non-compliance.\n\n**Who This Module Is For**\nThis module is mandatory for all employees in roles that interact with this area. It should be completed within 30 days of starting in a relevant role and refreshed annually.\n\n**Estimated Duration**\nApproximately 45–60 minutes, including exercises and knowledge checks.`,
+    },
+    {
+      title: "Key Concepts",
+      readMins: 4,
+      summary: `The essential concepts, terminology, and mental models needed to understand and apply the subject matter correctly.`,
+      body: `Before diving into procedures and practical application, it's important to build a solid conceptual foundation. This section introduces the key terms and ideas you'll encounter throughout the module and in your day-to-day work.\n\n**Concept 1: Purpose and Context**\nUnderstanding why this area exists helps you make better decisions in ambiguous situations. The practices and procedures in this module exist to protect customers, colleagues, and the organisation — not as bureaucratic obstacles.\n\n**Concept 2: Risk and Proportionality**\nNot all situations carry the same risk. Good judgment means applying more scrutiny and care to higher-risk situations, and moving efficiently through lower-risk ones. The risk framework in this area helps you make that assessment consistently.\n\n**Concept 3: Your Role in the System**\nYou are one part of a larger system of controls. Your contribution — doing your part correctly and raising concerns when something seems wrong — is essential to the system working as intended.\n\n**Concept 4: When in Doubt, Ask**\nNo procedure covers every scenario. When you encounter an unusual situation, the right response is to pause and ask rather than to guess. The escalation contacts and resources available to you are listed in the appendix.`,
+    },
+    {
+      title: "Core Procedures",
+      readMins: 4,
+      summary: `Step-by-step guidance for the procedures you'll use most frequently, with decision points and worked examples.`,
+      body: `**Standard Procedure**\n\nThe following procedure applies to the most common scenario you'll encounter in this area. Follow each step in order. Do not skip steps unless the procedure explicitly allows it.\n\n1. **Prepare** — Gather the information and materials needed before starting. Attempting to complete the procedure without the necessary inputs wastes time and increases error risk.\n\n2. **Verify** — Confirm that the situation meets the criteria for this procedure. If it doesn't, consult the decision tree to identify the correct procedure.\n\n3. **Execute** — Follow the steps precisely. Document your actions as you go, not retrospectively.\n\n4. **Review** — Before finalising, check your work against the checklist provided. A second pair of eyes is recommended for high-stakes activities.\n\n5. **Record** — Log the outcome in the designated system. Include all required fields. Incomplete records are treated as non-compliance.\n\n6. **Follow up** — If the procedure generates downstream actions (notifications, approvals, handoffs), initiate them promptly. Don't assume someone else will.`,
+    },
+    {
+      title: "Compliance & Common Mistakes",
+      readMins: 3,
+      summary: `The regulatory and policy requirements relevant to this area, and the most frequently observed errors — with guidance on how to avoid them.`,
+      body: `**Compliance Requirements**\nThis area is governed by both internal policy and external regulatory requirements. Failure to comply can result in disciplinary action, regulatory sanction, and reputational damage. The key obligations are:\n\n• Maintain accurate records of all activities\n• Complete mandatory training within the required timeframes\n• Report suspected breaches or anomalies within 24 hours\n• Do not share access credentials or bypass system controls\n• Follow the data handling requirements appropriate to the classification of information you're working with\n\n**Common Mistakes**\n\n*Mistake 1: Incomplete documentation* — The most frequent compliance gap. Always complete all required fields at the time of the activity.\n\n*Mistake 2: Assuming someone else has done it* — Responsibility doesn't transfer automatically. If you're unsure, check explicitly.\n\n*Mistake 3: Applying the wrong procedure* — Take an extra 30 seconds to confirm you're using the right procedure for the situation. The cost of a wrong procedure is much higher than the cost of checking.\n\n*Mistake 4: Delaying escalation* — If something seems wrong, raise it immediately. Problems are almost always easier to resolve when caught early.`,
+    },
+    {
+      title: "Knowledge Check & Resources",
+      readMins: 2,
+      summary: `A short knowledge check to confirm understanding, followed by a reference list of supporting resources and contacts.`,
+      body: `**Knowledge Check**\n\n1. What are the two conditions that must be met before starting the standard procedure?\n→ The required information must be gathered, and the situation must meet the criteria for that procedure.\n\n2. Within how many hours must a suspected breach be reported?\n→ 24 hours.\n\n3. What should you do if you encounter a situation the procedure doesn't cover?\n→ Pause, consult the escalation contacts listed in the appendix, and do not guess.\n\n4. Who is responsible for completing required training?\n→ Every individual in a relevant role, supported by their line manager.\n\n**Reference Resources**\n• Policy documents: [Policy Register]\n• Operational runbook: [Runbook link]\n• Training record system: [LMS link]\n• Escalation contacts: [Contact list]\n• Incident reporting portal: [Portal link]\n• Feedback on this module: [Feedback form]\n\nIf you've completed this module and have questions not addressed here, speak with your line manager or contact the relevant team directly.`,
+    },
+  ],
+  contract: (topic) => [
+    {
+      title: "Parties & Recitals",
+      readMins: 2,
+      summary: `Identifies the parties to the agreement, the background context, and the purpose this agreement is intended to serve.`,
+      body: `This agreement is entered into between the parties identified in the cover sheet. The parties wish to set out their respective rights and obligations in connection with the subject matter described herein.\n\n**Background**\nThe parties have agreed that it is in their mutual interest to formalise the terms of their relationship in a binding written agreement. This document supersedes any prior written or oral agreements between the parties on the same subject matter.\n\n**Purpose**\nThis agreement governs the provision of services, the use of deliverables, and the respective obligations of each party. It is intended to provide clarity and certainty to both parties and to establish a fair and workable framework for the relationship.`,
+    },
+    {
+      title: "Scope of Services",
+      readMins: 3,
+      summary: `A precise description of the services to be delivered, the deliverables, timelines, and any exclusions from scope.`,
+      body: `**Services**\nThe Provider agrees to deliver the services described in Schedule 1 (Statement of Work). Services will be delivered in accordance with the specifications, standards, and timelines set out in that schedule.\n\n**Deliverables**\nAll deliverables are listed in Schedule 1. The Client's acceptance criteria for each deliverable are also set out in that schedule. Acceptance is deemed given if no written objection is raised within 10 business days of delivery.\n\n**Exclusions**\nThe following are expressly excluded from scope unless agreed in writing: (a) services not described in Schedule 1; (b) work required as a result of the Client's failure to meet its obligations; (c) services required due to a Force Majeure event.\n\n**Changes to Scope**\nEither party may request a change to the scope by submitting a written change request. No change takes effect until both parties have signed a change order specifying the amended scope, timeline, and any price adjustment.`,
+    },
+    {
+      title: "Commercial Terms",
+      readMins: 2,
+      summary: `Pricing, payment terms, invoicing schedule, and provisions for price adjustments and disputed invoices.`,
+      body: `**Pricing**\nThe fees payable under this agreement are set out in Schedule 2. Fees are exclusive of applicable taxes, which the Client is responsible for paying.\n\n**Payment Terms**\nInvoices are payable within 30 calendar days of the invoice date. Late payments accrue interest at 4% per annum above the base rate of the Bank of England, calculated daily.\n\n**Invoicing**\nInvoices will be issued monthly in arrears unless otherwise specified in Schedule 2. Each invoice must reference this agreement and include sufficient detail to allow the Client to verify the charges.\n\n**Disputed Invoices**\nIf the Client disputes any part of an invoice, they must notify the Provider in writing within 10 business days, specifying the amount in dispute and the reason. Undisputed amounts remain payable by the due date. The parties will use good faith efforts to resolve the dispute within 20 business days.`,
+    },
+    {
+      title: "Intellectual Property & Confidentiality",
+      readMins: 2,
+      summary: `Ownership of intellectual property created under the agreement, licensing terms, and obligations of confidentiality that bind both parties.`,
+      body: `**IP Ownership**\nAll pre-existing intellectual property belonging to either party remains the property of that party. Intellectual property created specifically for the Client under this agreement ("Work Product") vests in the Client upon full payment of the applicable fees.\n\n**Licence**\nThe Provider grants the Client a non-exclusive, worldwide, royalty-free licence to use any Provider IP incorporated in the Work Product solely to the extent necessary to use the Work Product for the purpose described in Schedule 1.\n\n**Confidentiality**\nEach party agrees to keep confidential all Confidential Information of the other party and to use it only in connection with this agreement. Confidential Information does not include information that is publicly available, independently developed, or required to be disclosed by law.\n\nConfidentiality obligations survive termination of this agreement for a period of five years.`,
+    },
+    {
+      title: "Term, Termination & Governing Law",
+      readMins: 2,
+      summary: `The duration of the agreement, termination rights, consequences of termination, and the governing law and dispute resolution mechanism.`,
+      body: `**Term**\nThis agreement commences on the Effective Date and continues until the completion of the services described in Schedule 1, unless terminated earlier in accordance with this section.\n\n**Termination**\nEither party may terminate this agreement immediately upon written notice if the other party commits a material breach and (if the breach is capable of remedy) fails to remedy it within 30 calendar days of written notice.\n\nThe Client may terminate for convenience upon 60 calendar days' written notice. In such cases, the Client is liable for fees for services delivered up to the termination date plus reasonable costs incurred in connection with the wind-down.\n\n**Consequences of Termination**\nUpon termination, each party must return or destroy the other's Confidential Information. Provisions that by their nature survive termination (including IP, confidentiality, and governing law) continue in force.\n\n**Governing Law**\nThis agreement is governed by the laws of England and Wales. Disputes will first be addressed through good-faith negotiation. If unresolved within 30 days, disputes will be referred to binding arbitration under the ICC Rules.`,
+    },
+  ],
+  research: (topic) => [
+    {
+      title: "Abstract & Introduction",
+      readMins: 2,
+      summary: `An overview of the research question, methodology, and key findings — providing readers with the essential context to evaluate the significance of the work.`,
+      body: `This document presents research into ${topic.toLowerCase()}. The study was motivated by a gap in the existing body of knowledge and a practical need to inform decision-making in the field.\n\n**Research Question**\nThe central question guiding this research is: how and to what extent does the subject matter influence outcomes in the relevant domain?\n\n**Methodology Overview**\nThe research employed a mixed-methods approach, combining quantitative analysis of structured data with qualitative insights gathered through interviews and case studies. The methodology is described in detail in Section 3.\n\n**Key Findings**\nThe research identified three primary findings, each with implications for theory and practice. These are summarised in the abstract and developed in full in the findings section. The implications for practitioners and for future research are discussed in the final section.`,
+    },
+    {
+      title: "Literature Review",
+      readMins: 4,
+      summary: `A critical review of the existing literature, identifying what is known, what is contested, and where the gaps lie that this research addresses.`,
+      body: `The existing literature on this topic spans multiple disciplines and methodological traditions. This review synthesises the most relevant prior work and situates the current study within that context.\n\n**Established Knowledge**\nA body of research has established the fundamental relationship between the key variables. The most cited work in this area demonstrated a statistically significant correlation (r=0.68, p<0.001) between the primary independent and dependent variables across a range of settings.\n\n**Contested Areas**\nSubsequent work has challenged several of the assumptions in the foundational studies. Critics have argued that the relationship is moderated by contextual factors that were not controlled for in the original studies, and that the effect size may be smaller in real-world conditions than in laboratory settings.\n\n**Gaps in the Literature**\nDespite significant research activity, two gaps remain. First, most studies have focused on large organisations; the applicability of findings to smaller entities is unclear. Second, longitudinal studies are sparse — most existing work is cross-sectional, limiting causal inference.\n\nThis study addresses both gaps through a longitudinal design and a sample that includes entities across the size spectrum.`,
+    },
+    {
+      title: "Methodology",
+      readMins: 3,
+      summary: `A full description of the research design, data collection methods, sample characteristics, and analytical approach.`,
+      body: `**Research Design**\nThis study used a longitudinal mixed-methods design. Quantitative data was collected at three time points (T1, T2, T3) over an 18-month period. Qualitative data was collected through semi-structured interviews at T1 and T3.\n\n**Sample**\nThe quantitative sample comprised 214 organisations across four sectors. Organisations were recruited through professional networks and stratified by size (small: <50 employees; medium: 50–250; large: >250). Response rates were 78% at T1, 71% at T2, and 68% at T3.\n\nThe qualitative sample comprised 24 participants selected purposively to ensure representation across sectors, sizes, and roles.\n\n**Data Collection**\nQuantitative data was collected via validated survey instruments. Qualitative data was collected through 60–90 minute interviews, conducted remotely and recorded with participant consent. Transcripts were verified by participants.\n\n**Analysis**\nQuantitative data was analysed using structural equation modelling (SEM) in R. Qualitative data was analysed using thematic analysis following the Braun and Clarke (2006) framework. Findings were triangulated across methods.`,
+    },
+    {
+      title: "Findings",
+      readMins: 4,
+      summary: `The main findings of the research, presented systematically with supporting evidence from both quantitative and qualitative data.`,
+      body: `**Finding 1: Primary Effect Confirmed**\nThe quantitative analysis confirmed a significant positive relationship between the primary variables (β=0.54, p<0.001, 95% CI [0.41, 0.67]). This finding is consistent with the foundational literature but with a smaller effect size than previously reported, supporting the critique that prior studies overstated the effect.\n\n**Finding 2: Moderation by Context**\nOrganisational size significantly moderated the primary relationship. The effect was strongest in large organisations (β=0.71) and weakest in small organisations (β=0.28), suggesting that the resources and capabilities needed to translate the independent variable into outcomes scale with organisational size.\n\n**Finding 3: Temporal Dynamics**\nLongitudinal analysis revealed that the relationship strengthened over time. The effect was modest at T1, grew at T2, and reached peak strength at T3. This suggests an implementation lag — organisations need time to realise the benefits of the independent variable.\n\n**Qualitative Themes**\nThematic analysis of interviews identified three reinforcing themes: (1) leadership alignment as a prerequisite for effect, (2) resource availability as a key enabler, and (3) cultural readiness as the most frequently cited barrier. These themes map onto the quantitative moderation results and provide explanatory depth.`,
+    },
+    {
+      title: "Discussion & Conclusions",
+      readMins: 3,
+      summary: `Interpretation of the findings, their theoretical and practical implications, the study's limitations, and directions for future research.`,
+      body: `**Interpretation**\nThe findings advance understanding in three ways. First, they confirm the primary theoretical relationship while providing a more accurate estimate of effect size. Second, they identify organisational size as a key boundary condition that should be incorporated into future theoretical models. Third, the longitudinal design provides new evidence of a temporal dynamic that cross-sectional studies cannot detect.\n\n**Practical Implications**\nFor practitioners, the key implication is that the independent variable is most impactful in larger, resource-rich organisations. Smaller organisations considering investment in this area should expect a longer implementation period and lower initial returns, and should ensure leadership alignment before committing resources.\n\n**Limitations**\nThis study has several limitations. The sample, while geographically diverse, is concentrated in English-speaking markets; generalisability to other cultural contexts is uncertain. Self-report measures introduce social desirability bias. The moderating variables examined are not exhaustive.\n\n**Future Research**\nFuture work should: (1) replicate the study in non-English-speaking markets; (2) examine additional moderators, particularly industry sector and competitive environment; (3) extend the longitudinal window to examine whether the effect continues to grow beyond 18 months or reaches a plateau.`,
+    },
+  ],
+  general: (topic) => [
+    {
+      title: "Introduction",
+      readMins: 2,
+      summary: `An overview of the document's purpose, audience, and how it is structured.`,
+      body: `This document provides information and guidance related to ${topic.toLowerCase()}. It is intended to serve as a reference for those who work in or interact with this area.\n\nThe content has been structured to progress from foundational context through to practical application. Readers who are already familiar with the background may wish to skip ahead to the procedures and guidance sections.\n\nFeedback on this document is welcomed and should be submitted through the standard document management process. The document owner is responsible for reviewing and updating the content in response to material changes.`,
+    },
+    {
+      title: "Background & Context",
+      readMins: 3,
+      summary: `The context that explains why this document exists — the business need, strategic relevance, and any historical factors that shape the current situation.`,
+      body: `Understanding the background to this document helps frame the guidance and decisions it contains. The current situation is the result of deliberate choices made in response to identified needs, and an appreciation of that history helps readers apply the guidance with good judgment rather than mechanical compliance.\n\nThe primary driver for this document was a recognised need to bring together existing practice, apply lessons learned from experience, and establish a clear reference point for new and existing team members alike.\n\nThe approach taken here reflects consultation with relevant stakeholders and draws on recognised good practice in the field. Where tradeoffs were made, the reasoning is documented in the relevant sections.`,
+    },
+    {
+      title: "Key Information & Guidance",
+      readMins: 4,
+      summary: `The main substantive content — the facts, principles, and guidance that readers need to act on.`,
+      body: `**Core Principles**\nThe guidance in this document is built on a small number of core principles that should inform how it is applied in situations not explicitly covered.\n\n1. *Clarity over complexity* — When in doubt, choose the simpler, clearer path. Complexity should only be introduced when it genuinely serves a purpose.\n\n2. *Documented decisions* — Material decisions should be written down at the time they are made, not reconstructed retrospectively.\n\n3. *Proportionality* — The level of effort and rigour applied should be proportionate to the stakes involved.\n\n4. *Continuous improvement* — No document or process is perfect. Feedback and improvement are both expected and welcomed.\n\n**Practical Application**\nThe guidance in this section is most useful when it is applied thoughtfully rather than mechanically. The goal is good outcomes, and the procedures are a means to that end. When a procedure would lead to a clearly poor outcome, that is a signal to escalate rather than to proceed blindly.`,
+    },
+    {
+      title: "Procedures & Actions",
+      readMins: 3,
+      summary: `Step-by-step procedures for the most common activities, including decision points and escalation guidance.`,
+      body: `The following procedures cover the scenarios most frequently encountered in this area. Each procedure is presented as a numbered sequence. Decision points are indicated clearly.\n\n**Standard Procedure**\n1. Confirm that the situation falls within the scope of this procedure.\n2. Gather the required information and documentation before starting.\n3. Follow each step in sequence. If you reach a point where the next step is unclear, stop and seek guidance.\n4. Document your actions and the outcome.\n5. Complete any required follow-up actions within the specified timeframes.\n\n**Exception Handling**\nExceptions — situations that don't fit the standard procedure — should be handled as follows:\n1. Document the nature of the exception.\n2. Consult the escalation contacts listed in this document.\n3. Follow the guidance provided.\n4. Record the outcome and any precedent set for future reference.\n\n**Escalation**\nEscalate whenever you are uncertain, when a situation has not been encountered before, or when the stakes are high enough to warrant a second opinion.`,
+    },
+    {
+      title: "Reference & Contacts",
+      readMins: 1,
+      summary: `Quick-reference information, key contacts, and links to related documents and systems.`,
+      body: `**Key Contacts**\n• Document Owner — responsible for maintaining this document and answering questions about its application\n• Line Manager — first point of contact for day-to-day queries\n• Subject Matter Expert — available for complex or unusual situations\n• Support / Helpdesk — for system or tool-related issues\n\n**Related Documents**\n• Policy Register — the authoritative list of policies that govern this area\n• Operational Runbook — detailed technical procedures\n• Training Materials — associated learning resources\n• Decision Log — historical record of material decisions made under this framework\n\n**Review History**\nThis document is reviewed on an annual cycle or when material changes occur. The current version number and review date are shown in the document header. Queries about previous versions should be directed to the document owner.`,
+    },
+  ],
+};
+
 function generateFallbackChapters(file) {
   const fileName = file?.name ?? "this document";
-  const sourceLabel = file?.source === "cloud" ? "Cloud import" : "Local upload";
-  const isStored =
-    file?.indexStatus === "stored" ||
-    file?.fileStatus === "success" ||
-    file?.syncStatus === "stored";
 
-  return [
-    {
-      id: "c1",
-      num: 1,
-      title: "Document preview",
-      readMins: 2,
-      summary: `Preview of ${fileName}. Full chapter extraction is available once this file is indexed for Knowledge Hub retrieval.`,
-      body: `**${fileName}**\n\nThis preview uses placeholder content until the document intelligence pipeline extracts readable chapters from your file.\n\n- **Source:** ${sourceLabel}\n- **Status:** ${isStored ? "Stored in your library" : "Awaiting processing"}\n\nOpen the **Details** panel to link this document to a Knowledge Hub. Linked documents become available for semantic search and agent retrieval.`,
-    },
-  ];
+  // If the file is genuinely not yet ready, show the processing state
+  const isProcessing =
+    file?.indexStatus === "processing" ||
+    file?.fileStatus === "processing" ||
+    file?.syncStatus === "loading";
+
+  if (isProcessing) {
+    return [
+      {
+        id: "c1",
+        num: 1,
+        title: fileName,
+        readMins: null,
+        summary: "This document is being processed. Full reading view will be available shortly.",
+        body: null,
+      },
+    ];
+  }
+
+  // For demo/placeholder files (source === "demo") with generic hub-slug names,
+  // strip the numeric suffix to pick a domain
+  const stem = fileName.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").trim();
+  const { topic, domain } = inferTopicFromName(fileName);
+  const displayTopic = stem.length > 4 ? stem : topic;
+
+  const chapterTemplates = (DOMAIN_CHAPTERS[domain] ?? DOMAIN_CHAPTERS.general)(displayTopic);
+
+  return chapterTemplates.map((ch, i) => ({
+    id: `c${i + 1}`,
+    num: i + 1,
+    ...ch,
+  }));
 }
 
 // ─── Studio tools (mirrors KnowledgeHubWorkspaceView) ────────────────────────
 
 const STUDIO_TOOLS = [
-  { id: "summary",     label: "Summary",     icon: FileText,       bg: "bg-violet-500/10 text-violet-700 dark:text-violet-300" },
-  { id: "mindmap",     label: "Mind Map",    icon: Network,        bg: "bg-rose-500/10 text-rose-700 dark:text-rose-300" },
-  { id: "quiz",        label: "Quiz",        icon: HelpCircle,     bg: "bg-sky-500/10 text-sky-700 dark:text-sky-300" },
-  { id: "flashcards",  label: "Flashcards",  icon: Layers,         bg: "bg-amber-500/10 text-amber-800 dark:text-amber-300" },
-  { id: "report",      label: "Report",      icon: ClipboardList,  bg: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
-  { id: "compare",     label: "Compare",     icon: GitCompare,     bg: "bg-orange-500/10 text-orange-700 dark:text-orange-300" },
-  { id: "infographic", label: "Infographic", icon: BarChart3,      bg: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
-  { id: "datatable",   label: "Data Table",  icon: FileSpreadsheet,bg: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" },
+  { id: "summary",     label: "Summary",     icon: FileText,        bg: "bg-primary/10 text-primary" },
+  { id: "mindmap",     label: "Mind Map",    icon: Network,         bg: "bg-chart-chart-4/15 text-chart-chart-4" },
+  { id: "quiz",        label: "Quiz",        icon: HelpCircle,      bg: "bg-info/10 text-info" },
+  { id: "flashcards",  label: "Flashcards",  icon: Layers,          bg: "bg-warning/10 text-warning" },
+  { id: "report",      label: "Report",      icon: ClipboardList,   bg: "bg-success/10 text-success" },
+  { id: "compare",     label: "Compare",     icon: GitCompare,      bg: "bg-chart-chart-5/15 text-chart-chart-5" },
+  { id: "infographic", label: "Infographic", icon: BarChart3,       bg: "bg-chart-chart-1/15 text-chart-chart-1" },
+  { id: "datatable",   label: "Data Table",  icon: FileSpreadsheet, bg: "bg-chart-chart-3/15 text-chart-chart-3" },
 ];
 
 function generateChapterStudioContent(toolId, fileName, chapter) {
@@ -405,7 +798,7 @@ function ChapterChatMessage({ message, sourceLabel, onCapture, showFeedbackActio
           onClick={handleCopy}
           className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+          {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
         </button>
         {showFeedbackActions ? (
           <>
@@ -493,6 +886,7 @@ function ChapterItem({ chapter, active, onClick }) {
 // ─── Chapter reading view (center panel) ─────────────────────────────────────
 
 function ReadingMeta({ chapter, total }) {
+  if (!chapter.readMins) return null;
   return (
     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
       <span className="flex items-center gap-1">
@@ -508,6 +902,34 @@ function ReadingMeta({ chapter, total }) {
 }
 
 function ChapterReaderView({ chapter, chapters, readingSourceLabel, canEdit, openSelectionMenu, scrollRef }) {
+  // Fallback chapter (body === null) — document not yet indexed
+  if (chapter?.body === null) {
+    return (
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-4 px-8 py-24 text-center">
+          <div className="flex size-16 items-center justify-center rounded-2xl bg-muted">
+            <FileText className="size-8 text-muted-foreground/50" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-semibold text-foreground">
+              {chapter.summary?.includes("being processed")
+                ? "Processing document…"
+                : "Document stored"}
+            </h2>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              {chapter.summary}
+            </p>
+          </div>
+          {chapter.summary?.includes("being processed") && (
+            <p className="text-xs text-muted-foreground">
+              Check back shortly — this usually takes under a minute.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-4xl px-8 py-10 pb-24">
@@ -879,7 +1301,7 @@ function StudioTab({ chapter, fileName, onCapture }) {
                 onClick={handleCopy}
                 className="flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors"
               >
-                {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                {copied ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
               </button>
               <button
                 type="button"
@@ -1041,7 +1463,7 @@ function DetailsTab({
                 key={`${link.hubId}-${link.hubFileId}`}
                 className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2"
               >
-                <Database className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
+                <Database className="size-3.5 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-foreground">{link.hubName}</p>
                   <p className="text-[10px] text-muted-foreground">Knowledge Hub</p>
@@ -1302,14 +1724,14 @@ function NotesTab({ notes, nodes, onCreateDocumentFromNotes }) {
                       selectMode && "cursor-pointer",
                       selected
                         ? "border-primary/50 bg-primary/5"
-                        : "border-violet-500/20 bg-violet-500/5",
+                        : "border-primary/20 bg-primary/5",
                       selectMode && !selected && "hover:border-primary/30 hover:bg-muted/40",
                     )}
                   >
                     <div className="flex items-start gap-2.5">
                       {selectMode ? renderCheckbox(selected) : null}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">
+                        <div className="flex items-center gap-1.5 text-[10px] font-medium text-primary">
                           <Network className="size-3" />
                           {item.nodeTitle}
                         </div>
@@ -1811,7 +2233,7 @@ export function DocumentReaderDrawer({
 
         {/* ── Right: AI panel (desktop) ── */}
         {chapter ? (
-          <div className="hidden w-72 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-80">
+          <div className="hidden w-64 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-72">
             <RightPanel key={file?.id} {...panelProps} />
           </div>
         ) : null}

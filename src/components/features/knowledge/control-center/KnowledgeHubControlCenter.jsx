@@ -50,6 +50,7 @@ import {
 import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
 import { HubFileSyncIcon, hubSyncStatusForRow } from "@/components/features/knowledge/HubFileSyncIcon";
+import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 import { HubMiniBarChart } from "@/components/features/knowledge/control-center/HubControlCenterCharts";
 import { HubControlCenterRelationships } from "@/components/features/knowledge/control-center/HubControlCenterRelationships";
 import { HubControlCenterTimeline } from "@/components/features/knowledge/control-center/HubControlCenterTimeline";
@@ -186,6 +187,7 @@ export function KnowledgeHubControlCenter({
   const [activeTab, setActiveTab] = useState("documents");
   const [docSearch, setDocSearch] = useState("");
   const [docSourceFilter, setDocSourceFilter] = useState("all");
+  const [docStatusFilter, setDocStatusFilter] = useState(null);
   const [docPage, setDocPage] = useState(1);
   const [selectedDocIds, setSelectedDocIds] = useState(() => new Set());
   const [timelineFilter, setTimelineFilter] = useState("all");
@@ -204,8 +206,17 @@ export function KnowledgeHubControlCenter({
     if (docSourceFilter === "cloud") list = list.filter((d) => d.isCloud);
     if (docSourceFilter === "local") list = list.filter((d) => !d.isCloud);
     if (docSourceFilter === "library") list = list.filter((d) => d.libraryDocumentId);
+    if (docStatusFilter) {
+      list = list.filter((d) => {
+        const status = resolveFileLifecycleStatus(d.raw, { includeDemoStatuses: showDemoStatuses });
+        // "local" filter matches local files; "processing" matches both syncing + processing
+        if (docStatusFilter === "local") return d.raw?.source === "user" || d.raw?.source === "upload";
+        if (docStatusFilter === "processing") return status === "processing" || status === "syncing";
+        return status === docStatusFilter;
+      });
+    }
     return list;
-  }, [telemetry, docSearch, docSourceFilter]);
+  }, [telemetry, docSearch, docSourceFilter, docStatusFilter, showDemoStatuses]);
 
   const docPagination = useMemo(
     () => paginateSlice(filteredDocs, docPage, HUB_FILES_PAGE_SIZE),
@@ -214,7 +225,7 @@ export function KnowledgeHubControlCenter({
 
   useEffect(() => {
     setDocPage(1);
-  }, [docSearch, docSourceFilter, hub?.id]);
+  }, [docSearch, docSourceFilter, docStatusFilter, hub?.id]);
 
   useEffect(() => {
     if (!hubTabs.some((tab) => tab.id === activeTab)) {
@@ -257,7 +268,14 @@ export function KnowledgeHubControlCenter({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold text-foreground">{hubName}</h1>
+              <h1 className="truncate text-xl font-semibold text-foreground">
+                {hubName.replace(/\s*\(Draft\)\s*$/i, "").trim()}
+              </h1>
+              {/\(Draft\)\s*$/i.test(hubName) && (
+                <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300">
+                  Draft
+                </Badge>
+              )}
               <Badge
                 variant="outline"
                 className={cn("capitalize", STATUS_STYLES[metadata.status] ?? STATUS_STYLES.published)}
@@ -360,6 +378,8 @@ export function KnowledgeHubControlCenter({
                   files={allFiles}
                   title={KNOWLEDGE_TERMS.documents}
                   includeDemoStatuses={showDemoStatuses}
+                  activeFilter={docStatusFilter}
+                  onFilter={setDocStatusFilter}
                 />
 
                 {pendingDownloadCount > 0 && canEdit && onDownloadAllPending ? (
@@ -505,7 +525,27 @@ export function KnowledgeHubControlCenter({
               {/* Agents */}
               <TabsContent value="agents" className="mt-0">
                 {linkedAgents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No agents consume this hub yet.</p>
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+                      <Bot className="size-5 text-muted-foreground/60" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">No agents connected</p>
+                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                        Attach an agent to this hub so it can retrieve documents during execution.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => navigate("/agents")}
+                    >
+                      <Bot className="size-3.5" />
+                      Go to Agents
+                    </Button>
+                  </div>
                 ) : (
                   <div className="overflow-hidden rounded-xl border border-border">
                     <Table>
@@ -645,31 +685,33 @@ export function KnowledgeHubControlCenter({
           </Tabs>
         </div>
 
-        {/* Right: insights rail (xl+) */}
-        <div className="hidden w-64 shrink-0 overflow-y-auto border-l border-border bg-muted/10 p-4 2xl:block">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usage insights</p>
-          <div className="mt-3 space-y-3">
-            <div className="rounded-lg border border-border bg-card p-3 text-sm">
-              <p className="text-[11px] text-muted-foreground">Hub accesses</p>
-              <p className="text-xl font-semibold tabular-nums">{usage.accessCount.toLocaleString()}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-3 text-sm">
-              <p className="text-[11px] text-muted-foreground">Top document</p>
-              <p className="truncate font-medium">{summary.mostUsedDocument}</p>
-            </div>
-            <div className="rounded-lg border border-border bg-card p-3">
-              <p className="mb-2 text-[11px] text-muted-foreground">Document access frequency</p>
-              <ul className="space-y-1">
-                {analytics.documentAccessFrequency.slice(0, 4).map((d) => (
-                  <li key={d.name} className="flex justify-between text-[11px]">
-                    <span className="truncate">{d.name}</span>
-                    <span className="tabular-nums">{d.count}</span>
-                  </li>
-                ))}
-              </ul>
+        {/* Right: insights rail — only shown on the Telemetry tab (2xl+) */}
+        {activeTab === "telemetry" && (
+          <div className="hidden w-64 shrink-0 overflow-y-auto border-l border-border bg-muted/10 p-4 2xl:block">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usage insights</p>
+            <div className="mt-3 space-y-3">
+              <div className="rounded-lg border border-border bg-card p-3 text-sm">
+                <p className="text-[11px] text-muted-foreground">Hub accesses</p>
+                <p className="text-xl font-semibold tabular-nums">{usage.accessCount.toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3 text-sm">
+                <p className="text-[11px] text-muted-foreground">Top document</p>
+                <p className="truncate font-medium">{summary.mostUsedDocument}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-3">
+                <p className="mb-2 text-[11px] text-muted-foreground">Document access frequency</p>
+                <ul className="space-y-1">
+                  {analytics.documentAccessFrequency.slice(0, 4).map((d) => (
+                    <li key={d.name} className="flex justify-between text-[11px]">
+                      <span className="truncate">{d.name}</span>
+                      <span className="tabular-nums">{d.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
     </div>
