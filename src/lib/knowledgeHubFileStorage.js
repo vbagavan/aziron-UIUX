@@ -31,6 +31,19 @@ export function knowledgeHubBlobKey(hubId, fileId) {
   return `kh-${hubId}-${fileId}`;
 }
 
+export function documentLibraryBlobKey(documentId) {
+  return `doclib-${documentId}`;
+}
+
+/** Resolve IndexedDB key for hub files or standalone library documents. */
+export function resolveFileStorageId(hubId, file) {
+  if (file?.localBlobId) return file.localBlobId;
+  if (hubId === "library" || file?.isLibraryDocument) {
+    return documentLibraryBlobKey(file.id);
+  }
+  return knowledgeHubBlobKey(hubId, file.id);
+}
+
 /**
  * @param {string} id
  * @param {Blob} blob

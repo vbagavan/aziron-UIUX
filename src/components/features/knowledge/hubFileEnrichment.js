@@ -9,6 +9,7 @@ import {
   createPendingSourceGuide,
   generateSourceGuide,
 } from "@/components/features/knowledge/hubSourceGuide";
+import { extractEpubGuideContent } from "@/lib/hubEpub";
 import { getKnowledgeHubFile } from "@/lib/knowledgeHubFileStorage";
 
 /**
@@ -55,14 +56,21 @@ export async function enrichStoredHubFile(hubId, fileRecord, updateHubFile) {
     });
 
     const previewKind = getDocumentPreviewKind(fileRecord.name, mime);
-    const isBinary =
+    const isMedia =
       previewKind === "video" ||
       previewKind === "audio" ||
-      previewKind === "image" ||
-      previewKind === "epub";
+      previewKind === "image";
 
     let text = "";
-    if (!isBinary) {
+    let structuredSections = null;
+
+    if (previewKind === "epub") {
+      const epubContent = await extractEpubGuideContent(stored.blob);
+      if (epubContent) {
+        text = epubContent.text;
+        structuredSections = epubContent.sections;
+      }
+    } else if (!isMedia) {
       try {
         text = (await extractDocumentMarkdown(stored.blob, fileRecord.name, mime)) ?? "";
       } catch {
@@ -75,6 +83,7 @@ export async function enrichStoredHubFile(hubId, fileRecord, updateHubFile) {
       fileName: fileRecord.name,
       metadata,
       allFiles: [],
+      structuredSections,
     });
 
     updateHubFile(hubId, fileRecord.id, { metadata, sourceGuide });

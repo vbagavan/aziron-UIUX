@@ -20,8 +20,11 @@ function formatTableDate(iso) {
   });
 }
 
-export function uploadToAttachedRow(file, index) {
-  const id = `upload-${file.name}-${index}-${file.lastModified}`;
+export function uploadToAttachedRow(file, uniqueSuffix) {
+  const id =
+    uniqueSuffix != null
+      ? `upload-${uniqueSuffix}-${file.name}`
+      : `upload-${file.name}-${file.lastModified}`;
   return {
     id,
     name: file.name,
@@ -62,6 +65,50 @@ export function mergeAttachedFiles(uploads, cloudRows) {
 export function totalAttachedSizeMb(rows) {
   const kb = (rows ?? []).reduce((sum, r) => sum + (r.sizeKb ?? 0), 0);
   return (kb / 1024).toFixed(2);
+}
+
+export function attachedRowsToCloudImports(rows, metasByProvider = {}) {
+  const cloudRows = (rows ?? []).filter((r) => r.source === "cloud");
+  if (cloudRows.length === 0) return [];
+
+  const providers = [
+    ...new Set(cloudRows.map((r) => r.cloudProvider ?? "onedrive")),
+  ];
+
+  return providers
+    .map((provider) => {
+      const meta = metasByProvider[provider] ?? {};
+      const providerRows = cloudRows.filter(
+        (r) => (r.cloudProvider ?? "onedrive") === provider,
+      );
+      if (providerRows.length === 0) return null;
+      const label = provider === "google-drive" ? "Google Drive" : "OneDrive";
+      return {
+        provider,
+        connection: meta.connection ?? null,
+        connectionName: meta.connectionName ?? `${label} connection`,
+        authMethod: meta.authMethod,
+        selectedFiles: providerRows.map((r) => ({
+          ...r.pickerFile,
+          syncStatus: r.syncStatus,
+          localBlobId: r.localBlobId ?? null,
+          draftBlobId: r.draftBlobId ?? null,
+          syncedAt: r.syncedAt ?? null,
+        })),
+      };
+    })
+    .filter(Boolean);
+}
+
+export function countImportableAttachedRows(rows, metasByProvider = {}) {
+  const uploadCount = (rows ?? []).filter(
+    (r) => (r.source === "upload" || r.source === "user") && (r.file || r.name),
+  ).length;
+  const cloudCount = attachedRowsToCloudImports(rows, metasByProvider).reduce(
+    (sum, imp) => sum + (imp.selectedFiles?.length ?? 0),
+    0,
+  );
+  return uploadCount + cloudCount;
 }
 
 export function attachedRowsToCloudImport(rows, connectionMeta) {

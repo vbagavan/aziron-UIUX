@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Bot,
-  ChevronRight,
   Database,
   FileText,
   Grid2x2,
@@ -47,6 +46,7 @@ import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { formatDisplayDate } from "@/data/knowledgeHubs";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubDetailView } from "@/components/features/knowledge/KnowledgeHubDetailView";
+import { KnowledgeHubHeaderBreadcrumb } from "@/components/features/knowledge/KnowledgeHubHeaderBreadcrumb";
 import { paginateSlice } from "@/lib/pagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAgents } from "@/context/AgentsContext";
@@ -61,6 +61,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
 
 const HUB_LIST_PAGE_SIZE = 20;
@@ -196,9 +197,9 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
   );
 }
 
-function EmptyState({ onAdd }) {
+function EmptyState({ onAdd, onBrowseDocuments }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 min-h-[400px]">
+    <div className="flex min-h-[400px] flex-1 flex-col items-center justify-center gap-3 py-16">
       <svg width="130" height="123" viewBox="0 0 130 123" fill="none" aria-hidden="true">
         <rect x="22" y="72" width="86" height="11" rx="4" fill="#E2E8F0" />
         <rect x="16" y="85" width="98" height="11" rx="4" fill="#CBD5E1" />
@@ -212,18 +213,27 @@ function EmptyState({ onAdd }) {
         <circle cx="118" cy="58" r="2" fill="#A5B4FC" />
         <circle cx="20" cy="22" r="1.5" fill="#E2E8F0" />
       </svg>
-      <p className="text-sm text-muted-foreground text-center max-w-sm">
-        Create your first Knowledge Hub to upload documents and let agents answer questions
-        from your content.
+      <p className="max-w-sm text-center text-sm text-muted-foreground">
+        Create your first {KNOWLEDGE_TERMS.hubSingular.toLowerCase()} to organize documents for agents
+        and workflows. Or upload to {KNOWLEDGE_TERMS.documents.toLowerCase()} and link later.
       </p>
-      {onAdd ? (
-        <Button size="sm" onClick={onAdd} className="gap-1.5">
-          <Plus size={16} />
-          Add Knowledge Hub
-        </Button>
-      ) : (
-        <p className="text-xs text-muted-foreground">You have view-only access to Knowledge Hub.</p>
-      )}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {onAdd ? (
+          <Button size="sm" onClick={onAdd} className="gap-1.5">
+            <Plus size={16} />
+            Add {KNOWLEDGE_TERMS.hubSingular}
+          </Button>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            You have view-only access to {KNOWLEDGE_TERMS.hubs.toLowerCase()}.
+          </p>
+        )}
+        {onBrowseDocuments ? (
+          <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onBrowseDocuments}>
+            Go to {KNOWLEDGE_TERMS.documents}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -373,14 +383,28 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [detailDraft, setDetailDraft] = useState({ name: null, detailsDirty: false });
+  const [detailDraft, setDetailDraft] = useState({
+    name: null,
+    detailsDirty: false,
+    hubSurface: "control-center",
+    libraryFileName: null,
+  });
+  const [hubNavRequest, setHubNavRequest] = useState(null);
   const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
   const menuRef = useRef(null);
 
   const detailHub = hubId ? getHubById(hubId) : null;
 
   useEffect(() => {
-    if (!hubId) setDetailDraft({ name: null, detailsDirty: false });
+    if (!hubId) {
+      setDetailDraft({
+        name: null,
+        detailsDirty: false,
+        hubSurface: "control-center",
+        libraryFileName: null,
+      });
+      setHubNavRequest(null);
+    }
   }, [hubId]);
 
   useEffect(() => {
@@ -435,11 +459,29 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const isEmpty = hubs.length === 0;
   const selectedCount = selectedRows.size;
 
+  function handleKnowledgeHubBreadcrumbClick() {
+    if (detailDraft.detailsDirty) {
+      const leave = window.confirm("You have unsaved changes. Leave without saving?");
+      if (!leave) return;
+    }
+    navigate("/knowledge");
+  }
+
+  function handleHubBreadcrumbClick() {
+    if (detailDraft.hubSurface === "library") {
+      setHubNavRequest("control-center");
+    }
+  }
+
   function openHub(id) {
     navigate(`/knowledge/${id}`);
   }
 
   function handleFilesAdded(names, provider) {
+    if (provider === "published") {
+      showToast("Knowledge Hub published and available to agents and workflows.");
+      return;
+    }
     if (!names?.length) return;
     const label =
       provider === "google-drive"
@@ -452,10 +494,10 @@ export default function KnowledgeHubPage({ onNavigate }) {
     showToast(
       names.length === 1
         ? label === "upload"
-          ? `"${names[0]}" uploaded.`
+          ? `"${names[0]}" added to hub and document library.`
           : `"${names[0]}" added from ${label}.`
         : label === "upload"
-          ? `${names.length} files uploaded.`
+          ? `${names.length} files added to hub and document library.`
           : `${names.length} files added from ${label}.`,
     );
   }
@@ -595,25 +637,15 @@ export default function KnowledgeHubPage({ onNavigate }) {
 
       <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
         <AppHeader onNavigate={onNavigate}>
-          {detailHub && (
-            <div className="ml-1 flex min-w-0 items-center gap-2">
-              <div className="h-6 w-px bg-border" />
-              <button
-                type="button"
-                onClick={() => navigate("/knowledge")}
-                className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Knowledge Hub
-              </button>
-              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="max-w-[200px] truncate text-sm font-medium text-foreground">
-                {detailDraft.name ?? detailHub.name}
-                {detailDraft.detailsDirty && (
-                  <span className="ml-1.5 font-normal text-muted-foreground">(unsaved)</span>
-                )}
-              </span>
-            </div>
-          )}
+          {detailHub ? (
+            <KnowledgeHubHeaderBreadcrumb
+              hubName={detailDraft.name ?? detailHub.name}
+              detailsDirty={detailDraft.detailsDirty}
+              libraryFileName={detailDraft.libraryFileName}
+              onKnowledgeHubClick={handleKnowledgeHubBreadcrumbClick}
+              onHubClick={handleHubBreadcrumbClick}
+            />
+          ) : null}
         </AppHeader>
 
         <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
@@ -622,6 +654,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
                 hub={detailHub}
                 canEdit={canEdit}
                 canDelete={canDelete}
+                hubNavRequest={hubNavRequest}
+                onHubNavHandled={() => setHubNavRequest(null)}
                 onMetadataChange={setDetailDraft}
                 onSave={(patch) => {
                   updateHub(detailHub.id, patch);
@@ -747,7 +781,10 @@ export default function KnowledgeHubPage({ onNavigate }) {
                 )}
 
                 {isEmpty ? (
-                  <EmptyState onAdd={canCreate ? () => setCreateOpen(true) : undefined} />
+                  <EmptyState
+                    onAdd={canCreate ? () => setCreateOpen(true) : undefined}
+                    onBrowseDocuments={() => navigate("/documents")}
+                  />
                 ) : filteredSorted.length === 0 ? (
                   <Empty className="border border-dashed py-12">
                     <EmptyHeader>
@@ -850,9 +887,21 @@ export default function KnowledgeHubPage({ onNavigate }) {
         />
       )}
 
-      {toasts.map((t) => (
-        <Toast key={t.id} message={t.message} onDismiss={() => dismissToast(t.id)} />
-      ))}
+      {toasts.length > 0 && (
+        <div className="pointer-events-none fixed right-4 bottom-4 z-[99999] flex w-full max-w-md flex-col gap-2">
+          {toasts.map((t) => (
+            <div key={t.id} className="pointer-events-auto">
+              <Toast
+                message={t.message}
+                variant={t.variant ?? "default"}
+                actionLabel={t.actionLabel}
+                onAction={t.onAction}
+                onDismiss={() => dismissToast(t.id)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,8 @@ export const PRIMARY_SIDEBAR_PAGES = new Set([
   "flows",
   // PLATFORM
   "knowledge",
+  "knowledge-research",
+  "documents",
   "marketplace",
   "vault",
   "usage",

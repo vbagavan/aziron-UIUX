@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   getKnowledgeHubFile,
-  knowledgeHubBlobKey,
+  resolveFileStorageId,
 } from "@/lib/knowledgeHubFileStorage";
 import { generateCloudFilePlaceholderThumbnail } from "@/lib/hubCloudThumbnail";
 import {
@@ -39,7 +39,7 @@ export function useFileThumbnail(hubId, file) {
         ? formatMediaDuration(file.metadata.durationSeconds)
         : null);
 
-    const storageId = file.localBlobId ?? knowledgeHubBlobKey(hubId, file.id);
+    const storageId = resolveFileStorageId(hubId, file);
     const isLinkedCloud = file.source === "cloud" && isCloudFileLinked(file);
 
     let cancelled = false;

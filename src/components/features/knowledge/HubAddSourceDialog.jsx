@@ -19,7 +19,7 @@ import {
  * Runs the full cloud connector flow (auth → scope → file picker) when adding
  * sources to an existing Knowledge Hub.
  */
-export function HubAddSourceDialog({ open, onOpenChange, provider, onComplete }) {
+export function HubAddSourceDialog({ open, onOpenChange, provider, onComplete, target = "hub" }) {
   const [wizardTitle, setWizardTitle] = useState("Connect cloud storage");
 
   useEffect(() => {
@@ -58,7 +58,9 @@ export function HubAddSourceDialog({ open, onOpenChange, provider, onComplete })
           </p>
           <DialogTitle>Connector setup — {providerLabel}</DialogTitle>
           <DialogDescription>
-            Authenticate, select a data scope, choose files, and add them to this knowledge hub.
+            {target === "library"
+              ? "Authenticate, select a data scope, choose files, and add them to your document library."
+              : "Authenticate, select a data scope, choose files, and add them to this knowledge hub."}
           </DialogDescription>
         </DialogHeader>
 

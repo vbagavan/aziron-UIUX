@@ -5,12 +5,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { hubSyncStatusForFile } from "@/lib/fileSyncStatus";
 
 const TOOLTIPS = {
-  linked: "Cloud link — click to save to your knowledge base",
-  loading: "Saving to your knowledge base…",
-  failed: "Save failed — click to retry",
-  success: "In your knowledge base",
+  linked: "Cloud reference — click to download and index",
+  loading: "Syncing — downloading and indexing file…",
+  failed: "Sync failed — click to retry",
+  success: "Synced and available locally",
 };
 
 function IconWithTooltip({ tip, children, asButton, onClick, ariaLabel }) {
@@ -99,13 +100,6 @@ export function HubFileSyncIcon({ status, fileName, canActivate, onActivate }) {
   );
 }
 
-export function hubSyncStatusForRow(row) {
-  if (row.source === "upload" || row.source === "user") return "success";
-  return row.syncStatus === "stored"
-    ? "success"
-    : row.syncStatus === "loading"
-      ? "loading"
-      : row.syncStatus === "failed"
-        ? "failed"
-        : "linked";
+export function hubSyncStatusForRow(row, options) {
+  return hubSyncStatusForFile(row, options);
 }

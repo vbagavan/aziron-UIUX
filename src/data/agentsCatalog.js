@@ -25,6 +25,11 @@ export const INITIAL_AGENTS = [
   { id: 17, name: "Industry News Alerts",    description: " ",                                                                                                                        date: "10 May 2026", provider: "OpenAI",    model: "GPT-4o mini",    status: "active",   lastRun: "10 min ago",  success: 100, accessEnabled: false, visibility: "private", labels: ["l-4"] },
   { id: 18, name: "Work-Life Balance Tracker", description: "Monitors your work patterns and suggests practical strategies for achieving a healthier balance.",                        date: "25 Jun 2026", provider: "Anthropic", model: "Claude 3 Haiku", status: "idle",     lastRun: "1 week ago",  success: 81,  accessEnabled: false, visibility: "private", labels: [] },
   { id: 19, name: "Continuous Learning Hub", description: "Recommends and tracks online courses and certifications to support your ongoing professional development.",                  date: "15 Jul 2026", provider: "OpenAI",    model: "GPT-4o",         status: "idle",     lastRun: "3 days ago",  success: 88,  accessEnabled: false, visibility: "private", labels: ["l-5"] },
+  { id: 20, name: "Brand Voice Assistant",   description: "Answers questions using MyDigitalHub brand guidelines, tone rules, and approved messaging.",                              date: "02 May 2026", provider: "Anthropic", model: "Claude 3.5",     status: "active",   lastRun: "20 min ago",  success: 95,  accessEnabled: true,  visibility: "private", knowledgeHubs: [9], ragMode: true, vectorSearch: true, labels: ["l-6"] },
+  { id: 21, name: "Campaign Content Copilot", description: "Drafts social posts, landing copy, and email snippets grounded in MyDigitalHub campaign assets.",                        date: "18 May 2026", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "1h ago",      success: 92,  accessEnabled: true,  visibility: "private", knowledgeHubs: [9], ragMode: true, vectorSearch: false, labels: ["l-6"] },
+  { id: 22, name: "Digital Asset Finder",    description: "Semantic search across MyDigitalHub documents, creatives, and briefs for fast retrieval.",                               date: "26 May 2026", provider: "OpenAI",    model: "GPT-4o",         status: "active",   lastRun: "10 min ago",  success: 98,  accessEnabled: true,  visibility: "private", knowledgeHubs: [9], ragMode: true, vectorSearch: true, labels: ["l-4"] },
+  { id: 23, name: "SEO Content Optimizer",   description: "Audits MyDigitalHub pages and docs for SEO gaps and suggests keyword-aligned rewrites.",                                 date: "04 Jun 2026", provider: "OpenAI",    model: "GPT-4.5",        status: "active",   lastRun: "25 min ago",  success: 91,  accessEnabled: true,  visibility: "private", knowledgeHubs: [9], ragMode: true, vectorSearch: false, labels: ["l-4"] },
+  { id: 24, name: "Social Calendar Planner", description: "Plans weekly social content using MyDigitalHub campaign calendars and approved asset library.",                          date: "11 Jun 2026", provider: "Anthropic", model: "Claude 3.5",     status: "idle",     lastRun: "3h ago",      success: 89,  accessEnabled: true,  visibility: "private", knowledgeHubs: [9], ragMode: true, vectorSearch: false, labels: ["l-6"] },
 ];
 
 /**
@@ -51,7 +56,10 @@ export function loadAgentsFromStorage() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    return parsed.map(migrateStoredAgent);
+    const stored = parsed.map(migrateStoredAgent);
+    const storedIds = new Set(stored.map((a) => a.id));
+    const missing = INITIAL_AGENTS.filter((a) => !storedIds.has(a.id)).map((a) => migrateStoredAgent(a));
+    return missing.length ? [...stored, ...missing] : stored;
   } catch {
     return null;
   }

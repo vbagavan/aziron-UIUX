@@ -220,15 +220,17 @@ export function CreateHubFilesStep({
                       <TableCell className="text-muted-foreground">{row.date}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={`Actions for ${row.name}`}
-                            >
-                              <MoreHorizontal aria-hidden />
-                            </Button>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Actions for ${row.name}`}
+                              />
+                            }
+                          >
+                            <MoreHorizontal aria-hidden />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuGroup>

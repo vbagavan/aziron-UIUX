@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { HubFileMetadataPanel } from "@/components/features/knowledge/HubFileMetadataPanel";
 import { HubKnowledgeGraph } from "@/components/features/knowledge/HubKnowledgeGraph";
-import { HubMarkdownPreview } from "@/components/features/knowledge/HubMarkdownPreview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,11 +62,8 @@ function ExternalResourceCard({ resource }) {
  *   sourceGuide: object | null,
  *   guideLoading?: boolean,
  *   metadata?: object,
- *   markdownContent?: string | null,
- *   previewKind?: string,
- *   previewSrc?: string | null,
  *   onQuickPrompt?: (prompt: string) => void,
- *   onGraphNodeClick?: (node: object) => void,
+ *   onSectionSelect?: (section: { id?: string, title: string, excerpt?: string }) => void,
  *   className?: string,
  * }} props
  */
@@ -76,11 +72,8 @@ export function HubSourceGuideView({
   sourceGuide,
   guideLoading = false,
   metadata,
-  markdownContent,
-  previewKind,
-  previewSrc,
   onQuickPrompt,
-  onGraphNodeClick,
+  onSectionSelect,
   className,
 }) {
   const [activeTab, setActiveTab] = useState("guide");
@@ -100,6 +93,16 @@ export function HubSourceGuideView({
   }
 
   const guide = sourceGuide?.status === "ready" ? sourceGuide : null;
+  const linkedResources = (guide?.externalResources ?? []).filter(
+    (res) => res.url && res.url !== "#",
+  );
+
+  function handleSectionClick(section) {
+    onSectionSelect?.(section);
+    onQuickPrompt?.(
+      `Summarize the section "${section.title}" from this document:\n\n${section.excerpt ?? ""}`,
+    );
+  }
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
@@ -118,15 +121,24 @@ export function HubSourceGuideView({
               <Network className="size-3.5" />
               Graph
             </TabsTrigger>
-            <TabsTrigger value="document" className="gap-1.5 text-xs">
-              <FileText className="size-3.5" />
-              Document
-            </TabsTrigger>
           </TabsList>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           <TabsContent value="guide" className="mt-0 flex flex-col gap-4 p-4">
+            {guide && guide.isPreview !== false ? (
+              <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">Auto-generated preview</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                    Topics and sections are extracted locally from your file. Use Ask AI for
+                    deeper answers grounded in this document.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             <HubFileMetadataPanel metadata={metadata} />
 
             {guide ? (
@@ -189,13 +201,22 @@ export function HubSourceGuideView({
 
                 {(guide.sections ?? []).length > 0 ? (
                   <SectionCard title="Document sections" icon={FileText}>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Click a section to ask about it in Ask AI.
+                    </p>
                     <ul className="space-y-3">
                       {(guide.sections ?? []).map((sec) => (
-                        <li key={sec.id} className="rounded-lg border border-border bg-muted/20 p-3">
-                          <p className="text-sm font-medium text-foreground">{sec.title}</p>
-                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            {sec.excerpt}
-                          </p>
+                        <li key={sec.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleSectionClick(sec)}
+                            className="w-full rounded-lg border border-border bg-muted/20 p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
+                          >
+                            <p className="text-sm font-medium text-foreground">{sec.title}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                              {sec.excerpt}
+                            </p>
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -204,8 +225,7 @@ export function HubSourceGuideView({
 
                 <SectionCard title="Quick prompts" icon={MessageSquareQuote}>
                   <p className="mb-3 text-xs text-muted-foreground">
-                    Search runs against this document only. Answers include citations to relevant
-                    sections.
+                    Opens Ask AI with a starter question about this document.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {(guide.quickPrompts ?? []).map((item) => (
@@ -223,13 +243,15 @@ export function HubSourceGuideView({
                   </div>
                 </SectionCard>
 
-                <SectionCard title="External resources" icon={Globe}>
-                  <div className="flex flex-col gap-2">
-                    {(guide.externalResources ?? []).map((res, i) => (
-                      <ExternalResourceCard key={`${res.title}-${i}`} resource={res} />
-                    ))}
-                  </div>
-                </SectionCard>
+                {linkedResources.length > 0 ? (
+                  <SectionCard title="External resources" icon={Globe}>
+                    <div className="flex flex-col gap-2">
+                      {linkedResources.map((res, i) => (
+                        <ExternalResourceCard key={`${res.title}-${i}`} resource={res} />
+                      ))}
+                    </div>
+                  </SectionCard>
+                ) : null}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">Source guide could not be generated.</p>
@@ -308,47 +330,12 @@ export function HubSourceGuideView({
               <HubKnowledgeGraph
                 graph={guide.graph}
                 onNodeClick={(node) => {
-                  onGraphNodeClick?.(node);
                   if (node.type === "topic") {
                     onQuickPrompt?.(`What does this document say about "${node.label}"?`);
                   }
                 }}
               />
             ) : null}
-          </TabsContent>
-
-          <TabsContent value="document" className="mt-0 flex flex-col gap-4 p-4">
-            {previewKind === "pdf" && previewSrc ? (
-              <iframe
-                title={`Document ${file.name}`}
-                src={previewSrc}
-                className="min-h-[480px] w-full flex-1 rounded-lg border border-border bg-background"
-              />
-            ) : previewKind === "image" && previewSrc ? (
-              <img
-                src={previewSrc}
-                alt={file.name}
-                className="max-h-[560px] w-full rounded-lg border border-border object-contain"
-              />
-            ) : previewKind === "video" && previewSrc ? (
-              <video
-                src={previewSrc}
-                controls
-                className="max-h-[560px] w-full rounded-lg border border-border bg-black"
-              >
-                <track kind="captions" />
-              </video>
-            ) : previewKind === "audio" && previewSrc ? (
-              <audio src={previewSrc} controls className="w-full" />
-            ) : markdownContent ? (
-              <div className="rounded-lg border border-border bg-background p-6">
-                <HubMarkdownPreview content={markdownContent} />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No raw document preview available for this file type.
-              </p>
-            )}
           </TabsContent>
         </div>
       </Tabs>

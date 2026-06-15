@@ -5,16 +5,21 @@ import { Spinner } from "@/components/ui/spinner";
 import { extractDocumentMarkdown } from "@/components/features/knowledge/hubDocumentExtraction";
 import { HubSourceGuideView } from "@/components/features/knowledge/HubSourceGuideView";
 import {
+  hasRawFilePreview,
+  HubFileRawPreview,
+} from "@/components/features/knowledge/HubFileRawPreview";
+import {
   createPendingSourceGuide,
   generateSourceGuide,
 } from "@/components/features/knowledge/hubSourceGuide";
+import { extractEpubGuideContent } from "@/lib/hubEpub";
 import {
   getDocumentPreviewKind,
   normalizePreviewBlob,
 } from "@/lib/projectDocumentPreview";
 import {
   getKnowledgeHubFile,
-  knowledgeHubBlobKey,
+  resolveFileStorageId,
 } from "@/lib/knowledgeHubFileStorage";
 import { getHubFileSourceLabel, getHubFileStatus } from "@/data/knowledgeHubs";
 import { cn } from "@/lib/utils";
@@ -26,6 +31,23 @@ function revokeRef(urlRef) {
   }
 }
 
+async function resolveGuideInput({ blob, kind, extracted, isMedia, guideSections }) {
+  let text = extracted ?? "";
+  let structuredSections = guideSections?.length ? guideSections : null;
+
+  if (kind === "epub") {
+    const epubContent = await extractEpubGuideContent(blob);
+    if (epubContent) {
+      text = epubContent.text || text;
+      structuredSections = structuredSections ?? epubContent.sections;
+    }
+  } else if (!text && !isMedia && kind !== "image" && kind !== "pdf") {
+    text = await blob.text().catch(() => "");
+  }
+
+  return { text, structuredSections };
+}
+
 /**
  * @param {{
  *   hubId: number | string,
@@ -35,6 +57,10 @@ function revokeRef(urlRef) {
  *   onRequestDownload?: () => void,
  *   onQuickPrompt?: (prompt: string, file: object) => void,
  *   onSourceGuideReady?: (fileId: string, guide: object) => void,
+ *   guideSections?: Array<{ id?: string, title: string, excerpt?: string, summary?: string, body?: string }>,
+ *   showSourceGuide?: boolean,
+ *   showInlinePreview?: boolean,
+ *   fallbackMarkdown?: string | null,
  *   className?: string,
  * }} props
  */
@@ -46,6 +72,10 @@ export function HubFilePreviewViewer({
   onRequestDownload,
   onQuickPrompt,
   onSourceGuideReady,
+  guideSections,
+  showSourceGuide = true,
+  showInlinePreview = true,
+  fallbackMarkdown = null,
   className,
 }) {
   const [loading, setLoading] = useState(true);
@@ -92,8 +122,7 @@ export function HubFilePreviewViewer({
       }
 
       try {
-        const storageId =
-          file.localBlobId ?? knowledgeHubBlobKey(hubId, file.id);
+        const storageId = resolveFileStorageId(hubId, file);
         const record = await getKnowledgeHubFile(storageId);
 
         if (cancelled || fileId !== file.id) return;
@@ -111,6 +140,7 @@ export function HubFilePreviewViewer({
                 fileName: file.name,
                 metadata: file.metadata,
                 allFiles,
+                structuredSections: guideSections,
               });
               if (!cancelled) {
                 setSourceGuide(guide);
@@ -170,16 +200,30 @@ export function HubFilePreviewViewer({
 
         const cachedGuide =
           file.sourceGuide?.status === "ready" ? file.sourceGuide : null;
-        if (cachedGuide) {
+        const shouldRegenerateGuide =
+          !cachedGuide ||
+          (guideSections?.length > 0 &&
+            (cachedGuide.sections?.length ?? 0) < 2 &&
+            guideSections.length >= 2);
+
+        if (cachedGuide && !shouldRegenerateGuide) {
           setSourceGuide(cachedGuide);
           setGuideLoading(false);
         } else {
           setGuideLoading(true);
+          const { text, structuredSections } = await resolveGuideInput({
+            blob,
+            kind,
+            extracted,
+            isMedia,
+            guideSections,
+          });
           const guide = await generateSourceGuide({
-            text: extracted ?? (isMedia ? "" : (await blob.text().catch(() => ""))),
+            text,
             fileName: file.name,
             metadata: file.metadata,
             allFiles,
+            structuredSections,
           });
           if (!cancelled && fileId === file.id) {
             setSourceGuide(guide);
@@ -215,7 +259,13 @@ export function HubFilePreviewViewer({
     needsDownload,
     allFiles,
     onSourceGuideReady,
+    guideSections,
   ]);
+
+  const displayMarkdown =
+    markdownContent ?? (previewSrc || loading ? null : fallbackMarkdown);
+  const hasPreview = hasRawFilePreview({ previewSrc, markdownContent: displayMarkdown });
+  const canShowGuideWhileLoading = showSourceGuide && Boolean(sourceGuide);
 
   if (needsDownload) {
     return (
@@ -243,16 +293,18 @@ export function HubFilePreviewViewer({
     );
   }
 
-  if (loading && !sourceGuide) {
+  if (loading && !hasPreview && !canShowGuideWhileLoading) {
     return (
       <div className={cn("flex flex-1 flex-col items-center justify-center gap-3 py-12", className)}>
         <Spinner className="text-primary" />
-        <p className="text-sm text-muted-foreground">Loading Source Guide…</p>
+        <p className="text-sm text-muted-foreground">
+          {showSourceGuide ? "Loading Source Guide…" : "Loading file preview…"}
+        </p>
       </div>
     );
   }
 
-  if (error && !sourceGuide && !markdownContent && !previewSrc) {
+  if (error && !hasPreview && !canShowGuideWhileLoading) {
     return (
       <div
         className={cn(
@@ -279,17 +331,69 @@ export function HubFilePreviewViewer({
     );
   }
 
+  if (!showSourceGuide && !hasPreview && !loading) {
+    return (
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center",
+          className,
+        )}
+      >
+        <FileText className="size-10 shrink-0 text-muted-foreground" strokeWidth={1.25} aria-hidden />
+        <div className="max-w-sm space-y-1">
+          <p className="text-sm font-medium text-foreground">{file.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {error ??
+              "This file is not stored locally yet. Switch to Reader view for chapter content, or re-upload the file."}
+          </p>
+        </div>
+        {downloadUrl ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            render={<a href={downloadUrl} download={file.name} rel="noreferrer" />}
+          >
+            <ExternalLink data-icon="inline-start" />
+            Download file
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <HubSourceGuideView
-      file={file}
-      sourceGuide={sourceGuide ?? createPendingSourceGuide()}
-      guideLoading={guideLoading}
-      metadata={file.metadata}
-      markdownContent={markdownContent}
-      previewKind={previewKind}
-      previewSrc={previewSrc}
-      onQuickPrompt={(prompt) => onQuickPrompt?.(prompt, file)}
-      className={className}
-    />
+    <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      {showInlinePreview && hasPreview ? (
+        <div
+          className={cn(
+            "flex flex-col p-4",
+            showSourceGuide
+              ? "max-h-[42%] shrink-0 overflow-auto border-b border-border"
+              : "min-h-0 flex-1 overflow-y-auto",
+          )}
+        >
+          <HubFileRawPreview
+            file={file}
+            previewKind={previewKind}
+            previewSrc={previewSrc}
+            markdownContent={displayMarkdown}
+            fullHeight={!showSourceGuide}
+            className={showSourceGuide ? undefined : "min-h-0 flex-1"}
+          />
+        </div>
+      ) : null}
+
+      {showSourceGuide ? (
+        <HubSourceGuideView
+          file={file}
+          sourceGuide={sourceGuide ?? createPendingSourceGuide()}
+          guideLoading={guideLoading}
+          metadata={file.metadata}
+          onQuickPrompt={(prompt) => onQuickPrompt?.(prompt, file)}
+          className="min-h-0 flex-1"
+        />
+      ) : null}
+    </div>
   );
 }

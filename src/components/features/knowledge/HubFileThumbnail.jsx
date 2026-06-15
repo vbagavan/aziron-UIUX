@@ -38,14 +38,14 @@ export function HubFileThumbnail({
             className={cn(
               "h-full w-full",
               imgFit,
-              fit === "contain" && "p-2 sm:p-3",
+              fit === "contain" && !imgClassName && "p-2 sm:p-3",
               imgClassName,
             )}
             draggable={false}
             loading="lazy"
           />
           {overlay && (
-            <span className="absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white backdrop-blur-sm">
+            <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold tabular-nums text-white">
               {overlay}
             </span>
           )}
@@ -65,7 +65,7 @@ export function HubFileThumbnail({
           <div
             className={cn(
               "flex items-center justify-center rounded-2xl bg-white/60 p-4 shadow-sm dark:bg-black/10",
-              iconSize === "size-8" ? "size-14" : "size-12",
+              iconSize === "size-8" ? "size-14" : iconSize === "size-5" ? "size-10" : "size-12",
             )}
           >
             <Icon className={cn(iconSize, cfg.fg)} strokeWidth={1.35} />

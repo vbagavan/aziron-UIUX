@@ -40,7 +40,9 @@ import { HubFileSyncIcon } from "@/components/features/knowledge/HubFileSyncIcon
 import { HubSourceUploadRow, HubUploadProgressSummary } from "@/components/features/knowledge/HubSourceUploadRow";
 import { HubSettingsSheet } from "@/components/features/knowledge/HubSettingsSheet";
 import { HubWorkspaceOverview } from "@/components/features/knowledge/HubWorkspaceOverview";
+import { HubDetailsPanel } from "@/components/features/knowledge/HubDetailsPanel";
 import { HubAddSourcesMenu } from "@/components/features/knowledge/HubAddSourcesMenu";
+import { useFlowCatalog } from "@/context/FlowCatalogContext";
 import { HubNotesPanel } from "@/components/features/knowledge/HubNotesPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -89,6 +91,7 @@ const STUDIO_TOOLS = [
 
 const CENTER_TABS = [
   { id: "overview",  label: "Overview" },
+  { id: "details",   label: "Details" },
   { id: "preview",   label: "Source Guide" },
   { id: "studio",    label: "Studio" },
   { id: "notes",     label: "Notes" },
@@ -732,6 +735,7 @@ function StudioConfigPanel({ tool, allFiles, onGenerate, onClose }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function KnowledgeHubWorkspaceView({
+  hub,
   hubId,
   hubName,
   hubDescription,
@@ -761,12 +765,12 @@ export function KnowledgeHubWorkspaceView({
   isDownloadingAll,
   linkedAgents,
   pendingUploads = [],
-  onCancelUpload,
   uploadHighlightId,
   onUploadHighlightSeen,
   onAddStudioToSources,
 }) {
   const isMobile = useIsMobile();
+  const { flows } = useFlowCatalog();
   const hubsCtx = useKnowledgeHubsOptional();
   const updateHubFile = hubsCtx?.updateHubFile;
 
@@ -1126,7 +1130,6 @@ export function KnowledgeHubWorkspaceView({
                     <HubSourceUploadRow
                       key={upload.id}
                       upload={upload}
-                      onCancel={onCancelUpload}
                     />
                   ))}
                 </ul>
@@ -1515,6 +1518,19 @@ export function KnowledgeHubWorkspaceView({
                   studioCount={recentStudio.length}
                   onGoToNotes={() => setCenterTab("notes")}
                   onGoToStudio={() => setCenterTab("studio")}
+                />
+              )}
+
+              {activeCenterTab === "details" && hub && (
+                <HubDetailsPanel
+                  hub={hub}
+                  allFiles={allFiles}
+                  flows={flows}
+                  canEdit={canEdit}
+                  onAddFiles={onUploadFiles}
+                  onOpenSources={() => setChooseSourceOpen(true)}
+                  onDeleteFile={canEdit ? onDeleteFile : undefined}
+                  onDownloadCloudFile={canEdit ? onDownloadCloudFile : undefined}
                 />
               )}
 

@@ -24,6 +24,7 @@ import {
 import { agentPublishScopePatch } from "@/lib/agentPublishScope";
 import { AgentsProvider } from "@/context/AgentsContext";
 import { KnowledgeHubProvider } from "@/context/KnowledgeHubContext";
+import { MyDigitalHubRelationshipSync } from "@/components/features/knowledge/MyDigitalHubRelationshipSync";
 import { VaultProvider } from "@/context/VaultContext";
 import AgentPage from "@/components/pages/AgentPage";
 import SettingsAppearancePage from "@/components/pages/SettingsAppearancePage";
@@ -35,6 +36,7 @@ import UserGroupsPage from "@/components/pages/UserGroupsPage";
 import UsagePage from "@/components/pages/UsagePage";
 import VaultPage from "@/components/pages/VaultPage";
 import KnowledgeHubPage from "@/components/pages/KnowledgeHubPage";
+import DocumentsPage from "@/components/pages/DocumentsPage";
 import MarketplacePage from "@/components/pages/MarketplacePage";
 import TenantListPage from "@/components/pages/TenantListPage";
 import TenantDetailPage from "@/components/pages/TenantDetailPage";
@@ -262,6 +264,7 @@ export default function AppRoutes() {
       addAgent={addAgent}
     >
       <KnowledgeHubProvider>
+        <MyDigitalHubRelationshipSync />
         <VaultProvider>
         <Routes>
       <Route path="/" element={<Navigate to="/new-chat" replace />} />
@@ -359,6 +362,7 @@ export default function AppRoutes() {
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
       <Route path="/knowledge/:hubId" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
+      <Route path="/documents" element={<DocumentsPage onNavigate={onNavigate} />} />
       <Route path="/marketplace" element={<MarketplaceRoute onNavigate={onNavigate} agents={agents} patchAgent={patchAgent} navigate={navigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 

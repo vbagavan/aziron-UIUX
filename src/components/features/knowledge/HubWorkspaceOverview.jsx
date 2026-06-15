@@ -61,7 +61,9 @@ export function HubWorkspaceOverview({
 
   const uploadedFiles = allFiles.filter((f) => f.source !== "cloud" && !f.isSampleDemo);
   const cloudFiles = allFiles.filter((f) => f.source === "cloud");
-  const cloudSaved = cloudFiles.filter((f) => f.syncStatus === "success" || f.localBlobId).length;
+  const cloudSaved = cloudFiles.filter(
+    (f) => f.syncStatus === "stored" || f.localBlobId,
+  ).length;
 
   return (
     <div className={cn("overflow-y-auto overscroll-y-contain h-full", className)}>

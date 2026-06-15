@@ -51,6 +51,7 @@ export function HubSettingsSheet({
   detailsDirty,
   onNameBlur,
   onDescriptionBlur,
+  embedded = false,
 }) {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
@@ -75,25 +76,17 @@ export function HubSettingsSheet({
     }
   }
 
-  return (
-    <Sheet>
-      <SheetTrigger
-        render={
-          <Button type="button" variant="outline" size="sm" className="gap-1.5">
-            <Settings className="size-3.5" aria-hidden />
-            Hub settings
-          </Button>
-        }
-      />
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Hub settings</SheetTitle>
-          <SheetDescription>
-            Configure this hub's identity, tags, and danger zone. Changes to name and description save automatically when you leave a field.
-          </SheetDescription>
-        </SheetHeader>
+  const settingsHeader = (
+    <SheetHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <SheetTitle>Hub settings</SheetTitle>
+      <SheetDescription>
+        Configure this hub&apos;s identity, tags, and danger zone. Changes to name and description save automatically when you leave a field.
+      </SheetDescription>
+    </SheetHeader>
+  );
 
-        <div className="mt-6 flex flex-col gap-5 px-4">
+  const settingsBody = (
+    <div className="flex flex-col gap-5 px-5 py-5">
           {canEdit && (
             <>
               {/* Identity */}
@@ -206,6 +199,30 @@ export function HubSettingsSheet({
             </section>
           )}
         </div>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {settingsHeader}
+        {settingsBody}
+      </>
+    );
+  }
+
+  return (
+    <Sheet>
+      <SheetTrigger
+        render={
+          <Button type="button" variant="outline" size="sm" className="gap-1.5">
+            <Settings className="size-3.5" aria-hidden />
+            Hub settings
+          </Button>
+        }
+      />
+      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-md">
+        {settingsHeader}
+        {settingsBody}
       </SheetContent>
     </Sheet>
   );

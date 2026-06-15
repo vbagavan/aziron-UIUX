@@ -34,6 +34,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -982,23 +983,24 @@ function CoverageColumnChip({ col, usedLakhs, canRemove, editing, onChangeLakh, 
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[10rem]">
-          <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
-            Sum insured
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {menuOptions.map((lakh) => (
-            <DropdownMenuItem
-              key={lakh}
-              onSelect={() => onChangeLakh(col.id, lakh)}
-              className={cn(
-                "text-xs justify-between",
-                currentLakh === lakh && "bg-primary/10 text-primary font-semibold",
-              )}
-            >
-              <span>{coverageColumnLabel(lakh)}</span>
-              <span className="text-muted-foreground">{coverageSumInsuredInr(lakh)}</span>
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+              Sum insured
+            </DropdownMenuLabel>
+            {menuOptions.map((lakh) => (
+              <DropdownMenuItem
+                key={lakh}
+                onSelect={() => onChangeLakh(col.id, lakh)}
+                className={cn(
+                  "text-xs justify-between",
+                  currentLakh === lakh && "bg-primary/10 text-primary font-semibold",
+                )}
+              >
+                <span>{coverageColumnLabel(lakh)}</span>
+                <span className="text-muted-foreground">{coverageSumInsuredInr(lakh)}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
       {canRemove && (

@@ -130,6 +130,98 @@ function resolvePath(baseDir, href) {
   return stack.join("/");
 }
 
+function stripHtml(html) {
+  return (html ?? "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseSpineIds(opfXml) {
+  const ids = [];
+  const spineBlock = opfXml.match(/<spine[^>]*>([\s\S]*?)<\/spine>/i)?.[1] ?? "";
+  const refRe = /<itemref[^>]+idref=["']([^"']+)["']/gi;
+  let match;
+  while ((match = refRe.exec(spineBlock))) {
+    ids.push(match[1]);
+  }
+  return ids;
+}
+
+function chapterTitleFromHtml(html, fallback) {
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
+  if (h1) return stripHtml(h1).slice(0, 120) || fallback;
+  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
+  if (titleTag) return stripHtml(titleTag).slice(0, 120) || fallback;
+  return fallback;
+}
+
+/**
+ * Extract readable text and section stubs from an EPUB blob for Source Guide generation.
+ * @param {Blob} blob
+ * @returns {Promise<{ text: string, sections: Array<{ id: string, title: string, excerpt: string }> } | null>}
+ */
+export async function extractEpubGuideContent(blob) {
+  try {
+    const buffer = await blob.arrayBuffer();
+    const containerBytes = await readZipEntry(buffer, "META-INF/container.xml");
+    if (!containerBytes) return null;
+
+    const containerXml = decodeUtf8(containerBytes);
+    const rootfile = containerXml.match(/full-path=["']([^"']+)["']/i)?.[1];
+    if (!rootfile) return null;
+
+    const opfBytes = await readZipEntry(buffer, rootfile);
+    if (!opfBytes) return null;
+
+    const opfXml = decodeUtf8(opfBytes);
+    const meta = parseOpfMetadata(opfXml);
+    const opfDir = rootfile.includes("/") ? rootfile.replace(/\/[^/]+$/, "") : "";
+    const spineIds = parseSpineIds(opfXml);
+
+    const sections = [];
+    const textParts = [];
+
+    for (let i = 0; i < spineIds.length && sections.length < 12; i += 1) {
+      const item = meta.manifest[spineIds[i]];
+      if (!item?.href) continue;
+      const media = item.mediaType ?? "";
+      if (media && !/html|xhtml|xml/i.test(media) && !/\.x?html?$/i.test(item.href)) {
+        continue;
+      }
+
+      const path = resolvePath(opfDir, item.href);
+      const chapterBytes = path ? await readZipEntry(buffer, path) : null;
+      if (!chapterBytes) continue;
+
+      const html = decodeUtf8(chapterBytes);
+      const plain = stripHtml(html);
+      if (plain.length < 40) continue;
+
+      const title = chapterTitleFromHtml(html, `Chapter ${sections.length + 1}`);
+      const excerpt = plain.slice(0, 220) + (plain.length > 220 ? "…" : "");
+      sections.push({
+        id: `epub-sec-${sections.length}`,
+        title,
+        excerpt,
+      });
+      textParts.push(`${title}\n\n${plain.slice(0, 1200)}`);
+    }
+
+    if (sections.length === 0) return null;
+
+    return {
+      text: textParts.join("\n\n").slice(0, 12000),
+      sections,
+    };
+  } catch (err) {
+    console.warn("[hubEpub] guide extract failed:", err);
+    return null;
+  }
+}
+
 /**
  * @param {Blob} blob
  * @returns {Promise<{

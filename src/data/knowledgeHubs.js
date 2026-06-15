@@ -202,6 +202,22 @@ export const SEED_KNOWLEDGE_HUBS = [
     usedBy: 2,
     visibility: "public",
   },
+  {
+    id: 9,
+    name: "MyDigitalHub",
+    description: "Digital marketing assets, brand guidelines, campaign briefs, and product content.",
+    files: 28,
+    collections: 3,
+    storageMB: 410,
+    provider: PROVIDER_LABEL,
+    createdOn: "2026-04-01",
+    updated: "Yesterday",
+    usedBy: 5,
+    visibility: "private",
+    status: "published",
+    tags: ["marketing", "brand", "campaigns"],
+    isUserCreated: true,
+  },
 ];
 
 /** Map a browser File to a hub file row (stored locally in this prototype). */
@@ -305,7 +321,9 @@ export function hubRecordsToStats(records) {
 export const CLOUD_PROVIDER_LABELS = {
   onedrive: "OneDrive",
   "google-drive": "Google Drive",
+  sharepoint: "SharePoint",
   dropbox: "Dropbox",
+  confluence: "Confluence",
   box: "Box",
 };
 
@@ -313,7 +331,7 @@ export function getHubFileSourceLabel(row) {
   if (row?.source === "cloud" && row.cloudProvider) {
     return CLOUD_PROVIDER_LABELS[row.cloudProvider] ?? row.cloudProvider;
   }
-  if (row?.source === "user" || row?.source === "upload") return "Uploaded";
+  if (row?.source === "user" || row?.source === "upload") return "Local";
   return "—";
 }
 
@@ -622,9 +640,15 @@ export function createHubPayload({
     storageMB,
     provider: PROVIDER_LABEL,
     createdOn: today,
+    createdAt: new Date().toISOString(),
     updated: "Just now",
+    updatedAt: new Date().toISOString(),
+    lastAccessedAt: new Date().toISOString(),
+    owner: { name: "You", email: "you@workspace.local", role: "Owner" },
     usedBy: 0,
     visibility: "private",
+    status: "draft",
+    tags: [],
     isUserCreated: true,
     userFiles,
     cloudConnections,

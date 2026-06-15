@@ -210,32 +210,10 @@ async function fetchWikipediaResource(topic) {
 
 function buildMockExternalResources(topics, metadata) {
   const primary = topics[0]?.label ?? "Document";
-  const resources = [
-    {
-      type: "report",
-      title: `${primary} — industry analysis`,
-      description: "Overview of market trends and benchmarks related to this topic.",
-      url: "#",
-      source: "Industry reports",
-    },
-    {
-      type: "news",
-      title: `Recent developments in ${primary}`,
-      description: "News coverage and commentary from the past 12 months.",
-      url: "#",
-      source: "News archive",
-    },
-    {
-      type: "internal",
-      title: "Internal knowledge repository",
-      description: "Related articles from your organization's wiki and playbooks.",
-      url: "#",
-      source: "Internal KB",
-    },
-  ];
+  const resources = [];
 
   if (metadata?.externalUrl) {
-    resources.unshift({
+    resources.push({
       type: "reference",
       title: metadata.title ?? primary,
       description: metadata.description ?? "Catalog reference for this work.",
@@ -277,16 +255,36 @@ function contextualQuickPrompts(metadata, topics) {
 }
 
 /**
- * @param {{ text: string, fileName: string, metadata?: object, allFiles?: object[] }} input
+ * @param {{ text: string, fileName: string, metadata?: object, allFiles?: object[], structuredSections?: object[] }} input
  */
-export async function generateSourceGuide({ text, fileName, metadata = null, allFiles = [] }) {
+export async function generateSourceGuide({
+  text,
+  fileName,
+  metadata = null,
+  allFiles = [],
+  structuredSections = null,
+} = {}) {
   await new Promise((r) => window.setTimeout(r, 400 + Math.random() * 300));
 
-  const corpus = text?.trim() ?? "";
+  let corpus = text?.trim() ?? "";
+  if (!corpus && structuredSections?.length) {
+    corpus = structuredSections
+      .map((s) => `${s.title ?? ""}\n${s.excerpt ?? s.summary ?? s.body ?? ""}`)
+      .join("\n\n");
+  }
+
   const topics = extractTopics(corpus, fileName, metadata);
   const keywords = topKeywords(corpus);
   const entities = extractEntities(corpus, metadata);
-  const sections = extractSections(corpus);
+  const sections =
+    structuredSections?.length > 0
+      ? structuredSections.slice(0, 12).map((s, i) => ({
+          id: s.id ?? `sec-${i}`,
+          title: s.title ?? `Section ${i + 1}`,
+          excerpt: (s.excerpt ?? s.summary ?? "").slice(0, 220) + ((s.excerpt ?? s.summary ?? "").length > 220 ? "…" : ""),
+          lineStart: i,
+        }))
+      : extractSections(corpus);
   const concepts = buildConcepts(topics, keywords, metadata);
   const discover = buildDiscover(topics, metadata, fileName);
   const graph = buildKnowledgeGraph(topics, entities, metadata, fileName);
@@ -295,16 +293,18 @@ export async function generateSourceGuide({ text, fileName, metadata = null, all
   const summary =
     metadata?.summary ??
     metadata?.description ??
-    (corpus
-      ? corpus
-          .replace(/^#+\s+/gm, "")
-          .replace(/\*\*/g, "")
-          .split(/\n+/)
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .join(" ")
-          .slice(0, 320) + (corpus.length > 320 ? "…" : "")
-      : `Structured guide for ${parseTitleFromFileName(fileName)}.`);
+    (sections[0]?.excerpt && sections.length > 1
+      ? `${sections[0].excerpt} This guide covers ${sections.length} sections extracted from the document.`
+      : corpus
+        ? corpus
+            .replace(/^#+\s+/gm, "")
+            .replace(/\*\*/g, "")
+            .split(/\n+/)
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .join(" ")
+            .slice(0, 320) + (corpus.length > 320 ? "…" : "")
+        : `Structured guide for ${parseTitleFromFileName(fileName)}.`);
 
   const externalFromWiki = topics[0]
     ? await fetchWikipediaResource(topics[0].label)
@@ -325,6 +325,7 @@ export async function generateSourceGuide({ text, fileName, metadata = null, all
   return {
     status: "ready",
     generatedAt: new Date().toISOString(),
+    isPreview: true,
     summary,
     topics,
     concepts,

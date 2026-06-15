@@ -11,6 +11,7 @@ export function KnowledgeHubPicker({
   onSelect,
   onClose,
   onRequestCreate,
+  emptyHint,
 }) {
   const ctx = useKnowledgeHubs();
   const hubs = hubsProp ?? ctx.pickerHubs;
@@ -84,7 +85,9 @@ export function KnowledgeHubPicker({
         {filtered.length === 0 && (
           <div className="flex flex-col items-center gap-1.5 px-2 py-4">
             <Database size={20} className="text-muted-foreground" />
-            <p className="text-center text-xs text-muted-foreground">No hubs found.</p>
+            <p className="text-center text-xs text-muted-foreground">
+              {emptyHint ?? (search.trim() ? "No hubs match your search." : "No hubs found.")}
+            </p>
           </div>
         )}
       </div>

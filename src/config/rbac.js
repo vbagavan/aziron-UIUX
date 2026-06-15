@@ -33,6 +33,7 @@ export const PERMISSIONS = {
     "knowledge.create":  true,
     "knowledge.edit":    true,
     "knowledge.delete":  true,
+    "knowledge.insights": true,
     // Marketplace
     "marketplace.view":  true,
     "marketplace.fork":  true,
@@ -89,6 +90,7 @@ export const PERMISSIONS = {
     "knowledge.create":  true,
     "knowledge.edit":    true,
     "knowledge.delete":  true,
+    "knowledge.insights": true,
     // Marketplace
     "marketplace.view":  true,
     "marketplace.fork":  true,
@@ -145,6 +147,7 @@ export const PERMISSIONS = {
     "knowledge.create":  false,
     "knowledge.edit":    false,
     "knowledge.delete":  false,
+    "knowledge.insights": false,
     // Marketplace — browse and fork only
     "marketplace.view":  true,
     "marketplace.fork":  true,

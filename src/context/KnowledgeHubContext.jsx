@@ -18,12 +18,21 @@ import { createPendingSourceGuide } from "@/components/features/knowledge/hubSou
 import { enrichStoredHubFile, enrichStoredHubFiles } from "@/components/features/knowledge/hubFileEnrichment";
 import {
   deleteKnowledgeHubFile,
+  documentLibraryBlobKey,
   getKnowledgeHubFile,
   knowledgeHubBlobKey,
   saveKnowledgeHubFile,
 } from "@/lib/knowledgeHubFileStorage";
 import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 import { useAgentsOptional } from "@/context/AgentsContext";
+import {
+  fileToLibraryRecord,
+  getHubLinksForDocument,
+  libraryRecordToHubFile,
+  loadDocumentsFromStorage,
+  resolveCloudImportToLibraryRecords,
+  saveDocumentsToStorage,
+} from "@/data/documentLibrary";
 
 const KnowledgeHubContext = createContext(null);
 
@@ -40,9 +49,15 @@ export function KnowledgeHubProvider({ children }) {
     () => loadHubsFromStorage() ?? normalizeHubs(SEED_KNOWLEDGE_HUBS),
   );
 
+  const [documents, setDocuments] = useState(() => loadDocumentsFromStorage());
+
   useEffect(() => {
     saveHubsToStorage(hubs);
   }, [hubs]);
+
+  useEffect(() => {
+    saveDocumentsToStorage(documents);
+  }, [documents]);
 
   const hubsWithUsage = useMemo(
     () => hubs.map((h) => attachUsedBy(h, agents)),
@@ -51,7 +66,31 @@ export function KnowledgeHubProvider({ children }) {
 
   const updateHub = useCallback((id, patch) => {
     setHubs((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, ...patch, updated: "Just now" } : h)),
+      prev.map((h) =>
+        h.id === id
+          ? {
+              ...h,
+              ...patch,
+              updated: "Just now",
+              updatedAt: new Date().toISOString(),
+            }
+          : h,
+      ),
+    );
+  }, []);
+
+  const recordHubAccess = useCallback((id) => {
+    const now = new Date().toISOString();
+    setHubs((prev) =>
+      prev.map((h) =>
+        Number(h.id) === Number(id)
+          ? {
+              ...h,
+              lastAccessedAt: now,
+              accessCount: (h.accessCount ?? 0) + 1,
+            }
+          : h,
+      ),
     );
   }, []);
 
@@ -140,6 +179,326 @@ export function KnowledgeHubProvider({ children }) {
     return attachUsedBy(stored, agents);
   }, [agents, updateHubFile]);
 
+  const addDocumentsToHub = useCallback(async (hubId, { files = [], cloudImport, cloudImports } = {}) => {
+    const targetId = Number(hubId);
+    if (Number.isNaN(targetId)) {
+      return { added: [], rejected: 0, records: [] };
+    }
+
+    const incoming = Array.from(files ?? []);
+    const { valid, rejected } = partitionUploadFiles(incoming);
+    const imports = cloudImports?.length
+      ? cloudImports
+      : cloudImport
+        ? [cloudImport]
+        : [];
+    const cloudRecords = imports.flatMap((imp) => resolveCloudImportToLibraryRecords(imp));
+    const newRecords = [];
+
+    for (const file of valid) {
+      const record = fileToLibraryRecord(file);
+      const blobKey = documentLibraryBlobKey(record.id);
+      try {
+        await saveKnowledgeHubFile(blobKey, file, file.name);
+        newRecords.push({
+          ...record,
+          localBlobId: blobKey,
+          syncStatus: "stored",
+          fileStatus: "success",
+          indexStatus: "stored",
+          metadata: createPendingHubFileMetadata(record.name),
+          sourceGuide: createPendingSourceGuide(),
+        });
+      } catch {
+        newRecords.push(record);
+      }
+    }
+
+    for (const record of cloudRecords) {
+      newRecords.push({
+        ...record,
+        metadata: createPendingHubFileMetadata(record.name),
+        sourceGuide: createPendingSourceGuide(),
+      });
+    }
+
+    if (newRecords.length === 0) {
+      return { added: [], rejected: rejected.length, records: [] };
+    }
+
+    let hubFiles = [];
+    setHubs((prev) => {
+      const targetHub = prev.find((h) => Number(h.id) === targetId);
+      if (!targetHub) return prev;
+
+      const existingNames = new Set((targetHub.userFiles ?? []).map((f) => f.name.toLowerCase()));
+      const existingExternal = new Set(
+        (targetHub.userFiles ?? [])
+          .map((f) => f.externalFileId)
+          .filter(Boolean),
+      );
+      const existingLibraryIds = new Set(
+        (targetHub.userFiles ?? [])
+          .map((f) => f.libraryDocumentId)
+          .filter(Boolean),
+      );
+
+      const toLink = newRecords.filter((doc) => {
+        if (existingLibraryIds.has(doc.id)) return false;
+        if (doc.externalFileId && existingExternal.has(doc.externalFileId)) return false;
+        if (existingNames.has(doc.name.toLowerCase())) return false;
+        return true;
+      });
+
+      hubFiles = toLink.map((doc) => libraryRecordToHubFile(doc, targetId));
+
+      if (hubFiles.length === 0) return prev;
+
+      const addedKb = hubFiles.reduce((sum, f) => sum + (f.sizeKb ?? 0), 0);
+      const cloudConnections = (() => {
+        const conn = imports[0]?.connection ?? cloudImport?.connection;
+        if (!conn) return targetHub.cloudConnections ?? [];
+        const existing = targetHub.cloudConnections ?? [];
+        if (existing.some((c) => c.id === conn.id || c.provider === conn.provider)) {
+          return existing;
+        }
+        return [...existing, conn];
+      })();
+
+      return prev.map((h) => {
+        if (Number(h.id) !== targetId) return h;
+        const userFiles = [...(h.userFiles ?? []), ...hubFiles];
+        return {
+          ...h,
+          userFiles,
+          cloudConnections,
+          files: userFiles.length,
+          collections: userFiles.length > 0 ? 1 : 0,
+          storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
+          updated: "Just now",
+          updatedAt: new Date().toISOString(),
+          isUserCreated: true,
+        };
+      });
+    });
+
+    const linkedDocIds = new Set(hubFiles.map((f) => f.libraryDocumentId));
+    const docsToAdd = newRecords.filter((d) => linkedDocIds.has(d.id));
+
+    if (docsToAdd.length > 0) {
+      setDocuments((prev) => [...prev, ...docsToAdd]);
+    }
+
+    const enriched = docsToAdd.filter((r) => r.localBlobId);
+    if (enriched.length > 0) {
+      queueMicrotask(() => {
+        enrichStoredHubFiles(
+          targetId,
+          enriched.map((doc) => {
+            const hubFile = hubFiles.find((f) => f.libraryDocumentId === doc.id);
+            return hubFile ?? doc;
+          }),
+          updateHubFile,
+        );
+        enrichStoredHubFiles(
+          "library",
+          enriched,
+          (_hubId, fileId, patch) => {
+            setDocuments((prev) =>
+              prev.map((d) => (d.id === fileId ? { ...d, ...patch } : d)),
+            );
+          },
+        );
+      });
+    }
+
+    return {
+      added: hubFiles.map((f) => f.name),
+      rejected: rejected.length,
+      records: hubFiles,
+    };
+  }, [updateHubFile]);
+
+  const addCloudFilesToHub = useCallback(
+    async (hubId, pickerFiles, connection) => {
+      const files = (pickerFiles ?? []).filter((f) => f && f.type !== "folder");
+      if (files.length === 0) return [];
+
+      const provider = connection?.provider ?? "onedrive";
+      const cloudImport = {
+        provider,
+        connection,
+        connectionName: connection?.name,
+        selectedFiles: files,
+      };
+
+      const result = await addDocumentsToHub(hubId, { cloudImport });
+      return result.added ?? [];
+    },
+    [addDocumentsToHub],
+  );
+
+  const addFilesToHub = useCallback(
+    async (id, fileList) => {
+      return addDocumentsToHub(id, { files: fileList });
+    },
+    [addDocumentsToHub],
+  );
+
+  /**
+   * Copy existing hub file records (and local blobs) into another hub.
+   * @param {{ hubId: number | string, fileId: string }[]} refs
+   * @param {number | string} targetHubId
+   */
+  const copyHubFilesToHub = useCallback(async (refs, targetHubId) => {
+    const targetId = Number(targetHubId);
+    const copied = [];
+    const skipped = [];
+
+    for (const ref of refs ?? []) {
+      const sourceHubId = Number(ref.hubId);
+      const fileId = ref.fileId;
+      if (!fileId || Number.isNaN(sourceHubId) || Number.isNaN(targetId)) continue;
+
+      if (sourceHubId === targetId) {
+        skipped.push(fileId);
+        continue;
+      }
+
+      const sourceHub = hubs.find((h) => Number(h.id) === sourceHubId);
+      const file = sourceHub?.userFiles?.find((f) => f.id === fileId);
+      if (!file) continue;
+
+      const newId = `kh${targetId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const newRecord = {
+        ...file,
+        id: newId,
+        updated: "Just now",
+        uploadedAt: file.uploadedAt ?? new Date().toISOString(),
+      };
+
+      const sourceStorageId = file.localBlobId ?? knowledgeHubBlobKey(sourceHubId, file.id);
+      try {
+        const stored = await getKnowledgeHubFile(sourceStorageId);
+        if (stored?.blob) {
+          const destStorageId = knowledgeHubBlobKey(targetId, newId);
+          await saveKnowledgeHubFile(destStorageId, stored.blob, stored.fileName ?? file.name);
+          newRecord.localBlobId = destStorageId;
+          newRecord.syncStatus = "stored";
+          newRecord.fileStatus = "success";
+          newRecord.indexStatus = "stored";
+        }
+      } catch {
+        /* keep metadata-only copy for linked cloud files */
+      }
+
+      copied.push(newRecord);
+    }
+
+    if (copied.length === 0) {
+      return { copied: [], skipped };
+    }
+
+    setHubs((prev) =>
+      prev.map((h) => {
+        if (Number(h.id) !== targetId) return h;
+        const userFiles = [...(h.userFiles ?? []), ...copied];
+        const addedKb = copied.reduce((sum, row) => sum + (row.sizeKb ?? 0), 0);
+        return {
+          ...h,
+          userFiles,
+          files: userFiles.length,
+          collections: userFiles.length > 0 ? 1 : 0,
+          storageMB: (h.storageMB ?? 0) + Math.max(1, Math.round(addedKb / 1024)),
+          updated: "Just now",
+          isUserCreated: true,
+        };
+      }),
+    );
+
+    queueMicrotask(() => {
+      enrichStoredHubFiles(
+        targetId,
+        copied.filter((row) => row.localBlobId),
+        updateHubFile,
+      );
+    });
+
+    return { copied, skipped };
+  }, [hubs, updateHubFile]);
+
+  const addDocumentsToLibrary = useCallback(async ({ files = [], cloudImport, cloudImports } = {}) => {
+    const incoming = Array.from(files ?? []);
+    const { valid, rejected } = partitionUploadFiles(incoming);
+    const imports = cloudImports?.length
+      ? cloudImports
+      : cloudImport
+        ? [cloudImport]
+        : [];
+    const cloudRecords = imports.flatMap((imp) => resolveCloudImportToLibraryRecords(imp));
+    const newRecords = [];
+
+    for (const file of valid) {
+      const record = fileToLibraryRecord(file);
+      const blobKey = documentLibraryBlobKey(record.id);
+      try {
+        await saveKnowledgeHubFile(blobKey, file, file.name);
+        newRecords.push({
+          ...record,
+          localBlobId: blobKey,
+          syncStatus: "stored",
+          fileStatus: "success",
+          indexStatus: "stored",
+          metadata: createPendingHubFileMetadata(record.name),
+          sourceGuide: createPendingSourceGuide(),
+        });
+      } catch {
+        newRecords.push(record);
+      }
+    }
+
+    for (const record of cloudRecords) {
+      newRecords.push({
+        ...record,
+        metadata: createPendingHubFileMetadata(record.name),
+        sourceGuide: createPendingSourceGuide(),
+      });
+    }
+
+    if (newRecords.length === 0) {
+      return { added: [], rejected: rejected.length };
+    }
+
+    setDocuments((prev) => [...prev, ...newRecords]);
+
+    const enriched = newRecords.filter((r) => r.localBlobId);
+    if (enriched.length > 0) {
+      queueMicrotask(() => {
+        enrichStoredHubFiles(
+          "library",
+          enriched,
+          (_hubId, fileId, patch) => {
+            setDocuments((prev) =>
+              prev.map((d) => (d.id === fileId ? { ...d, ...patch } : d)),
+            );
+          },
+        );
+      });
+    }
+
+    return {
+      added: newRecords.map((r) => r.name),
+      rejected: rejected.length,
+      records: newRecords,
+    };
+  }, []);
+
+  const updateLibraryDocument = useCallback((documentId, patch) => {
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === documentId ? { ...d, ...patch, updated: "Just now" } : d)),
+    );
+  }, []);
+
   const downloadCloudFileToHub = useCallback(
     async (hubId, fileId) => {
       const hub = hubs.find((h) => h.id === hubId);
@@ -159,22 +518,38 @@ export function KnowledgeHubProvider({ children }) {
 
       try {
         const blob = await downloadCloudFileBlob(file);
-        const storageId = knowledgeHubBlobKey(hubId, fileId);
+        const storageId = file.libraryDocumentId
+          ? documentLibraryBlobKey(file.libraryDocumentId)
+          : knowledgeHubBlobKey(hubId, fileId);
         await saveKnowledgeHubFile(storageId, blob, file.name);
 
-        updateHubFile(hubId, fileId, {
+        const storedPatch = {
           syncStatus: "stored",
           fileStatus: "success",
           indexStatus: "stored",
           localBlobId: storageId,
           syncedAt: new Date().toISOString(),
           syncError: null,
-        });
+        };
+
+        updateHubFile(hubId, fileId, storedPatch);
+
+        if (file.libraryDocumentId) {
+          updateLibraryDocument(file.libraryDocumentId, storedPatch);
+        }
+
         void enrichStoredHubFile(
           hubId,
           { ...file, localBlobId: storageId },
           updateHubFile,
         );
+        if (file.libraryDocumentId) {
+          void enrichStoredHubFile(
+            "library",
+            { ...file, id: file.libraryDocumentId, localBlobId: storageId },
+            (_hubId, docId, patch) => updateLibraryDocument(docId, patch),
+          );
+        }
         return { ok: true, fileName: file.name };
       } catch (err) {
         const message = err?.message ?? "Download failed";
@@ -186,133 +561,182 @@ export function KnowledgeHubProvider({ children }) {
         return { ok: false, error: message };
       }
     },
-    [hubs, updateHubFile],
+    [hubs, updateHubFile, updateLibraryDocument],
   );
 
-  const addCloudFilesToHub = useCallback((hubId, pickerFiles, connection) => {
-    const files = (pickerFiles ?? []).filter((f) => f && f.type !== "folder");
-    if (files.length === 0) return [];
+  const downloadCloudFileToLibrary = useCallback(
+    async (documentId) => {
+      const doc = documents.find((d) => d.id === documentId);
+      if (!doc || doc.source !== "cloud") {
+        return { ok: false, error: "Not a cloud file" };
+      }
+      if (doc.syncStatus === "loading") {
+        return { ok: false, error: "Already downloading" };
+      }
 
-    let addedNames = [];
+      updateLibraryDocument(documentId, {
+        syncStatus: "loading",
+        fileStatus: "loading",
+        syncError: null,
+      });
+
+      try {
+        const blob = await downloadCloudFileBlob(doc);
+        const storageId = documentLibraryBlobKey(documentId);
+        await saveKnowledgeHubFile(storageId, blob, doc.name);
+
+        updateLibraryDocument(documentId, {
+          syncStatus: "stored",
+          fileStatus: "success",
+          indexStatus: "stored",
+          localBlobId: storageId,
+          syncedAt: new Date().toISOString(),
+          syncError: null,
+        });
+
+        void enrichStoredHubFile(
+          "library",
+          { ...doc, localBlobId: storageId },
+          (_hubId, fileId, patch) => {
+            updateLibraryDocument(fileId, patch);
+          },
+        );
+
+        return { ok: true, fileName: doc.name };
+      } catch (err) {
+        const message = err?.message ?? "Download failed";
+        updateLibraryDocument(documentId, {
+          syncStatus: "failed",
+          fileStatus: "failed",
+          syncError: message,
+        });
+        return { ok: false, error: message };
+      }
+    },
+    [documents, updateLibraryDocument],
+  );
+
+  const linkDocumentToHub = useCallback(
+    (documentId, hubId) => {
+      const targetId = Number(hubId);
+      const libraryDoc = documents.find((d) => d.id === documentId);
+      if (!libraryDoc || Number.isNaN(targetId)) {
+        return { linked: false, reason: "not_found" };
+      }
+
+      const targetHub = hubs.find((h) => Number(h.id) === targetId);
+      if (!targetHub) return { linked: false, reason: "hub_not_found" };
+
+      const alreadyLinked = (targetHub.userFiles ?? []).some(
+        (f) => f.libraryDocumentId === documentId,
+      );
+      if (alreadyLinked) {
+        return { linked: false, reason: "already_linked" };
+      }
+
+      const hubFile = libraryRecordToHubFile(libraryDoc, targetId);
+      setHubs((prev) =>
+        prev.map((h) => {
+          if (Number(h.id) !== targetId) return h;
+          const userFiles = [...(h.userFiles ?? []), hubFile];
+          const addedKb = hubFile.sizeKb ?? 0;
+          return {
+            ...h,
+            userFiles,
+            files: userFiles.length,
+            collections: userFiles.length > 0 ? 1 : 0,
+            storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
+            updated: "Just now",
+            isUserCreated: true,
+          };
+        }),
+      );
+
+      return { linked: true, hubFileId: hubFile.id, hubName: targetHub.name };
+    },
+    [documents, hubs],
+  );
+
+  const linkDocumentsToHub = useCallback(
+    async (documentIds, hubId) => {
+      const linked = [];
+      const skipped = [];
+      for (const documentId of documentIds ?? []) {
+        const result = linkDocumentToHub(documentId, hubId);
+        if (result.linked) linked.push(documentId);
+        else skipped.push(documentId);
+      }
+      return { linked, skipped };
+    },
+    [linkDocumentToHub],
+  );
+
+  const unlinkDocumentFromHub = useCallback((documentId, hubId) => {
+    const targetId = Number(hubId);
+    let removed = false;
+
     setHubs((prev) =>
       prev.map((h) => {
-        if (h.id !== hubId) return h;
-        const existingNames = new Set((h.userFiles ?? []).map((f) => f.name.toLowerCase()));
-        const existingExternal = new Set(
-          (h.userFiles ?? [])
-            .map((f) => f.externalFileId)
-            .filter(Boolean),
-        );
-        const toAdd = files.filter(
-          (f) => !existingExternal.has(f.id) && !existingNames.has(f.name.toLowerCase()),
-        );
-        if (toAdd.length === 0) return h;
+        if (Number(h.id) !== targetId) return h;
+        const prevUser = h.userFiles ?? [];
+        const hubFile = prevUser.find((f) => f.libraryDocumentId === documentId);
+        if (!hubFile) return h;
 
-        const provider = connection?.provider ?? "onedrive";
-        const conn =
-          connection ??
-          h.cloudConnections?.find((c) => c.provider === provider) ??
-          h.cloudConnections?.[0] ??
-          null;
-        const providerLabel =
-          provider === "google-drive" ? "Google Drive" : "OneDrive";
-        const records = toAdd.map((f) =>
-          cloudFileToHubRecord(f, hubId, {
-            provider: conn?.provider ?? provider,
-            connectionId: conn?.id ?? null,
-            connectionName: conn?.name ?? `${providerLabel} connection`,
-          }),
-        );
-        const stats = hubRecordsToStats(records);
-        const userFiles = [...(h.userFiles ?? []), ...records];
-        addedNames = records.map((r) => r.name);
-
-        const cloudConnections = (() => {
-          const existing = h.cloudConnections ?? [];
-          if (!conn) return existing;
-          if (existing.some((c) => c.id === conn.id || c.provider === conn.provider)) {
-            return existing;
-          }
-          return [...existing, conn];
-        })();
-
+        removed = true;
+        const userFiles = prevUser.filter((f) => f.libraryDocumentId !== documentId);
+        const storageDrop = Math.max(0, Math.round((hubFile.sizeKb ?? 0) / 1024));
         return {
           ...h,
           userFiles,
-          cloudConnections,
-          files: userFiles.length,
-          collections: userFiles.length > 0 ? 1 : 0,
-          storageMB: (h.storageMB ?? 0) + stats.storageMB,
+          files: Math.max(0, userFiles.length),
+          storageMB: Math.max(0, (h.storageMB ?? 0) - storageDrop),
           updated: "Just now",
-          isUserCreated: h.isUserCreated ?? true,
         };
       }),
     );
-    return addedNames;
+
+    return { removed };
   }, []);
 
-  const addFilesToHub = useCallback(async (id, fileList) => {
-    const hubId = Number(id);
-    const incoming = Array.from(fileList ?? []);
-    const { valid, rejected: rejectedFiles } = partitionUploadFiles(incoming);
-    const rejected = rejectedFiles.length;
-    if (valid.length === 0) {
-      return { added: [], rejected };
-    }
+  const getDocumentHubLinks = useCallback(
+    (documentId) => getHubLinksForDocument(documentId, hubs),
+    [hubs],
+  );
 
-    const records = await Promise.all(
-      valid.map(async (file) => {
-        const record = fileToHubRecord(file, hubId);
-        const blobKey = knowledgeHubBlobKey(hubId, record.id);
-        try {
-          await saveKnowledgeHubFile(blobKey, file, file.name);
-          return {
-            ...record,
-            localBlobId: blobKey,
-            syncStatus: "stored",
-            fileStatus: "success",
-            indexStatus: "stored",
-          };
-        } catch {
-          return record;
-        }
-      }),
-    );
+  const removeDocumentFromLibrary = useCallback((documentId) => {
+    const doc = documents.find((d) => d.id === documentId);
+    if (!doc) return { removed: false, reason: "not_found" };
 
-    const recordsWithMeta = records.map((record) =>
-      record.localBlobId
-        ? {
-            ...record,
-            metadata: createPendingHubFileMetadata(record.name),
-            sourceGuide: createPendingSourceGuide(),
-          }
-        : record,
-    );
+    setDocuments((prev) => prev.filter((d) => d.id !== documentId));
 
-    const stats = filesToHubStats(valid);
     setHubs((prev) =>
       prev.map((h) => {
-        if (Number(h.id) !== hubId) return h;
-        const userFiles = [...(h.userFiles ?? []), ...recordsWithMeta];
-        const fileStats = hubRecordsToStats(userFiles);
+        const prevUser = h.userFiles ?? [];
+        const linked = prevUser.filter((f) => f.libraryDocumentId === documentId);
+        if (linked.length === 0) return h;
+
+        const userFiles = prevUser.filter((f) => f.libraryDocumentId !== documentId);
+        const storageDrop = linked.reduce(
+          (sum, row) => sum + Math.max(0, Math.round((row.sizeKb ?? 0) / 1024)),
+          0,
+        );
         return {
           ...h,
           userFiles,
-          files: fileStats.added,
-          collections: userFiles.length > 0 ? 1 : 0,
-          storageMB: (h.storageMB ?? 0) + stats.storageMB,
+          files: Math.max(0, userFiles.length),
+          storageMB: Math.max(0, (h.storageMB ?? 0) - storageDrop),
           updated: "Just now",
-          isUserCreated: true,
         };
       }),
     );
 
-    queueMicrotask(() => {
-      enrichStoredHubFiles(hubId, recordsWithMeta, updateHubFile);
-    });
+    const blobKey = doc.localBlobId ?? documentLibraryBlobKey(documentId);
+    if (doc.localBlobId || doc.syncStatus === "stored") {
+      void deleteKnowledgeHubFile(blobKey);
+    }
 
-    return { added: valid.map((f) => f.name), rejected, records: recordsWithMeta };
-  }, [updateHubFile]);
+    return { removed: true, name: doc.name };
+  }, [documents]);
 
   const deleteHubFile = useCallback((hubId, fileId) => {
     setHubs((prev) =>
@@ -324,7 +748,7 @@ export function KnowledgeHubProvider({ children }) {
 
         if (removedUser > 0) {
           const removedRow = prevUser.find((f) => f.id === fileId);
-          if (removedRow?.localBlobId) {
+          if (removedRow?.localBlobId && !removedRow?.libraryDocumentId) {
             void deleteKnowledgeHubFile(removedRow.localBlobId);
           }
           const storageDrop = removedRow
@@ -373,13 +797,25 @@ export function KnowledgeHubProvider({ children }) {
   const value = useMemo(
     () => ({
       hubs: hubsWithUsage,
+      documents,
       pickerHubs,
       addHub,
       updateHub,
       addFilesToHub,
       addCloudFilesToHub,
+      addDocumentsToHub,
+      copyHubFilesToHub,
+      addDocumentsToLibrary,
+      updateLibraryDocument,
+      linkDocumentToHub,
+      linkDocumentsToHub,
+      unlinkDocumentFromHub,
+      removeDocumentFromLibrary,
+      getDocumentHubLinks,
+      recordHubAccess,
       updateHubFile,
       downloadCloudFileToHub,
+      downloadCloudFileToLibrary,
       deleteHubFile,
       deleteHub,
       deleteHubs,
@@ -388,13 +824,25 @@ export function KnowledgeHubProvider({ children }) {
     }),
     [
       hubsWithUsage,
+      documents,
       pickerHubs,
       addHub,
       updateHub,
       addFilesToHub,
       addCloudFilesToHub,
+      addDocumentsToHub,
+      copyHubFilesToHub,
+      addDocumentsToLibrary,
+      updateLibraryDocument,
+      linkDocumentToHub,
+      linkDocumentsToHub,
+      unlinkDocumentFromHub,
+      removeDocumentFromLibrary,
+      getDocumentHubLinks,
+      recordHubAccess,
       updateHubFile,
       downloadCloudFileToHub,
+      downloadCloudFileToLibrary,
       deleteHubFile,
       deleteHub,
       deleteHubs,

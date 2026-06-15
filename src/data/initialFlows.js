@@ -42,6 +42,7 @@ export const INITIAL_FLOWS = [
     success: 99,
     createdAt: "28 Jan 2026",
     visibility: "private",
+    knowledgeHubs: [8, 2],
   },
   {
     id: 2,
@@ -84,6 +85,7 @@ export const INITIAL_FLOWS = [
     success: 91,
     createdAt: "14 Feb 2026",
     visibility: "private",
+    knowledgeHubs: [2],
   },
   {
     id: 4,
@@ -158,5 +160,46 @@ export const INITIAL_FLOWS = [
     success: 96,
     createdAt: "18 Mar 2026",
     visibility: "public",
+    knowledgeHubs: [3, 7],
+  },
+  {
+    id: 8,
+    name: "Brand Content Refresh",
+    version: "v1.2",
+    description:
+      "Reviews MyDigitalHub assets for outdated messaging, suggests rewrites, and queues updates for approval.",
+    status: "inprogress",
+    steps: [
+      { label: "Scan", icon: "FileText", color: "var(--primary)" },
+      { label: "Compare", icon: "Bot", color: "var(--chart-chart-4)" },
+      { label: "Draft", icon: "FileText", color: "var(--warning)" },
+      { label: "Approve", icon: "GitBranch", color: "var(--success)" },
+    ],
+    lastRun: "35 min ago",
+    runs: 186,
+    success: 94,
+    createdAt: "08 Apr 2026",
+    visibility: "private",
+    knowledgeHubs: [9],
+  },
+  {
+    id: 9,
+    name: "Campaign Launch Pipeline",
+    version: "v2.0",
+    description:
+      "Pulls briefs from MyDigitalHub, generates channel variants, and publishes approved copy to connected tools.",
+    status: "completed",
+    steps: [
+      { label: "Ingest", icon: "Database", color: "var(--chart-chart-3)" },
+      { label: "Generate", icon: "Bot", color: "var(--chart-chart-4)" },
+      { label: "Review", icon: "FileText", color: "var(--warning)" },
+      { label: "Publish", icon: "Webhook", color: "var(--info)" },
+    ],
+    lastRun: "2h ago",
+    runs: 412,
+    success: 97,
+    createdAt: "22 Apr 2026",
+    visibility: "private",
+    knowledgeHubs: [9],
   },
 ];

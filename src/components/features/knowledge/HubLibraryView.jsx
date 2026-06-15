@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuGroup,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -39,6 +40,7 @@ import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbna
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
 import { getHubFileDisplayFields } from "@/components/features/knowledge/hubFileMetadata";
 import { HubAssetDetailView } from "@/components/features/knowledge/HubAssetDetailView";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { useCloudThumbnailPrefetch } from "@/components/features/knowledge/useCloudThumbnailPrefetch";
 
 const VIEW_OPTIONS = [
@@ -129,7 +131,7 @@ function FileCard({ hubId, file, selectionMode, selected, highlighted, cardRef, 
     <article
       ref={cardRef}
       className={cn(
-        "hub-library-card group flex cursor-pointer flex-col gap-3",
+        "hub-library-card group flex cursor-pointer flex-col items-center gap-2",
         selected && selectionMode && "hub-library-card-selected",
         highlighted && "hub-library-card-selected",
       )}
@@ -144,40 +146,46 @@ function FileCard({ hubId, file, selectionMode, selected, highlighted, cardRef, 
       }}
       aria-pressed={selectionMode ? selected : undefined}
     >
-      <div className="hub-library-cover relative aspect-[3/4] w-full overflow-hidden rounded-xl">
-        <HubFileThumbnail hubId={hubId} file={file} cfg={cfg} />
+      <div className="hub-library-cover relative mx-auto aspect-[3/4] w-[92px] overflow-hidden rounded-lg sm:w-[104px]">
+        <HubFileThumbnail
+          hubId={hubId}
+          file={file}
+          cfg={cfg}
+          iconSize="size-5"
+          imgClassName="p-1"
+        />
 
         {selectionMode && (
           <div
             className={cn(
-              "absolute left-2.5 top-2.5 z-10 flex size-5 items-center justify-center rounded-full border transition-all duration-200",
+              "absolute left-1.5 top-1.5 z-10 flex size-4 items-center justify-center rounded-full border transition-all duration-200",
               selected
                 ? "border-primary bg-primary text-primary-foreground shadow-sm"
                 : "border-border bg-background/95 shadow-sm",
             )}
             aria-hidden
           >
-            {selected && <Check className="size-2.5" />}
+            {selected && <Check className="size-2" strokeWidth={3} />}
           </div>
         )}
 
         {file.source === "cloud" && (
-          <div className={cn("absolute z-10", selectionMode ? "right-2.5 top-2.5" : "right-2.5 top-2.5")}>
-            <span className="flex items-center gap-1 rounded-md bg-black/50 px-2 py-0.5 text-[9px] font-medium text-white backdrop-blur-sm">
-              <Cloud className="size-2.5" /> Cloud
+          <div className="absolute right-1 top-1 z-10">
+            <span className="flex items-center gap-0.5 rounded bg-black/55 px-1 py-px text-[8px] font-medium text-white">
+              <Cloud className="size-2" /> Cloud
             </span>
           </div>
         )}
       </div>
 
-      <div className="min-w-0 px-0.5">
-        <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground" title={title}>
+      <div className="min-w-0 w-full px-0.5 text-center">
+        <p className="line-clamp-2 text-xs font-medium leading-snug text-foreground" title={title}>
           {title}
         </p>
         {author && (
-          <p className="mt-1 truncate text-[11px] text-muted-foreground">{author}</p>
+          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{author}</p>
         )}
-        <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+        <p className="mt-0.5 text-[10px] text-muted-foreground/70">
           {cfg.label}{sizeLabel ? ` · ${sizeLabel}` : ""}
         </p>
       </div>
@@ -226,7 +234,7 @@ function FileTypeSection({ type, files, hubId, selectionMode, selected, highligh
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
           {files.map((file) => (
             <FileCard
               key={file.id}
@@ -349,6 +357,10 @@ export function HubLibraryView({
   onSortByChange,
   highlightFileId = null,
   onHighlightSeen,
+  initialFileId = null,
+  onBrowseDocumentsLibrary,
+  backLabel = KNOWLEDGE_TERMS.libraryView,
+  onBack,
 }) {
   const [selected, setSelected] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -366,6 +378,14 @@ export function HubLibraryView({
     const timer = window.setTimeout(() => onHighlightSeen?.(), 2400);
     return () => window.clearTimeout(timer);
   }, [highlightFileId, allFiles, onHighlightSeen]);
+
+  useEffect(() => {
+    if (!initialFileId) return;
+    const file = allFiles.find((f) => f.id === initialFileId);
+    if (!file) return;
+    setCatalogFile(file);
+    setViewMode("detail");
+  }, [initialFileId, allFiles]);
 
   const availableTypes = useMemo(() => {
     const types = new Set(allFiles.map((f) => f.type).filter(Boolean));
@@ -449,10 +469,13 @@ export function HubLibraryView({
             variant="ghost"
             size="sm"
             className="h-8 gap-1.5 px-2 text-xs text-muted-foreground"
-            onClick={() => handleViewModeChange("grid")}
+            onClick={() => {
+              if (onBack) onBack();
+              else handleViewModeChange("grid");
+            }}
           >
             <ArrowLeft className="size-3.5" />
-            Library
+            {backLabel}
           </Button>
           <p className="truncate text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             {anyFiltersActive
@@ -528,18 +551,19 @@ export function HubLibraryView({
             <ChevronDown className="size-3" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-40">
-            <DropdownMenuLabel className="text-[11px]">Filter by type</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onFilterTypeChange("all")}>
-              <span className="flex-1">All types</span>
-              {(!filterType || filterType === "all") && <Check className="ml-2 size-3.5" />}
-            </DropdownMenuItem>
-            {availableTypes.map((type) => (
-              <DropdownMenuItem key={type} onClick={() => onFilterTypeChange(type)}>
-                <span className="flex-1">{type}</span>
-                {filterType === type && <Check className="ml-2 size-3.5" />}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-[11px]">Filter by type</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onFilterTypeChange("all")}>
+                <span className="flex-1">All types</span>
+                {(!filterType || filterType === "all") && <Check className="ml-2 size-3.5" />}
               </DropdownMenuItem>
-            ))}
+              {availableTypes.map((type) => (
+                <DropdownMenuItem key={type} onClick={() => onFilterTypeChange(type)}>
+                  <span className="flex-1">{type}</span>
+                  {filterType === type && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -552,14 +576,15 @@ export function HubLibraryView({
             <ChevronDown className="size-3" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuLabel className="text-[11px]">Sort by</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {SORT_OPTIONS.map((opt) => (
-              <DropdownMenuItem key={opt.id} onClick={() => onSortByChange(opt.id)}>
-                <span className="flex-1">{opt.label}</span>
-                {(sortBy ?? "recent") === opt.id && <Check className="ml-2 size-3.5" />}
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-[11px]">Sort by</DropdownMenuLabel>
+              {SORT_OPTIONS.map((opt) => (
+                <DropdownMenuItem key={opt.id} onClick={() => onSortByChange(opt.id)}>
+                  <span className="flex-1">{opt.label}</span>
+                  {(sortBy ?? "recent") === opt.id && <Check className="ml-2 size-3.5" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -657,10 +682,10 @@ export function HubLibraryView({
         {allFiles.length > 0 && displayFiles.length > 0 && viewMode === "grid" && !anyFiltersActive && (
           <header className="hub-library-hero mb-12 mt-6 max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              {hubName || "Knowledge Hub"}
+              {hubName || KNOWLEDGE_TERMS.hubSingular}
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-[2.5rem]">
-              Library
+              {KNOWLEDGE_TERMS.libraryView}
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
               Click any file to open its catalog page. Use Select to choose multiple files.
@@ -673,14 +698,22 @@ export function HubLibraryView({
             <Empty>
               <EmptyMedia><Files className="size-12 text-muted-foreground/40" /></EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>No files yet</EmptyTitle>
-                <EmptyDescription>Upload files or connect a cloud source to get started.</EmptyDescription>
+                <EmptyTitle>No documents yet</EmptyTitle>
+                <EmptyDescription>
+                  Upload documents or connect a cloud source. You can also link files from the{" "}
+                  {KNOWLEDGE_TERMS.documents.toLowerCase()} library.
+                </EmptyDescription>
               </EmptyHeader>
               {canEdit && (
-                <EmptyContent>
+                <EmptyContent className="flex flex-wrap justify-center gap-2">
                   <Button type="button" size="sm" onClick={onUploadFiles}>
-                    <Upload className="mr-1.5 size-3.5" /> Upload files
+                    <Upload className="mr-1.5 size-3.5" /> Add sources
                   </Button>
+                  {onBrowseDocumentsLibrary ? (
+                    <Button type="button" size="sm" variant="outline" onClick={onBrowseDocumentsLibrary}>
+                      Browse {KNOWLEDGE_TERMS.documents} library
+                    </Button>
+                  ) : null}
                 </EmptyContent>
               )}
             </Empty>
@@ -690,7 +723,7 @@ export function HubLibraryView({
             <Empty>
               <EmptyMedia><Search className="size-12 text-muted-foreground/40" /></EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>No files match</EmptyTitle>
+                <EmptyTitle>No documents match</EmptyTitle>
                 <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -731,7 +764,7 @@ export function HubLibraryView({
           </div>
         ) : (
           /* ── Grid view ── */
-          <div className="flex flex-col gap-14 pt-1">
+          <div className="flex flex-col gap-10 pt-1">
             {filesByType.map(([type, files]) => (
               <FileTypeSection
                 key={type}
