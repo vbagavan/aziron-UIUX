@@ -79,7 +79,7 @@ import {
 } from "@/lib/sourceCategories";
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
 import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbnail";
-import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
+import { AddSourceWizard } from "@/components/features/sources/AddSourceWizard";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
@@ -807,7 +807,6 @@ export default function DocumentsPage({ onNavigate }) {
     hubs,
     documents,
     addHub,
-    addDocumentsToLibrary,
     linkDocumentsToHub,
     linkDocumentToHub,
     unlinkDocumentFromHub,
@@ -838,7 +837,7 @@ export default function DocumentsPage({ onNavigate }) {
   const [selectedKeys, setSelectedKeys] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [readerDoc, setReaderDoc]       = useState(null);
-  const [uploadOpen, setUploadOpen]     = useState(false);
+  const [wizardOpen, setWizardOpen]     = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
   const [linkAfterHubCreate, setLinkAfterHubCreate] = useState(null);
   const [removeConfirm, setRemoveConfirm] = useState(null);
@@ -1097,36 +1096,14 @@ export default function DocumentsPage({ onNavigate }) {
     setSelectionMode(true);
   }
 
-  async function handleUploadComplete(result) {
-    const count = result?.added?.length ?? 0;
-    const skipped = result?.rejected ?? 0;
-    if (count === 0) {
-      showToast({
-        title: "Nothing added",
-        description:
-          skipped > 0
-            ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (invalid or too large).`
-            : "No valid files were added to your library.",
-        variant: skipped > 0 ? "destructive" : "default",
-      });
-      return;
-    }
-    const skipNote =
-      skipped > 0 ? ` ${skipped} file${skipped === 1 ? "" : "s"} skipped (too large or invalid).` : "";
+  function handleSourceAdded(result) {
+    if (!result) return;
+    const where = result.hubName ? `"${result.hubName}"` : "your document library";
     showToast({
-      title: KNOWLEDGE_TERMS.uploadComplete,
-      description: `${count} source${count === 1 ? "" : "s"} added to your library.${skipNote}`,
+      title: "Source added",
+      description: `${result.sourceName} added to ${where}.`,
       variant: "success",
     });
-  }
-
-  function handleViewInDocuments(recordIds = []) {
-    const ids = recordIds.filter(Boolean);
-    if (ids.length === 0) {
-      navigate("/documents");
-      return;
-    }
-    navigate(`/documents?highlight=${ids.join(",")}`);
   }
 
   async function handleAddToHub(hubId) {
@@ -1472,7 +1449,7 @@ export default function DocumentsPage({ onNavigate }) {
               description={KNOWLEDGE_TERMS.documentsPageDescription}
             >
               {canCreate && (
-                <Button size="sm" onClick={() => setUploadOpen(true)}>
+                <Button size="sm" onClick={() => setWizardOpen(true)}>
                   <Upload data-icon="inline-start" aria-hidden />
                   {KNOWLEDGE_TERMS.addSources}
                 </Button>
@@ -1741,7 +1718,7 @@ export default function DocumentsPage({ onNavigate }) {
                 <EmptyDocuments
                   canUpload={canCreate}
                   canCreateHub={canCreate}
-                  onUpload={() => canCreate && setUploadOpen(true)}
+                  onUpload={() => canCreate && setWizardOpen(true)}
                   onBrowseHubs={() => navigate("/knowledge")}
                 />
               ) : filteredDocs.length === 0 ? (
@@ -1834,22 +1811,10 @@ export default function DocumentsPage({ onNavigate }) {
         />
       )}
 
-      <DocumentsUploadDialog
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-        onUpload={addDocumentsToLibrary}
-        onUploadComplete={(result) => {
-          if (result?.hasError && !result?.success) {
-            showToast({
-              title: KNOWLEDGE_TERMS.uploadFailed,
-              description: KNOWLEDGE_TERMS.uploadFailedDescription,
-              variant: "destructive",
-            });
-            return;
-          }
-          handleUploadComplete(result);
-        }}
-        onViewInDocuments={handleViewInDocuments}
+      <AddSourceWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onComplete={handleSourceAdded}
       />
 
       <KnowledgeHubCreateDialog
