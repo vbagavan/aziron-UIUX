@@ -17,10 +17,10 @@ import {
 import {
   canActivateFileSync,
   formatLastSyncedRelative,
-  getFileLifecycleMeta,
   hubSyncStatusForFile,
   isCloudFile,
 } from "@/lib/fileSyncStatus";
+import { getSourceLifecycleMeta } from "@/lib/sourceCategories";
 import { cn } from "@/lib/utils";
 import { HubFileSyncIcon } from "@/components/features/knowledge/HubFileSyncIcon";
 
@@ -90,7 +90,7 @@ export function FileSyncStatusIndicator({
   includeDemoStatuses = false,
   className,
 }) {
-  const { status, label, message, badgeVariant } = getFileLifecycleMeta(file, { includeDemoStatuses });
+  const { status, label, message, badgeVariant } = getSourceLifecycleMeta(file, { includeDemoStatuses });
   const name = fileName ?? file?.name ?? "file";
   const lastSynced = formatLastSyncedRelative(file?.syncedAt);
   const activate = canActivate && canActivateFileSync(file, { includeDemoStatuses });

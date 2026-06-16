@@ -69,6 +69,10 @@ const navGroups = [
         page: "knowledge",
         activeFor: ["documents"],
         roles: ["superadmin", "tenantadmin", "tenantuser"],
+        subItems: [
+          { icon: BookOpen, label: KNOWLEDGE_TERMS.hubs, page: "knowledge" },
+          { icon: FileText, label: KNOWLEDGE_TERMS.documents, page: "documents" },
+        ],
       },
       { icon: Store,     label: "Marketplace",    page: "marketplace", roles: ["superadmin", "tenantadmin", "tenantuser"] },
       { icon: Vault,     label: "Vault",           page: "vault",       roles: ["superadmin", "tenantadmin", "tenantuser"] },
@@ -479,7 +483,7 @@ function NavItem({
   const active = isActive(item.page, activePage, item.activeFor || []);
   const subActive = item.subItems?.some((s) => s.trackActive !== false && s.page === activePage);
   const isParentActive = active || subActive;
-  const isKnowledgeGroup = item.page === "knowledge-research";
+  const isKnowledgeGroup = item.page === "knowledge" || item.page === "knowledge-research";
 
   const [subOpen, setSubOpen] = useState(!sidebarCollapsed && isParentActive);
   const [showPopover, setShowPopover] = useState(false);
@@ -722,6 +726,29 @@ function NavItem({
                 </button>
               );
             })}
+            {isKnowledgeGroup && knowledgeNavExtras?.recentHubs?.length > 0 ? (
+              <>
+                <div className="mx-2 my-1 border-t border-border" />
+                <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Recent
+                </p>
+                {knowledgeNavExtras.recentHubs.map((hub) => (
+                  <button
+                    key={`recent-pop-${hub.id}`}
+                    role="menuitem"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      knowledgeNavExtras.onNavigateHub?.(hub.id);
+                      setShowPopover(false);
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-left text-xs">{hub.name}</span>
+                  </button>
+                ))}
+              </>
+            ) : null}
           </div>
         )}
       </>

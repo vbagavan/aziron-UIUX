@@ -38,7 +38,10 @@ export function DocumentsHeaderBreadcrumb({
       onClick: () => onHubClick?.(hubLinks[0].hubId),
     });
   } else if (hubLinks.length > 1) {
-    segments.push({ label: `${hubLinks.length} linked hubs` });
+    segments.push({
+      label: `${hubLinks[0].hubName} (+${hubLinks.length - 1})`,
+      onClick: () => onHubClick?.(hubLinks[0].hubId),
+    });
   }
 
   segments.push({ label: fileName, current: true });

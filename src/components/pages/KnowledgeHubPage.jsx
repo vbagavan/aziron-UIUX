@@ -289,7 +289,7 @@ function HubTable({
             <TableRow
               key={hub.id}
               className={cn(
-                "cursor-pointer",
+                "group cursor-pointer",
                 selectedRows.has(hub.id) && "bg-primary/5",
               )}
               onClick={() => onOpenHub(hub.id)}
@@ -346,6 +346,12 @@ function HubTable({
                     aria-label={`Delete ${hub.name}`}
                     aria-haspopup="menu"
                     aria-expanded={openMenuId === hub.id}
+                    className={cn(
+                      "transition-opacity",
+                      openMenuId === hub.id
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                    )}
                   >
                     <MoreVertical size={15} />
                   </Button>
@@ -489,6 +495,10 @@ export default function KnowledgeHubPage({ onNavigate }) {
   }
 
   function handleHubBreadcrumbClick() {
+    if (detailDraft.libraryFileName) {
+      setHubNavRequest("close-preview");
+      return;
+    }
     if (detailDraft.hubSurface === "library") {
       setHubNavRequest("control-center");
     }
@@ -671,7 +681,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
           ) : null}
         </AppHeader>
 
-        {!detailHub && <KnowledgeTabBar />}
+        <KnowledgeTabBar />
 
         <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
           {detailHub ? (
@@ -709,7 +719,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
             <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
               <>
                 <PageHeader
-                  title="Knowledge Hub"
+                  title="Knowledge Hubs"
                   description="Manage every knowledge hub in your workspace — document stores your agents use for retrieval."
                 >
                     {!isEmpty && (

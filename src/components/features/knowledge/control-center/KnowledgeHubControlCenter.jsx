@@ -175,6 +175,7 @@ export function KnowledgeHubControlCenter({
   pendingDownloadCount = 0,
   onDownloadAllPending,
   onBrowseDocumentsLibrary,
+  onOpenLibraryView,
   className,
 }) {
   const navigate = useNavigate();
@@ -297,35 +298,39 @@ export function KnowledgeHubControlCenter({
               <p className={CAPTION}>No description yet.</p>
             )}
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setActiveTab("documents")}
-                className="hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
               >
-                {summary.documents} document{summary.documents === 1 ? "" : "s"}
+                <FileText className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.documents}</span>
+                <span className="text-muted-foreground">{summary.documents === 1 ? "document" : "documents"}</span>
               </button>
-              <span aria-hidden className="text-border">·</span>
               <button
                 type="button"
                 onClick={() => setActiveTab("agents")}
-                className="hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
               >
-                {summary.agents} agent{summary.agents === 1 ? "" : "s"}
+                <Bot className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.agents}</span>
+                <span className="text-muted-foreground">{summary.agents === 1 ? "agent" : "agents"}</span>
               </button>
-              <span aria-hidden className="text-border">·</span>
               <button
                 type="button"
                 onClick={() => setActiveTab("workflows")}
-                className="hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
               >
-                {summary.workflows} workflow{summary.workflows === 1 ? "" : "s"}
+                <GitBranch className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.workflows}</span>
+                <span className="text-muted-foreground">{summary.workflows === 1 ? "workflow" : "workflows"}</span>
               </button>
               {summary.lastActivity ? (
-                <>
-                  <span aria-hidden className="text-border">·</span>
-                  <span>Active {summary.lastActivity}</span>
-                </>
+                <span className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  Active {summary.lastActivity}
+                </span>
               ) : null}
             </div>
 
@@ -464,6 +469,11 @@ export function KnowledgeHubControlCenter({
                       <SelectItem value="library">In library</SelectItem>
                     </SelectContent>
                   </Select>
+                  {onOpenLibraryView ? (
+                    <Button type="button" variant="outline" size="sm" className="h-9" onClick={onOpenLibraryView}>
+                      View all sources
+                    </Button>
+                  ) : null}
                   {canEdit && selectedDocIds.size > 0 && onDeleteFile ? (
                     <Button type="button" size="sm" variant="destructive" onClick={handleBulkRemove}>
                       Remove ({selectedDocIds.size})
@@ -514,7 +524,7 @@ export function KnowledgeHubControlCenter({
                       </TableHeader>
                       <TableBody>
                         {docPagination.items.map((doc) => (
-                          <TableRow key={doc.id}>
+                          <TableRow key={doc.id} className="group">
                             {canEdit ? (
                               <TableCell>
                                 <input
@@ -552,7 +562,7 @@ export function KnowledgeHubControlCenter({
                             <TableCell>
                               <div className="flex justify-end gap-1">
                                 {canEdit && onDeleteFile ? (
-                                  <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={() => onDeleteFile(doc.raw)}>
+                                  <Button type="button" variant="ghost" size="icon-sm" className="text-destructive opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" onClick={() => onDeleteFile(doc.raw)}>
                                     <Trash2 className="size-3.5" />
                                   </Button>
                                 ) : null}

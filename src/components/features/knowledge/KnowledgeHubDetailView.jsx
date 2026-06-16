@@ -10,7 +10,10 @@ import {
 import { KnowledgeHubControlCenter } from "@/components/features/knowledge/control-center/KnowledgeHubControlCenter";
 import { HubLibraryView } from "@/components/features/knowledge/HubLibraryView";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
+import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
+import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
 import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
+import { DbBrowseTablesDialog } from "@/components/features/knowledge/sources/DbBrowseTablesDialog";
 import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import ConnectionWizard from "@/components/connections/ConnectionWizard.jsx";
 import { useConnectionsStore } from "@/lib/connections/store.js";
@@ -21,7 +24,13 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { buildHubFileInventory, getHubFileStatus } from "@/data/knowledgeHubs";
+import {
+  createApiLibraryRecord,
+  createDbLibraryRecord,
+  DEMO_DB_CONNECTIONS,
+} from "@/data/documentLibrary";
 import { getMergedHubCloudConnections } from "@/lib/hubCloudConnections";
+import { DB_SOURCE_CONNECTORS, resolveSourceCategory } from "@/lib/sourceCategories";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 
 export function KnowledgeHubDetailView({
@@ -39,7 +48,7 @@ export function KnowledgeHubDetailView({
   canEdit = true,
   canDelete = true,
 }) {
-  const { getHubById, deleteHubFile, downloadCloudFileToHub, addCloudFilesToHub, addDocumentsToHub, hubs, recordHubAccess, updateHub } =
+  const { getHubById, deleteHubFile, downloadCloudFileToHub, addCloudFilesToHub, addDocumentsToHub, addCategorySourcesToLibrary, hubs, recordHubAccess, updateHub } =
     useKnowledgeHubs();
 
   const liveHub = useMemo(
@@ -63,6 +72,8 @@ export function KnowledgeHubDetailView({
   const [librarySearch, setLibrarySearch] = useState("");
   const [libraryFilterType, setLibraryFilterType] = useState("all");
   const [librarySortBy, setLibrarySortBy] = useState("recent");
+  const [dbConnections, setDbConnections] = useState(DEMO_DB_CONNECTIONS);
+  const [dbBrowseTarget, setDbBrowseTarget] = useState(null);
   const openIntegrationsWizard = useConnectionsStore((s) => s.openWizard);
   const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
   const navigate = useNavigate();
@@ -161,10 +172,11 @@ export function KnowledgeHubDetailView({
   const fileSyncCounts = countSyncStates(allFiles);
   const pendingDownloadRows = useMemo(() => rowsNeedingDownload(allFiles), [allFiles]);
 
-  const libraryFileName = useMemo(() => {
+  const activeFileName = useMemo(() => {
+    if (previewFile?.name) return previewFile.name;
     if (!libraryFileId) return null;
     return allFiles.find((f) => f.id === libraryFileId)?.name ?? null;
-  }, [libraryFileId, allFiles]);
+  }, [previewFile, libraryFileId, allFiles]);
 
   const handleDownloadCloudFile = useCallback(
     async (row) => {
@@ -196,11 +208,17 @@ export function KnowledgeHubDetailView({
       name: name.trim() || liveHub?.name,
       detailsDirty: !!detailsDirty,
       hubSurface,
-      libraryFileName,
+      libraryFileName: activeFileName,
     });
-  }, [name, description, detailsDirty, liveHub?.name, hubSurface, libraryFileName, onMetadataChange]);
+  }, [name, description, detailsDirty, liveHub?.name, hubSurface, activeFileName, onMetadataChange]);
 
   useEffect(() => {
+    if (hubNavRequest === "close-preview") {
+      setPreviewFile(null);
+      setLibraryFileId(null);
+      onHubNavHandled?.();
+      return;
+    }
     if (hubNavRequest !== "control-center") return;
     setHubSurface("control-center");
     setLibraryFileId(null);
@@ -234,6 +252,13 @@ export function KnowledgeHubDetailView({
     if (file) setPreviewFile(file);
   }
 
+  function handleNavigateToHub(hId) {
+    setPreviewFile(null);
+    if (String(hId) !== String(liveHub.id)) {
+      navigate(`/knowledge/${hId}`);
+    }
+  }
+
   function backToControlCenter() {
     setHubSurface("control-center");
     setLibraryFileId(null);
@@ -243,6 +268,84 @@ export function KnowledgeHubDetailView({
     if (!connection?.provider) return;
     setUploadBrowseConnection(connection);
     setUploadDialogOpen(true);
+  }
+
+  function handleConnectDbProvider(providerId) {
+    const connector = DB_SOURCE_CONNECTORS.find((c) => c.id === providerId);
+    const label = connector?.label ?? providerId;
+    const conn = {
+      id: `${providerId}-${Date.now()}`,
+      name: `${label.toLowerCase().replace(/\s+/g, "-")}-${Date.now().toString(36).slice(-4)}`,
+      providerLabel: label,
+      provider: providerId,
+      tableCount: 0,
+    };
+    setDbConnections((prev) => [...prev, conn]);
+    onNotify?.({
+      title: "Database connected",
+      description: `${conn.name} is ready — browse tables to add sources.`,
+    });
+  }
+
+  function handleBrowseDbConnection(connection) {
+    setChooseSourceOpen(false);
+    setDbBrowseTarget(connection);
+  }
+
+  function handleAddDbTable(connection, table) {
+    const record = createDbLibraryRecord({
+      provider: connection.provider,
+      connectionName: connection.name,
+      tableName: table.tableName,
+      schema: table.schema,
+      databaseName: table.databaseName,
+      collectionName: table.collectionName,
+      rowCount: table.rowCount,
+    });
+    const { added } = addCategorySourcesToLibrary([record], liveHub.id);
+    setDbBrowseTarget(null);
+    const name = added[0]?.name ?? table.tableName;
+    onFilesAdded?.([name], "database");
+    onNotify?.({
+      title: "Database source added",
+      description: `"${name}" was added to your library and linked to this hub.`,
+    });
+  }
+
+  function handleAddApiSource(config) {
+    const isWebhook = config?.provider === "webhook" || config?.kind === "webhook";
+    const record = createApiLibraryRecord({
+      ...config,
+      kind: isWebhook ? "webhook" : config?.kind ?? "rest-graphql",
+      provider: isWebhook ? "webhook" : config?.provider ?? "rest",
+    });
+    const { added } = addCategorySourcesToLibrary([record], liveHub.id);
+    setChooseSourceOpen(false);
+    const name = added[0]?.name ?? "API source";
+    onFilesAdded?.([name], "api");
+    onNotify?.({
+      title: "API source added",
+      description: `"${name}" was added to your library and linked to this hub.`,
+    });
+  }
+
+  function handleConnectApiProvider(providerId) {
+    if (providerId === "webhook") {
+      onNotify?.({
+        title: "Webhook",
+        description: "Set the inbound URL in the form below, then click Add as source.",
+      });
+      return;
+    }
+    onNotify?.({
+      title: "REST API",
+      description: "Enter the endpoint URL below, preview if needed, then Add as source.",
+    });
+  }
+
+  function openLibraryView() {
+    setPreviewFile(null);
+    setHubSurface("library");
   }
 
   return (
@@ -268,13 +371,28 @@ export function KnowledgeHubDetailView({
       <HubSyncCoachMark visible={hasCloudFiles && fileSyncCounts.cloudLink > 0} />
 
       {previewFile ? (
+        resolveSourceCategory(previewFile) === "dbs" ? (
+          <DatabaseDetailView
+            record={{ ...previewFile, hubId: previewFile.hubId ?? liveHub.id }}
+            hubLinks={[{ hubId: liveHub.id, hubFileId: previewFile.id, hubName: name.trim() || liveHub.name }]}
+            onClose={() => setPreviewFile(null)}
+            onNavigateToHub={handleNavigateToHub}
+          />
+        ) : resolveSourceCategory(previewFile) === "apis" ? (
+          <ApiDetailView
+            record={{ ...previewFile, hubId: previewFile.hubId ?? liveHub.id }}
+            hubLinks={[{ hubId: liveHub.id, hubFileId: previewFile.id, hubName: name.trim() || liveHub.name }]}
+            onClose={() => setPreviewFile(null)}
+            onNavigateToHub={handleNavigateToHub}
+          />
+        ) : (
         <DocumentReaderDrawer
           file={{ ...previewFile, hubId: previewFile.hubId ?? liveHub.id, isLibraryDocument: false }}
           hubLinks={[{ hubId: liveHub.id, hubFileId: previewFile.id, hubName: name.trim() || liveHub.name }]}
           hubs={hubs}
           canEdit={canEdit}
           canCreate={false}
-          onNavigateToHub={(hId) => navigate(`/knowledge/${hId}`)}
+          onNavigateToHub={handleNavigateToHub}
           onRemoveHubFile={(hId, fId) => {
             deleteHubFile(hId, fId);
             setPreviewFile(null);
@@ -283,6 +401,7 @@ export function KnowledgeHubDetailView({
           onClose={() => setPreviewFile(null)}
           onNotify={(msg) => onNotify?.(msg)}
         />
+        )
       ) : hubSurface === "library" ? (
         <HubLibraryView
           hubId={liveHub.id}
@@ -324,6 +443,7 @@ export function KnowledgeHubDetailView({
           onBrowseDocumentsLibrary={() =>
             navigate(`/documents?linkHub=${encodeURIComponent(liveHub.id)}`)
           }
+          onOpenLibraryView={openLibraryView}
           className="min-h-0 flex-1"
         />
       )}
@@ -399,12 +519,26 @@ export function KnowledgeHubDetailView({
         }}
         showTrigger={false}
         cloudConnections={cloudConnections}
+        connectedDatabases={dbConnections}
         onBrowseCloudConnection={openCloudFilePicker}
         onConnectHubProvider={openHubConnectorWizard}
         onConnectCatalogProvider={openIntegrationsWizardWithProvider}
         onBrowseAllConnectors={openIntegrationsWizard}
         onCustomConnector={openIntegrationsWizardWithProvider}
         onUploadFiles={openUploadDialog}
+        onConnectDbProvider={handleConnectDbProvider}
+        onBrowseDbConnection={handleBrowseDbConnection}
+        onAddApiSource={handleAddApiSource}
+        onConnectApiProvider={handleConnectApiProvider}
+      />
+
+      <DbBrowseTablesDialog
+        connection={dbBrowseTarget}
+        open={Boolean(dbBrowseTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDbBrowseTarget(null);
+        }}
+        onSelectTable={handleAddDbTable}
       />
 
       {canEdit && addSourceProvider ? (

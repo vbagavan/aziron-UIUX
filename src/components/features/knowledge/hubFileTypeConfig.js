@@ -1,6 +1,7 @@
 import {
   AlignLeft,
   BookOpen,
+  Database,
   FileCode,
   FileSpreadsheet,
   FileText,
@@ -9,6 +10,7 @@ import {
   Image,
   LayoutTemplate,
   Music,
+  Zap,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,6 +44,8 @@ export const FILE_TYPE_CONFIGS = {
   Markdown:   { icon: AlignLeft,       ...MUTED_TYPE, label: "MD"    },
   HTML:       { icon: FileCode,        bg: "bg-muted", fg: "text-warning",       stripe: "bg-warning",       accent: "bg-warning/10 text-warning",             label: "HTML"  },
   eBook:      { icon: BookOpen,        ...PRIMARY_TYPE, label: "EPUB"  },
+  Database:   { icon: Database,        bg: "bg-muted", fg: "text-chart-chart-3", stripe: "bg-chart-chart-3", accent: "bg-chart-chart-3/15 text-chart-chart-3", label: "Database" },
+  API:        { icon: Zap,             bg: "bg-muted", fg: "text-info",          stripe: "bg-info",          accent: "bg-info/10 text-info",                   label: "API"      },
 };
 
 export const FALLBACK_TYPE = {

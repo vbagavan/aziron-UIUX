@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
-  Search,
   ChevronDown,
   ChevronRight,
-  ArrowLeft,
-  ArrowRight,
   Sparkles,
   Send,
   Bot,
@@ -28,7 +25,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Pencil,
-  PanelLeftClose,
   MessageSquare,
   BookOpen,
   Trash2,
@@ -688,6 +684,29 @@ function generateFallbackChapters(file) {
   }));
 }
 
+function mergeChaptersForReading(chapters, fileName) {
+  if (!chapters.length) return null;
+  const docTitle = fileName?.replace(/\.[^.]+$/, "") ?? chapters[0].title;
+
+  if (chapters.length === 1) {
+    return { ...chapters[0], title: docTitle };
+  }
+
+  const body = chapters
+    .filter((ch) => ch.body != null)
+    .map((ch) => `**${ch.title}**\n\n${ch.body}`)
+    .join("\n\n");
+
+  return {
+    ...chapters[0],
+    id: "document",
+    title: docTitle,
+    summary: chapters.map((c) => c.summary).filter(Boolean).join(" "),
+    body,
+    readMins: chapters.reduce((sum, c) => sum + (c.readMins ?? 0), 0),
+  };
+}
+
 // ─── Studio tools (mirrors KnowledgeHubWorkspaceView) ────────────────────────
 
 const STUDIO_TOOLS = [
@@ -834,43 +853,9 @@ function ChapterChatMessage({ message, sourceLabel, onCapture, showFeedbackActio
   );
 }
 
-// ─── Chapter navigation item ──────────────────────────────────────────────────
+// ─── Document reading view (center panel) ─────────────────────────────────────
 
-function ChapterItem({ chapter, active, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(chapter.id)}
-      className={cn(
-        "group flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left transition-colors duration-100",
-        active ? "bg-primary/10" : "hover:bg-muted",
-      )}
-    >
-      <span
-        className={cn(
-          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors",
-          active
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground group-hover:bg-border",
-        )}
-      >
-        {chapter.num}
-      </span>
-      <span
-        className={cn(
-          "line-clamp-2 text-xs leading-snug transition-colors",
-          active ? "font-semibold text-primary" : "font-medium text-foreground/80 group-hover:text-foreground",
-        )}
-      >
-        {chapter.title}
-      </span>
-    </button>
-  );
-}
-
-// ─── Chapter reading view (center panel) ─────────────────────────────────────
-
-function ReadingMeta({ chapter, total }) {
+function ReadingMeta({ chapter }) {
   if (!chapter.readMins) return null;
   return (
     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
@@ -878,15 +863,11 @@ function ReadingMeta({ chapter, total }) {
         <Clock className="size-3" />
         {chapter.readMins} min read
       </span>
-      <span className="h-3 w-px bg-border" />
-      <span>
-        Chapter {chapter.num} of {total}
-      </span>
     </div>
   );
 }
 
-function ChapterReaderView({ chapter, chapters, readingSourceLabel, canEdit, openSelectionMenu, scrollRef }) {
+function ChapterReaderView({ chapter, readingSourceLabel, canEdit, openSelectionMenu, scrollRef }) {
   // Fallback chapter (body === null) — document not yet indexed
   if (chapter?.body === null) {
     return (
@@ -918,15 +899,11 @@ function ChapterReaderView({ chapter, chapters, readingSourceLabel, canEdit, ope
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-4xl px-8 py-10 pb-24">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/70">
-          Chapter {chapter?.num}
-        </p>
-
-        <h1 className="mt-3 text-[2rem] font-bold leading-tight tracking-tight text-foreground">
+        <h1 className="text-[2rem] font-bold leading-tight tracking-tight text-foreground">
           {chapter?.title}
         </h1>
 
-        <ReadingMeta chapter={chapter} total={chapters.length} />
+        <ReadingMeta chapter={chapter} />
 
         <div className="my-6 h-px w-12 bg-primary/30" />
 
@@ -1873,45 +1850,24 @@ export function DocumentReaderDrawer({
     if (demoChapters?.length) return demoChapters;
     return file ? generateFallbackChapters(file) : [];
   }, [file?.id, file?.name]);
-  const showChapterNav = chapters.length > 1;
 
-  const [activeId, setActiveId] = useState(chapters[0]?.id ?? null);
-  const [search, setSearch] = useState("");
-  const [chaptersNavCollapsed, setChaptersNavCollapsed] = useState(false);
+  const chapter = useMemo(
+    () => mergeChaptersForReading(chapters, file?.name),
+    [chapters, file?.name],
+  );
+
   const [panelTab, setPanelTab] = useState("chapter");
   const [centerView, setCenterView] = useState("read");
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
-  const [mobileChapterOpen, setMobileChapterOpen] = useState(false);
   const [askSeedPrompt, setAskSeedPrompt] = useState("");
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    setActiveId(chapters[0]?.id ?? null);
-    setSearch("");
     setPanelTab("chapter");
     setCenterView("read");
     setMobilePanelOpen(false);
     setAskSeedPrompt("");
-  }, [file?.id, chapters]);
-
-  const chapter = chapters.find((c) => c.id === activeId) ?? chapters[0];
-  const chapterIndex = chapters.findIndex((c) => c.id === activeId);
-
-  const filteredChapters = search.trim()
-    ? chapters.filter((c) =>
-        c.title.toLowerCase().includes(search.toLowerCase()),
-      )
-    : chapters;
-
-  useEffect(() => {
-    if (
-      search.trim() &&
-      filteredChapters.length > 0 &&
-      !filteredChapters.some((c) => c.id === activeId)
-    ) {
-      setActiveId(filteredChapters[0].id);
-    }
-  }, [search, filteredChapters, activeId]);
+  }, [file?.id]);
 
   const handleRequestDownload = useCallback(async () => {
     if (file?.isLibraryDocument) {
@@ -1932,19 +1888,6 @@ export function DocumentReaderDrawer({
     },
     [file?.hubId, file?.isLibraryDocument, updateHubFile, updateLibraryDocument],
   );
-
-  function goTo(id) {
-    setActiveId(id);
-    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function goPrev() {
-    if (chapterIndex > 0) goTo(chapters[chapterIndex - 1].id);
-  }
-
-  function goNext() {
-    if (chapterIndex < chapters.length - 1) goTo(chapters[chapterIndex + 1].id);
-  }
 
   function openMobilePanel(tabId) {
     setPanelTab(tabId);
@@ -2003,80 +1946,31 @@ export function DocumentReaderDrawer({
 
   if (!file) return null;
 
-  const readingSourceLabel = `${file.name} · ${chapter?.title ?? "Chapter"}`;
+  const readingSourceLabel = file.name;
 
   return (
     <>
     <div className="flex h-full w-full flex-col bg-background">
+      {onClose ? (
+        <header className="shrink-0 border-b border-border bg-card/50 px-5 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <BookOpen className="size-3.5" aria-hidden />
+                Document
+              </div>
+              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                {file.name}
+              </h1>
+            </div>
+            <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
+              <X className="size-4" />
+            </Button>
+          </div>
+        </header>
+      ) : null}
 
-      {/* ── Three columns ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-
-        {/* ── Left: chapter nav ── */}
-        {showChapterNav ? (
-          chaptersNavCollapsed ? (
-            <div className="hidden w-11 shrink-0 flex-col items-center border-r border-border bg-muted/20 py-3 md:flex">
-              <button
-                type="button"
-                onClick={() => setChaptersNavCollapsed(false)}
-                aria-label="Expand chapters"
-                title="Expand chapters"
-                className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <PanelLeftClose className="size-4 rotate-180" />
-              </button>
-              <span className="mt-4 rotate-180 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground [writing-mode:vertical-rl]">
-                Chapters
-              </span>
-            </div>
-          ) : (
-            <div className="hidden w-52 shrink-0 flex-col border-r border-border bg-muted/20 md:flex">
-              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Chapters
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setChaptersNavCollapsed(true)}
-                  aria-label="Collapse chapters"
-                  title="Collapse chapters"
-                  className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <PanelLeftClose className="size-4" />
-                </button>
-              </div>
-
-              <div className="px-3 py-3">
-                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-2.5 py-1.5">
-                  <Search className="size-3 shrink-0 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search chapters…"
-                    className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-2 pb-4">
-                <div className="flex flex-col gap-0.5">
-                  {filteredChapters.map((ch) => (
-                    <ChapterItem
-                      key={ch.id}
-                      chapter={ch}
-                      active={ch.id === activeId}
-                      onClick={goTo}
-                    />
-                  ))}
-                  {filteredChapters.length === 0 && (
-                    <p className="px-3 py-2 text-xs text-muted-foreground">No chapters match.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        ) : null}
 
         {/* ── Center: reader + optional source preview ── */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -2117,60 +2011,11 @@ export function DocumentReaderDrawer({
             >
               <ChapterReaderView
                 chapter={chapter}
-                chapters={chapters}
                 readingSourceLabel={readingSourceLabel}
                 canEdit={canEdit}
                 openSelectionMenu={capture.openSelectionMenu}
                 scrollRef={scrollRef}
               />
-
-              {chapters.length > 1 ? (
-              <div className="flex shrink-0 items-center justify-between border-t border-border bg-muted/10 px-4 py-2 md:px-8">
-                <button
-                  type="button"
-                  onClick={goPrev}
-                  disabled={chapterIndex === 0}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    chapterIndex === 0
-                      ? "cursor-not-allowed text-muted-foreground/40"
-                      : "text-foreground hover:bg-muted",
-                  )}
-                >
-                  <ArrowLeft className="size-4" />
-                  <span className="hidden sm:inline">Previous</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <span className="hidden text-xs text-muted-foreground sm:inline">
-                    {chapterIndex + 1} / {chapters.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setMobileChapterOpen(true)}
-                    className="flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground md:hidden"
-                  >
-                    Ch {chapterIndex + 1}
-                    <ChevronDown className="size-3 opacity-60" />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={chapterIndex === chapters.length - 1}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    chapterIndex === chapters.length - 1
-                      ? "cursor-not-allowed text-muted-foreground/40"
-                      : "text-foreground hover:bg-muted",
-                  )}
-                >
-                  <span className="hidden sm:inline">Next</span>
-                  <ArrowRight className="size-4" />
-                </button>
-              </div>
-              ) : null}
             </div>
 
             <div
@@ -2235,43 +2080,6 @@ export function DocumentReaderDrawer({
         </div>
       </SheetContent>
     </Sheet>
-
-    {showChapterNav ? (
-      <Sheet open={mobileChapterOpen} onOpenChange={setMobileChapterOpen}>
-        <SheetContent side="bottom" className="h-[min(70vh,520px)] gap-0 p-0 md:hidden">
-          <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
-            <SheetTitle className="text-sm">Chapters</SheetTitle>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-            <div className="mb-3 px-2">
-              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-2.5 py-1.5">
-                <Search className="size-3 shrink-0 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search chapters…"
-                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {filteredChapters.map((ch) => (
-                <ChapterItem
-                  key={ch.id}
-                  chapter={ch}
-                  active={ch.id === activeId}
-                  onClick={(id) => {
-                    goTo(id);
-                    setMobileChapterOpen(false);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    ) : null}
 
     <SelectionContextMenu
       menu={capture.selectionMenu}

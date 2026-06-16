@@ -1,5 +1,15 @@
 import { useMemo, useState } from "react";
-import { Cloud, FolderOpen, LayoutGrid, Plus, Upload, Wrench } from "lucide-react";
+import {
+  Cloud,
+  Database,
+  FileText,
+  FolderOpen,
+  LayoutGrid,
+  Plus,
+  Upload,
+  Wrench,
+  Zap,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +29,18 @@ import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_MD,
 } from "@/components/features/knowledge/hubDialogSizes";
+import { AddApiSourcePanel } from "@/components/features/knowledge/sources/AddApiSourcePanel";
+import { AddDbSourcePanel } from "@/components/features/knowledge/sources/AddDbSourcePanel";
 import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
+import { SOURCE_CATEGORIES } from "@/lib/sourceCategories";
 import { cloudProviderLabel } from "@/lib/hubCloudConnections";
 import { cn } from "@/lib/utils";
+
+const CATEGORY_TABS = [
+  { id: "files", label: SOURCE_CATEGORIES.files.label, icon: FileText },
+  { id: "dbs", label: SOURCE_CATEGORIES.dbs.label, icon: Database },
+  { id: "apis", label: SOURCE_CATEGORIES.apis.label, icon: Zap },
+];
 
 function deferAfterClose(action) {
   if (!action) return;
@@ -74,9 +93,136 @@ function ConnectedAccountRow({ connection, onBrowse }) {
   );
 }
 
+function FilesSourcePanel({
+  hideUploadOption,
+  showCatalogConnectors,
+  visibleConnectors,
+  connectedAccounts,
+  onUpload,
+  onBrowseConnection,
+  onHubProvider,
+  onCatalogProvider,
+  onBrowseAll,
+  onCustom,
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {!hideUploadOption ? (
+        <>
+          <SourceOptionRow
+            icon={Upload}
+            title="Upload files"
+            description="Add documents from your computer"
+            onClick={onUpload}
+          />
+          <Separator />
+        </>
+      ) : null}
+
+      {connectedAccounts.length > 0 ? (
+        <>
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Connected accounts
+              </p>
+              <Badge variant="secondary" className="text-[10px]">
+                {connectedAccounts.length}
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-2">
+              {connectedAccounts.map((conn) => (
+                <ConnectedAccountRow
+                  key={`${conn.provider}-${conn.id ?? conn.name}`}
+                  connection={conn}
+                  onBrowse={onBrowseConnection}
+                />
+              ))}
+            </div>
+          </section>
+          <Separator />
+        </>
+      ) : null}
+
+      <section className="flex flex-col gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Cloud storage
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {visibleConnectors.map((connector) => (
+            <Button
+              key={connector.id}
+              type="button"
+              variant="outline"
+              disabled={!connector.enabled}
+              className="flex h-auto flex-col items-center gap-2 p-3"
+              onClick={() => {
+                if (!connector.enabled) return;
+                if (connector.flow === "hub-wizard") {
+                  onHubProvider(connector.id);
+                  return;
+                }
+                if (connector.flow === "integrations-wizard") {
+                  onCatalogProvider(connector.catalogId);
+                }
+              }}
+            >
+              {connector.logo ? (
+                <img
+                  src={connector.logo}
+                  alt=""
+                  className="size-8 object-contain"
+                  draggable={false}
+                />
+              ) : null}
+              <span className="min-w-0 w-full truncate text-center text-xs font-semibold">
+                {connector.label}
+              </span>
+              {connector.recommended ? (
+                <Badge variant="secondary" className="text-[10px]">
+                  Recommended
+                </Badge>
+              ) : null}
+              {!connector.enabled ? (
+                <Badge variant="outline" className="text-[10px]">
+                  Soon
+                </Badge>
+              ) : null}
+            </Button>
+          ))}
+        </div>
+      </section>
+
+      {showCatalogConnectors ? (
+        <>
+          <Separator />
+          <section className="flex flex-col gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              More options
+            </p>
+            <div className="flex flex-col gap-2">
+              <SourceOptionRow
+                icon={LayoutGrid}
+                title="Browse all connectors"
+                description="Search the full integrations catalog"
+                onClick={onBrowseAll}
+              />
+              <SourceOptionRow
+                icon={Wrench}
+                title="Custom connector"
+                description="Connect an MCP server or custom integration"
+                onClick={onCustom}
+              />
+            </div>
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 /**
- * Add sources control — opens a shadcn Dialog to choose source type, then routes
- * to the appropriate connector wizard or upload flow.
+ * Add sources control — category tabs (Files · DBs · APIs) route to the right wizard.
  */
 export function HubAddSourcesMenu({
   className,
@@ -86,14 +232,20 @@ export function HubAddSourcesMenu({
   showCatalogConnectors = true,
   hideUploadOption = false,
   cloudConnections = [],
+  connectedDatabases = [],
   onConnectHubProvider,
   onConnectCatalogProvider,
+  onConnectDbProvider,
+  onBrowseDbConnection,
+  onAddApiSource,
+  onConnectApiProvider,
   onBrowseAllConnectors,
   onCustomConnector,
   onUploadFiles,
   onBrowseCloudConnection,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("files");
   const chooseOpen = openProp ?? internalOpen;
   const setChooseOpen = onOpenChangeProp ?? setInternalOpen;
 
@@ -110,6 +262,26 @@ export function HubAddSourcesMenu({
   function handleCatalogProvider(catalogId) {
     if (!onConnectCatalogProvider) return;
     closeAndRun(() => onConnectCatalogProvider(catalogId));
+  }
+
+  function handleDbProvider(providerId) {
+    if (!onConnectDbProvider) return;
+    closeAndRun(() => onConnectDbProvider(providerId));
+  }
+
+  function handleBrowseDb(connection) {
+    if (!onBrowseDbConnection) return;
+    closeAndRun(() => onBrowseDbConnection(connection));
+  }
+
+  function handleAddApi(config) {
+    if (!onAddApiSource) return;
+    closeAndRun(() => onAddApiSource(config));
+  }
+
+  function handleApiProvider(providerId) {
+    if (!onConnectApiProvider) return;
+    closeAndRun(() => onConnectApiProvider(providerId));
   }
 
   function handleBrowseAll() {
@@ -141,6 +313,12 @@ export function HubAddSourcesMenu({
     [cloudConnections],
   );
 
+  const categoryDescriptions = {
+    files: "Upload locally or connect cloud storage — OneDrive, Google Drive, AWS S3, and more.",
+    dbs: "Connect a database, then pick tables, views, or collections.",
+    apis: "Configure a REST endpoint or webhook — the response becomes a source.",
+  };
+
   return (
     <>
       {showTrigger ? (
@@ -155,137 +333,78 @@ export function HubAddSourcesMenu({
         </Button>
       ) : null}
 
-      <Dialog open={chooseOpen} onOpenChange={setChooseOpen}>
+      <Dialog
+        open={chooseOpen}
+        onOpenChange={(next) => {
+          setChooseOpen(next);
+          if (!next) setActiveCategory("files");
+        }}
+      >
         <DialogContent className={HUB_DIALOG_CONTENT_MD}>
           <DialogHeader className="shrink-0 px-6 py-4">
-            <DialogTitle>Choose source type</DialogTitle>
+            <DialogTitle>Add a source</DialogTitle>
             <DialogDescription>
-              {hideUploadOption
-                ? "Connect OneDrive or Google Drive to import files into your library."
-                : showCatalogConnectors
-                  ? "Upload from your computer, connect a cloud provider, or browse the integrations catalog."
-                  : "Upload from your computer or connect OneDrive / Google Drive to import files."}
+              Choose a category, then connect or configure your source.
             </DialogDescription>
           </DialogHeader>
 
-          <Separator className="shrink-0" />
+          <div className="shrink-0 border-b border-border px-6">
+            <div className="flex gap-1" role="tablist" aria-label="Source category">
+              {CATEGORY_TABS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeCategory === id}
+                  onClick={() => setActiveCategory(id)}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors",
+                    activeCategory === id
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-3.5 shrink-0" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
-            <div className="flex flex-col gap-4">
-              {!hideUploadOption ? (
-                <>
-                  <SourceOptionRow
-                    icon={Upload}
-                    title="Upload files"
-                    description="Add documents from your computer"
-                    onClick={handleUpload}
-                  />
+            <p className="mb-4 text-sm text-muted-foreground">
+              {categoryDescriptions[activeCategory]}
+            </p>
 
-                  <Separator />
-                </>
-              ) : null}
+            {activeCategory === "files" ? (
+              <FilesSourcePanel
+                hideUploadOption={hideUploadOption}
+                showCatalogConnectors={showCatalogConnectors}
+                visibleConnectors={visibleConnectors}
+                connectedAccounts={connectedAccounts}
+                onUpload={handleUpload}
+                onBrowseConnection={handleBrowseConnection}
+                onHubProvider={handleHubProvider}
+                onCatalogProvider={handleCatalogProvider}
+                onBrowseAll={handleBrowseAll}
+                onCustom={handleCustom}
+              />
+            ) : null}
 
-              {connectedAccounts.length > 0 ? (
-                <>
-                  <section className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Connected accounts
-                      </p>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {connectedAccounts.length}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {connectedAccounts.map((conn) => (
-                        <ConnectedAccountRow
-                          key={`${conn.provider}-${conn.id ?? conn.name}`}
-                          connection={conn}
-                          onBrowse={handleBrowseConnection}
-                        />
-                      ))}
-                    </div>
-                  </section>
+            {activeCategory === "dbs" ? (
+              <AddDbSourcePanel
+                connectedDatabases={connectedDatabases}
+                onConnectProvider={handleDbProvider}
+                onBrowseConnection={handleBrowseDb}
+              />
+            ) : null}
 
-                  <Separator />
-                </>
-              ) : null}
-
-              <section className="flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Popular connectors
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {visibleConnectors.map((connector) => (
-                    <Button
-                      key={connector.id}
-                      type="button"
-                      variant="outline"
-                      disabled={!connector.enabled}
-                      className="flex h-auto flex-col items-center gap-2 p-3"
-                      onClick={() => {
-                        if (!connector.enabled) return;
-                        if (connector.flow === "hub-wizard") {
-                          handleHubProvider(connector.id);
-                          return;
-                        }
-                        if (connector.flow === "integrations-wizard") {
-                          handleCatalogProvider(connector.catalogId);
-                        }
-                      }}
-                    >
-                      {connector.logo ? (
-                        <img
-                          src={connector.logo}
-                          alt=""
-                          className="size-8 object-contain"
-                          draggable={false}
-                        />
-                      ) : null}
-                      <span className="min-w-0 w-full truncate text-center text-xs font-semibold">
-                        {connector.label}
-                      </span>
-                      {connector.recommended ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Recommended
-                        </Badge>
-                      ) : null}
-                      {!connector.enabled ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          Soon
-                        </Badge>
-                      ) : null}
-                    </Button>
-                  ))}
-                </div>
-              </section>
-
-              {showCatalogConnectors ? (
-                <>
-                  <Separator />
-
-                  <section className="flex flex-col gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      More options
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      <SourceOptionRow
-                        icon={LayoutGrid}
-                        title="Browse all connectors"
-                        description="Search the full integrations catalog"
-                        onClick={handleBrowseAll}
-                      />
-                      <SourceOptionRow
-                        icon={Wrench}
-                        title="Custom connector"
-                        description="Connect an MCP server or custom integration"
-                        onClick={handleCustom}
-                      />
-                    </div>
-                  </section>
-                </>
-              ) : null}
-            </div>
+            {activeCategory === "apis" ? (
+              <AddApiSourcePanel
+                onAddApiSource={handleAddApi}
+                onConnectProvider={handleApiProvider}
+              />
+            ) : null}
           </div>
 
           <DialogFooter className="m-0 -mx-0 -mb-0 shrink-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 sm:justify-end">

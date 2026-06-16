@@ -32,6 +32,7 @@ import {
   loadDocumentsFromStorage,
   resolveCloudImportToLibraryRecords,
   saveDocumentsToStorage,
+  syncDemoCategoryHubLinks,
 } from "@/data/documentLibrary";
 
 const KnowledgeHubContext = createContext(null);
@@ -45,11 +46,14 @@ export function KnowledgeHubProvider({ children }) {
   const agentsCtx = useAgentsOptional();
   const agents = agentsCtx?.agents ?? [];
 
-  const [hubs, setHubs] = useState(
-    () => loadHubsFromStorage() ?? normalizeHubs(SEED_KNOWLEDGE_HUBS),
-  );
+  const initialDocuments = loadDocumentsFromStorage();
 
-  const [documents, setDocuments] = useState(() => loadDocumentsFromStorage());
+  const [hubs, setHubs] = useState(() => {
+    const loaded = loadHubsFromStorage() ?? normalizeHubs(SEED_KNOWLEDGE_HUBS);
+    return syncDemoCategoryHubLinks(loaded, initialDocuments);
+  });
+
+  const [documents, setDocuments] = useState(initialDocuments);
 
   useEffect(() => {
     saveHubsToStorage(hubs);
@@ -493,6 +497,50 @@ export function KnowledgeHubProvider({ children }) {
     };
   }, []);
 
+  const addCategorySourcesToLibrary = useCallback((records, hubId = null) => {
+    const stamped = (records ?? []).map((r) => ({
+      ...r,
+      uploadedAt: r.uploadedAt ?? new Date().toISOString(),
+      created: r.created ?? new Date().toISOString(),
+      updated: "Just now",
+      indexStatus: r.indexStatus ?? "stored",
+      fileStatus: r.fileStatus ?? "success",
+      hubLinks: [],
+    }));
+
+    if (stamped.length === 0) return { added: [] };
+
+    setDocuments((prev) => [...prev, ...stamped]);
+
+    if (hubId != null) {
+      const targetId = Number(hubId);
+      setHubs((prev) =>
+        prev.map((h) => {
+          if (Number(h.id) !== targetId) return h;
+          const userFiles = [...(h.userFiles ?? [])];
+          let storageAdd = 0;
+          for (const doc of stamped) {
+            if (userFiles.some((f) => f.libraryDocumentId === doc.id)) continue;
+            const hubFile = libraryRecordToHubFile(doc, targetId);
+            userFiles.push(hubFile);
+            storageAdd += Math.max(0, Math.round((hubFile.sizeKb ?? 0) / 1024));
+          }
+          return {
+            ...h,
+            userFiles,
+            files: userFiles.length,
+            collections: userFiles.length > 0 ? 1 : 0,
+            storageMB: (h.storageMB ?? 0) + storageAdd,
+            updated: "Just now",
+            isUserCreated: true,
+          };
+        }),
+      );
+    }
+
+    return { added: stamped };
+  }, []);
+
   const updateLibraryDocument = useCallback((documentId, patch) => {
     setDocuments((prev) =>
       prev.map((d) => (d.id === documentId ? { ...d, ...patch, updated: "Just now" } : d)),
@@ -806,6 +854,7 @@ export function KnowledgeHubProvider({ children }) {
       addDocumentsToHub,
       copyHubFilesToHub,
       addDocumentsToLibrary,
+      addCategorySourcesToLibrary,
       updateLibraryDocument,
       linkDocumentToHub,
       linkDocumentsToHub,
@@ -833,6 +882,7 @@ export function KnowledgeHubProvider({ children }) {
       addDocumentsToHub,
       copyHubFilesToHub,
       addDocumentsToLibrary,
+      addCategorySourcesToLibrary,
       updateLibraryDocument,
       linkDocumentToHub,
       linkDocumentsToHub,

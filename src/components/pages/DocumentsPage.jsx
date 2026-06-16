@@ -70,13 +70,21 @@ import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
 import { FileSyncStatusIndicator } from "@/components/features/knowledge/FileSyncStatusIndicator";
-import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
-import { getFileSourceLabel } from "@/lib/fileSyncStatus";
+import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
+import {
+  getSourceMetricColumnLabel,
+  getSourceMetricDisplay,
+  getSourceProviderLabel,
+  resolveSourceCategory,
+} from "@/lib/sourceCategories";
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
 import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbnail";
 import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
+import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
+import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
 import { DocumentsHeaderBreadcrumb } from "@/components/features/documents/DocumentsHeaderBreadcrumb";
+import { DocumentsCategoryTabBar } from "@/components/features/documents/DocumentsCategoryTabBar";
 import { KnowledgeTabBar } from "@/components/features/knowledge/KnowledgeTabBar";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
@@ -303,10 +311,15 @@ function formatHubDisplayName(hubName) {
 function HubBadge({ hubName }) {
   const displayName = formatHubDisplayName(hubName);
   return (
-    <Badge variant="outline" className="max-w-[120px]">
-      <Database data-icon="inline-start" aria-hidden />
-      <span className="truncate">{displayName}</span>
-    </Badge>
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex min-w-0 max-w-full" />}>
+        <Badge variant="outline" className="max-w-[120px]">
+          <Database data-icon="inline-start" aria-hidden />
+          <span className="truncate">{displayName}</span>
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>{displayName}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -431,6 +444,7 @@ function DocumentsListTable({
   selectedKeys,
   highlightedIds,
   canEdit,
+  metricColumnLabel = "Size",
   onToggleSelect,
   onOpen,
   onSyncFile,
@@ -447,7 +461,7 @@ function DocumentsListTable({
           <TableHead className="hidden sm:table-cell">Source</TableHead>
           <TableHead className="hidden sm:table-cell">Hubs</TableHead>
           <TableHead className="hidden sm:table-cell">Type</TableHead>
-          <TableHead className="hidden text-right sm:table-cell">Size</TableHead>
+          <TableHead className="hidden text-right sm:table-cell">{metricColumnLabel}</TableHead>
           {!selectionMode ? <TableHead className="w-10 sm:table-cell" /> : null}
         </TableRow>
       </TableHeader>
@@ -490,9 +504,9 @@ function DocFileRow({
 }) {
   const cfg = getFileTypeConfig(file.type);
   const Icon = cfg.icon;
-  const sizeLabel = formatFileSize(file.sizeKb);
+  const sizeLabel = getSourceMetricDisplay(file).label;
   const displayName = getDocDisplayName(file);
-  const sourceLabel = getFileSourceLabel(file);
+  const sourceLabel = getSourceProviderLabel(file);
   const isCloud = file.source === "cloud";
   const hasHubActions = hubLinks?.length > 0;
 
@@ -559,7 +573,7 @@ function DocFileRow({
               {truncateMiddle(displayName, 48)}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
-              <FileSourceBadge file={file} size="sm" />
+              <SourceBadge record={file} size="sm" />
               <HubLinksBadge hubLinks={hubLinks} />
               <FileSyncStatusIndicator
                 file={file}
@@ -577,7 +591,7 @@ function DocFileRow({
       <TableCell className="hidden sm:table-cell">
         <Tooltip>
           <TooltipTrigger render={<span className="inline-flex" onClick={stopRowClick} />}>
-            <FileSourceBadge file={file} size="sm" />
+            <SourceBadge record={file} size="sm" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
             <p className="font-medium">{sourceLabel}</p>
@@ -808,11 +822,17 @@ export default function DocumentsPage({ onNavigate }) {
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
 
+  const categoryParam = searchParams.get("category");
+  const validCategories = new Set(["all", "files", "dbs", "apis"]);
+
   const [viewMode, setViewMode]         = useState(() => loadSavedViewMode() ?? "list");
   const [docsPage, setDocsPage]         = useState(1);
   const [searchQuery, setSearchQuery]   = useState("");
   const [sortBy, setSortBy]             = useState("recent");
   const [filterSource, setFilterSource] = useState("all");
+  const [filterCategory, setFilterCategoryState] = useState(() =>
+    validCategories.has(categoryParam) ? categoryParam : "all",
+  );
   const [filterType, setFilterType]     = useState("all");
   const [filterStatus, setFilterStatus] = useState(null);
   const [selectedKeys, setSelectedKeys] = useState(new Set());
@@ -828,15 +848,42 @@ export default function DocumentsPage({ onNavigate }) {
     [hubs, linkHubId],
   );
 
+  function setFilterCategory(id) {
+    setFilterCategoryState(id);
+    setDocsPage(1);
+    const next = new URLSearchParams(searchParams);
+    if (id === "all") next.delete("category");
+    else next.set("category", id);
+    setSearchParams(next, { replace: true });
+  }
+
   useEffect(() => {
-    if (!linkHubId || !linkTargetHub) return;
+    const fromUrl = ["all", "files", "dbs", "apis"].includes(categoryParam) ? categoryParam : "all";
+    setFilterCategoryState((prev) => (prev !== fromUrl ? fromUrl : prev));
+  }, [categoryParam]);
+
+  useEffect(() => {
+    if (!linkHubId) return;
+    if (!linkTargetHub) {
+      if (hubs.length > 0) {
+        showToast({
+          title: "Hub not found",
+          description: "That Knowledge Hub link is invalid or was removed.",
+          variant: "destructive",
+        });
+        const next = new URLSearchParams(searchParams);
+        next.delete("linkHub");
+        setSearchParams(next, { replace: true });
+      }
+      return;
+    }
     setReaderDoc(null);
     setSelectionMode(true);
-  }, [linkHubId, linkTargetHub]);
+  }, [linkHubId, linkTargetHub, hubs.length, searchParams, setSearchParams, showToast]);
 
   useEffect(() => {
     setDocsPage(1);
-  }, [searchQuery, filterSource, filterType, filterStatus, sortBy]);
+  }, [searchQuery, filterSource, filterCategory, filterType, filterStatus, sortBy]);
 
   // ── Flat document list: library + legacy hub-only files ───────────────────
 
@@ -844,7 +891,8 @@ export default function DocumentsPage({ onNavigate }) {
     const docs = [];
 
     for (const doc of documents) {
-      const hubLinks = getHubLinksForDocument(doc.id, hubs);
+      const scanned = getHubLinksForDocument(doc.id, hubs);
+      const hubLinks = scanned.length > 0 ? scanned : (doc.hubLinks ?? []);
       docs.push({
         ...doc,
         isLibraryDocument: true,
@@ -912,6 +960,7 @@ export default function DocumentsPage({ onNavigate }) {
       }
       if (filterSource === "local" && d.source !== "user" && d.source !== "upload") return false;
       if (filterSource === "cloud" && d.source !== "cloud") return false;
+      if (filterCategory !== "all" && resolveSourceCategory(d) !== filterCategory) return false;
       if (filterType !== "all" && d.type !== filterType) return false;
       if (filterStatus) {
         const status = resolveFileLifecycleStatus(d);
@@ -937,7 +986,7 @@ export default function DocumentsPage({ onNavigate }) {
       }
       return (b.uploadedAt ?? b.created ?? "").localeCompare(a.uploadedAt ?? a.created ?? "");
     });
-  }, [allDocs, searchQuery, filterSource, filterType, filterStatus, sortBy]);
+  }, [allDocs, searchQuery, filterSource, filterCategory, filterType, filterStatus, sortBy]);
 
   const docsPagination = useMemo(
     () => paginateSlice(filteredDocs, docsPage, DOCS_PAGE_SIZE),
@@ -983,10 +1032,13 @@ export default function DocumentsPage({ onNavigate }) {
   function clearAllFilters() {
     setSearchQuery("");
     setFilterSource("all");
+    setFilterCategory("all");
     setFilterType("all");
     setFilterStatus(null);
     setDocsPage(1);
   }
+
+  const metricColumnLabel = getSourceMetricColumnLabel(filterCategory);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -1025,11 +1077,15 @@ export default function DocumentsPage({ onNavigate }) {
 
   function handleOpenDoc(doc) {
     setReaderDoc(doc);
-    exitSelectionMode();
   }
 
   function handleCloseReader() {
     setReaderDoc(null);
+  }
+
+  function handleNavigateToHub(hubId) {
+    handleCloseReader();
+    navigate(`/knowledge/${hubId}`);
   }
 
   function selectAllVisible() {
@@ -1399,12 +1455,12 @@ export default function DocumentsPage({ onNavigate }) {
               fileName={activeReaderDoc.name}
               hubLinks={activeReaderDoc.hubLinks ?? []}
               onDocumentsClick={handleCloseReader}
-              onHubClick={(hubId) => navigate(`/knowledge/${hubId}`)}
+              onHubClick={(hubId) => handleNavigateToHub(hubId)}
             />
           ) : null}
         </AppHeader>
 
-        {!readerDoc && <KnowledgeTabBar />}
+        <KnowledgeTabBar />
 
         <main className="flex flex-1 flex-col overflow-hidden">
 
@@ -1423,6 +1479,13 @@ export default function DocumentsPage({ onNavigate }) {
               )}
             </PageHeader>
           </div>
+          )}
+
+          {!readerDoc && (
+            <DocumentsCategoryTabBar
+              value={filterCategory}
+              onChange={setFilterCategory}
+            />
           )}
 
           {/* Toolbar — hidden in reader view */}
@@ -1599,6 +1662,21 @@ export default function DocumentsPage({ onNavigate }) {
           {/* Content area */}
           <div className="flex min-h-0 flex-1 overflow-hidden">
             {readerDoc ? (
+              resolveSourceCategory(activeReaderDoc) === "dbs" ? (
+                <DatabaseDetailView
+                  record={activeReaderDoc}
+                  hubLinks={activeReaderDoc?.hubLinks ?? []}
+                  onClose={handleCloseReader}
+                  onNavigateToHub={handleNavigateToHub}
+                />
+              ) : resolveSourceCategory(activeReaderDoc) === "apis" ? (
+                <ApiDetailView
+                  record={activeReaderDoc}
+                  hubLinks={activeReaderDoc?.hubLinks ?? []}
+                  onClose={handleCloseReader}
+                  onNavigateToHub={handleNavigateToHub}
+                />
+              ) : (
               <DocumentReaderDrawer
                 file={activeReaderDoc}
                 hubLinks={activeReaderDoc?.hubLinks ?? []}
@@ -1606,7 +1684,7 @@ export default function DocumentsPage({ onNavigate }) {
                 canEdit={canEdit}
                 canCreate={canCreate}
                 onNotify={showToast}
-                onNavigateToHub={(hubId) => navigate(`/knowledge/${hubId}`)}
+                onNavigateToHub={handleNavigateToHub}
                 onLinkToHub={handleLinkDocToHub}
                 onLinkHubFileToHub={handleLinkHubFileToHub}
                 onUnlinkFromHub={handleUnlinkDocFromHub}
@@ -1621,6 +1699,7 @@ export default function DocumentsPage({ onNavigate }) {
                 }}
                 onClose={handleCloseReader}
               />
+              )
               ) : (
             <div
               className={cn(
@@ -1718,6 +1797,7 @@ export default function DocumentsPage({ onNavigate }) {
                     selectedKeys={selectedKeys}
                     highlightedIds={highlightIds}
                     canEdit={canEdit}
+                    metricColumnLabel={metricColumnLabel}
                     onToggleSelect={toggleSelect}
                     onOpen={handleOpenDoc}
                     onSyncFile={handleSyncFile}
