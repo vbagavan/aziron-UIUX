@@ -64,6 +64,7 @@ import { paginateSlice } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { CAPTION, DETAIL_TITLE, PAGE_SUBTITLE } from "@/lib/typography";
 
 const HUB_FILES_PAGE_SIZE = 20;
 
@@ -264,18 +265,13 @@ export function KnowledgeHubControlCenter({
   return (
     <div className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}>
       {/* ── Header ── */}
-      <header className="shrink-0 border-b border-border bg-card/50 px-5 py-4">
+      <header className="shrink-0 border-b border-border bg-muted/20 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold text-foreground">
+              <h1 className={cn(DETAIL_TITLE, "truncate")}>
                 {hubName.replace(/\s*\(Draft\)\s*$/i, "").trim()}
               </h1>
-              {/\(Draft\)\s*$/i.test(hubName) && (
-                <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300">
-                  Draft
-                </Badge>
-              )}
               <Badge
                 variant="outline"
                 className={cn("capitalize", STATUS_STYLES[metadata.status] ?? STATUS_STYLES.published)}
@@ -283,16 +279,70 @@ export function KnowledgeHubControlCenter({
                 {metadata.status}
               </Badge>
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              {hubDescription || "No description — add one to help agents and workflows understand this hub."}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>Owner: {metadata.owner?.name}</span>
-              <span>Created {metadata.createdAtLabel}</span>
-              <span>Modified {metadata.updatedAtLabel}</span>
+
+            {hubDescription ? (
+              <p className={cn(PAGE_SUBTITLE, "max-w-2xl")}>{hubDescription}</p>
+            ) : canEdit && onEditHub ? (
+              <p className={CAPTION}>
+                No description yet.{" "}
+                <button
+                  type="button"
+                  onClick={onEditHub}
+                  className="text-foreground underline-offset-2 hover:underline"
+                >
+                  Add description
+                </button>
+              </p>
+            ) : (
+              <p className={CAPTION}>No description yet.</p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => setActiveTab("documents")}
+                className="hover:text-foreground"
+              >
+                {summary.documents} document{summary.documents === 1 ? "" : "s"}
+              </button>
+              <span aria-hidden className="text-border">·</span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("agents")}
+                className="hover:text-foreground"
+              >
+                {summary.agents} agent{summary.agents === 1 ? "" : "s"}
+              </button>
+              <span aria-hidden className="text-border">·</span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("workflows")}
+                className="hover:text-foreground"
+              >
+                {summary.workflows} workflow{summary.workflows === 1 ? "" : "s"}
+              </button>
+              {summary.lastActivity ? (
+                <>
+                  <span aria-hidden className="text-border">·</span>
+                  <span>Active {summary.lastActivity}</span>
+                </>
+              ) : null}
             </div>
+
+            <p className={CAPTION}>
+              {metadata.owner?.name ?? "Unknown"}
+              <span aria-hidden className="mx-1.5 text-border">·</span>
+              <span title={`Modified ${metadata.updatedAtLabel}`}>
+                Updated {metadata.updatedAtRelative}
+              </span>
+              <span aria-hidden className="mx-1.5 text-border">·</span>
+              <span title={`Created ${metadata.createdAtLabel}`}>
+                Created {metadata.createdAtLabel}
+              </span>
+            </p>
+
             {metadata.tags?.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1">
                 {metadata.tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-[10px]">
                     {tag}
@@ -302,20 +352,20 @@ export function KnowledgeHubControlCenter({
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {canEdit && onEditHub ? (
-              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onEditHub}>
-                <Pencil className="size-3.5" />
-                Edit
-              </Button>
-            ) : null}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             {canEdit && onOpenSources ? (
               <Button type="button" size="sm" className="gap-1.5" onClick={onOpenSources}>
                 <Plus data-icon="inline-start" aria-hidden />
                 Add sources
               </Button>
             ) : null}
-            {canEdit && onPublish ? (
+            {canEdit && onEditHub ? (
+              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onEditHub}>
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            ) : null}
+            {canEdit && onPublish && metadata.status === "draft" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={

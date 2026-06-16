@@ -15,6 +15,10 @@ import {
   FileText,
   SortDesc,
   Trash2,
+  MoreHorizontal,
+  RefreshCw,
+  Unlink,
+  ExternalLink,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +61,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
@@ -65,11 +70,14 @@ import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
 import { FileSyncStatusIndicator } from "@/components/features/knowledge/FileSyncStatusIndicator";
+import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
+import { getFileSourceLabel } from "@/lib/fileSyncStatus";
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
 import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbnail";
 import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DocumentsHeaderBreadcrumb } from "@/components/features/documents/DocumentsHeaderBreadcrumb";
+import { KnowledgeTabBar } from "@/components/features/knowledge/KnowledgeTabBar";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
 import { Toast, useToast } from "@/components/ui/Toast";
@@ -426,17 +434,21 @@ function DocumentsListTable({
   onToggleSelect,
   onOpen,
   onSyncFile,
+  onUnlinkFromHub,
+  onRequestRemove,
 }) {
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {selectionMode ? <TableHead className="w-10" /> : null}
-          <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Hubs</TableHead>
           <TableHead className="hidden w-12 text-center sm:table-cell">Status</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead className="hidden sm:table-cell">Source</TableHead>
+          <TableHead className="hidden sm:table-cell">Hubs</TableHead>
           <TableHead className="hidden sm:table-cell">Type</TableHead>
           <TableHead className="hidden text-right sm:table-cell">Size</TableHead>
+          {!selectionMode ? <TableHead className="w-10 sm:table-cell" /> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -453,6 +465,8 @@ function DocumentsListTable({
             onOpen={onOpen}
             canEdit={canEdit}
             onSyncFile={onSyncFile}
+            onUnlinkFromHub={onUnlinkFromHub}
+            onRequestRemove={onRequestRemove}
           />
         ))}
       </TableBody>
@@ -460,15 +474,35 @@ function DocumentsListTable({
   );
 }
 
-function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighted, onToggleSelect, onOpen, canEdit, onSyncFile }) {
+function DocFileRow({
+  hubId,
+  file,
+  hubLinks,
+  selectionMode,
+  selected,
+  highlighted,
+  onToggleSelect,
+  onOpen,
+  canEdit,
+  onSyncFile,
+  onUnlinkFromHub,
+  onRequestRemove,
+}) {
   const cfg = getFileTypeConfig(file.type);
   const Icon = cfg.icon;
   const sizeLabel = formatFileSize(file.sizeKb);
   const displayName = getDocDisplayName(file);
+  const sourceLabel = getFileSourceLabel(file);
+  const isCloud = file.source === "cloud";
+  const hasHubActions = hubLinks?.length > 0;
 
   function handleActivate() {
     if (selectionMode) onToggleSelect(docKey(file));
     else onOpen?.(file);
+  }
+
+  function stopRowClick(e) {
+    e.stopPropagation();
   }
 
   return (
@@ -502,6 +536,19 @@ function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighte
         </TableCell>
       ) : null}
 
+      <TableCell className="hidden text-center sm:table-cell">
+        <div className="flex justify-center" onClick={stopRowClick}>
+          <FileSyncStatusIndicator
+            file={file}
+            fileName={displayName}
+            compact
+            iconOnly
+            canActivate={canEdit && isCloud}
+            onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
+          />
+        </div>
+      </TableCell>
+
       <TableCell>
         <div className="flex min-w-0 items-center gap-3">
           <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm ring-1 ring-border/60 sm:hidden", cfg.bg)}>
@@ -512,13 +559,14 @@ function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighte
               {truncateMiddle(displayName, 48)}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
+              <FileSourceBadge file={file} size="sm" />
               <HubLinksBadge hubLinks={hubLinks} />
               <FileSyncStatusIndicator
                 file={file}
                 fileName={displayName}
                 compact
                 iconOnly
-                canActivate={canEdit && file.source === "cloud"}
+                canActivate={canEdit && isCloud}
                 onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
               />
             </div>
@@ -527,20 +575,26 @@ function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighte
       </TableCell>
 
       <TableCell className="hidden sm:table-cell">
-        <HubLinksBadge hubLinks={hubLinks} />
+        <Tooltip>
+          <TooltipTrigger render={<span className="inline-flex" onClick={stopRowClick} />}>
+            <FileSourceBadge file={file} size="sm" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p className="font-medium">{sourceLabel}</p>
+            {file.connectionName ? (
+              <p className="text-muted-foreground">{file.connectionName}</p>
+            ) : null}
+            {isCloud ? (
+              <p className="mt-1 text-muted-foreground">
+                Use row actions to sync or reload from cloud storage.
+              </p>
+            ) : null}
+          </TooltipContent>
+        </Tooltip>
       </TableCell>
 
-      <TableCell className="hidden text-center sm:table-cell">
-        <div className="flex justify-center">
-          <FileSyncStatusIndicator
-            file={file}
-            fileName={displayName}
-            compact
-            iconOnly
-            canActivate={canEdit && file.source === "cloud"}
-            onActivate={onSyncFile ? () => onSyncFile(file) : undefined}
-          />
-        </div>
+      <TableCell className="hidden sm:table-cell">
+        <HubLinksBadge hubLinks={hubLinks} />
       </TableCell>
 
       <TableCell className="hidden text-muted-foreground sm:table-cell">{cfg.label}</TableCell>
@@ -548,6 +602,63 @@ function DocFileRow({ hubId, file, hubLinks, selectionMode, selected, highlighte
       <TableCell className="hidden text-right text-muted-foreground sm:table-cell">
         {sizeLabel ?? "—"}
       </TableCell>
+
+      {!selectionMode ? (
+        <TableCell className="w-10 p-0 text-right" onClick={stopRowClick}>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
+                  aria-label={`Actions for ${displayName}`}
+                />
+              }
+            >
+              <MoreHorizontal className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => onOpen?.(file)}>
+                  <ExternalLink data-icon="inline-start" aria-hidden />
+                  Open in reader
+                </DropdownMenuItem>
+                {canEdit && isCloud && onSyncFile ? (
+                  <DropdownMenuItem onClick={() => onSyncFile(file)}>
+                    <RefreshCw data-icon="inline-start" aria-hidden />
+                    Sync from cloud
+                  </DropdownMenuItem>
+                ) : null}
+                {canEdit && file.isLibraryDocument && hasHubActions
+                  ? hubLinks.map((link) => (
+                      <DropdownMenuItem
+                        key={link.hubId}
+                        onClick={() => onUnlinkFromHub?.(file.id, link.hubId)}
+                      >
+                        <Unlink data-icon="inline-start" aria-hidden />
+                        Unlink from {link.hubName}
+                      </DropdownMenuItem>
+                    ))
+                  : null}
+                {canEdit && onRequestRemove ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => onRequestRemove(file)}
+                    >
+                      <Trash2 data-icon="inline-start" aria-hidden />
+                      {file.isLibraryDocument ? "Remove from library" : "Remove from hub"}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      ) : null}
     </TableRow>
   );
 }
@@ -1147,6 +1258,16 @@ export default function DocumentsPage({ onNavigate }) {
     }
   }
 
+  function requestRemoveDoc(doc) {
+    if (!canEdit || !doc) return;
+    const name = getDocDisplayName(doc);
+    if (doc.isLibraryDocument) {
+      setRemoveConfirm({ mode: "single-library", documentId: doc.id, name });
+    } else {
+      setRemoveConfirm({ mode: "single-hub", hubId: doc.hubId, fileId: doc.id, name });
+    }
+  }
+
   function executeRemoveConfirm() {
     if (!removeConfirm) return;
 
@@ -1282,6 +1403,8 @@ export default function DocumentsPage({ onNavigate }) {
             />
           ) : null}
         </AppHeader>
+
+        {!readerDoc && <KnowledgeTabBar />}
 
         <main className="flex flex-1 flex-col overflow-hidden">
 
@@ -1598,6 +1721,8 @@ export default function DocumentsPage({ onNavigate }) {
                     onToggleSelect={toggleSelect}
                     onOpen={handleOpenDoc}
                     onSyncFile={handleSyncFile}
+                    onUnlinkFromHub={handleUnlinkDocFromHub}
+                    onRequestRemove={requestRemoveDoc}
                   />
                   <DocsTablePagination
                     page={docsPagination.currentPage}

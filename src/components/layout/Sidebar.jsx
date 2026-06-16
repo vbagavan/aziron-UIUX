@@ -66,23 +66,9 @@ const navGroups = [
       {
         icon: BookOpen,
         label: KNOWLEDGE_TERMS.sidebarGroup,
-        page: "knowledge-research",
-        activeFor: ["knowledge", "documents"],
+        page: "knowledge",
+        activeFor: ["documents"],
         roles: ["superadmin", "tenantadmin", "tenantuser"],
-        subItems: [
-          {
-            icon: Layers,
-            label: KNOWLEDGE_TERMS.hubs,
-            page: "knowledge",
-            description: KNOWLEDGE_TERMS.hubsDescription,
-          },
-          {
-            icon: Files,
-            label: KNOWLEDGE_TERMS.documents,
-            page: "documents",
-            description: KNOWLEDGE_TERMS.documentsDescription,
-          },
-        ],
       },
       { icon: Store,     label: "Marketplace",    page: "marketplace", roles: ["superadmin", "tenantadmin", "tenantuser"] },
       { icon: Vault,     label: "Vault",           page: "vault",       roles: ["superadmin", "tenantadmin", "tenantuser"] },

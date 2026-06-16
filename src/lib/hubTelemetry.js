@@ -381,6 +381,7 @@ export function getHubTelemetry(hub, { agents = [], flows = [], allFiles = [] } 
       lastActivityAt,
       createdAtLabel: formatDisplayDateTime(createdAt),
       updatedAtLabel: formatDisplayDateTime(updatedAt),
+      updatedAtRelative: relativeTimeFrom(updatedAt),
       lastAccessLabel: formatDisplayDateTime(lastAccessedAt),
       lastActivityLabel: formatDisplayDateTime(lastActivityAt),
       lastAccessRelative: relativeTimeFrom(lastAccessedAt),

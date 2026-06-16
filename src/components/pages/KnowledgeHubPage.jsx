@@ -48,6 +48,7 @@ import { formatDisplayDate } from "@/data/knowledgeHubs";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubDetailView } from "@/components/features/knowledge/KnowledgeHubDetailView";
 import { KnowledgeHubHeaderBreadcrumb } from "@/components/features/knowledge/KnowledgeHubHeaderBreadcrumb";
+import { KnowledgeTabBar } from "@/components/features/knowledge/KnowledgeTabBar";
 import { paginateSlice } from "@/lib/pagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAgents } from "@/context/AgentsContext";
@@ -669,6 +670,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
             />
           ) : null}
         </AppHeader>
+
+        {!detailHub && <KnowledgeTabBar />}
 
         <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
           {detailHub ? (

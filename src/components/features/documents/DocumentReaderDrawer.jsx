@@ -16,11 +16,8 @@ import {
   Check,
   RotateCcw,
   Network,
-  HelpCircle,
   Layers,
   ClipboardList,
-  GitCompare,
-  BarChart3,
   FileSpreadsheet,
   Database,
   ExternalLink,
@@ -696,11 +693,8 @@ function generateFallbackChapters(file) {
 const STUDIO_TOOLS = [
   { id: "summary",     label: "Summary",     icon: FileText,        bg: "bg-primary/10 text-primary" },
   { id: "mindmap",     label: "Mind Map",    icon: Network,         bg: "bg-chart-chart-4/15 text-chart-chart-4" },
-  { id: "quiz",        label: "Quiz",        icon: HelpCircle,      bg: "bg-info/10 text-info" },
   { id: "flashcards",  label: "Flashcards",  icon: Layers,          bg: "bg-warning/10 text-warning" },
   { id: "report",      label: "Report",      icon: ClipboardList,   bg: "bg-success/10 text-success" },
-  { id: "compare",     label: "Compare",     icon: GitCompare,      bg: "bg-chart-chart-5/15 text-chart-chart-5" },
-  { id: "infographic", label: "Infographic", icon: BarChart3,       bg: "bg-chart-chart-1/15 text-chart-chart-1" },
   { id: "datatable",   label: "Data Table",  icon: FileSpreadsheet, bg: "bg-chart-chart-3/15 text-chart-chart-3" },
 ];
 
@@ -712,9 +706,6 @@ function generateChapterStudioContent(toolId, fileName, chapter) {
     case "summary":
       return `# Summary — ${title}\n\n**Source:** ${fileBase}\n\n## Overview\n${chapter?.summary ?? ""}\n\n## Key Points\n- ${(chapter?.body ?? "").split("\n\n").slice(0, 3).map(p => p.slice(0, 80).trim()).join("\n- ")}\n\n## Conclusion\nThis chapter provides foundational context for the broader document. Cross-reference with adjacent chapters for complete coverage.`;
 
-    case "quiz":
-      return `# Quiz — ${title}\n\n**Source:** ${fileBase}\n\n---\n\n**Q1.** What is the primary subject of this chapter?\n- A) Administrative procedures\n- B) ${title} ✓\n- C) Historical background\n- D) Technical specifications\n\n---\n\n**Q2.** Which statement best summarises this chapter?\n- A) It provides an unrelated overview\n- B) It introduces contradictory ideas\n- C) ${(chapter?.summary ?? "").slice(0, 90)}… ✓\n- D) None of the above\n\n---\n\n**Q3.** True or False: The content in this chapter stands alone without reference to the rest of the document.\n- **False** ✓ — It builds on the document's core narrative.`;
-
     case "flashcards":
       return `# Flashcards — ${title}\n\n**Source:** ${fileBase}\n\n---\n\n**Card 1**\nQ: What is the main topic of "${title}"?\nA: ${(chapter?.summary ?? "").slice(0, 100)}\n\n---\n\n**Card 2**\nQ: How many chapters does this document contain?\nA: Multiple chapters covering progressive depth on the subject.\n\n---\n\n**Card 3**\nQ: What action or knowledge does this chapter aim to convey?\nA: Understanding of ${title.toLowerCase()} and its implications for the overall subject matter.`;
 
@@ -723,12 +714,6 @@ function generateChapterStudioContent(toolId, fileName, chapter) {
 
     case "report":
       return `# Report — ${title}\n\n**Source:** ${fileBase}  \n**Generated:** ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}\n\n## Executive Summary\n${chapter?.summary ?? ""}\n\n## Findings\n\n### Section Analysis\nThe chapter presents its material in a structured manner, progressing from foundational concepts to practical implications. The narrative is internally consistent and references the document's broader thesis.\n\n### Depth of Coverage\n- Conceptual clarity: **High**\n- Practical application: **Medium**\n- Cross-references: **Low** (self-contained)\n\n## Recommendations\n1. Pair with Chapter ${(chapter?.num ?? 1) + 1} for sequential understanding.\n2. Use the summary as a quick-reference card.\n3. Review open questions before moving forward.`;
-
-    case "compare":
-      return `# Compare — ${title} vs Adjacent Chapters\n\n**Source:** ${fileBase}\n\n| Dimension | This Chapter | Previous | Next |\n|-----------|-------------|----------|------|\n| Scope | Focused | Broader | Deeper |\n| Complexity | Medium | Lower | Higher |\n| Dependencies | None | — | This chapter |\n| Key Concept | ${title} | Foundation | Application |\n\n## Analysis\nThis chapter occupies the middle ground in the document's pedagogical arc — it builds on foundational concepts from earlier sections while preparing the reader for more complex material ahead.`;
-
-    case "infographic":
-      return `# Infographic Script — ${title}\n\n**Source:** ${fileBase}\n\n## Visual Structure\n\n[HEADER BLOCK]\nTitle: ${title}\nSubtitle: From ${fileBase}\n\n[STAT CALLOUTS]\n• ${chapter?.readMins ?? 3} min read\n• ${(chapter?.body ?? "").split(" ").length} words\n• ${(chapter?.body ?? "").split("\n\n").length} sections\n\n[FLOW DIAGRAM]\n1. Introduction → 2. Core Concept → 3. Detail → 4. Implication → 5. Takeaway\n\n[KEY QUOTE]\n"${(chapter?.body ?? "").split(".")[0].trim()}."\n\n[FOOTER]\nSource: ${fileBase} · Chapter ${chapter?.num}`;
 
     case "datatable":
       return `# Data Table — ${title}\n\n**Source:** ${fileBase}\n\n| Field | Value |\n|-------|-------|\n| Chapter | ${chapter?.num ?? 1} |\n| Title | ${title} |\n| Reading Time | ${chapter?.readMins ?? 3} min |\n| Word Count | ~${(chapter?.body ?? "").split(" ").length} |\n| Paragraphs | ${(chapter?.body ?? "").split("\n\n").length} |\n| Source File | ${fileName ?? "Unknown"} |\n| Summary Length | ${(chapter?.summary ?? "").split(" ").length} words |\n\n## Extracted Entities\n| Type | Value |\n|------|-------|\n| Topic | ${title} |\n| Document | ${fileBase} |\n| Context | Chapter ${chapter?.num} of document |`;
