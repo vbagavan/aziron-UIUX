@@ -74,6 +74,17 @@ import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolb
 import { getHubDisplayName, isHubDraft } from "@/lib/hubDisplay";
 
 const HUB_LIST_PAGE_SIZE = 20;
+const HUB_VIEW_KEY = "knowledge_hubs_view_mode";
+
+function loadSavedHubViewMode() {
+  try {
+    const saved = localStorage.getItem(HUB_VIEW_KEY);
+    if (saved === "table" || saved === "grid") return saved;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 /** Table footer pagination — matches InsuranceManagementPage / shadcn Pagination. */
 function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageChange }) {
@@ -164,54 +175,66 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {hubs.map((hub, i) => {
         const accent = HUB_TAG_COLORS[i % HUB_TAG_COLORS.length];
+        const displayName = getHubDisplayName(hub);
         return (
-          <button
+          <div
             key={hub.id}
-            type="button"
-            onClick={() => onOpenHub(hub.id)}
-            className="group relative flex flex-col rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+            className="group relative rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
           >
-            <div className={cn("mb-3 flex size-10 items-center justify-center rounded-lg", accent)}>
-              <Database className="size-5" aria-hidden />
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="truncate text-sm font-semibold text-foreground">{getHubDisplayName(hub)}</p>
-              {isHubDraft(hub) && (
-                <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenHub(hub.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOpenHub(hub.id);
+                }
+              }}
+              className="flex cursor-pointer flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card rounded-xl"
+            >
+              <div className={cn("mb-3 flex size-10 items-center justify-center rounded-lg", accent)}>
+                <Database className="size-5" aria-hidden />
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+                {isHubDraft(hub) && (
+                  <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
+                )}
+              </div>
+              {hub.description && (
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground" title={hub.description}>{hub.description}</p>
               )}
-            </div>
-            {hub.description && (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground" title={hub.description}>{hub.description}</p>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <FileText className="size-3" />
-                {hub.files ?? 0} files
-              </span>
-              <span className="flex items-center gap-1">
-                <Bot className="size-3" />
-                {hub.usedBy ?? 0} agents
-              </span>
-              <span>{hub.storageMB ?? 0} MB</span>
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <FileText className="size-3" />
+                  {hub.files ?? 0} files
+                </span>
+                <span className="flex items-center gap-1">
+                  <Bot className="size-3" />
+                  {hub.usedBy ?? 0} agents
+                </span>
+                <span>{hub.storageMB ?? 0} MB</span>
+              </div>
             </div>
             {canDelete && (
               <button
                 type="button"
-                aria-label={`Delete ${hub.name}`}
-                onClick={(e) => { e.stopPropagation(); onDeleteRequest(hub); }}
-                className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-60 transition-all hover:bg-muted hover:opacity-100 group-hover:opacity-100"
+                aria-label={`Delete ${displayName}`}
+                onClick={() => onDeleteRequest(hub)}
+                className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-60 transition-all hover:bg-muted hover:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <Trash2 className="size-3.5" />
               </button>
             )}
-          </button>
+          </div>
         );
       })}
     </div>
   );
 }
 
-function EmptyState({ onAdd, onBrowseDocuments }) {
+function EmptyState({ onQuickCreate, onFullCreate, onBrowseDocuments }) {
   return (
     <div className="flex min-h-[400px] flex-1 flex-col items-center justify-center gap-3 py-16">
       <svg width="130" height="123" viewBox="0 0 130 123" fill="none" aria-hidden="true">
@@ -232,16 +255,21 @@ function EmptyState({ onAdd, onBrowseDocuments }) {
         and workflows. Or upload to {KNOWLEDGE_TERMS.documents.toLowerCase()} and link later.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {onAdd ? (
-          <Button size="sm" onClick={onAdd} className="gap-1.5">
+        {onQuickCreate ? (
+          <Button size="sm" onClick={onQuickCreate} className="gap-1.5">
             <Plus size={16} />
-            Add {KNOWLEDGE_TERMS.hubSingular}
+            Create {KNOWLEDGE_TERMS.hubSingular.toLowerCase()}
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
             You have view-only access to {KNOWLEDGE_TERMS.hubs.toLowerCase()}.
           </p>
         )}
+        {onFullCreate ? (
+          <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onFullCreate}>
+            Create with sources
+          </Button>
+        ) : null}
         {onBrowseDocuments ? (
           <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onBrowseDocuments}>
             Go to {KNOWLEDGE_TERMS.documents}
@@ -412,7 +440,25 @@ export default function KnowledgeHubPage({
     libraryFileName: null,
   });
   const [hubNavRequest, setHubNavRequest] = useState(null);
-  const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
+  const [viewMode, setViewMode] = useState(() => loadSavedHubViewMode() ?? "table"); // "table" | "grid"
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HUB_VIEW_KEY, viewMode);
+    } catch {
+      /* ignore */
+    }
+  }, [viewMode]);
+
+  function openQuickCreate() {
+    setCreateMode("quick");
+    setCreateOpen(true);
+  }
+
+  function openFullCreate() {
+    setCreateMode("full");
+    setCreateOpen(true);
+  }
 
   const detailHub = hubId ? getHubById(hubId) : null;
 
@@ -797,23 +843,17 @@ export default function KnowledgeHubPage({
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => {
-                            setCreateMode("quick");
-                            setCreateOpen(true);
-                          }}
+                          onClick={openFullCreate}
                           className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
                         >
-                          Quick create
+                          Create with sources
                         </Button>
                         <Button
-                          onClick={() => {
-                            setCreateMode("full");
-                            setCreateOpen(true);
-                          }}
+                          onClick={openQuickCreate}
                           className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
                         >
                           <Plus size={16} />
-                          Add Knowledge Hub
+                          Create {KNOWLEDGE_TERMS.hubSingular.toLowerCase()}
                         </Button>
                       </>
                     )}
@@ -838,7 +878,8 @@ export default function KnowledgeHubPage({
 
                 {isEmpty ? (
                   <EmptyState
-                    onAdd={canCreate ? () => setCreateOpen(true) : undefined}
+                    onQuickCreate={canCreate ? openQuickCreate : undefined}
+                    onFullCreate={canCreate ? openFullCreate : undefined}
                     onBrowseDocuments={() => openDocumentsTab()}
                   />
                 ) : filteredSorted.length === 0 ? (

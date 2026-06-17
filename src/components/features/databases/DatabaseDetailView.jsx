@@ -526,7 +526,7 @@ export function DatabaseDetailView({
                 <SchemaTab detail={detail} />
               </TabsContent>
               <TabsContent value="usage" className="mt-0">
-                <SourceUsageTab usage={detail.usage} />
+                <SourceUsageTab usage={detail.usage} hubLinks={hubLinks} />
               </TabsContent>
               <TabsContent value="query" className="mt-0">
                 <QueryStudioTab detail={detail} />

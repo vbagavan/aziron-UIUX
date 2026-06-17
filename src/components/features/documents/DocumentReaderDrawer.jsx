@@ -42,7 +42,11 @@ import { useDocumentContentCapture } from "@/components/features/documents/useDo
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
 import { formatDisplayDate } from "@/data/knowledgeHubs";
 import { cn } from "@/lib/utils";
-import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
+import { LinkedKnowledgeHubSection } from "@/components/features/knowledge/LinkedKnowledgeHubSection";
+import {
+  getSourceDetailRows,
+  getSourceDetailsTitle,
+} from "@/lib/sourceListModel";
 import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePreviewViewer";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -1328,147 +1332,42 @@ function DetailsTab({
   canEdit = true,
   canCreate = true,
 }) {
-  const cfg = getFileTypeConfig(file?.type);
-  const linkedHubIds = new Set(hubLinks.map((l) => Number(l.hubId)));
-  const availableHubs = hubs.filter((h) => !linkedHubIds.has(Number(h.id)));
-  const allHubsLinked = hubs.length > 0 && availableHubs.length === 0;
+  const detailRows = getSourceDetailRows(file ?? {});
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto">
       <div className="px-4 py-4">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Document details
+          {getSourceDetailsTitle(file ?? {})}
         </p>
         <dl className="space-y-2 text-xs">
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">Type</dt>
-            <dd className="font-medium text-foreground">{cfg.label}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">Size</dt>
-            <dd className="font-medium text-foreground">{formatFileSize(file?.sizeKb)}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted-foreground">Source</dt>
-            <dd className="flex items-center gap-1 font-medium text-foreground">
-              {file?.source === "cloud" ? (
-                <>
-                  <Cloud className="size-3" /> Cloud
-                </>
-              ) : (
-                <>
-                  <HardDrive className="size-3" /> Local
-                </>
-              )}
-            </dd>
-          </div>
-          {file?.uploadedAt && (
-            <div className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">Uploaded</dt>
-              <dd className="font-medium text-foreground">
-                {formatDisplayDate(file.uploadedAt) ?? file.uploadedAt}
+          {detailRows.map(({ label, value }) => (
+            <div key={label} className="flex justify-between gap-2">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="max-w-[58%] truncate text-right font-medium text-foreground" title={String(value)}>
+                {value}
               </dd>
             </div>
-          )}
+          ))}
         </dl>
       </div>
 
       <div className="mx-4 h-px bg-border" />
 
-      <div className="px-4 py-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Linked Knowledge Hubs
-          </p>
-          <KnowledgeHubSearchPicker
-            hubs={availableHubs}
-            align="end"
-            emptyHint={
-              allHubsLinked
-                ? "This document is already linked to all your Knowledge Hubs."
-                : undefined
-            }
-            onSelect={(hub) => {
-              if (file?.isLibraryDocument) {
-                onLinkToHub?.(file.id, hub.id);
-              } else {
-                onLinkHubFileToHub?.(file.hubId, file.id, hub.id);
-              }
-            }}
-            onRequestCreate={canCreate ? onCreateHub : undefined}
-            renderTrigger={({ toggle }) => (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 px-2 text-[11px]"
-                onClick={toggle}
-                disabled={!canEdit || allHubsLinked}
-              >
-                <Plus className="size-3" />
-                Add to hub
-                <ChevronDown className="size-3 opacity-60" />
-              </Button>
-            )}
-          />
-        </div>
-
-        {hubLinks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-            This document is not linked to any Knowledge Hub yet. Add it to a hub when you want
-            agents to use it for retrieval.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {hubLinks.map((link) => (
-              <li
-                key={`${link.hubId}-${link.hubFileId}`}
-                className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2"
-              >
-                <Database className="size-3.5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">{link.hubName}</p>
-                  <p className="text-[10px] text-muted-foreground">Knowledge Hub</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    title="Open hub"
-                    onClick={() => onNavigateToHub?.(link.hubId)}
-                  >
-                    <ExternalLink className="size-3.5" />
-                  </Button>
-                  {file?.isLibraryDocument ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      title="Remove from hub"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => onUnlinkFromHub?.(file.id, link.hubId)}
-                    >
-                      <Unlink className="size-3.5" />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      title="Remove from hub"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveHubFile?.(file.hubId, file.id)}
-                    >
-                      <Unlink className="size-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <LinkedKnowledgeHubSection
+        record={file}
+        hubLinks={hubLinks}
+        hubs={hubs}
+        canEdit={canEdit}
+        canCreate={canCreate}
+        hubIcon={FileText}
+        onNavigateToHub={onNavigateToHub}
+        onLinkToHub={onLinkToHub}
+        onLinkHubFileToHub={onLinkHubFileToHub}
+        onUnlinkFromHub={onUnlinkFromHub}
+        onRemoveHubFile={onRemoveHubFile}
+        onCreateHub={onCreateHub}
+      />
 
       {!file?.isLibraryDocument && hubLinks.length > 0 ? (
         <p className="mx-4 mb-4 rounded-lg border border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">

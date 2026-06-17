@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const TAB_BUTTON_CLASS =
@@ -20,6 +21,44 @@ export function PageUnderlineTabs({
   className,
   listClassName,
 }) {
+  const tabRefs = useRef([]);
+
+  const focusTabAt = useCallback(
+    (index) => {
+      const tab = tabs[index];
+      if (!tab) return;
+      onValueChange?.(tab.id);
+      tabRefs.current[index]?.focus();
+    },
+    [onValueChange, tabs],
+  );
+
+  const handleKeyDown = useCallback(
+    (event, index) => {
+      if (!tabs.length) return;
+
+      let nextIndex = index;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        nextIndex = (index + 1) % tabs.length;
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        event.preventDefault();
+        nextIndex = tabs.length - 1;
+      } else {
+        return;
+      }
+
+      focusTabAt(nextIndex);
+    },
+    [focusTabAt, tabs.length],
+  );
+
   return (
     <div
       className={cn(
@@ -32,13 +71,16 @@ export function PageUnderlineTabs({
         aria-label={ariaLabel}
         className={cn("flex h-10 w-max min-w-0 items-stretch", listClassName)}
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const active = value === tab.id;
           const Icon = tab.icon;
           const panelId = panelIdForTab(panelIdPrefix, tab.id);
           return (
             <button
               key={tab.id}
+              ref={(node) => {
+                tabRefs.current[index] = node;
+              }}
               type="button"
               role="tab"
               id={panelId ? `${panelIdPrefix}-tab-${tab.id}` : undefined}
@@ -46,6 +88,7 @@ export function PageUnderlineTabs({
               aria-controls={panelId}
               tabIndex={active ? 0 : -1}
               onClick={() => onValueChange?.(tab.id)}
+              onKeyDown={(event) => handleKeyDown(event, index)}
               className={cn(
                 TAB_BUTTON_CLASS,
                 active

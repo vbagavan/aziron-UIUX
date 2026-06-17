@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { normalizeSourceUsage } from "@/lib/sourceUsageModel";
+import { mergeSourceUsage } from "@/lib/sourceListModel";
 
 const USAGE_TABS = [
   { id: "hubs", label: "Knowledge Hubs", icon: Layers },
@@ -50,10 +51,11 @@ function EmptyUsageState({ icon: Icon, title, description, actionLabel, onAction
   );
 }
 
-export function SourceUsageTab({ usage }) {
+export function SourceUsageTab({ usage, hubLinks = [] }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("hubs");
-  const { hubs, agents, flows } = normalizeSourceUsage(usage);
+  const { hubs, agents, flows } = normalizeSourceUsage(mergeSourceUsage({ usage, hubLinks }));
+  const liveHubLinks = hubLinks?.length > 0;
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col gap-0">
@@ -87,9 +89,9 @@ export function SourceUsageTab({ usage }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Knowledge Hub</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Linked assets</TableHead>
-                  <TableHead>Last accessed</TableHead>
+                  {!liveHubLinks ? <TableHead>Status</TableHead> : null}
+                  {!liveHubLinks ? <TableHead className="text-right">Linked assets</TableHead> : null}
+                  {!liveHubLinks ? <TableHead>Last accessed</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,16 +101,20 @@ export function SourceUsageTab({ usage }) {
                       <button
                         type="button"
                         className="font-medium hover:underline"
-                        onClick={() => navigate("/knowledge")}
+                        onClick={() => navigate(hub.hubId ? `/knowledge/${hub.hubId}` : "/knowledge")}
                       >
                         {hub.name}
                       </button>
                     </TableCell>
-                    <TableCell>
-                      <StatusBadge status={hub.status} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{hub.linkedAssets}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{hub.lastAccessed}</TableCell>
+                    {!liveHubLinks ? (
+                      <>
+                        <TableCell>
+                          <StatusBadge status={hub.status} />
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{hub.linkedAssets}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{hub.lastAccessed}</TableCell>
+                      </>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>

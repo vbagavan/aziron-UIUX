@@ -605,7 +605,7 @@ export function ApiDetailView({
                 />
               </TabsContent>
               <TabsContent value="usage" className="mt-0">
-                <SourceUsageTab usage={detail.usage} />
+                <SourceUsageTab usage={detail.usage} hubLinks={hubLinks} />
               </TabsContent>
               <TabsContent value="playground" className="mt-0">
                 <PlaygroundTab

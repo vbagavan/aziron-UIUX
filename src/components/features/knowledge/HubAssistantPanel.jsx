@@ -26,10 +26,9 @@ export const HUB_ASSISTANT_PANEL_TABS = [
   { id: "ask", label: "Ask AI" },
   { id: "studio", label: "Studio" },
   { id: "notes", label: "Notes" },
-  { id: "details", label: "Details" },
 ];
 
-function loadHubNotes(hubId) {
+export function loadHubNotes(hubId) {
   try {
     const raw = localStorage.getItem(`hub-notes-${hubId}`);
     return raw ? JSON.parse(raw) : [];
@@ -292,7 +291,7 @@ function HubAskTab({
   );
 }
 
-function HubStudioTab({ hubName, allFiles, onSaveAsNote }) {
+export function HubStudioTab({ hubName, allFiles, onSaveAsNote }) {
   const [activeTool, setActiveTool] = useState(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -664,7 +663,7 @@ export function HubAssistantPanel({
         />
       ) : activeTab === "studio" ? (
         <HubStudioTab hubName={hubName} allFiles={allFiles} onSaveAsNote={handleSaveStudioAsNote} />
-      ) : activeTab === "notes" ? (
+      ) : (
         <HubNotesPanel
           hubId={hubId}
           notes={notes}
@@ -673,17 +672,6 @@ export function HubAssistantPanel({
           onDeleteNote={handleDeleteNote}
           pendingQuote={pendingQuote}
           onClearPendingQuote={() => setPendingQuote(null)}
-        />
-      ) : (
-        <HubDetailsTab
-          hubName={hubName}
-          hubDescription={hubDescription}
-          metadata={metadata}
-          summary={summary}
-          linkedAgents={linkedAgents}
-          linkedWorkflows={linkedWorkflows}
-          onEditHub={onEditHub}
-          canEdit={canEdit}
         />
       )}
     </div>

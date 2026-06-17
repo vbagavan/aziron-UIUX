@@ -5,7 +5,9 @@ export const KNOWLEDGE_TERMS = {
   hubSingular: "Knowledge Hub",
   documents: "Documents",
   /** Hub control center tab — distinct from top-level Documents library tab. */
-  hubSourcesTab: "Sources in hub",
+  hubSourcesTab: "Hub sources",
+  /** Hub control center tab for AI-generated summaries, notes, and studio outputs. */
+  hubGeneratedAssetsTab: "Generated assets",
   libraryView: "Library",
   controlCenter: "Control Center",
   knowledgeHelpLabel: "Knowledge help",
@@ -13,8 +15,12 @@ export const KNOWLEDGE_TERMS = {
   documentsDescription: "Central file library",
   hubsDescription: "Curated collections for agents",
   documentsPageDescription:
-    "Upload once, link to any hub. Files added directly to a hub also appear here.",
+    "Upload once, link to hubs. Files can belong to multiple hubs; each database or API belongs to one hub only.",
   documentsLearnMore: "How linking works",
+  /** Shown when a library source has no hub links. */
+  sourceNotLinked: "Not linked",
+  singleHubSourceRule:
+    "Files can link to multiple Knowledge Hubs. Each database and API belongs to one hub only.",
   addSources: "Add sources",
   fromComputer: "From your computer",
   fromCloudStorage: "From cloud storage",

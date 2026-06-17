@@ -74,6 +74,9 @@ function LanguageSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
+        aria-label={`Select language, currently ${selected.label}`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
         className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
       >
         <span className="text-base leading-none">{selected.flag}</span>
@@ -179,14 +182,16 @@ export default function AppHeader({
 
           <button
             onClick={toggleNotifications}
-            aria-label="Open notifications"
+            aria-label={hasBadge ? `Open notifications, ${pendingKudos} pending` : "Open notifications"}
             className="relative flex items-center justify-center size-8 rounded-full text-muted-foreground hover:bg-muted transition-colors"
           >
             <Bell size={16} aria-hidden />
-            <span className="absolute top-[7px] right-[7px] size-[7px] bg-destructive rounded-full border border-background" />
-            {hasBadge && (
-              <span className="absolute top-[5px] right-[5px] size-[11px] rounded-full bg-destructive/40 animate-ping" />
-            )}
+            {hasBadge ? (
+              <>
+                <span className="absolute top-[7px] right-[7px] size-[7px] bg-destructive rounded-full border border-background" />
+                <span className="absolute top-[5px] right-[5px] size-[11px] rounded-full bg-destructive/40 animate-ping" />
+              </>
+            ) : null}
           </button>
         </div>
       </header>

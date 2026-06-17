@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -183,8 +182,8 @@ export function ShareHubDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
           <DialogTitle>Share {hub?.name ?? "hub"}</DialogTitle>
           <DialogDescription>
             Sharing happens at the hub level. Anyone you add can access every source
@@ -192,143 +191,142 @@ export function ShareHubDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Principal type switch */}
-        <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
-          {PRINCIPAL_TABS.map(({ id, label, icon }) => {
-            const Icon = icon;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setTab(id);
-                  setQuery("");
-                }}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-                  tab === id
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="size-3.5" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Selected chips */}
-        {selected.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {selected.map((s, i) => (
-              <span
-                key={`${s.name}-${i}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 py-0.5 pl-1 pr-1.5 text-xs"
-              >
-                <PrincipalIcon type={s.principalType} name={s.name} />
-                <span className="max-w-[140px] truncate font-medium">{s.name}</span>
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
+            {PRINCIPAL_TABS.map(({ id, label, icon }) => {
+              const Icon = icon;
+              return (
                 <button
+                  key={id}
                   type="button"
-                  onClick={() => removePrincipal(s)}
-                  className="text-muted-foreground hover:text-foreground"
-                  aria-label={`Remove ${s.name}`}
+                  onClick={() => {
+                    setTab(id);
+                    setQuery("");
+                  }}
+                  className={cn(
+                    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                    tab === id
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
                 >
-                  <X className="size-3" />
+                  <Icon className="size-3.5" />
+                  {label}
                 </button>
-              </span>
-            ))}
+              );
+            })}
           </div>
-        ) : null}
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${PRINCIPAL_TABS.find((t) => t.id === tab)?.label.toLowerCase()}…`}
-            className="h-9 pl-8"
-          />
-        </div>
-
-        {/* Results */}
-        <div className="max-h-52 min-h-[6rem] overflow-y-auto rounded-lg border border-border">
-          {results.length === 0 ? (
-            <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-              No matches. Everyone found is already a member.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {results.map((entry) => (
-                <li key={entry.email ?? entry.name}>
+          {selected.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {selected.map((s, i) => (
+                <span
+                  key={`${s.name}-${i}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 py-0.5 pl-1 pr-1.5 text-xs"
+                >
+                  <PrincipalIcon type={s.principalType} name={s.name} />
+                  <span className="max-w-[140px] truncate font-medium">{s.name}</span>
                   <button
                     type="button"
-                    onClick={() => addPrincipal(entry)}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                    onClick={() => removePrincipal(s)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label={`Remove ${s.name}`}
                   >
-                    <PrincipalIcon type={entry.principalType} name={entry.name} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{entry.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {entry.principalType === "user"
-                          ? entry.email
-                          : `${entry.memberCount} member${entry.memberCount === 1 ? "" : "s"}`}
-                      </span>
-                    </span>
-                    <Check className="size-4 shrink-0 text-muted-foreground opacity-0" />
+                    <X className="size-3" />
                   </button>
-                </li>
+                </span>
               ))}
-            </ul>
-          )}
+            </div>
+          ) : null}
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search ${PRINCIPAL_TABS.find((t) => t.id === tab)?.label.toLowerCase()}…`}
+              className="h-9 pl-8"
+            />
+          </div>
+
+          <div className="min-h-[8rem] overflow-y-auto rounded-lg border border-border">
+            {results.length === 0 ? (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                No matches. Everyone found is already a member.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {results.map((entry) => (
+                  <li key={entry.email ?? entry.name}>
+                    <button
+                      type="button"
+                      onClick={() => addPrincipal(entry)}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <PrincipalIcon type={entry.principalType} name={entry.name} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{entry.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {entry.principalType === "user"
+                            ? entry.email
+                            : `${entry.memberCount} member${entry.memberCount === 1 ? "" : "s"}`}
+                        </span>
+                      </span>
+                      <Check className="size-4 shrink-0 text-muted-foreground opacity-0" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Role</span>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="h-8 w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ASSIGNABLE_HUB_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {HUB_ROLE_META[r].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            {onManageMembers ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  handleClose(false);
-                  onManageMembers();
-                }}
-              >
-                <Settings2 className="size-3.5" />
-                Manage members
+        <div className="shrink-0 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Role</span>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="h-8 w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ASSIGNABLE_HUB_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {HUB_ROLE_META[r].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 sm:justify-end">
+              {onManageMembers ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    handleClose(false);
+                    onManageMembers();
+                  }}
+                >
+                  <Settings2 className="size-3.5" />
+                  Manage members
+                </Button>
+              ) : null}
+              <Button type="button" size="sm" disabled={selected.length === 0} onClick={handleShare}>
+                {selected.length > 0 ? `Share with ${selected.length}` : "Share"}
               </Button>
-            ) : null}
-            <Button type="button" size="sm" disabled={selected.length === 0} onClick={handleShare}>
-              {selected.length > 0 ? `Share with ${selected.length}` : "Share"}
-            </Button>
+            </div>
           </div>
-        </DialogFooter>
-
-        <p className="-mt-1 text-center text-[11px] text-muted-foreground">
-          <Badge variant="secondary" className="mr-1 align-middle">
-            {members.length}
-          </Badge>
-          {members.length === 1 ? "principal" : "principals"} with access
-          {reach > 0 ? ` · ~${reach} ${reach === 1 ? "person" : "people"} reached` : ""}
-        </p>
+          <p className="mt-3 text-center text-[11px] text-muted-foreground">
+            <Badge variant="secondary" className="mr-1 align-middle">
+              {members.length}
+            </Badge>
+            {members.length === 1 ? "principal" : "principals"} with access
+            {reach > 0 ? ` · ~${reach} ${reach === 1 ? "person" : "people"} reached` : ""}
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );

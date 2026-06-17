@@ -109,6 +109,11 @@ import {
 import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 import { paginateSlice } from "@/lib/pagination";
 import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
+import {
+  SOURCE_LIST_COLUMNS,
+  getDocumentsSearchPlaceholder,
+  getSourceFormatLabel,
+} from "@/lib/sourceListModel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -254,7 +259,11 @@ function HubBadge({ hubName }) {
 
 function HubLinksBadge({ hubLinks = [], record }) {
   if (hubLinks.length === 0) {
-    return <Badge variant="secondary">Not linked to a hub</Badge>;
+    return (
+      <Badge variant="secondary">
+        {isSingleHubSource(record) ? `${KNOWLEDGE_TERMS.sourceNotLinked} to a hub` : KNOWLEDGE_TERMS.sourceNotLinked}
+      </Badge>
+    );
   }
 
   const names = hubLinks.map((link) => formatHubDisplayName(link.hubName)).filter(Boolean);
@@ -389,9 +398,9 @@ function DocumentsListTable({
           {selectionMode ? <TableHead className="w-10" /> : null}
           <TableHead className="hidden w-12 text-center sm:table-cell">Status</TableHead>
           <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Source</TableHead>
-          <TableHead className="hidden sm:table-cell">Hubs</TableHead>
-          <TableHead className="hidden sm:table-cell">Type</TableHead>
+          <TableHead className="hidden sm:table-cell">{SOURCE_LIST_COLUMNS.source}</TableHead>
+          <TableHead className="hidden sm:table-cell">{SOURCE_LIST_COLUMNS.hubs}</TableHead>
+          <TableHead className="hidden sm:table-cell">{SOURCE_LIST_COLUMNS.format}</TableHead>
           <TableHead className="hidden text-right sm:table-cell">{metricColumnLabel}</TableHead>
           {!selectionMode ? <TableHead className="w-10 sm:table-cell" /> : null}
         </TableRow>
@@ -542,7 +551,7 @@ function DocFileRow({
         <HubLinksBadge hubLinks={hubLinks} record={file} />
       </TableCell>
 
-      <TableCell className="hidden text-muted-foreground sm:table-cell">{cfg.label}</TableCell>
+      <TableCell className="hidden text-muted-foreground sm:table-cell">{getSourceFormatLabel(file)}</TableCell>
 
       <TableCell className="hidden text-right text-muted-foreground sm:table-cell">
         {sizeLabel ?? "—"}
@@ -1427,7 +1436,8 @@ export default function DocumentsPage({
                 <Search aria-hidden />
               </InputGroupAddon>
               <InputGroupInput
-                placeholder="Search documents…"
+                placeholder={getDocumentsSearchPlaceholder()}
+                aria-label="Search sources"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -1778,6 +1788,7 @@ export default function DocumentsPage({
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onComplete={handleSourceAdded}
+        defaultHubId={linkHubId ?? undefined}
       />
 
       <LinkingHelpDialog open={linkingHelpOpen} onOpenChange={setLinkingHelpOpen} />

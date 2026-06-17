@@ -19,19 +19,21 @@ export function LinkingHelpDialog({ open, onOpenChange }) {
         </DialogHeader>
         <div className="space-y-4 text-sm text-muted-foreground">
           <p>
-            <strong className="text-foreground">{KNOWLEDGE_TERMS.documents}</strong> is your workspace library — upload
-            once and keep a single copy of each file, database, or API source.
+            <strong className="text-foreground">{KNOWLEDGE_TERMS.documents}</strong> is your workspace library — one
+            record per file, database, or API source.
           </p>
           <p>
             <strong className="text-foreground">{KNOWLEDGE_TERMS.hubs}</strong> are curated collections that agents
-            and workflows use for retrieval. Link library items to any hub without duplicating files.
+            and workflows retrieve from. Link library sources to hubs without duplicating data.
           </p>
+          <p>{KNOWLEDGE_TERMS.singleHubSourceRule}</p>
           <ol className="list-decimal space-y-2 pl-5">
             <li>Add sources to {KNOWLEDGE_TERMS.documents.toLowerCase()}.</li>
-            <li>Select files and choose <strong className="text-foreground">Add to Hub</strong>, or from a hub choose{" "}
+            <li>
+              Select sources and choose <strong className="text-foreground">Add to Hub</strong>, or from a hub open{" "}
               <strong className="text-foreground">Browse {KNOWLEDGE_TERMS.documents} library</strong>.
             </li>
-            <li>Linked files appear in both the hub and the central library.</li>
+            <li>Linked sources stay in the library and appear under that hub&apos;s {KNOWLEDGE_TERMS.hubSourcesTab.toLowerCase()} tab.</li>
           </ol>
         </div>
       </DialogContent>

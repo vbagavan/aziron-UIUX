@@ -2,9 +2,13 @@ import { ChevronDown, ExternalLink, Plus, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
 import { isSingleHubSource } from "@/lib/sourceCategories";
+import {
+  getSourceHubLinkEmptyMessage,
+  getSourceHubLinkPickerHint,
+} from "@/lib/sourceListModel";
 
 /**
- * Hub link list + picker for detail side panels (documents, APIs, databases).
+ * Hub link list + picker for detail side panels (files, APIs, databases).
  */
 export function LinkedKnowledgeHubSection({
   record,
@@ -16,7 +20,9 @@ export function LinkedKnowledgeHubSection({
   emptyMessage,
   onNavigateToHub,
   onLinkToHub,
+  onLinkHubFileToHub,
   onUnlinkFromHub,
+  onRemoveHubFile,
   onCreateHub,
 }) {
   const singleHub = isSingleHubSource(record);
@@ -24,8 +30,32 @@ export function LinkedKnowledgeHubSection({
   const linkedHubIds = new Set(hubLinks.map((l) => Number(l.hubId)));
   const availableHubs = hubs.filter((h) => !linkedHubIds.has(Number(h.id)));
   const allHubsLinked = !singleHub && hubs.length > 0 && availableHubs.length === 0;
-  const showPicker = onLinkToHub && availableHubs.length > 0;
+  const canLink =
+    onLinkToHub ||
+    (onLinkHubFileToHub && record?.hubId != null && record?.id != null);
+  const showPicker = canLink && availableHubs.length > 0;
   const pickerLabel = singleHub && hubLinked ? "Change hub" : "Add to hub";
+  const resolvedEmptyMessage = emptyMessage ?? getSourceHubLinkEmptyMessage(record);
+
+  function handleSelectHub(hub) {
+    if (record?.isLibraryDocument === true && record?.id && onLinkToHub) {
+      onLinkToHub(record.id, hub.id);
+      return;
+    }
+    if (onLinkHubFileToHub && record?.hubId != null && record?.id != null) {
+      onLinkHubFileToHub(record.hubId, record.id, hub.id);
+    }
+  }
+
+  function handleUnlink(link) {
+    if (record?.isLibraryDocument === true && onUnlinkFromHub) {
+      onUnlinkFromHub(record?.id, link.hubId);
+      return;
+    }
+    if (onRemoveHubFile && record?.hubId != null && record?.id != null) {
+      onRemoveHubFile(record.hubId, record.id);
+    }
+  }
 
   return (
     <div className="px-4 py-4">
@@ -37,12 +67,8 @@ export function LinkedKnowledgeHubSection({
           <KnowledgeHubSearchPicker
             hubs={availableHubs}
             align="end"
-            emptyHint={
-              allHubsLinked
-                ? "This source is already linked to all your Knowledge Hubs."
-                : undefined
-            }
-            onSelect={(hub) => onLinkToHub(record?.id, hub.id)}
+            emptyHint={getSourceHubLinkPickerHint(record, { allHubsLinked })}
+            onSelect={handleSelectHub}
             onRequestCreate={canCreate ? onCreateHub : undefined}
             renderTrigger={({ toggle }) => (
               <Button
@@ -64,7 +90,7 @@ export function LinkedKnowledgeHubSection({
 
       {hubLinks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-          {emptyMessage}
+          {resolvedEmptyMessage}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -91,7 +117,7 @@ export function LinkedKnowledgeHubSection({
                     <ExternalLink className="size-3.5" />
                   </Button>
                 ) : null}
-                {onUnlinkFromHub ? (
+                {(onUnlinkFromHub || onRemoveHubFile) ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -99,7 +125,7 @@ export function LinkedKnowledgeHubSection({
                     aria-label={`Remove from ${link.hubName}`}
                     title="Remove from hub"
                     className="text-muted-foreground hover:text-destructive"
-                    onClick={() => onUnlinkFromHub(record?.id, link.hubId)}
+                    onClick={() => handleUnlink(link)}
                   >
                     <Unlink className="size-3.5" />
                   </Button>
@@ -112,7 +138,7 @@ export function LinkedKnowledgeHubSection({
 
       {singleHub && hubLinked ? (
         <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-          Each {record?.category === "apis" ? "API" : "database"} can belong to one Knowledge Hub.
+          Each {record?.category === "apis" ? "API" : "database"} belongs to one Knowledge Hub.
           Use Change hub to move it.
         </p>
       ) : null}

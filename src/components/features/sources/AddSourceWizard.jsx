@@ -39,6 +39,7 @@ import {
   applyExpressDefaults,
   STEP_META,
 } from "@/lib/addSourceFlow";
+import { loadLastSourceType, saveLastSourceType } from "@/lib/wizardPrefs";
 import {
   ChooseSourceTypeStep,
   DestinationStep,
@@ -70,7 +71,11 @@ import {
   EnterpriseSyncStep,
 } from "@/components/features/sources/connectorFlowSteps";
 
-function initialState() {
+function initialState({ defaultHubId } = {}) {
+  const destination = defaultHubId
+    ? { mode: "existing-hub", hubId: defaultHubId, newHubName: "" }
+    : { mode: "documents", hubId: null, newHubName: "" };
+
   return {
     type: null,
     files: { items: [] },
@@ -102,11 +107,11 @@ function initialState() {
     },
     ent: { app: null, connected: false, objectIds: [], syncFreq: "realtime" },
     config: { name: "", description: "", tags: [], visibility: "organization", autoSync: true },
-    destination: { mode: "documents", hubId: null, newHubName: "" },
+    destination,
   };
 }
 
-export function AddSourceWizard({ open, onOpenChange, onComplete }) {
+export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId = null }) {
   const navigate = useNavigate();
   const {
     hubs,
@@ -122,15 +127,27 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
   const [finishing, setFinishing] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Reset everything whenever the dialog closes.
+  // Reset whenever the dialog closes; restore last source type + hub context on open.
   useEffect(() => {
-    if (open) return;
-    setState(initialState());
+    if (!open) {
+      setState(initialState());
+      setStepIndex(0);
+      setPhase("wizard");
+      setFinishing(false);
+      setResult(null);
+      return;
+    }
+
+    const lastType = loadLastSourceType();
+    setState({
+      ...initialState({ defaultHubId }),
+      ...(lastType ? { type: lastType } : {}),
+    });
     setStepIndex(0);
     setPhase("wizard");
     setFinishing(false);
     setResult(null);
-  }, [open]);
+  }, [open, defaultHubId]);
 
   const steps = useMemo(() => getWizardSteps(state.type), [state.type]);
   const currentKey = steps[stepIndex] ?? "choose-type";
@@ -185,6 +202,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
   }
 
   function handleSelectSourceType(typeId) {
+    saveLastSourceType(typeId);
     setState((prev) => ({ ...prev, type: typeId }));
     setStepIndex(1);
   }

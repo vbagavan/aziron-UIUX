@@ -13,14 +13,17 @@ import {
   Search,
   Share2,
   Sparkles,
+  StickyNote,
   Trash2,
   Users,
+  Wand2,
   Zap,
 } from "lucide-react";
 import {
-  HubAssistantPanel,
-  HUB_ASSISTANT_PANEL_TABS,
+  HubStudioTab,
+  loadHubNotes,
 } from "@/components/features/knowledge/HubAssistantPanel";
+import { HubNotesPanel } from "@/components/features/knowledge/HubNotesPanel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +65,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { FileSourceBadge } from "@/components/features/knowledge/FileSourceBadge";
+import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
 import { HubFileSyncIcon, hubSyncStatusForRow } from "@/components/features/knowledge/HubFileSyncIcon";
 import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
@@ -87,6 +90,8 @@ import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { CAPTION, PAGE_SUBTITLE } from "@/lib/typography";
 import { PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 import { summarizeHubAssets } from "@/data/knowledgeHubs";
+import { getSourceMetricDisplay } from "@/lib/sourceCategories";
+import { getSourceFormatLabel, SOURCE_LIST_COLUMNS, getHubSourcesSearchPlaceholder } from "@/lib/sourceListModel";
 import {
   HUB_ROLE_META,
   hubRoleCan,
@@ -101,10 +106,11 @@ const HUB_FILES_PAGE_SIZE = 20;
 
 const ALL_HUB_TABS = [
   { id: "documents", label: KNOWLEDGE_TERMS.hubSourcesTab, icon: FileText },
-  { id: "knowledge", label: "Knowledge", icon: Sparkles },
+  { id: "knowledge", label: KNOWLEDGE_TERMS.hubGeneratedAssetsTab, icon: Sparkles },
   { id: "agents", label: "Agents", icon: Bot },
   { id: "workflows", label: "Workflows", icon: GitBranch },
   { id: "members", label: "Members", icon: Users },
+  { id: "studio", label: "Studio", icon: Wand2 },
   { id: "telemetry", label: KNOWLEDGE_TERMS.insightsTab, icon: BarChart3, requiresInsights: true },
   { id: "timeline", label: "Timeline", icon: History },
 ];
@@ -114,6 +120,93 @@ const STATUS_STYLES = {
   published: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30",
   archived: "bg-muted text-muted-foreground border-border",
 };
+
+function HubSourcesOnboarding({
+  hasSources,
+  isPublished,
+  linkedAgentCount,
+  canEdit,
+  onAddSources,
+  onPublish,
+  onBrowseLibrary,
+  onViewAgents,
+}) {
+  const steps = [
+    {
+      id: "sources",
+      label: "Add sources",
+      detail: "Upload files or connect cloud storage to this hub.",
+      done: hasSources,
+      action: onAddSources,
+      actionLabel: "Add sources",
+    },
+    {
+      id: "publish",
+      label: "Publish hub",
+      detail: "Make this hub available to agents and workflows.",
+      done: isPublished,
+      action: onPublish,
+      actionLabel: "Publish hub",
+      hidden: !canEdit || isPublished,
+    },
+    {
+      id: "agents",
+      label: "Link an agent",
+      detail: "Connect an agent so it can retrieve from this hub.",
+      done: linkedAgentCount > 0,
+      action: onViewAgents,
+      actionLabel: "View agents",
+    },
+  ].filter((step) => !step.hidden);
+
+  const completed = steps.filter((step) => step.done).length;
+
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 text-left">
+      <p className="text-sm font-semibold text-foreground">Get this hub ready</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {completed} of {steps.length} steps complete
+      </p>
+      <ol className="mt-4 flex flex-col gap-3">
+        {steps.map((step, index) => (
+          <li key={step.id} className="flex gap-3">
+            <span
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                step.done
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  : "bg-muted text-muted-foreground",
+              )}
+              aria-hidden
+            >
+              {step.done ? "✓" : index + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">{step.label}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{step.detail}</p>
+              {!step.done && step.action && canEdit ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={index === 0 ? "default" : "outline"}
+                  className="mt-2 h-8"
+                  onClick={step.action}
+                >
+                  {step.actionLabel}
+                </Button>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+      {!hasSources && onBrowseLibrary ? (
+        <Button type="button" size="sm" variant="ghost" className="mt-4 h-8" onClick={onBrowseLibrary}>
+          Browse {KNOWLEDGE_TERMS.documents} library
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 function AgentStatusBadge({ status }) {
   const variant =
@@ -249,8 +342,15 @@ export function KnowledgeHubControlCenter({
   const [selectedDocIds, setSelectedDocIds] = useState(() => new Set());
   const [timelineFilter, setTimelineFilter] = useState("all");
   const [timelineSearch, setTimelineSearch] = useState("");
-  const [panelTab, setPanelTab] = useState("ask");
-  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notes, setNotes] = useState(() => loadHubNotes(hub?.id));
+  const [pendingQuote, setPendingQuote] = useState(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`hub-notes-${hub?.id}`, JSON.stringify(notes));
+    } catch {}
+  }, [notes, hub?.id]);
 
   const telemetry = useMemo(
     () => getHubTelemetry(hub, { agents, flows, allFiles }),
@@ -287,8 +387,7 @@ export function KnowledgeHubControlCenter({
   }, [docSearch, docSourceFilter, docStatusFilter, hub?.id]);
 
   useEffect(() => {
-    setPanelTab("ask");
-    setMobilePanelOpen(false);
+    setNotesOpen(false);
   }, [hub?.id]);
 
   useEffect(() => {
@@ -318,6 +417,14 @@ export function KnowledgeHubControlCenter({
   const memberCount = (hub.members ?? []).length;
   const previewing = viewAsRole && viewAsRole !== realHubRole;
 
+  const tabCounts = {
+    documents: allFiles.length,
+    knowledge: assetSummary.active,
+    agents: summary.agents,
+    workflows: summary.workflows,
+    members: memberCount,
+  };
+
   function toggleDocSelection(id) {
     setSelectedDocIds((prev) => {
       const next = new Set(prev);
@@ -336,26 +443,19 @@ export function KnowledgeHubControlCenter({
     setSelectedDocIds(new Set());
   }
 
-  function openMobilePanel(tab) {
-    setPanelTab(tab);
-    setMobilePanelOpen(true);
+  function handleAddNote(note) {
+    setNotes((prev) => [{ ...note, id: Date.now(), createdAt: new Date().toISOString() }, ...prev]);
   }
-
-  const assistantPanelProps = {
-    hubId: hub.id,
-    hubName: getHubDisplayName(hubName),
-    hubDescription,
-    allFiles,
-    metadata,
-    summary,
-    linkedAgents,
-    linkedWorkflows,
-    canEdit,
-    tab: panelTab,
-    onTabChange: setPanelTab,
-    onOpenSource: onOpenLibraryFile,
-    onEditHub,
-  };
+  function handleEditNote(updated) {
+    setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+  }
+  function handleDeleteNote(id) {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+  }
+  function handleSaveStudioAsNote(note) {
+    handleAddNote(note);
+    setNotesOpen(true);
+  }
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}>
@@ -400,60 +500,6 @@ export function KnowledgeHubControlCenter({
             ) : (
               <p className={CAPTION}>No description yet.</p>
             )}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("documents")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <FileText className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.documents}</span>
-                <span className="text-muted-foreground">{summary.documents === 1 ? "document" : "documents"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("agents")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Bot className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.agents}</span>
-                <span className="text-muted-foreground">{summary.agents === 1 ? "agent" : "agents"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("workflows")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <GitBranch className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.workflows}</span>
-                <span className="text-muted-foreground">{summary.workflows === 1 ? "workflow" : "workflows"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("knowledge")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Sparkles className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{assetSummary.active}</span>
-                <span className="text-muted-foreground">{assetSummary.active === 1 ? "asset" : "assets"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("members")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Users className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{memberCount}</span>
-                <span className="text-muted-foreground">{memberCount === 1 ? "member" : "members"}</span>
-              </button>
-              {summary.lastActivity ? (
-                <span className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                  Active {summary.lastActivity}
-                </span>
-              ) : null}
-            </div>
 
             <p className={CAPTION}>
               {metadata.owner?.name ?? "Unknown"}
@@ -506,6 +552,17 @@ export function KnowledgeHubControlCenter({
                 Edit
               </Button>
             ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => setNotesOpen(true)}
+              aria-label="Open notes"
+              title="Notes"
+            >
+              <StickyNote className="size-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -555,8 +612,11 @@ export function KnowledgeHubControlCenter({
         {/* Center: tabs */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
-            <div className="shrink-0 overflow-x-auto border-b border-border px-4">
-              <TabsList className="h-10 w-max min-w-full justify-start rounded-none bg-transparent p-0">
+            <div
+              className="shrink-0 overflow-x-auto border-b border-border px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]"
+              aria-label="Hub sections"
+            >
+              <TabsList className="h-10 w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0">
                 {hubTabs.map(({ id, label, icon: Icon }) => (
                   <TabsTrigger
                     key={id}
@@ -565,6 +625,11 @@ export function KnowledgeHubControlCenter({
                   >
                     <Icon className="size-3.5" />
                     {label}
+                    {tabCounts[id] !== undefined ? (
+                      <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground data-[state=active]:bg-primary/10">
+                        {tabCounts[id]}
+                      </span>
+                    ) : null}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -598,7 +663,8 @@ export function KnowledgeHubControlCenter({
                     <Input
                       value={docSearch}
                       onChange={(e) => setDocSearch(e.target.value)}
-                      placeholder="Search documents…"
+                      placeholder={getHubSourcesSearchPlaceholder()}
+                      aria-label="Search hub sources"
                       className="h-9 pl-8"
                     />
                   </div>
@@ -621,27 +687,27 @@ export function KnowledgeHubControlCenter({
                 </div>
 
                 {filteredDocs.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border py-12 text-center">
-                    <FileText className="mx-auto size-8 text-muted-foreground/40" />
-                    <p className="mt-2 text-sm font-medium">
-                      {allFiles.length === 0 ? "No documents yet" : "No documents match"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {allFiles.length === 0
-                        ? "Use Add sources above to upload or connect cloud storage."
-                        : "Try adjusting search or filters."}
-                    </p>
-                    {allFiles.length === 0 && onBrowseDocumentsLibrary ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="mt-4"
-                        onClick={onBrowseDocumentsLibrary}
-                      >
-                        Browse {KNOWLEDGE_TERMS.documents} library
-                      </Button>
-                    ) : null}
+                  <div className="rounded-xl border border-dashed border-border py-8 text-center">
+                    {allFiles.length === 0 ? (
+                      <HubSourcesOnboarding
+                        hasSources={false}
+                        isPublished={metadata.status !== "draft"}
+                        linkedAgentCount={summary.agents}
+                        canEdit={canEdit}
+                        onAddSources={onOpenSources}
+                        onPublish={onPublish}
+                        onBrowseLibrary={onBrowseDocumentsLibrary}
+                        onViewAgents={() => setActiveTab("agents")}
+                      />
+                    ) : (
+                      <>
+                        <FileText className="mx-auto size-8 text-muted-foreground/40" />
+                        <p className="mt-2 text-sm font-medium">No documents match</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Try adjusting search or filters.
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-xl border border-border">
@@ -653,11 +719,10 @@ export function KnowledgeHubControlCenter({
                             <span className="sr-only">Sync status</span>
                           </TableHead>
                           <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Uploaded</TableHead>
-                          <TableHead>Modified</TableHead>
-                          <TableHead className="text-right">Usage</TableHead>
+                          <TableHead>{SOURCE_LIST_COLUMNS.source}</TableHead>
+                          <TableHead>{SOURCE_LIST_COLUMNS.format}</TableHead>
+                          <TableHead className="text-right">{SOURCE_LIST_COLUMNS.metric}</TableHead>
+                          <TableHead>{SOURCE_LIST_COLUMNS.updated}</TableHead>
                           <TableHead className="w-[80px]" />
                         </TableRow>
                       </TableHeader>
@@ -691,13 +756,16 @@ export function KnowledgeHubControlCenter({
                                 {doc.name}
                               </button>
                             </TableCell>
-                            <TableCell className="text-xs">{doc.type}</TableCell>
                             <TableCell>
-                              <FileSourceBadge file={doc.raw} size="sm" />
+                              <SourceBadge record={doc.raw} size="sm" />
                             </TableCell>
-                            <TableCell className="text-xs">{doc.uploadedRelative}</TableCell>
-                            <TableCell className="text-xs">{doc.modifiedRelative}</TableCell>
-                            <TableCell className="text-right text-xs tabular-nums">{doc.usageCount}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {getSourceFormatLabel(doc.raw)}
+                            </TableCell>
+                            <TableCell className="text-right text-xs tabular-nums">
+                              {getSourceMetricDisplay(doc.raw).label}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{doc.modifiedRelative}</TableCell>
                             <TableCell>
                               <div className="flex justify-end gap-1">
                                 {canEdit && onDeleteFile ? (
@@ -834,6 +902,15 @@ export function KnowledgeHubControlCenter({
                 )}
               </TabsContent>
 
+              {/* Studio */}
+              <TabsContent value="studio" className="mt-0 flex min-h-0 flex-1 flex-col">
+                <HubStudioTab
+                  hubName={getHubDisplayName(hubName)}
+                  allFiles={allFiles}
+                  onSaveAsNote={handleSaveStudioAsNote}
+                />
+              </TabsContent>
+
               {/* Telemetry */}
               <TabsContent value="telemetry" className="mt-0 space-y-6">
                 <div className="grid gap-4 lg:grid-cols-3">
@@ -897,38 +974,25 @@ export function KnowledgeHubControlCenter({
             </div>
           </Tabs>
 
-          <div className="flex shrink-0 items-center gap-1 border-t border-border bg-background px-2 py-2 lg:hidden">
-            {HUB_ASSISTANT_PANEL_TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => openMobilePanel(id)}
-                className={cn(
-                  "flex-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors",
-                  panelTab === id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: hub assistant panel (desktop) */}
-        <div className="hidden w-64 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-72">
-          <HubAssistantPanel key={hub.id} {...assistantPanelProps} />
         </div>
       </div>
 
-      <Sheet open={mobilePanelOpen} onOpenChange={setMobilePanelOpen}>
-        <SheetContent side="bottom" className="h-[min(88vh,720px)] gap-0 p-0">
+      {/* Notes sheet */}
+      <Sheet open={notesOpen} onOpenChange={setNotesOpen}>
+        <SheetContent side="right" className="w-80 gap-0 p-0 sm:max-w-sm">
           <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
-            <SheetTitle className="text-sm">Hub assistant</SheetTitle>
+            <SheetTitle className="text-sm">Hub notes</SheetTitle>
           </SheetHeader>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <HubAssistantPanel key={`mobile-${hub.id}`} {...assistantPanelProps} />
+            <HubNotesPanel
+              hubId={hub.id}
+              notes={notes}
+              onAddNote={handleAddNote}
+              onEditNote={handleEditNote}
+              onDeleteNote={handleDeleteNote}
+              pendingQuote={pendingQuote}
+              onClearPendingQuote={() => setPendingQuote(null)}
+            />
           </div>
         </SheetContent>
       </Sheet>

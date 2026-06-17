@@ -586,28 +586,18 @@ export function KnowledgeHubProvider({ children }) {
 
     if (hubId != null) {
       const targetId = Number(hubId);
-      setHubs((prev) =>
-        prev.map((h) => {
-          if (Number(h.id) !== targetId) return h;
-          const userFiles = [...(h.userFiles ?? [])];
-          let storageAdd = 0;
-          for (const doc of stamped) {
-            if (userFiles.some((f) => f.libraryDocumentId === doc.id)) continue;
-            const hubFile = libraryRecordToHubFile(doc, targetId);
-            userFiles.push(hubFile);
-            storageAdd += Math.max(0, Math.round((hubFile.sizeKb ?? 0) / 1024));
-          }
-          return {
-            ...h,
-            userFiles,
-            files: userFiles.length,
-            collections: userFiles.length > 0 ? 1 : 0,
-            storageMB: (h.storageMB ?? 0) + storageAdd,
-            updated: "Just now",
-            isUserCreated: true,
-          };
-        }),
-      );
+      setHubs((prev) => {
+        let nextHubs = prev;
+        for (const doc of stamped) {
+          const { hubs: linked } = applyLibraryDocumentHubLink(nextHubs, {
+            libraryDoc: doc,
+            documentId: doc.id,
+            targetId,
+          });
+          nextHubs = linked;
+        }
+        return nextHubs;
+      });
     }
 
     return { added: stamped };

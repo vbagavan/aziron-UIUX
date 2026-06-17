@@ -29,7 +29,7 @@ export const HUB_TIMELINE_FILTERS = [
   { id: "hub", label: "Hub" },
   { id: "document", label: "Files" },
   { id: "cloud", label: "Cloud sync" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "knowledge", label: "Generated assets" },
   { id: "members", label: "Members" },
   { id: "agent", label: "Agents" },
   { id: "workflow", label: "Workflows" },
