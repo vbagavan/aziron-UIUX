@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -283,17 +284,19 @@ export function HubKnowledgeTab({ hub, hubRole, actor }) {
                 <ChevronRight className="size-3.5 rotate-90 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuLabel>Create from sources</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {GENERATE_MENU.map(({ type, label, icon }) => {
-                  const Icon = icon;
-                  return (
-                    <DropdownMenuItem key={type} onClick={() => runGenerate(type, "")}>
-                      <Icon data-icon="inline-start" aria-hidden />
-                      {label}
-                    </DropdownMenuItem>
-                  );
-                })}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Create from sources</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {GENERATE_MENU.map(({ type, label, icon }) => {
+                    const Icon = icon;
+                    return (
+                      <DropdownMenuItem key={type} onClick={() => runGenerate(type, "")}>
+                        <Icon data-icon="inline-start" aria-hidden />
+                        {label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button type="button" size="sm" className="gap-1.5" disabled={generating || !question.trim()} onClick={handleAsk}>

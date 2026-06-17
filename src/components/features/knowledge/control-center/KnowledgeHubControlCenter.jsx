@@ -966,8 +966,8 @@ function ViewAsMenu({ value, realRole, onChange }) {
         View as: {hubRoleLabel(active)}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Preview permissions as</DropdownMenuLabel>
         <DropdownMenuGroup>
+          <DropdownMenuLabel>Preview permissions as</DropdownMenuLabel>
           {VIEW_AS_ROLES.map((r) => (
             <DropdownMenuItem
               key={r}
