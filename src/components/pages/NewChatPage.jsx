@@ -745,7 +745,7 @@ export default function NewChatPage({ onNavigate }) {
                   <img src={imgAzironLogo} alt="Aziron" className="object-contain" style={{ width: 72, height: 66 }} />
                   <div className="space-y-2 text-center">
                     <h1 className="type-page-title text-3xl font-medium tracking-tight">
-                      Hi John, where should we start?
+                      Hi John123, where should we start?
                     </h1>
                     <p className="text-sm text-muted-foreground">
                       Ask a question, sketch an idea, or start a voice conversation.
