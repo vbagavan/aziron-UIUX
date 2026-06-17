@@ -112,6 +112,72 @@ export function KnowledgeHubProvider({ children }) {
     );
   }, []);
 
+  // ── Generated knowledge assets (hub-owned) ──────────────────────────────
+  const patchHubById = useCallback((hubId, updater) => {
+    const numericHubId = Number(hubId);
+    setHubs((prev) =>
+      prev.map((h) => {
+        if (Number(h.id) !== numericHubId) return h;
+        const next = updater(h);
+        return next
+          ? { ...next, updated: "Just now", updatedAt: new Date().toISOString() }
+          : h;
+      }),
+    );
+  }, []);
+
+  const addHubAsset = useCallback((hubId, asset) => {
+    if (!asset) return null;
+    patchHubById(hubId, (h) => ({ ...h, assets: [asset, ...(h.assets ?? [])] }));
+    return asset;
+  }, [patchHubById]);
+
+  const updateHubAsset = useCallback((hubId, assetId, patch) => {
+    patchHubById(hubId, (h) => ({
+      ...h,
+      assets: (h.assets ?? []).map((a) =>
+        a.id === assetId ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a,
+      ),
+    }));
+  }, [patchHubById]);
+
+  const removeHubAsset = useCallback((hubId, assetId) => {
+    patchHubById(hubId, (h) => ({
+      ...h,
+      assets: (h.assets ?? []).filter((a) => a.id !== assetId),
+    }));
+  }, [patchHubById]);
+
+  // ── Hub membership & sharing ─────────────────────────────────────────────
+  const addHubMembers = useCallback((hubId, members) => {
+    const incoming = (members ?? []).filter(Boolean);
+    if (incoming.length === 0) return { added: 0 };
+    patchHubById(hubId, (h) => {
+      const existing = h.members ?? [];
+      const keyOf = (m) =>
+        m.principalType === "user" ? (m.email ?? "").toLowerCase() : `${m.principalType}:${(m.name ?? "").toLowerCase()}`;
+      const seen = new Set(existing.map(keyOf));
+      const fresh = incoming.filter((m) => !seen.has(keyOf(m)));
+      if (fresh.length === 0) return h;
+      return { ...h, members: [...existing, ...fresh], visibility: "shared" };
+    });
+    return { added: incoming.length };
+  }, [patchHubById]);
+
+  const updateHubMemberRole = useCallback((hubId, memberId, role) => {
+    patchHubById(hubId, (h) => ({
+      ...h,
+      members: (h.members ?? []).map((m) => (m.id === memberId ? { ...m, role } : m)),
+    }));
+  }, [patchHubById]);
+
+  const removeHubMember = useCallback((hubId, memberId) => {
+    patchHubById(hubId, (h) => ({
+      ...h,
+      members: (h.members ?? []).filter((m) => m.id !== memberId),
+    }));
+  }, [patchHubById]);
+
   const addHub = useCallback(async (payload) => {
     const hub = createHubPayload(payload);
     const userFiles = [...(hub.userFiles ?? [])];
@@ -860,6 +926,12 @@ export function KnowledgeHubProvider({ children }) {
       getDocumentHubLinks,
       recordHubAccess,
       updateHubFile,
+      addHubAsset,
+      updateHubAsset,
+      removeHubAsset,
+      addHubMembers,
+      updateHubMemberRole,
+      removeHubMember,
       downloadCloudFileToHub,
       downloadCloudFileToLibrary,
       deleteHubFile,
@@ -888,6 +960,12 @@ export function KnowledgeHubProvider({ children }) {
       getDocumentHubLinks,
       recordHubAccess,
       updateHubFile,
+      addHubAsset,
+      updateHubAsset,
+      removeHubAsset,
+      addHubMembers,
+      updateHubMemberRole,
+      removeHubMember,
       downloadCloudFileToHub,
       downloadCloudFileToLibrary,
       deleteHubFile,

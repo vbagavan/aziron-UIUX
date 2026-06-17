@@ -5,7 +5,8 @@ import {
   mergeMyDigitalHubFlows,
 } from "@/lib/myDigitalHubLinks";
 import { workflowsUsingHub } from "@/lib/workflowKnowledge";
-import { formatDisplayDate, getHubFileSourceLabel } from "@/data/knowledgeHubs";
+import { assetTypeLabel, formatDisplayDate, getHubFileSourceLabel } from "@/data/knowledgeHubs";
+import { hubRoleLabel } from "@/lib/hubRoles";
 
 const DEFAULT_OWNER = { name: "You", email: "you@workspace.local", role: "Owner" };
 
@@ -16,6 +17,8 @@ const TIMELINE_FILTER_GROUPS = {
   cloud: (e) => e.category?.startsWith("cloud"),
   agent: (e) => e.category?.startsWith("agent"),
   workflow: (e) => e.category?.startsWith("workflow"),
+  knowledge: (e) => e.category?.startsWith("asset"),
+  members: (e) => e.category?.startsWith("member") || e.category === "share",
   metadata: (e) => e.category === "metadata",
   access: (e) => e.category === "access" || e.category === "interaction",
   system: (e) => e.category === "system",
@@ -26,6 +29,8 @@ export const HUB_TIMELINE_FILTERS = [
   { id: "hub", label: "Hub" },
   { id: "document", label: "Files" },
   { id: "cloud", label: "Cloud sync" },
+  { id: "knowledge", label: "Knowledge" },
+  { id: "members", label: "Members" },
   { id: "agent", label: "Agents" },
   { id: "workflow", label: "Workflows" },
   { id: "metadata", label: "Metadata" },
@@ -214,6 +219,35 @@ function buildHubTimeline(hub, linkedAgents, linkedWorkflows, allFiles) {
       label: "Workflow attached",
       detail: `${flow.name} ${flow.version ?? ""}`.trim(),
       at: new Date(updated.getTime() - hashSeed(flow.id) * 7200000),
+    });
+  }
+
+  for (const asset of hub?.assets ?? []) {
+    const at = parseValidDate(asset.createdAt) ?? updated;
+    const archived = asset.status === "archived";
+    events.push({
+      id: `asset-${asset.id}`,
+      category: archived ? "asset-archive" : "asset-add",
+      label: archived
+        ? `${assetTypeLabel(asset.type)} archived`
+        : `${assetTypeLabel(asset.type)} generated`,
+      detail: `${asset.title} · ${asset.createdByName ?? "Member"}`,
+      at,
+    });
+  }
+
+  for (const member of hub?.members ?? []) {
+    if (member.role === "owner") continue;
+    const at = parseValidDate(member.addedAt) ?? created;
+    const isGroup = member.principalType !== "user";
+    events.push({
+      id: `member-${member.id}`,
+      category: "member-add",
+      label: isGroup
+        ? `${member.principalType === "team" ? "Team" : "Department"} given access`
+        : "Member added",
+      detail: `${member.name} · ${hubRoleLabel(member.role)}`,
+      at,
     });
   }
 

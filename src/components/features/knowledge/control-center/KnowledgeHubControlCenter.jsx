@@ -4,13 +4,17 @@ import {
   BarChart3,
   Bot,
   ChevronDown,
+  Eye,
   FileText,
   GitBranch,
   History,
   Pencil,
   Plus,
   Search,
+  Share2,
+  Sparkles,
   Trash2,
+  Users,
   Zap,
 } from "lucide-react";
 import {
@@ -26,6 +30,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -68,16 +80,31 @@ import { getHubDisplayName } from "@/lib/hubDisplay";
 import { paginateSlice } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { CAPTION, PAGE_SUBTITLE } from "@/lib/typography";
 import { PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
+import { summarizeHubAssets } from "@/data/knowledgeHubs";
+import {
+  HUB_ROLE_META,
+  hubRoleCan,
+  hubRoleLabel,
+  resolveHubRole,
+} from "@/lib/hubRoles";
+import { HubKnowledgeTab } from "@/components/features/knowledge/control-center/HubKnowledgeTab";
+import { HubMembersTab } from "@/components/features/knowledge/control-center/HubMembersTab";
+import { ShareHubDialog } from "@/components/features/knowledge/ShareHubDialog";
 
 const HUB_FILES_PAGE_SIZE = 20;
 
 const ALL_HUB_TABS = [
   { id: "documents", label: KNOWLEDGE_TERMS.hubSourcesTab, icon: FileText },
+  { id: "knowledge", label: "Knowledge", icon: Sparkles },
   { id: "agents", label: "Agents", icon: Bot },
   { id: "workflows", label: "Workflows", icon: GitBranch },
+  { id: "members", label: "Members", icon: Users },
   { id: "telemetry", label: KNOWLEDGE_TERMS.insightsTab, icon: BarChart3, requiresInsights: true },
   { id: "timeline", label: "Timeline", icon: History },
 ];
@@ -170,7 +197,7 @@ export function KnowledgeHubControlCenter({
   hubName,
   hubDescription,
   allFiles = [],
-  canEdit = false,
+  canEdit: canEditProp = false,
   showDemoStatuses = false,
   onOpenSources,
   onOpenLibraryFile,
@@ -187,9 +214,29 @@ export function KnowledgeHubControlCenter({
 }) {
   const navigate = useNavigate();
   const { can } = usePermissions();
+  const { auth } = useAuth();
+  const { addHubMembers } = useKnowledgeHubs();
   const { agents } = useAgents();
   const { flows } = useFlowCatalog();
   const canViewInsights = can("knowledge.insights");
+
+  // Effective per-hub role. `viewAsRole` lets Editors/Owner preview the hub as a
+  // lower role to confirm the RBAC gates without leaving their account.
+  const realHubRole = useMemo(() => resolveHubRole(hub, auth?.user), [hub, auth?.user]);
+  // Keep the preview scoped to the current hub without a reset effect: a stored
+  // hubId mismatch means we navigated away, so the preview falls back to null.
+  const [viewAs, setViewAs] = useState({ hubId: null, role: null });
+  const viewAsRole = viewAs.hubId === hub?.id ? viewAs.role : null;
+  const setViewAsRole = (role) => setViewAs({ hubId: hub?.id, role });
+  const hubRole = viewAsRole ?? realHubRole;
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // File editing is the org-level permission AND the hub role allowing uploads.
+  // Outside a preview these are equal, so live behaviour is unchanged.
+  const canEdit = canEditProp && hubRoleCan(hubRole, "sources.upload");
+  const canManageMembers = hubRoleCan(hubRole, "members.manage");
+  const canShare = hubRoleCan(hubRole, "hub.share");
+
   const hubTabs = useMemo(
     () => ALL_HUB_TABS.filter((tab) => !tab.requiresInsights || canViewInsights),
     [canViewInsights],
@@ -266,6 +313,10 @@ export function KnowledgeHubControlCenter({
 
   const { metadata, summary, linkedAgents, linkedWorkflows, usage, analytics, relationships } =
     telemetry;
+
+  const assetSummary = summarizeHubAssets(hub);
+  const memberCount = (hub.members ?? []).length;
+  const previewing = viewAsRole && viewAsRole !== realHubRole;
 
   function toggleDocSelection(id) {
     setSelectedDocIds((prev) => {
@@ -378,6 +429,24 @@ export function KnowledgeHubControlCenter({
                 <span className="font-semibold tabular-nums text-foreground">{summary.workflows}</span>
                 <span className="text-muted-foreground">{summary.workflows === 1 ? "workflow" : "workflows"}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("knowledge")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <Sparkles className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{assetSummary.active}</span>
+                <span className="text-muted-foreground">{assetSummary.active === 1 ? "asset" : "assets"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("members")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <Users className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{memberCount}</span>
+                <span className="text-muted-foreground">{memberCount === 1 ? "member" : "members"}</span>
+              </button>
               {summary.lastActivity ? (
                 <span className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -410,6 +479,15 @@ export function KnowledgeHubControlCenter({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {canManageMembers ? (
+              <ViewAsMenu value={viewAsRole} realRole={realHubRole} onChange={setViewAsRole} />
+            ) : null}
+            {canShare ? (
+              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setShareOpen(true)}>
+                <Share2 className="size-3.5" />
+                Share
+              </Button>
+            ) : null}
             {canEdit && onOpenSources ? (
               <Button type="button" size="sm" className="gap-1.5" onClick={onOpenSources}>
                 <Plus data-icon="inline-start" aria-hidden />
@@ -447,6 +525,22 @@ export function KnowledgeHubControlCenter({
           />
         </CollapsibleContent>
       </Collapsible>
+
+      {previewing ? (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-5 py-2 text-xs text-amber-800 dark:text-amber-300">
+          <span className="flex items-center gap-1.5">
+            <Eye className="size-3.5" />
+            Previewing this hub as a <strong>{hubRoleLabel(hubRole)}</strong>. Actions are gated to that role.
+          </span>
+          <button
+            type="button"
+            onClick={() => setViewAsRole(null)}
+            className="font-medium underline-offset-2 hover:underline"
+          >
+            Exit preview
+          </button>
+        </div>
+      ) : null}
 
       {/* ── Main layout ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -625,6 +719,20 @@ export function KnowledgeHubControlCenter({
                     />
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Knowledge (generated assets) */}
+              <TabsContent value="knowledge" className="mt-0">
+                <HubKnowledgeTab hub={hub} hubRole={hubRole} actor={auth?.user} />
+              </TabsContent>
+
+              {/* Members */}
+              <TabsContent value="members" className="mt-0">
+                <HubMembersTab
+                  hub={hub}
+                  hubRole={hubRole}
+                  onShareClick={canShare ? () => setShareOpen(true) : undefined}
+                />
               </TabsContent>
 
               {/* Agents */}
@@ -824,6 +932,55 @@ export function KnowledgeHubControlCenter({
           </div>
         </SheetContent>
       </Sheet>
+
+      <ShareHubDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        hub={hub}
+        members={hub.members ?? []}
+        actor={auth?.user}
+        onShare={(newMembers) => {
+          const { added } = addHubMembers(hub.id, newMembers) ?? {};
+          toast.success("Hub shared", {
+            description: `${added ?? newMembers.length} ${(added ?? newMembers.length) === 1 ? "principal" : "principals"} now have access.`,
+            action: { label: "View members", onClick: () => setActiveTab("members") },
+          });
+        }}
+        onManageMembers={() => setActiveTab("members")}
+      />
     </div>
+  );
+}
+
+const VIEW_AS_ROLES = ["owner", "editor", "contributor", "viewer"];
+
+/** Editor/Owner-only control to preview the hub as a lower role (RBAC check). */
+function ViewAsMenu({ value, realRole, onChange }) {
+  const active = value ?? realRole;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={<Button type="button" variant="outline" size="sm" className="gap-1.5" />}
+      >
+        <Eye className="size-3.5" />
+        View as: {hubRoleLabel(active)}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Preview permissions as</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          {VIEW_AS_ROLES.map((r) => (
+            <DropdownMenuItem
+              key={r}
+              onClick={() => onChange(r === realRole ? null : r)}
+            >
+              {HUB_ROLE_META[r]?.label ?? r}
+              {r === realRole ? (
+                <span className="ml-auto text-[10px] text-muted-foreground">Your role</span>
+              ) : null}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

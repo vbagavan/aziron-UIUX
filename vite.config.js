@@ -12,6 +12,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // bind to 0.0.0.0 so the app is reachable by LAN IP, not just localhost
     port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
     strictPort: true,
   },

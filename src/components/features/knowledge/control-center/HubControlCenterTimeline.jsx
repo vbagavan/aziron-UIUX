@@ -9,6 +9,8 @@ import {
   Layers,
   Search,
   Settings2,
+  Sparkles,
+  Users,
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +69,20 @@ const CATEGORY_META = {
     ringClass: "border-border bg-muted/30",
     Icon: GitBranch,
   },
+  knowledge: {
+    label: "Knowledge",
+    badgeVariant: "outline",
+    iconClass: "text-primary",
+    ringClass: "border-primary/20 bg-primary/5",
+    Icon: Sparkles,
+  },
+  members: {
+    label: "Members",
+    badgeVariant: "outline",
+    iconClass: "text-primary",
+    ringClass: "border-primary/20 bg-primary/5",
+    Icon: Users,
+  },
   metadata: {
     label: "Metadata",
     badgeVariant: "outline",
@@ -96,6 +112,8 @@ function resolveCategoryMeta(category) {
   if (category.startsWith("cloud")) return CATEGORY_META.cloud;
   if (category.startsWith("agent")) return CATEGORY_META.agent;
   if (category.startsWith("workflow")) return CATEGORY_META.workflow;
+  if (category.startsWith("asset")) return CATEGORY_META.knowledge;
+  if (category.startsWith("member") || category === "share") return CATEGORY_META.members;
   if (category === "metadata") return CATEGORY_META.metadata;
   if (category === "access" || category === "interaction") return CATEGORY_META.access;
   if (category === "system") return CATEGORY_META.system;

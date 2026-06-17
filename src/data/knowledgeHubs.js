@@ -653,8 +653,249 @@ export function createHubPayload({
     isUserCreated: true,
     userFiles,
     cloudConnections,
+    members: [
+      {
+        id: `m-${id}-owner`,
+        principalType: "user",
+        name: "You",
+        email: "you@workspace.local",
+        role: "owner",
+        memberCount: null,
+        addedByName: "You",
+        addedAt: new Date().toISOString(),
+      },
+    ],
+    assets: [],
     pendingFileName: userFiles[0]?.name ?? null,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Knowledge assets (AI-generated outputs that belong to the hub)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Generated-asset taxonomy. Sources are *inputs*; assets are *outputs*. */
+export const ASSET_TYPES = {
+  note: { label: "Note", plural: "Notes", accent: "bg-slate-500/10 text-slate-700 dark:text-slate-300" },
+  summary: { label: "Summary", plural: "Summaries", accent: "bg-violet-500/10 text-violet-700 dark:text-violet-300" },
+  report: { label: "Report", plural: "Reports", accent: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
+  insight: { label: "Insight", plural: "Insights", accent: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
+  document: { label: "Document", plural: "Documents", accent: "bg-sky-500/10 text-sky-700 dark:text-sky-300" },
+  presentation: { label: "Presentation", plural: "Presentations", accent: "bg-amber-500/10 text-amber-800 dark:text-amber-300" },
+};
+
+export const ASSET_TYPE_ORDER = ["note", "summary", "report", "insight", "document", "presentation"];
+
+export function assetTypeLabel(type) {
+  return ASSET_TYPES[type]?.label ?? "Asset";
+}
+
+const DEFAULT_HUB_OWNER = { name: "You", email: "you@workspace.local", role: "Owner" };
+
+function shortId(prefix) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function firstLine(text, max = 120) {
+  const line = String(text ?? "").trim().split("\n").find((l) => l.trim()) ?? "";
+  const clean = line.replace(/^#+\s*/, "").replace(/[*_>`]/g, "").trim();
+  return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+}
+
+/**
+ * Build a hub-owned Knowledge Asset. Generated outputs auto-save through this —
+ * there is no manual "save" step. `actor` is the signed-in user.
+ */
+export function createHubAsset({
+  type = "note",
+  title = "",
+  body = "",
+  excerpt = "",
+  sources = [],
+  sourceFileIds = [],
+  origin = "ai",
+  actor = null,
+} = {}) {
+  const now = new Date().toISOString();
+  const resolvedTitle = title.trim() || firstLine(body) || `${assetTypeLabel(type)} ${now.slice(0, 10)}`;
+  return {
+    id: shortId("asset"),
+    type: ASSET_TYPES[type] ? type : "note",
+    title: resolvedTitle,
+    excerpt: excerpt.trim() || firstLine(body, 160),
+    body,
+    status: "active",
+    pinned: false,
+    origin,
+    sources,
+    sourceFileIds,
+    createdByName: actor?.name ?? DEFAULT_HUB_OWNER.name,
+    createdByEmail: actor?.email ?? DEFAULT_HUB_OWNER.email,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/** Active / pinned / archived rollups for header chips and filters. */
+export function summarizeHubAssets(hub) {
+  const assets = hub?.assets ?? [];
+  let active = 0;
+  let pinned = 0;
+  let archived = 0;
+  for (const a of assets) {
+    if (a.status === "archived") archived += 1;
+    else {
+      active += 1;
+      if (a.pinned) pinned += 1;
+    }
+  }
+  return { total: assets.length, active, pinned, archived };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hub membership (sharing happens only at the hub level)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Build a member record for a user, team, or department. */
+export function createHubMember({
+  principalType = "user",
+  name,
+  email = null,
+  role = "viewer",
+  memberCount = null,
+  actor = null,
+} = {}) {
+  return {
+    id: shortId(principalType === "user" ? "u" : principalType === "team" ? "t" : "d"),
+    principalType,
+    name: name?.trim() ?? "",
+    email: email?.trim() ?? null,
+    role,
+    memberCount,
+    addedByName: actor?.name ?? DEFAULT_HUB_OWNER.name,
+    addedAt: new Date().toISOString(),
+  };
+}
+
+function hashSeed(value) {
+  let h = 0;
+  const s = String(value);
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+const DEMO_PEOPLE = [
+  { name: "Sarah Chen", email: "sarah.chen@aziro.com" },
+  { name: "Marcus Reid", email: "marcus.reid@aziro.com" },
+  { name: "Priya Nair", email: "priya.nair@aziro.com" },
+  { name: "Tom Alvarez", email: "tom.alvarez@aziro.com" },
+  { name: "Lena Brooks", email: "lena.brooks@aziro.com" },
+];
+const DEMO_TEAMS = ["Platform Engineering", "Data Science", "Customer Success", "Marketing Ops"];
+const DEMO_DEPTS = ["Engineering", "Operations", "Revenue"];
+const DEMO_ROLES = ["editor", "contributor", "contributor", "viewer", "viewer"];
+
+/** Deterministic demo members so seed hubs show a populated Members tab. */
+function buildDemoMembers(hub) {
+  const seed = hashSeed(`m-${hub.id}`);
+  const owner = hub.owner ?? DEFAULT_HUB_OWNER;
+  const members = [
+    {
+      id: `m-${hub.id}-owner`,
+      principalType: "user",
+      name: owner.name,
+      email: owner.email,
+      role: "owner",
+      memberCount: null,
+      addedByName: owner.name,
+      addedAt: hub.createdAt ?? `${hub.createdOn}T09:00:00.000Z`,
+    },
+  ];
+  const userCount = 2 + (seed % 3);
+  for (let i = 0; i < userCount; i += 1) {
+    const p = DEMO_PEOPLE[(seed + i) % DEMO_PEOPLE.length];
+    members.push({
+      id: `m-${hub.id}-u${i}`,
+      principalType: "user",
+      name: p.name,
+      email: p.email,
+      role: DEMO_ROLES[(seed + i) % DEMO_ROLES.length],
+      memberCount: null,
+      addedByName: owner.name,
+      addedAt: hub.createdOn ? `${hub.createdOn}T10:00:00.000Z` : hub.createdAt,
+    });
+  }
+  members.push({
+    id: `m-${hub.id}-team`,
+    principalType: "team",
+    name: DEMO_TEAMS[seed % DEMO_TEAMS.length],
+    email: null,
+    role: "contributor",
+    memberCount: 4 + (seed % 9),
+    addedByName: owner.name,
+    addedAt: hub.createdOn ? `${hub.createdOn}T11:00:00.000Z` : hub.createdAt,
+  });
+  if (seed % 2 === 0) {
+    members.push({
+      id: `m-${hub.id}-dept`,
+      principalType: "department",
+      name: DEMO_DEPTS[seed % DEMO_DEPTS.length],
+      email: null,
+      role: "viewer",
+      memberCount: 12 + (seed % 40),
+      addedByName: owner.name,
+      addedAt: hub.createdOn ? `${hub.createdOn}T11:30:00.000Z` : hub.createdAt,
+    });
+  }
+  return members;
+}
+
+const DEMO_ASSET_TEMPLATES = [
+  { type: "summary", title: (h) => `Executive summary — ${h.name}` },
+  { type: "report", title: (h) => `Coverage report: ${h.name} sources` },
+  { type: "insight", title: () => `Insight: recurring themes & gaps` },
+  { type: "note", title: () => `Onboarding walkthrough notes` },
+  { type: "document", title: () => `Draft FAQ from connected sources` },
+  { type: "presentation", title: (h) => `${h.name} overview deck` },
+  { type: "summary", title: () => `Weekly digest of new sources` },
+  { type: "note", title: () => `Key decisions & open questions` },
+];
+
+/** Deterministic demo assets so seed hubs show a populated Knowledge tab at scale. */
+function buildDemoAssets(hub) {
+  const seed = hashSeed(`a-${hub.id}`);
+  const count = Math.min(36, Math.max(5, Math.round((hub.files ?? 8) / 3) + 4));
+  const owner = hub.owner ?? DEFAULT_HUB_OWNER;
+  const baseTime = new Date(hub.createdAt ?? `${hub.createdOn}T12:00:00.000Z`).getTime();
+  const assets = [];
+  for (let i = 0; i < count; i += 1) {
+    const tpl = DEMO_ASSET_TEMPLATES[(seed + i) % DEMO_ASSET_TEMPLATES.length];
+    const author = i % 3 === 0 ? owner : DEMO_PEOPLE[(seed + i) % DEMO_PEOPLE.length];
+    const at = new Date(baseTime + i * 5400000 + (seed % 7) * 3600000).toISOString();
+    const archived = i % 7 === 6;
+    const pinned = !archived && i % 9 === 1;
+    assets.push({
+      id: `a-${hub.id}-${i}`,
+      type: tpl.type,
+      title: tpl.title(hub),
+      excerpt:
+        "Auto-generated from this hub's connected sources by Ask AI. All members with access can read and build on it.",
+      body: "",
+      status: archived ? "archived" : "active",
+      pinned,
+      origin: i % 4 === 0 ? "ask-ai" : "studio",
+      sources: [],
+      sourceFileIds: [],
+      createdByName: author.name,
+      createdByEmail: author.email,
+      createdAt: at,
+      updatedAt: at,
+    });
+  }
+  return assets;
 }
 
 export const KNOWLEDGE_HUBS_STORAGE_KEY = "aziron_knowledge_hubs_v1";
@@ -674,6 +915,18 @@ export function normalizeHubs(hubs) {
         collections: defaults.collections,
         storageMB: defaults.storageMB,
       };
+    }
+    // Backfill membership + generated-asset demo data onto seed hubs only.
+    // `undefined` (never set) is the trigger; an empty [] is respected so a
+    // user can archive/remove everything without it reappearing.
+    if (!next.isUserCreated) {
+      if (next.members === undefined) next = { ...next, members: buildDemoMembers(next) };
+      if (next.assets === undefined) next = { ...next, assets: buildDemoAssets(next) };
+    } else {
+      if (next.members === undefined) {
+        next = { ...next, members: [{ ...(next.owner ?? DEFAULT_HUB_OWNER), id: `m-${next.id}-owner`, principalType: "user", role: "owner", memberCount: null }] };
+      }
+      if (next.assets === undefined) next = { ...next, assets: [] };
     }
     const userFiles = (next.userFiles ?? []).map(migrateCloudFileRecord);
     return userFiles.length > 0 ? { ...next, userFiles } : next;
