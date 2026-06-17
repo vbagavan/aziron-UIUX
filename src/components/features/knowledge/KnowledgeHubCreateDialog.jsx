@@ -256,7 +256,9 @@ export function KnowledgeHubCreateDialog({
   onCreated,
   onCloudFileSynced,
   onCloudFileSyncFailed,
+  mode = "full",
 }) {
+  const isQuick = mode === "quick";
   const [dialogStep, setDialogStep] = useState(1);
   const [contentMode, setContentMode] = useState("upload");
   const [formData, setFormData] = useState({ name: "", description: "" });
@@ -467,18 +469,30 @@ export function KnowledgeHubCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={HUB_DIALOG_CONTENT_XL}>
+      <DialogContent className={isQuick ? undefined : HUB_DIALOG_CONTENT_XL}>
         <DialogHeader className="border-b border-border px-6 py-4">
-          <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
-            Step {dialogStep} of {TOTAL_STEPS} — {stepLabel}
-          </p>
-          <DialogTitle>Create Knowledge Hub</DialogTitle>
+          {!isQuick ? (
+            <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
+              Step {dialogStep} of {TOTAL_STEPS} — {stepLabel}
+            </p>
+          ) : null}
+          <DialogTitle>{isQuick ? "Quick create Knowledge Hub" : "Create Knowledge Hub"}</DialogTitle>
           <DialogDescription>
-            Store documents your AI agents use for retrieval, reasoning, and workflows.
+            {isQuick
+              ? "Name your hub now — add sources from the hub page anytime."
+              : "Store documents your AI agents use for retrieval, reasoning, and workflows."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
+        <div className={cn(isQuick ? "px-6 py-4" : HUB_DIALOG_BODY_SCROLL, !isQuick && "px-6 py-4")}>
+          {isQuick ? (
+            <Step3NameHub
+              formData={formData}
+              attachedFiles={[]}
+              onChange={setFormData}
+            />
+          ) : (
+            <>
           {dialogStep >= 1 && !isCloudWizardStep && (
             <CreateHubStepIndicator currentStep={dialogStep} />
           )}
@@ -558,6 +572,8 @@ export function KnowledgeHubCreateDialog({
               onChange={setFormData}
             />
           )}
+            </>
+          )}
         </div>
 
         <Dialog open={cloudAddOpen} onOpenChange={setCloudAddOpen}>
@@ -586,7 +602,7 @@ export function KnowledgeHubCreateDialog({
           </DialogContent>
         </Dialog>
 
-        {showDefaultFooter && (
+        {!isQuick && showDefaultFooter && (
           <DialogFooter className="m-0 shrink-0 gap-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 !mx-0 !mb-0 dark:bg-muted/20">
             <div className="flex w-full flex-wrap items-center justify-end gap-2">
               {dialogStep === 1 ? (
@@ -661,6 +677,25 @@ export function KnowledgeHubCreateDialog({
                   </Button>
                 </>
               )}
+            </div>
+          </DialogFooter>
+        )}
+
+        {isQuick && (
+          <DialogFooter className="m-0 shrink-0 gap-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 !mx-0 !mb-0 dark:bg-muted/20">
+            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+              <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="gap-1.5"
+                onClick={handleCreate}
+                disabled={!formData.name.trim()}
+              >
+                <Check size={15} />
+                Create Knowledge Hub
+              </Button>
             </div>
           </DialogFooter>
         )}

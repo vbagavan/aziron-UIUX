@@ -59,3 +59,27 @@ export function getFileTypeConfig(type) {
   if (!type) return FALLBACK_TYPE;
   return FILE_TYPE_CONFIGS[type.trim()] ?? FALLBACK_TYPE;
 }
+
+/** Canonical type key for filters (merges `file` / `File`, case variants). */
+export function normalizeDocumentType(type) {
+  if (!type) return "File";
+  const trimmed = type.trim();
+  if (FILE_TYPE_CONFIGS[trimmed]) return trimmed;
+
+  const match = Object.keys(FILE_TYPE_CONFIGS).find(
+    (key) => key.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (match) return match;
+
+  if (trimmed.toLowerCase() === "file") return "File";
+  return trimmed;
+}
+
+/** User-facing label for type filters — never duplicates the word “File”. */
+export function getTypeFilterLabel(type) {
+  const normalized = normalizeDocumentType(type);
+  if (FILE_TYPE_CONFIGS[normalized]?.label) {
+    return FILE_TYPE_CONFIGS[normalized].label;
+  }
+  return normalized;
+}

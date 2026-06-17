@@ -2,15 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bot,
   ChevronDown,
-  ExternalLink,
-  GitBranch,
   RotateCcw,
   Send,
   Sparkles,
   Zap,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LinkedKnowledgeHubSection } from "@/components/features/knowledge/LinkedKnowledgeHubSection";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { getSourceLifecycleMeta } from "@/lib/sourceCategories";
 import { mockApiReply } from "@/lib/apiDetailModel";
@@ -19,7 +17,6 @@ import { cn } from "@/lib/utils";
 
 const PANEL_TABS = [
   { id: "ask", label: "Ask AI" },
-  { id: "insights", label: "Insights" },
   { id: "details", label: "Details" },
 ];
 
@@ -198,76 +195,18 @@ function ApiAskTab({ detail, record, seedPrompt, onSeedPromptApplied, onOpenPlay
   );
 }
 
-function ApiInsightsTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint }) {
-  const primaryEndpoint = detail.endpoints[0];
-
-  return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
-      <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
-        <p className="text-xs font-medium text-foreground">Purpose</p>
-        <p className={cn(CAPTION, "mt-1 leading-relaxed")}>{detail.knowledge.purpose}</p>
-      </div>
-
-      <section>
-        <p className={SECTION_EYEBROW}>Business functions</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {detail.knowledge.businessFunctions.map((f) => (
-            <Badge key={f} variant="secondary" className="text-[10px]">
-              {f}
-            </Badge>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <p className={SECTION_EYEBROW}>Suggested use cases</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {detail.knowledge.suggestedUseCases.map((u) => (
-            <Badge key={u} variant="outline" className="text-[10px]">
-              {u}
-            </Badge>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <p className={SECTION_EYEBROW}>Quick actions</p>
-        {detail.knowledge.suggestedQuestions.slice(0, 3).map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => onAskQuestion?.(q)}
-            className="flex w-full items-start gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-left text-xs transition-colors hover:border-primary/30 hover:bg-muted/30"
-          >
-            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
-            <span>{q}</span>
-          </button>
-        ))}
-      </section>
-
-      {primaryEndpoint ? (
-        <section className="rounded-lg border border-border bg-muted/20 p-3">
-          <p className={SECTION_EYEBROW}>Primary endpoint</p>
-          <button
-            type="button"
-            onClick={() => onSelectEndpoint?.(primaryEndpoint.id)}
-            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-left font-mono text-[11px] transition-colors hover:border-primary/30"
-          >
-            <span className="font-semibold text-emerald-600">{primaryEndpoint.method}</span>{" "}
-            {primaryEndpoint.path}
-          </button>
-          {onOpenPlayground ? (
-            <Button type="button" size="sm" variant="outline" className="mt-3 h-7 w-full text-xs" onClick={onOpenPlayground}>
-              Try in Playground
-            </Button>
-          ) : null}
-        </section>
-      ) : null}
-    </div>
-  );
-}
-
-function ApiDetailsTab({ detail, record, hubLinks = [], onNavigateToHub }) {
+function ApiDetailsTab({
+  detail,
+  record,
+  hubLinks = [],
+  hubs = [],
+  canEdit = true,
+  canCreate = true,
+  onNavigateToHub,
+  onLinkToHub,
+  onUnlinkFromHub,
+  onCreateHub,
+}) {
   const lifecycle = getSourceLifecycleMeta(record);
 
   return (
@@ -320,75 +259,19 @@ function ApiDetailsTab({ detail, record, hubLinks = [], onNavigateToHub }) {
 
       <div className="mx-4 h-px bg-border" />
 
-      <div className="px-4 py-4">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Linked Knowledge Hubs
-        </p>
-        {hubLinks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-            Not linked to a Knowledge Hub yet.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {hubLinks.map((link) => (
-              <li
-                key={`${link.hubId}-${link.hubFileId}`}
-                className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2"
-              >
-                <Zap className="size-3.5 shrink-0 text-primary" aria-hidden />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">{link.hubName}</p>
-                  <p className="text-[10px] text-muted-foreground">Knowledge Hub</p>
-                </div>
-                {onNavigateToHub ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    title="Open hub"
-                    onClick={() => onNavigateToHub(link.hubId)}
-                  >
-                    <ExternalLink className="size-3.5" />
-                  </Button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="mx-4 h-px bg-border" />
-
-      <div className="px-4 py-4">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Downstream usage
-        </p>
-        <div className="space-y-3 text-xs">
-          <div>
-            <p className="mb-1.5 flex items-center gap-1 text-muted-foreground">
-              <GitBranch className="size-3" aria-hidden />
-              Agents
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {detail.usage.agents.map((a) => (
-                <Badge key={a} variant="outline" className="text-[10px]">
-                  {a}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="mb-1.5 text-muted-foreground">Flows</p>
-            <div className="flex flex-wrap gap-1">
-              {detail.usage.flows.map((f) => (
-                <Badge key={f} variant="secondary" className="text-[10px]">
-                  {f}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <LinkedKnowledgeHubSection
+        record={record}
+        hubLinks={hubLinks}
+        hubs={hubs}
+        canEdit={canEdit}
+        canCreate={canCreate}
+        hubIcon={Zap}
+        emptyMessage="Not linked to a Knowledge Hub yet. Add it to a hub when you want agents to call this API for retrieval."
+        onNavigateToHub={onNavigateToHub}
+        onLinkToHub={onLinkToHub}
+        onUnlinkFromHub={onUnlinkFromHub}
+        onCreateHub={onCreateHub}
+      />
     </div>
   );
 }
@@ -397,14 +280,18 @@ export function ApiRightPanel({
   detail,
   record,
   hubLinks = [],
+  hubs = [],
+  canEdit = true,
+  canCreate = true,
   tab,
   onTabChange,
   seedPrompt,
   onSeedPromptApplied,
   onNavigateToHub,
+  onLinkToHub,
+  onUnlinkFromHub,
+  onCreateHub,
   onOpenPlayground,
-  onAskQuestion,
-  onSelectEndpoint,
 }) {
   const [internalTab, setInternalTab] = useState("ask");
   const activeTab = tab ?? internalTab;
@@ -438,19 +325,18 @@ export function ApiRightPanel({
           onSeedPromptApplied={onSeedPromptApplied}
           onOpenPlayground={onOpenPlayground}
         />
-      ) : activeTab === "insights" ? (
-        <ApiInsightsTab
-          detail={detail}
-          onAskQuestion={onAskQuestion}
-          onOpenPlayground={onOpenPlayground}
-          onSelectEndpoint={onSelectEndpoint}
-        />
       ) : (
         <ApiDetailsTab
           detail={detail}
           record={record}
           hubLinks={hubLinks}
+          hubs={hubs}
+          canEdit={canEdit}
+          canCreate={canCreate}
           onNavigateToHub={onNavigateToHub}
+          onLinkToHub={onLinkToHub}
+          onUnlinkFromHub={onUnlinkFromHub}
+          onCreateHub={onCreateHub}
         />
       )}
     </div>

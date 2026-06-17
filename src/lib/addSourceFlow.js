@@ -23,11 +23,20 @@ import {
 
 /** Ordered step keys per source type (after Step 1 "choose-type"). */
 export const FLOW_STEPS = {
-  files: ["upload", "processing", "configure", "destination"],
-  cloud: ["cloud-provider", "cloud-connect", "cloud-browse", "cloud-sync", "configure", "destination"],
-  databases: ["db-select", "db-connect", "db-discover", "db-data", "db-ai", "db-sync", "configure", "destination"],
-  apis: ["api-type", "api-connect", "api-discover", "api-objects", "api-sync", "api-ai", "configure", "destination"],
-  enterprise: ["ent-select", "ent-connect", "ent-discover", "ent-objects", "ent-sync", "configure", "destination"],
+  files: ["upload", "processing", "destination"],
+  cloud: ["cloud-provider", "cloud-connect", "cloud-browse", "cloud-sync", "destination"],
+  databases: ["db-select", "db-connect", "db-data", "destination"],
+  apis: ["api-type", "api-connect", "api-objects", "destination"],
+  enterprise: ["ent-select", "ent-connect", "ent-objects", "destination"],
+};
+
+/** Approximate wizard length shown on the source-type chooser. */
+export const SOURCE_TYPE_STEP_HINTS = {
+  files: "~3 steps",
+  cloud: "~6 steps",
+  databases: "~4 steps",
+  apis: "~4 steps",
+  enterprise: "~5 steps",
 };
 
 export const STEP_META = {
@@ -67,7 +76,6 @@ export const STEP_META = {
   "ent-sync": { title: "Sync strategy", subtitle: "When Aziron should fetch data" },
 
   // Shared tail
-  configure: { title: "Configure source", subtitle: "Name, describe, and govern this source" },
   destination: { title: "Destination", subtitle: "Where should this source live?" },
 };
 
@@ -78,6 +86,58 @@ export function getFlowSteps(type) {
 /** Full ordered key list for a type, including the leading choose-type step. */
 export function getWizardSteps(type) {
   return type ? ["choose-type", ...getFlowSteps(type)] : ["choose-type"];
+}
+
+/** Apply recommended defaults when express connector steps are skipped. */
+export function applyExpressDefaults(state) {
+  const next = { ...state };
+
+  if (state.type === "databases" && state.db?.tested) {
+    const tables = flattenDbTables();
+    const selected = state.db.selectedTableIds?.length
+      ? state.db.selectedTableIds
+      : tables.slice(0, 1).map((row) => row.key);
+    next.db = {
+      ...state.db,
+      selectedTableIds: selected,
+      embedStrategy: state.db.embedStrategy ?? "full",
+      syncType: state.db.syncType ?? "incremental",
+      syncFreq: state.db.syncFreq ?? "realtime",
+    };
+  }
+
+  if (state.type === "apis" && state.api?.tested) {
+    const objects = resolveDiscoverableObjects(state);
+    const objectIds = state.api.objectIds?.length
+      ? state.api.objectIds
+      : objects.slice(0, 2).map((o) => o.id);
+    next.api = {
+      ...state.api,
+      objectIds,
+      fetchStrategy: state.api.fetchStrategy ?? "scheduled",
+      schedule: state.api.schedule ?? "15m",
+      ai: {
+        knowledgeIndex: true,
+        semanticSearch: true,
+        entityGraph: true,
+        ...state.api.ai,
+      },
+    };
+  }
+
+  if (state.type === "enterprise" && state.ent?.connected) {
+    const objects = getEnterpriseObjects(state.ent?.app);
+    const objectIds = state.ent.objectIds?.length
+      ? state.ent.objectIds
+      : objects.slice(0, 2).map((o) => o.id);
+    next.ent = {
+      ...state.ent,
+      objectIds,
+      syncFreq: state.ent.syncFreq ?? "realtime",
+    };
+  }
+
+  return next;
 }
 
 // ─── Discovery helpers ───────────────────────────────────────────────────────

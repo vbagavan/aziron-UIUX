@@ -34,7 +34,7 @@ import {
   SUGGESTED_TAGS,
   VISIBILITY_OPTIONS,
 } from "@/data/addSourceCatalog";
-import { deriveSourceName } from "@/lib/addSourceFlow";
+import { deriveSourceName, SOURCE_TYPE_STEP_HINTS } from "@/lib/addSourceFlow";
 import {
   OptionCard,
   RadioRow,
@@ -51,7 +51,7 @@ function formatSize(bytes) {
 
 // ─── Step 1 — choose source type ─────────────────────────────────────────────
 
-export function ChooseSourceTypeStep({ state, update }) {
+export function ChooseSourceTypeStep({ state, onSelectType }) {
   return (
     <div className="flex flex-col gap-3">
       {SOURCE_TYPES.map((type) => (
@@ -61,8 +61,9 @@ export function ChooseSourceTypeStep({ state, update }) {
           accent={type.accent}
           title={type.label}
           description={type.description}
+          badge={SOURCE_TYPE_STEP_HINTS[type.id]}
           selected={state.type === type.id}
-          onClick={() => update(null, { type: type.id })}
+          onClick={() => onSelectType?.(type.id)}
         />
       ))}
     </div>

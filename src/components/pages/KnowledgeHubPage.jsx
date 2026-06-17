@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Bot,
@@ -21,6 +21,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -47,8 +54,7 @@ import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { formatDisplayDate } from "@/data/knowledgeHubs";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubDetailView } from "@/components/features/knowledge/KnowledgeHubDetailView";
-import { KnowledgeHubHeaderBreadcrumb } from "@/components/features/knowledge/KnowledgeHubHeaderBreadcrumb";
-import { KnowledgeTabBar } from "@/components/features/knowledge/KnowledgeTabBar";
+import { KnowledgeHubBackNav } from "@/components/features/knowledge/KnowledgeHubBackNav";
 import { paginateSlice } from "@/lib/pagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAgents } from "@/context/AgentsContext";
@@ -64,15 +70,10 @@ import {
 } from "@/components/ui/empty";
 
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
-import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
+import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
+import { getHubDisplayName, isHubDraft } from "@/lib/hubDisplay";
 
 const HUB_LIST_PAGE_SIZE = 20;
-
-/** Strip a trailing "(Draft)" label from hub names and return whether it was present. */
-function parseHubName(name = "") {
-  const match = name.match(/^(.*)\s+\(Draft\)\s*$/i);
-  return match ? { displayName: match[1].trim(), isDraft: true } : { displayName: name, isDraft: false };
-}
 
 /** Table footer pagination — matches InsuranceManagementPage / shadcn Pagination. */
 function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageChange }) {
@@ -102,7 +103,7 @@ function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageCha
                   onPageChange(Math.max(1, currentPage - 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === 1 && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === 1}
@@ -117,7 +118,7 @@ function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageCha
                     e.preventDefault();
                     onPageChange(pg);
                   }}
-                  className="h-7 w-7 cursor-pointer text-xs"
+                  className={cn(PAGINATION_CONTROL_CLASS, "w-11")}
                 >
                   {pg}
                 </PaginationLink>
@@ -130,7 +131,7 @@ function HubTablePagination({ page, totalPages, totalItems, itemLabel, onPageCha
                   onPageChange(Math.min(totalPages, currentPage + 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === totalPages && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === totalPages}
@@ -174,8 +175,8 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
               <Database className="size-5" aria-hidden />
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <p className="truncate text-sm font-semibold text-foreground">{parseHubName(hub.name).displayName}</p>
-              {parseHubName(hub.name).isDraft && (
+              <p className="truncate text-sm font-semibold text-foreground">{getHubDisplayName(hub)}</p>
+              {isHubDraft(hub) && (
                 <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
               )}
             </div>
@@ -198,7 +199,7 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
                 type="button"
                 aria-label={`Delete ${hub.name}`}
                 onClick={(e) => { e.stopPropagation(); onDeleteRequest(hub); }}
-                className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
+                className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-60 transition-all hover:bg-muted hover:opacity-100 group-hover:opacity-100"
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -254,10 +255,7 @@ function EmptyState({ onAdd, onBrowseDocuments }) {
 function HubTable({
   hubs,
   selectedRows,
-  openMenuId,
-  menuRef,
   onToggleRow,
-  onMenuOpen,
   onDeleteRequest,
   onOpenHub,
   page,
@@ -305,8 +303,8 @@ function HubTable({
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-medium text-foreground">{parseHubName(hub.name).displayName}</span>
-                  {parseHubName(hub.name).isDraft && (
+                  <span className="font-medium text-foreground">{getHubDisplayName(hub)}</span>
+                  {isHubDraft(hub) && (
                     <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
                   )}
                 </div>
@@ -338,41 +336,32 @@ function HubTable({
                 onClick={(e) => e.stopPropagation()}
               >
                 {canDelete && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => onMenuOpen(openMenuId === hub.id ? null : hub.id)}
-                    aria-label={`Delete ${hub.name}`}
-                    aria-haspopup="menu"
-                    aria-expanded={openMenuId === hub.id}
-                    className={cn(
-                      "transition-opacity",
-                      openMenuId === hub.id
-                        ? "opacity-100"
-                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                    )}
-                  >
-                    <MoreVertical size={15} />
-                  </Button>
-                )}
-                {canDelete && openMenuId === hub.id && (
-                  <div
-                    ref={menuRef}
-                    role="menu"
-                    className="absolute right-4 top-full z-20 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-md ring-1 ring-foreground/10"
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      role="menuitem"
-                      className="h-8 w-full justify-start gap-2 px-3 font-normal text-destructive hover:text-destructive"
-                      onClick={() => onDeleteRequest(hub)}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Actions for ${hub.name}`}
+                          className="opacity-60 transition-opacity hover:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+                        />
+                      }
                     >
-                      <Trash2 size={13} />
-                      Delete
-                    </Button>
-                  </div>
+                      <MoreVertical size={15} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => onDeleteRequest(hub)}
+                        >
+                          <Trash2 data-icon="inline-start" aria-hidden />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </TableCell>
             </TableRow>
@@ -390,7 +379,12 @@ function HubTable({
   );
 }
 
-export default function KnowledgeHubPage({ onNavigate }) {
+export default function KnowledgeHubPage({
+  onNavigate,
+  embedded = false,
+  onHeaderSlot,
+  onRequestTab,
+}) {
   const { hubId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -404,12 +398,13 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const { toasts, showToast, dismissToast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [createMode, setCreateMode] = useState("full");
   const [listSearch, setListSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [listPage, setListPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState(new Set());
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [detailDraft, setDetailDraft] = useState({
     name: null,
     detailsDirty: false,
@@ -418,9 +413,19 @@ export default function KnowledgeHubPage({ onNavigate }) {
   });
   const [hubNavRequest, setHubNavRequest] = useState(null);
   const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
-  const menuRef = useRef(null);
 
   const detailHub = hubId ? getHubById(hubId) : null;
+
+  const openDocumentsTab = (opts) => {
+    if (onRequestTab) {
+      onRequestTab("documents", opts);
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("tab", "documents");
+    if (opts?.linkHub) params.set("linkHub", String(opts.linkHub));
+    navigate(`/knowledge?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (!hubId) {
@@ -437,26 +442,11 @@ export default function KnowledgeHubPage({ onNavigate }) {
   useEffect(() => {
     if (searchParams.get("create") === "1" && canCreate) {
       setCreateOpen(true);
-      setSearchParams({}, { replace: true });
+      const next = new URLSearchParams(searchParams);
+      next.delete("create");
+      setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams, canCreate]);
-
-  useEffect(() => {
-    if (!openMenuId) return;
-    function onKey(e) {
-      if (e.key === "Escape") setOpenMenuId(null);
-    }
-    function onPointer(e) {
-      if (menuRef.current?.contains(e.target)) return;
-      setOpenMenuId(null);
-    }
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("mousedown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("mousedown", onPointer);
-    };
-  }, [openMenuId]);
 
   useEffect(() => {
     setListPage(1);
@@ -486,23 +476,41 @@ export default function KnowledgeHubPage({ onNavigate }) {
   const isEmpty = hubs.length === 0;
   const selectedCount = selectedRows.size;
 
-  function handleKnowledgeHubBreadcrumbClick() {
+  const handleKnowledgeHubBreadcrumbClick = useCallback(() => {
     if (detailDraft.detailsDirty) {
-      const leave = window.confirm("You have unsaved changes. Leave without saving?");
-      if (!leave) return;
+      setLeaveConfirmOpen(true);
+      return;
     }
+    navigate("/knowledge");
+  }, [detailDraft.detailsDirty, navigate]);
+
+  function confirmLeaveHub() {
+    setLeaveConfirmOpen(false);
     navigate("/knowledge");
   }
 
-  function handleHubBreadcrumbClick() {
-    if (detailDraft.libraryFileName) {
-      setHubNavRequest("close-preview");
-      return;
-    }
-    if (detailDraft.hubSurface === "library") {
-      setHubNavRequest("control-center");
-    }
-  }
+  const showHubBackNav = Boolean(detailHub && !detailDraft.libraryFileName);
+  const showHubBackNavInHeader = showHubBackNav && !embedded;
+
+  useEffect(() => {
+    if (!embedded || !onHeaderSlot) return undefined;
+    onHeaderSlot(
+      showHubBackNavInHeader ? (
+        <KnowledgeHubBackNav
+          onBack={handleKnowledgeHubBreadcrumbClick}
+          hubTitle={getHubDisplayName(detailDraft.name ?? detailHub?.name)}
+        />
+      ) : null,
+    );
+    return () => onHeaderSlot(null);
+  }, [
+    embedded,
+    onHeaderSlot,
+    showHubBackNavInHeader,
+    handleKnowledgeHubBreadcrumbClick,
+    detailDraft.name,
+    detailHub?.name,
+  ]);
 
   function openHub(id) {
     navigate(`/knowledge/${id}`);
@@ -585,7 +593,6 @@ export default function KnowledgeHubPage({ onNavigate }) {
   }
 
   function requestDelete(hub) {
-    setOpenMenuId(null);
     setConfirmDelete({ type: "single", hub });
   }
 
@@ -651,41 +658,33 @@ export default function KnowledgeHubPage({ onNavigate }) {
   }
 
   if (hubId && !detailHub) {
+    const notFound = (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+        <p className="text-muted-foreground">Knowledge Hub not found.</p>
+        <Button variant="outline" size="sm" onClick={() => navigate("/knowledge")}>
+          Back to list
+        </Button>
+      </div>
+    );
+    if (embedded) {
+      return (
+        <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
+          {notFound}
+        </div>
+      );
+    }
     return (
       <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
         <Sidebar activePage="knowledge" onNavigate={onNavigate} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-          <p className="text-muted-foreground">Knowledge Hub not found.</p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/knowledge")}>
-            Back to list
-          </Button>
-        </div>
+        {notFound}
       </div>
     );
   }
 
-  return (
-    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
-      <Sidebar activePage="knowledge" onNavigate={onNavigate} />
-
-      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
-        <AppHeader onNavigate={onNavigate}>
-          {detailHub ? (
-            <KnowledgeHubHeaderBreadcrumb
-              hubName={detailDraft.name ?? detailHub.name}
-              detailsDirty={detailDraft.detailsDirty}
-              libraryFileName={detailDraft.libraryFileName}
-              onKnowledgeHubClick={handleKnowledgeHubBreadcrumbClick}
-              onHubClick={handleHubBreadcrumbClick}
-            />
-          ) : null}
-        </AppHeader>
-
-        <KnowledgeTabBar />
-
-        <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
-          {detailHub ? (
-              <KnowledgeHubDetailView
+  const panelContent = (
+    <div className={detailHub ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-1" : "min-h-0 flex-1 overflow-y-auto"}>
+      {detailHub ? (
+        <KnowledgeHubDetailView
                 hub={detailHub}
                 canEdit={canEdit}
                 canDelete={canDelete}
@@ -714,6 +713,8 @@ export default function KnowledgeHubPage({ onNavigate }) {
                   )
                 }
                 onNotify={(payload) => showToast(payload)}
+                onBrowseDocumentsLibrary={(id) => openDocumentsTab({ linkHub: id })}
+                onBackToHubs={handleKnowledgeHubBreadcrumbClick}
               />
           ) : (
             <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
@@ -767,36 +768,54 @@ export default function KnowledgeHubPage({ onNavigate }) {
                             ))}
                           </SelectContent>
                         </Select>
-                        <div className="flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
-                          <button
+                        <div className={cn("flex items-center rounded-lg border border-border/60 bg-background p-0.5", TOOLBAR_CONTROL_CLASS)}>
+                          <Button
                             type="button"
+                            variant={viewMode === "table" ? "secondary" : "ghost"}
+                            size="icon-sm"
                             aria-label="Table view"
+                            aria-pressed={viewMode === "table"}
                             onClick={() => setViewMode("table")}
-                            className={cn("flex size-7 items-center justify-center rounded-md transition-colors",
-                              viewMode === "table" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
                           >
-                            <LayoutList className="size-3.5" />
-                          </button>
-                          <button
+                            <LayoutList className="size-3.5" aria-hidden />
+                          </Button>
+                          <Button
                             type="button"
+                            variant={viewMode === "grid" ? "secondary" : "ghost"}
+                            size="icon-sm"
                             aria-label="Grid view"
+                            aria-pressed={viewMode === "grid"}
                             onClick={() => setViewMode("grid")}
-                            className={cn("flex size-7 items-center justify-center rounded-md transition-colors",
-                              viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}
                           >
-                            <Grid2x2 className="size-3.5" />
-                          </button>
+                            <Grid2x2 className="size-3.5" aria-hidden />
+                          </Button>
                         </div>
                       </>
                     )}
                     {canCreate && (
-                      <Button
-                        onClick={() => setCreateOpen(true)}
-                        className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
-                      >
-                        <Plus size={16} />
-                        Add Knowledge Hub
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setCreateMode("quick");
+                            setCreateOpen(true);
+                          }}
+                          className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
+                        >
+                          Quick create
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setCreateMode("full");
+                            setCreateOpen(true);
+                          }}
+                          className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
+                        >
+                          <Plus size={16} />
+                          Add Knowledge Hub
+                        </Button>
+                      </>
                     )}
                 </PageHeader>
 
@@ -820,7 +839,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
                 {isEmpty ? (
                   <EmptyState
                     onAdd={canCreate ? () => setCreateOpen(true) : undefined}
-                    onBrowseDocuments={() => navigate("/documents")}
+                    onBrowseDocuments={() => openDocumentsTab()}
                   />
                 ) : filteredSorted.length === 0 ? (
                   <Empty className="border border-dashed py-12">
@@ -868,10 +887,7 @@ export default function KnowledgeHubPage({ onNavigate }) {
                     <HubTable
                       hubs={hubPagination.items}
                       selectedRows={selectedRows}
-                      openMenuId={openMenuId}
-                      menuRef={menuRef}
                       onToggleRow={toggleRow}
-                      onMenuOpen={setOpenMenuId}
                       onDeleteRequest={requestDelete}
                       onOpenHub={openHub}
                       page={hubPagination.currentPage}
@@ -885,12 +901,15 @@ export default function KnowledgeHubPage({ onNavigate }) {
               </>
             </div>
           )}
-        </div>
-      </div>
+    </div>
+  );
 
+  const pageOverlays = (
+    <>
       {canCreate && (
         <KnowledgeHubCreateDialog
           open={createOpen}
+          mode={createMode}
           onOpenChange={setCreateOpen}
           onCreated={handleCreated}
           onCloudFileSynced={(name) =>
@@ -924,6 +943,16 @@ export default function KnowledgeHubPage({ onNavigate }) {
         />
       )}
 
+      {leaveConfirmOpen && (
+        <ConfirmDialog
+          title="Leave without saving?"
+          message="You have unsaved changes to this Knowledge Hub. Leave without saving?"
+          confirmLabel="Leave"
+          onConfirm={confirmLeaveHub}
+          onCancel={() => setLeaveConfirmOpen(false)}
+        />
+      )}
+
       {toasts.length > 0 && (
         <div className="pointer-events-none fixed right-4 bottom-4 z-[99999] flex w-full max-w-md flex-col gap-2">
           {toasts.map((t) => (
@@ -939,6 +968,35 @@ export default function KnowledgeHubPage({ onNavigate }) {
           ))}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
+        {panelContent}
+        {pageOverlays}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-page-main flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
+      <Sidebar activePage="knowledge" onNavigate={onNavigate} />
+
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
+        <AppHeader onNavigate={onNavigate}>
+          {showHubBackNav ? (
+            <KnowledgeHubBackNav
+              onBack={handleKnowledgeHubBreadcrumbClick}
+              hubTitle={getHubDisplayName(detailDraft.name ?? detailHub?.name)}
+            />
+          ) : null}
+        </AppHeader>
+
+        {panelContent}
+        {pageOverlays}
+      </div>
     </div>
   );
 }

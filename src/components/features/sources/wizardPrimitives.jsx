@@ -6,6 +6,7 @@
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getWizardProviderLogo } from "@/lib/wizardProviderLogos";
 
 /** Colored rounded monogram used for provider tiles (no brand logos needed). */
 export function Monogram({ short, color, className }) {
@@ -87,7 +88,33 @@ export function OptionCard({ icon: Icon, accent, title, description, selected, o
   );
 }
 
-/** Compact selectable provider tile (monogram + label) for a grid. */
+/** Brand logo or monogram fallback for wizard provider tiles. */
+export function ProviderMark({ provider, className }) {
+  const logoSrc = getWizardProviderLogo(provider.id);
+
+  if (logoSrc) {
+    return (
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-lg bg-background p-1.5 ring-1 ring-border/60",
+          className,
+        )}
+      >
+        <img
+          src={logoSrc}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="size-full object-contain"
+        />
+      </span>
+    );
+  }
+
+  return <Monogram short={provider.short} color={provider.color} className={className} />;
+}
+
+/** Compact selectable provider tile (logo + label) for a grid. */
 export function ProviderTile({ provider, selected, disabled, onClick, badge }) {
   return (
     <button
@@ -103,7 +130,7 @@ export function ProviderTile({ provider, selected, disabled, onClick, badge }) {
           : "border-border bg-background hover:border-primary/40 hover:bg-muted/40",
       )}
     >
-      <Monogram short={provider.short} color={provider.color} />
+      <ProviderMark provider={provider} />
       <span className="min-w-0 w-full truncate text-xs font-semibold text-foreground">
         {provider.label}
       </span>

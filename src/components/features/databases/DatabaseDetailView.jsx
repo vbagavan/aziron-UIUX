@@ -1,14 +1,8 @@
 import { useMemo, useState } from "react";
 import {
-  Bot,
-  Database,
-  GitBranch,
-  Layers,
   MessageSquare,
   Sparkles,
   Table2,
-  X,
-  Workflow,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { DatabaseRightPanel, DATABASE_PANEL_TABS } from "@/components/features/databases/DatabaseRightPanel";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
+import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
 import {
   generateSqlFromNaturalLanguage,
   getDatabaseDetail,
@@ -35,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 const MAIN_TABS = [
   { id: "overview", label: "Overview" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "discover", label: "Discover" },
   { id: "schema", label: "Schema" },
   { id: "usage", label: "Usage" },
   { id: "query", label: "Query Studio" },
@@ -62,20 +57,6 @@ function MetricCard({ label, value }) {
 function OverviewTab({ detail }) {
   return (
     <div className="space-y-6">
-      <div>
-        <p className={SECTION_EYEBROW}>Database metadata</p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight">{detail.title}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{detail.provider}</Badge>
-          <Badge variant="secondary">{detail.environment}</Badge>
-          {detail.focusedTable ? (
-            <Badge variant="outline" className="font-mono text-[11px]">
-              Table: {detail.focusedTable}
-            </Badge>
-          ) : null}
-        </div>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Last sync" value={detail.lastSyncRelative} />
         <MetricCard label="Health" value={detail.health} />
@@ -93,18 +74,12 @@ function OverviewTab({ detail }) {
               <dt className="text-muted-foreground">Connection</dt>
               <dd className="font-medium">{detail.connectionName}</dd>
             </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Provider</dt>
-              <dd className="font-medium">{detail.provider}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Environment</dt>
-              <dd className="font-medium">{detail.environment}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Focused asset</dt>
-              <dd className="font-mono text-xs">{detail.focusedTable}</dd>
-            </div>
+            {detail.focusedTable ? (
+              <div className="flex justify-between gap-2 border-b border-border/60 py-2">
+                <dt className="text-muted-foreground">Focused asset</dt>
+                <dd className="font-mono text-xs">{detail.focusedTable}</dd>
+              </div>
+            ) : null}
           </dl>
         </CardContent>
       </Card>
@@ -112,8 +87,13 @@ function OverviewTab({ detail }) {
   );
 }
 
-function KnowledgeTab({ detail }) {
+function DiscoverTab({ detail, onAskQuestion, onOpenQueryStudio }) {
   const { knowledge } = detail;
+  const sqlPreview = generateSqlFromNaturalLanguage(
+    knowledge.suggestedQuestions[0] ?? "Show top customers",
+    detail,
+  );
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -122,7 +102,7 @@ function KnowledgeTab({ detail }) {
           AI intelligence generated from this database
         </div>
         <p className={cn(CAPTION, "mt-1")}>
-          Discover business context, domains, and ready-to-ask questions — like Discover, for databases.
+          Business context, domains, and ready-to-use patterns for agents and flows.
         </p>
       </div>
 
@@ -154,15 +134,37 @@ function KnowledgeTab({ detail }) {
         <p className={SECTION_EYEBROW}>Suggested questions</p>
         <ul className="mt-3 space-y-2">
           {knowledge.suggestedQuestions.map((q) => (
-            <li
-              key={q}
-              className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-sm"
-            >
-              <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
-              {q}
+            <li key={q}>
+              {onAskQuestion ? (
+                <button
+                  type="button"
+                  onClick={() => onAskQuestion(q)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/30 hover:bg-muted/40"
+                >
+                  <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
+                  {q}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-sm">
+                  <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
+                  {q}
+                </div>
+              )}
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="rounded-lg border border-border bg-muted/20 p-4">
+        <p className={SECTION_EYEBROW}>SQL preview</p>
+        <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-muted-foreground">
+          {sqlPreview}
+        </pre>
+        {onOpenQueryStudio ? (
+          <Button type="button" size="sm" variant="outline" className="mt-3" onClick={onOpenQueryStudio}>
+            Open in Query Studio
+          </Button>
+        ) : null}
       </section>
     </div>
   );
@@ -317,37 +319,6 @@ function SchemaTab({ detail }) {
   );
 }
 
-function UsageTab({ detail }) {
-  const sections = [
-    { title: "Knowledge Hubs", icon: Layers, items: detail.usage.hubs },
-    { title: "Agents", icon: Bot, items: detail.usage.agents },
-    { title: "Flows", icon: Workflow, items: detail.usage.flows },
-  ];
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {sections.map(({ title, icon: Icon, items }) => (
-        <Card key={title} className="gap-0 py-0 shadow-none">
-          <CardHeader className="flex-row items-center gap-2 px-4 py-3">
-            <Icon className="size-4 text-muted-foreground" aria-hidden />
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-4">
-            {items.map((item) => (
-              <div
-                key={item}
-                className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm font-medium"
-              >
-                {item}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 function QueryStudioTab({ detail }) {
   const [mode, setMode] = useState("natural");
   const [nlPrompt, setNlPrompt] = useState("Show top 10 customers by ARR");
@@ -439,8 +410,14 @@ function QueryStudioTab({ detail }) {
 export function DatabaseDetailView({
   record,
   hubLinks = [],
+  hubs = [],
+  canEdit = true,
+  canCreate = true,
   onClose,
   onNavigateToHub,
+  onLinkToHub,
+  onUnlinkFromHub,
+  onCreateHub,
   className,
 }) {
   const detail = useMemo(() => getDatabaseDetail(record), [record?.id, record?.name]);
@@ -471,35 +448,34 @@ export function DatabaseDetailView({
     detail,
     record,
     hubLinks,
+    hubs,
+    canEdit,
+    canCreate,
     tab: panelTab,
     onTabChange: setPanelTab,
     seedPrompt: askSeedPrompt,
     onSeedPromptApplied: () => setAskSeedPrompt(""),
     onNavigateToHub,
+    onLinkToHub,
+    onUnlinkFromHub,
+    onCreateHub,
     onOpenQueryStudio: handleOpenQueryStudio,
-    onAskQuestion: handleAskFromInsight,
   };
 
   return (
     <div className={cn("flex h-full w-full flex-col bg-background", className)}>
       <header className="shrink-0 border-b border-border bg-card/50 px-5 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Database className="size-3.5" aria-hidden />
-              Database details
-            </div>
-            <h1 className="mt-1 truncate text-xl font-semibold tracking-tight">{detail.title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <SourceBadge record={record} size="sm" />
-              <Badge variant="secondary">{detail.environment}</Badge>
-              {hubLinks.length > 0 ? (
-                <Badge variant="outline">
-                  <GitBranch data-icon="inline-start" aria-hidden />
-                  {hubLinks.length} hub{hubLinks.length === 1 ? "" : "s"}
-                </Badge>
-              ) : null}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <h1 className="truncate text-xl font-semibold tracking-tight">{detail.title}</h1>
+            <SourceBadge record={record} size="sm" />
+            <Badge variant="outline">{detail.provider}</Badge>
+            <Badge variant="secondary">{detail.environment}</Badge>
+            {detail.focusedTable ? (
+              <Badge variant="outline" className="font-mono text-[11px]">
+                {detail.focusedTable}
+              </Badge>
+            ) : null}
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -511,8 +487,8 @@ export function DatabaseDetailView({
             >
               <MessageSquare className="size-4" />
             </button>
-            <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
-              <X className="size-4" />
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Close
             </Button>
           </div>
         </div>
@@ -539,14 +515,18 @@ export function DatabaseDetailView({
               <TabsContent value="overview" className="mt-0">
                 <OverviewTab detail={detail} />
               </TabsContent>
-              <TabsContent value="knowledge" className="mt-0">
-                <KnowledgeTab detail={detail} />
+              <TabsContent value="discover" className="mt-0">
+                <DiscoverTab
+                  detail={detail}
+                  onAskQuestion={handleAskFromInsight}
+                  onOpenQueryStudio={handleOpenQueryStudio}
+                />
               </TabsContent>
               <TabsContent value="schema" className="mt-0 flex min-h-[480px] flex-col">
                 <SchemaTab detail={detail} />
               </TabsContent>
               <TabsContent value="usage" className="mt-0">
-                <UsageTab detail={detail} />
+                <SourceUsageTab usage={detail.usage} />
               </TabsContent>
               <TabsContent value="query" className="mt-0">
                 <QueryStudioTab detail={detail} />

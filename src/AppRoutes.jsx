@@ -35,8 +35,7 @@ import UserDetailPage from "@/components/pages/UserDetailPage";
 import UserGroupsPage from "@/components/pages/UserGroupsPage";
 import UsagePage from "@/components/pages/UsagePage";
 import VaultPage from "@/components/pages/VaultPage";
-import KnowledgeHubPage from "@/components/pages/KnowledgeHubPage";
-import DocumentsPage from "@/components/pages/DocumentsPage";
+import KnowledgePage, { DocumentsRouteRedirect } from "@/components/pages/KnowledgePage";
 import MarketplacePage from "@/components/pages/MarketplacePage";
 import TenantListPage from "@/components/pages/TenantListPage";
 import TenantDetailPage from "@/components/pages/TenantDetailPage";
@@ -360,9 +359,9 @@ export default function AppRoutes() {
       <Route path="/user-groups" element={<UserGroupsPage onNavigate={onNavigate} />} />
       <Route path="/usage" element={<UsagePage onNavigate={onNavigate} />} />
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
-      <Route path="/knowledge" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
-      <Route path="/knowledge/:hubId" element={<KnowledgeHubPage onNavigate={onNavigate} />} />
-      <Route path="/documents" element={<DocumentsPage onNavigate={onNavigate} />} />
+      <Route path="/knowledge" element={<KnowledgePage onNavigate={onNavigate} />} />
+      <Route path="/knowledge/:hubId" element={<KnowledgePage onNavigate={onNavigate} />} />
+      <Route path="/documents" element={<DocumentsRouteRedirect />} />
       <Route path="/marketplace" element={<MarketplaceRoute onNavigate={onNavigate} agents={agents} patchAgent={patchAgent} navigate={navigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />
 

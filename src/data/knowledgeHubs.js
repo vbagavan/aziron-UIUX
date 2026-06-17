@@ -99,8 +99,9 @@ export function inferHubFileType(fileName, mimeType = "") {
 export const SEED_KNOWLEDGE_HUBS = [
   {
     id: 1,
-    name: "Test Hub (Draft)",
+    name: "Test Hub",
     description: "Sandbox hub for uploads and embedding tests.",
+    status: "draft",
     files: 0,
     collections: 0,
     storageMB: 0,

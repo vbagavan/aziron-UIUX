@@ -1,3 +1,7 @@
+/**
+ * @deprecated Superseded by KnowledgeHubControlCenter + DocumentReaderDrawer.
+ * Retained for reference only — not mounted in routing.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,

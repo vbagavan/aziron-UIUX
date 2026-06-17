@@ -7,6 +7,7 @@ import {
 } from "@/data/knowledgeHubs";
 import { createPendingHubFileMetadata } from "@/components/features/knowledge/hubFileMetadata";
 import { createPendingSourceGuide } from "@/components/features/knowledge/hubSourceGuide";
+import { isSingleHubSource } from "@/lib/sourceCategories";
 
 export const DOCUMENT_LIBRARY_STORAGE_KEY = "aziron_document_library_v1";
 
@@ -384,11 +385,14 @@ export function resolveCloudImportToLibraryRecords(cloudImport) {
 }
 
 /** Hub associations for a library document (from stored links + live hub scan). */
-export function getHubLinksForDocument(documentId, hubs = []) {
+export function getHubLinksForDocument(documentId, hubs = [], documents = []) {
   const links = [];
+  let sampleRecord = documents.find((d) => d.id === documentId);
+
   for (const hub of hubs) {
     for (const file of hub.userFiles ?? []) {
       if (file.libraryDocumentId === documentId) {
+        sampleRecord = sampleRecord ?? file;
         links.push({
           hubId: hub.id,
           hubFileId: file.id,
@@ -397,6 +401,11 @@ export function getHubLinksForDocument(documentId, hubs = []) {
       }
     }
   }
+
+  if (sampleRecord && isSingleHubSource(sampleRecord) && links.length > 1) {
+    return links.slice(0, 1);
+  }
+
   return links;
 }
 
@@ -431,6 +440,62 @@ export function libraryRecordToHubFile(libraryDoc, hubId) {
     metadata: libraryDoc.metadata ?? createPendingHubFileMetadata(libraryDoc.name),
     sourceGuide: libraryDoc.sourceGuide ?? createPendingSourceGuide(),
   };
+}
+
+/**
+ * Link a library document to a hub. APIs/databases unlink from other hubs first.
+ * @returns {{ hubs: object[], alreadyLinked: boolean, moved: boolean, hubFileId?: string }}
+ */
+export function applyLibraryDocumentHubLink(prevHubs, { libraryDoc, documentId, targetId }) {
+  const exclusive = isSingleHubSource(libraryDoc);
+  let alreadyLinked = false;
+  let moved = false;
+  let hubFileId;
+
+  const hubs = prevHubs.map((h) => {
+    const hid = Number(h.id);
+    const prevUser = h.userFiles ?? [];
+    const linkedHere = prevUser.some((f) => f.libraryDocumentId === documentId);
+
+    if (hid === targetId) {
+      if (linkedHere) {
+        alreadyLinked = true;
+        return h;
+      }
+      const hubFile = libraryRecordToHubFile(libraryDoc, targetId);
+      hubFileId = hubFile.id;
+      const userFiles = [...prevUser, hubFile];
+      const addedKb = hubFile.sizeKb ?? 0;
+      return {
+        ...h,
+        userFiles,
+        files: userFiles.length,
+        collections: userFiles.length > 0 ? 1 : 0,
+        storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
+        updated: "Just now",
+        isUserCreated: true,
+      };
+    }
+
+    if (!exclusive || !linkedHere) return h;
+
+    moved = true;
+    const linked = prevUser.filter((f) => f.libraryDocumentId === documentId);
+    const userFiles = prevUser.filter((f) => f.libraryDocumentId !== documentId);
+    const storageDrop = linked.reduce(
+      (sum, row) => sum + Math.max(0, Math.round((row.sizeKb ?? 0) / 1024)),
+      0,
+    );
+    return {
+      ...h,
+      userFiles,
+      files: Math.max(0, userFiles.length),
+      storageMB: Math.max(0, (h.storageMB ?? 0) - storageDrop),
+      updated: "Just now",
+    };
+  });
+
+  return { hubs, alreadyLinked, moved, hubFileId };
 }
 
 /** Ensure demo library rows with hubLinks metadata appear as hub file links. */

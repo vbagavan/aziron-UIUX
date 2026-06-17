@@ -54,7 +54,7 @@ import {
 } from "@/data/addSourceCatalog";
 import {
   CheckRow,
-  Monogram,
+  ProviderMark,
   ProviderGrid,
   ProviderTile,
   RadioRow,
@@ -309,7 +309,7 @@ export function DbConnectStep({ state, update }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Monogram short={provider.short} color={provider.color} className="size-7 text-[10px]" />
+        <ProviderMark provider={provider} className="size-7 p-1 text-[10px]" />
         Connecting to {provider.label}
       </div>
 
@@ -566,7 +566,7 @@ export function ApiConnectStep({ state, update }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Monogram short={apiType.short} color={apiType.color} className="size-7 text-[10px]" />
+        <ProviderMark provider={apiType} className="size-7 p-1 text-[10px]" />
         {apiType.label} connection
       </div>
 

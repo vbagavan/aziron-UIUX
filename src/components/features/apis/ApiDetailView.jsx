@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bot,
-  GitBranch,
-  Layers,
   MessageSquare,
   Play,
   Sparkles,
-  Workflow,
-  X,
-  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiRightPanel, API_PANEL_TABS } from "@/components/features/apis/ApiRightPanel";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
+import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
 import {
   buildPlaygroundRequest,
   getApiDetail,
@@ -27,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const MAIN_TABS = [
   { id: "overview", label: "Overview" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "discover", label: "Discover" },
   { id: "endpoints", label: "Endpoints" },
   { id: "usage", label: "Usage" },
   { id: "playground", label: "Playground" },
@@ -69,21 +64,6 @@ function MetricCard({ label, value }) {
 function OverviewTab({ detail }) {
   return (
     <div className="space-y-6">
-      <div>
-        <p className={SECTION_EYEBROW}>API overview</p>
-        <h2 className="mt-1 text-2xl font-semibold tracking-tight">{detail.title}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{detail.version}</Badge>
-          <Badge variant="secondary">{detail.authentication}</Badge>
-          <Badge
-            variant={detail.status === "Connected" ? "default" : "destructive"}
-            className={detail.status === "Connected" ? "bg-emerald-600" : undefined}
-          >
-            {detail.status}
-          </Badge>
-        </div>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Latency" value={`${detail.latencyMs}ms`} />
         <MetricCard label="Availability" value={detail.availability} />
@@ -106,20 +86,8 @@ function OverviewTab({ detail }) {
               <dd className="font-medium">{detail.connectionName}</dd>
             </div>
             <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Version</dt>
-              <dd className="font-medium">{detail.version}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
               <dt className="text-muted-foreground">Authentication</dt>
               <dd className="font-medium">{detail.authentication}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Refresh</dt>
-              <dd className="font-medium">{detail.refreshCadence}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Status</dt>
-              <dd className="font-medium">{detail.status}</dd>
             </div>
           </dl>
         </CardContent>
@@ -128,8 +96,10 @@ function OverviewTab({ detail }) {
   );
 }
 
-function KnowledgeTab({ detail }) {
+function DiscoverTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint }) {
   const { knowledge } = detail;
+  const primaryEndpoint = detail.endpoints[0];
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -170,16 +140,52 @@ function KnowledgeTab({ detail }) {
         <p className={SECTION_EYEBROW}>Suggested questions</p>
         <ul className="mt-3 space-y-2">
           {knowledge.suggestedQuestions.map((q) => (
-            <li
-              key={q}
-              className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-sm"
-            >
-              <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
-              {q}
+            <li key={q}>
+              {onAskQuestion ? (
+                <button
+                  type="button"
+                  onClick={() => onAskQuestion(q)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/30 hover:bg-muted/40"
+                >
+                  <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
+                  {q}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2.5 text-sm">
+                  <Sparkles className="size-3.5 shrink-0 text-primary" aria-hidden />
+                  {q}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       </section>
+
+      {primaryEndpoint ? (
+        <section className="rounded-lg border border-border bg-muted/20 p-4">
+          <p className={SECTION_EYEBROW}>Primary endpoint</p>
+          <button
+            type="button"
+            onClick={() => onSelectEndpoint?.(primaryEndpoint.id)}
+            className="mt-2 flex w-full items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-left font-mono text-sm transition-colors hover:border-primary/30"
+          >
+            <MethodBadge method={primaryEndpoint.method} />
+            {primaryEndpoint.path}
+          </button>
+          {onOpenPlayground ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => onOpenPlayground(primaryEndpoint.id)}
+            >
+              <Play data-icon="inline-start" aria-hidden />
+              Try in Playground
+            </Button>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -297,41 +303,6 @@ function EndpointsTab({ detail, selectedEndpointId, onSelectEndpoint, onTryInPla
   );
 }
 
-function UsageTab({ detail }) {
-  const sections = [
-    { title: "Knowledge Hubs", icon: Layers, items: detail.usage.hubs },
-    { title: "Agents", icon: Bot, items: detail.usage.agents },
-    { title: "Flows", icon: Workflow, items: detail.usage.flows },
-  ];
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {sections.map(({ title, icon: Icon, items }) => (
-        <Card key={title} className="gap-0 py-0 shadow-none">
-          <CardHeader className="flex-row items-center gap-2 px-4 py-3">
-            <Icon className="size-4 text-muted-foreground" aria-hidden />
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-4">
-            {items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None linked.</p>
-            ) : (
-              items.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm font-medium"
-                >
-                  {item}
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 function PlaygroundTab({ detail, selectedEndpointId, onSelectEndpoint }) {
   const endpoint =
     detail.endpoints.find((e) => e.id === selectedEndpointId) ?? detail.endpoints[0];
@@ -443,10 +414,9 @@ function OperationsTab({ detail }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         <MetricCard label="Rate limit" value={operations.rateLimit} />
         <MetricCard label="Quota used" value={`${operations.rateLimitUsed}%`} />
-        <MetricCard label="Avg latency" value={`${operations.avgLatencyMs}ms`} />
         <MetricCard label="Error rate" value={operations.errorRate} />
       </div>
 
@@ -463,14 +433,6 @@ function OperationsTab({ detail }) {
             <div className="flex justify-between gap-2 border-b border-border/60 py-2">
               <dt className="text-muted-foreground">Last fetch status</dt>
               <dd className="font-medium">{operations.lastFetchStatus}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Availability</dt>
-              <dd className="font-medium">{detail.availability}</dd>
-            </div>
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Connection status</dt>
-              <dd className="font-medium">{detail.status}</dd>
             </div>
           </dl>
         </CardContent>
@@ -510,8 +472,14 @@ function OperationsTab({ detail }) {
 export function ApiDetailView({
   record,
   hubLinks = [],
+  hubs = [],
+  canEdit = true,
+  canCreate = true,
   onClose,
   onNavigateToHub,
+  onLinkToHub,
+  onUnlinkFromHub,
+  onCreateHub,
   className,
 }) {
   const detail = useMemo(() => getApiDetail(record), [record?.id, record?.name]);
@@ -550,45 +518,34 @@ export function ApiDetailView({
     detail,
     record,
     hubLinks,
+    hubs,
+    canEdit,
+    canCreate,
     tab: panelTab,
     onTabChange: setPanelTab,
     seedPrompt: askSeedPrompt,
     onSeedPromptApplied: () => setAskSeedPrompt(""),
     onNavigateToHub,
+    onLinkToHub,
+    onUnlinkFromHub,
+    onCreateHub,
     onOpenPlayground: () => handleOpenPlayground(selectedEndpointId),
-    onAskQuestion: handleAskFromInsight,
-    onSelectEndpoint: (id) => {
-      setSelectedEndpointId(id);
-      setMainTab("endpoints");
-    },
   };
 
   return (
     <div className={cn("flex h-full w-full flex-col bg-background", className)}>
       <header className="shrink-0 border-b border-border bg-card/50 px-5 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              <Zap className="size-3.5" aria-hidden />
-              API details
-            </div>
-            <h1 className="mt-1 truncate text-xl font-semibold tracking-tight">{detail.title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <SourceBadge record={record} size="sm" />
-              <Badge variant="outline">{detail.version}</Badge>
-              <Badge
-                variant={detail.status === "Connected" ? "default" : "destructive"}
-                className={detail.status === "Connected" ? "bg-emerald-600" : undefined}
-              >
-                {detail.status}
-              </Badge>
-              {hubLinks.length > 0 ? (
-                <Badge variant="outline">
-                  <GitBranch data-icon="inline-start" aria-hidden />
-                  {hubLinks.length} hub{hubLinks.length === 1 ? "" : "s"}
-                </Badge>
-              ) : null}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <h1 className="truncate text-xl font-semibold tracking-tight">{detail.title}</h1>
+            <SourceBadge record={record} size="sm" />
+            <Badge variant="outline">{detail.version}</Badge>
+            <Badge
+              variant={detail.status === "Connected" ? "default" : "destructive"}
+              className={detail.status === "Connected" ? "bg-emerald-600" : undefined}
+            >
+              {detail.status}
+            </Badge>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -600,8 +557,8 @@ export function ApiDetailView({
             >
               <MessageSquare className="size-4" />
             </button>
-            <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
-              <X className="size-4" />
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Close
             </Button>
           </div>
         </div>
@@ -628,8 +585,16 @@ export function ApiDetailView({
               <TabsContent value="overview" className="mt-0">
                 <OverviewTab detail={detail} />
               </TabsContent>
-              <TabsContent value="knowledge" className="mt-0">
-                <KnowledgeTab detail={detail} />
+              <TabsContent value="discover" className="mt-0">
+                <DiscoverTab
+                  detail={detail}
+                  onAskQuestion={handleAskFromInsight}
+                  onOpenPlayground={handleOpenPlayground}
+                  onSelectEndpoint={(id) => {
+                    setSelectedEndpointId(id);
+                    setMainTab("endpoints");
+                  }}
+                />
               </TabsContent>
               <TabsContent value="endpoints" className="mt-0 flex min-h-[480px] flex-col">
                 <EndpointsTab
@@ -640,7 +605,7 @@ export function ApiDetailView({
                 />
               </TabsContent>
               <TabsContent value="usage" className="mt-0">
-                <UsageTab detail={detail} />
+                <SourceUsageTab usage={detail.usage} />
               </TabsContent>
               <TabsContent value="playground" className="mt-0">
                 <PlaygroundTab

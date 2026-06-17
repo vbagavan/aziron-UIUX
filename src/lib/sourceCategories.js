@@ -7,7 +7,7 @@ import { CLOUD_PROVIDER_LABELS, FILE_LIFECYCLE_META, resolveFileLifecycleStatus 
 
 export const SOURCE_CATEGORIES = {
   files: { id: "files", label: "Files", icon: "file" },
-  dbs: { id: "dbs", label: "DBs", icon: "database" },
+  dbs: { id: "dbs", label: "Database", icon: "database" },
   apis: { id: "apis", label: "APIs", icon: "api" },
 };
 
@@ -48,7 +48,7 @@ const FILE_CLOUD_PROVIDERS = new Set([
 export const CATEGORY_FILTER_OPTIONS = [
   { id: "all", label: "All" },
   { id: "files", label: "Files" },
-  { id: "dbs", label: "DBs" },
+  { id: "dbs", label: "Database" },
   { id: "apis", label: "APIs" },
 ];
 
@@ -198,6 +198,12 @@ export const CATEGORY_LIFECYCLE_META = {
     "fetch-error": { label: "Fetch error", message: "Last request failed", badgeVariant: "destructive" },
   },
 };
+
+/** APIs and databases may belong to at most one Knowledge Hub (files can link to many). */
+export function isSingleHubSource(record) {
+  const category = resolveSourceCategory(record);
+  return category === "dbs" || category === "apis";
+}
 
 export function getSourceLifecycleMeta(file, options = {}) {
   const category = resolveSourceCategory(file);

@@ -4,8 +4,11 @@ export const KNOWLEDGE_TERMS = {
   hubs: "Knowledge Hubs",
   hubSingular: "Knowledge Hub",
   documents: "Documents",
+  /** Hub control center tab — distinct from top-level Documents library tab. */
+  hubSourcesTab: "Sources in hub",
   libraryView: "Library",
   controlCenter: "Control Center",
+  knowledgeHelpLabel: "Knowledge help",
   insightsTab: "Insights",
   documentsDescription: "Central file library",
   hubsDescription: "Curated collections for agents",

@@ -8,7 +8,6 @@ import {
   rowsNeedingDownload,
 } from "@/components/features/knowledge/hubFileSyncUtils";
 import { KnowledgeHubControlCenter } from "@/components/features/knowledge/control-center/KnowledgeHubControlCenter";
-import { HubLibraryView } from "@/components/features/knowledge/HubLibraryView";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
@@ -47,6 +46,8 @@ export function KnowledgeHubDetailView({
   onHubNavHandled,
   canEdit = true,
   canDelete = true,
+  onBrowseDocumentsLibrary,
+  onBackToHubs,
 }) {
   const { getHubById, deleteHubFile, downloadCloudFileToHub, addCloudFilesToHub, addDocumentsToHub, addCategorySourcesToLibrary, hubs, recordHubAccess, updateHub } =
     useKnowledgeHubs();
@@ -67,16 +68,24 @@ export function KnowledgeHubDetailView({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [hubSurface, setHubSurface] = useState("control-center");
-  const [libraryFileId, setLibraryFileId] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
-  const [librarySearch, setLibrarySearch] = useState("");
-  const [libraryFilterType, setLibraryFilterType] = useState("all");
-  const [librarySortBy, setLibrarySortBy] = useState("recent");
   const [dbConnections, setDbConnections] = useState(DEMO_DB_CONNECTIONS);
   const [dbBrowseTarget, setDbBrowseTarget] = useState(null);
   const openIntegrationsWizard = useConnectionsStore((s) => s.openWizard);
   const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
   const navigate = useNavigate();
+
+  const browseDocumentsLibrary = useCallback(
+    (hubId) => {
+      if (onBrowseDocumentsLibrary) {
+        onBrowseDocumentsLibrary(hubId);
+        return;
+      }
+      const params = new URLSearchParams({ tab: "documents", linkHub: String(hubId) });
+      navigate(`/knowledge?${params.toString()}`);
+    },
+    [navigate, onBrowseDocumentsLibrary],
+  );
 
   // Only fire when the hub ID changes (navigating to a different hub), not on every
   // hub-data refresh. Without this, recordHubAccess() → context update → liveHub new
@@ -88,7 +97,6 @@ export function KnowledgeHubDetailView({
     setDescription(liveHub.description ?? "");
     recordHubAccess(liveHub.id);
     setHubSurface("control-center");
-    setLibraryFileId(null);
     setPreviewFile(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveHubId, recordHubAccess]);
@@ -168,15 +176,10 @@ export function KnowledgeHubDetailView({
   }
 
   const hasCloudFiles = allFiles.some((row) => row.source === "cloud");
-  const hasSampleDemoFiles = allFiles.some((row) => row.isSampleDemo);
   const fileSyncCounts = countSyncStates(allFiles);
   const pendingDownloadRows = useMemo(() => rowsNeedingDownload(allFiles), [allFiles]);
 
-  const activeFileName = useMemo(() => {
-    if (previewFile?.name) return previewFile.name;
-    if (!libraryFileId) return null;
-    return allFiles.find((f) => f.id === libraryFileId)?.name ?? null;
-  }, [previewFile, libraryFileId, allFiles]);
+  const activeFileName = previewFile?.name ?? null;
 
   const handleDownloadCloudFile = useCallback(
     async (row) => {
@@ -215,13 +218,11 @@ export function KnowledgeHubDetailView({
   useEffect(() => {
     if (hubNavRequest === "close-preview") {
       setPreviewFile(null);
-      setLibraryFileId(null);
       onHubNavHandled?.();
       return;
     }
     if (hubNavRequest !== "control-center") return;
     setHubSurface("control-center");
-    setLibraryFileId(null);
     onHubNavHandled?.();
   }, [hubNavRequest, onHubNavHandled]);
 
@@ -261,7 +262,6 @@ export function KnowledgeHubDetailView({
 
   function backToControlCenter() {
     setHubSurface("control-center");
-    setLibraryFileId(null);
   }
 
   function openCloudFilePicker(connection) {
@@ -345,7 +345,7 @@ export function KnowledgeHubDetailView({
 
   function openLibraryView() {
     setPreviewFile(null);
-    setHubSurface("library");
+    setHubSurface("control-center");
   }
 
   return (
@@ -355,15 +355,6 @@ export function KnowledgeHubDetailView({
           <Info className="size-4" />
           <AlertDescription className="text-xs">
             View-only access — uploads and edits are disabled.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hasSampleDemoFiles && (
-        <Alert className="mx-3 mt-2 shrink-0 py-2">
-          <Info className="size-4" />
-          <AlertDescription className="text-xs">
-            Sample OneDrive files included for demo. Save them to your knowledge base or replace with your own sources.
           </AlertDescription>
         </Alert>
       )}
@@ -402,28 +393,6 @@ export function KnowledgeHubDetailView({
           onNotify={(msg) => onNotify?.(msg)}
         />
         )
-      ) : hubSurface === "library" ? (
-        <HubLibraryView
-          hubId={liveHub.id}
-          hubName={name.trim() || liveHub.name}
-          allFiles={allFiles}
-          canEdit={canEdit}
-          onUploadFiles={canEdit ? openUploadDialog : undefined}
-          onDeleteFile={canEdit ? setFileToDelete : undefined}
-          onPreviewFile={setPreviewFile}
-          searchQuery={librarySearch}
-          onSearchQueryChange={setLibrarySearch}
-          filterType={libraryFilterType}
-          onFilterTypeChange={setLibraryFilterType}
-          sortBy={librarySortBy}
-          onSortByChange={setLibrarySortBy}
-          initialFileId={libraryFileId}
-          onBrowseDocumentsLibrary={() =>
-            navigate(`/documents?linkHub=${encodeURIComponent(liveHub.id)}`)
-          }
-          backLabel={KNOWLEDGE_TERMS.controlCenter}
-          onBack={backToControlCenter}
-        />
       ) : (
         <KnowledgeHubControlCenter
           hub={liveHub}
@@ -440,10 +409,8 @@ export function KnowledgeHubDetailView({
           onPublish={canEdit ? handlePublish : undefined}
           pendingDownloadCount={pendingDownloadRows.length}
           onDownloadAllPending={pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined}
-          onBrowseDocumentsLibrary={() =>
-            navigate(`/documents?linkHub=${encodeURIComponent(liveHub.id)}`)
-          }
-          onOpenLibraryView={openLibraryView}
+          onBrowseDocumentsLibrary={() => browseDocumentsLibrary(liveHub.id)}
+          onBackToHubs={onBackToHubs}
           className="min-h-0 flex-1"
         />
       )}
@@ -481,7 +448,6 @@ export function KnowledgeHubDetailView({
             deleteHubFile(liveHub.id, fileToDelete.id);
             onFileDeleted?.(fileToDelete.name);
             if (previewFile?.id === fileToDelete.id) setPreviewFile(null);
-            if (libraryFileId === fileToDelete.id) backToControlCenter();
             setFileToDelete(null);
           }}
           onCancel={() => setFileToDelete(null)}

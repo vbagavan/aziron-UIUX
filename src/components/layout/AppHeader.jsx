@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell, ChevronDown, Check, Sun, Moon } from "lucide-react";
+import { Bell, ChevronDown, Check, HelpCircle, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/context/ThemeContext";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { LinkingHelpDialog } from "@/components/features/knowledge/LinkingHelpDialog";
 import NotificationPanel from "@/components/layout/NotificationPanel";
 
 // ─── Language data ─────────────────────────────────────────────────────────────
@@ -126,6 +128,7 @@ function LanguageSelector() {
 
 // ─── App header ────────────────────────────────────────────────────────────────
 export default function AppHeader({
+  activePage,
   onNavigate,
   children,
   approvals,
@@ -137,6 +140,7 @@ export default function AppHeader({
   onNotifToggle,
 }) {
   const [showNotificationsInternal, setShowNotificationsInternal] = useState(false);
+  const [linkingHelpOpen, setLinkingHelpOpen] = useState(false);
 
   const showNotifications   = notifOpenProp !== undefined ? notifOpenProp : showNotificationsInternal;
   const toggleNotifications = onNotifToggle ?? (() => setShowNotificationsInternal((v) => !v));
@@ -153,6 +157,18 @@ export default function AppHeader({
         </div>
 
         <div className="flex items-center gap-1">
+          {activePage === "knowledge" ? (
+            <button
+              type="button"
+              aria-label={KNOWLEDGE_TERMS.knowledgeHelpLabel}
+              title={KNOWLEDGE_TERMS.documentsLearnMore}
+              onClick={() => setLinkingHelpOpen(true)}
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <HelpCircle size={15} />
+            </button>
+          ) : null}
+
           <LanguageSelector />
 
           <div className="w-px h-4 bg-border mx-1" />
@@ -185,6 +201,10 @@ export default function AppHeader({
         onRequestChanges={onRequestChanges}
         onKudosActionComplete={onKudosActionComplete}
       />
+
+      {activePage === "knowledge" ? (
+        <LinkingHelpDialog open={linkingHelpOpen} onOpenChange={setLinkingHelpOpen} />
+      ) : null}
     </>
   );
 }

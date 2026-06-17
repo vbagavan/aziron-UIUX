@@ -23,10 +23,11 @@ import {
   knowledgeHubBlobKey,
   saveKnowledgeHubFile,
 } from "@/lib/knowledgeHubFileStorage";
-import { partitionUploadFiles } from "@/lib/hubUploadLimits";
+import { isSingleHubSource } from "@/lib/sourceCategories";
 import { useAgentsOptional } from "@/context/AgentsContext";
 import {
   fileToLibraryRecord,
+  applyLibraryDocumentHubLink,
   getHubLinksForDocument,
   libraryRecordToHubFile,
   loadDocumentsFromStorage,
@@ -373,6 +374,11 @@ export function KnowledgeHubProvider({ children }) {
       const file = sourceHub?.userFiles?.find((f) => f.id === fileId);
       if (!file) continue;
 
+      if (isSingleHubSource(file)) {
+        skipped.push(fileId);
+        continue;
+      }
+
       const newId = `kh${targetId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const newRecord = {
         ...file,
@@ -675,32 +681,23 @@ export function KnowledgeHubProvider({ children }) {
       const targetHub = hubs.find((h) => Number(h.id) === targetId);
       if (!targetHub) return { linked: false, reason: "hub_not_found" };
 
-      const alreadyLinked = (targetHub.userFiles ?? []).some(
-        (f) => f.libraryDocumentId === documentId,
+      const { hubs: nextHubs, alreadyLinked, moved, hubFileId } = applyLibraryDocumentHubLink(
+        hubs,
+        { libraryDoc, documentId, targetId },
       );
+
       if (alreadyLinked) {
         return { linked: false, reason: "already_linked" };
       }
 
-      const hubFile = libraryRecordToHubFile(libraryDoc, targetId);
-      setHubs((prev) =>
-        prev.map((h) => {
-          if (Number(h.id) !== targetId) return h;
-          const userFiles = [...(h.userFiles ?? []), hubFile];
-          const addedKb = hubFile.sizeKb ?? 0;
-          return {
-            ...h,
-            userFiles,
-            files: userFiles.length,
-            collections: userFiles.length > 0 ? 1 : 0,
-            storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
-            updated: "Just now",
-            isUserCreated: true,
-          };
-        }),
-      );
+      setHubs(nextHubs);
 
-      return { linked: true, hubFileId: hubFile.id, hubName: targetHub.name };
+      return {
+        linked: true,
+        moved,
+        hubFileId,
+        hubName: targetHub.name,
+      };
     },
     [documents, hubs],
   );
@@ -747,8 +744,8 @@ export function KnowledgeHubProvider({ children }) {
   }, []);
 
   const getDocumentHubLinks = useCallback(
-    (documentId) => getHubLinksForDocument(documentId, hubs),
-    [hubs],
+    (documentId) => getHubLinksForDocument(documentId, hubs, documents),
+    [hubs, documents],
   );
 
   const removeDocumentFromLibrary = useCallback((documentId) => {

@@ -1,50 +1,31 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { Layers, Files } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Files, Layers } from "lucide-react";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+
+export const KNOWLEDGE_TABS = {
+  hubs: "hubs",
+  documents: "documents",
+};
+
+export const KNOWLEDGE_TAB_PANEL_PREFIX = "knowledge-main";
 
 const TABS = [
-  { label: "Knowledge Hubs", icon: Layers, path: "/knowledge" },
-  { label: "Documents", icon: Files, path: "/documents" },
+  { id: KNOWLEDGE_TABS.hubs, label: KNOWLEDGE_TERMS.hubs, icon: Layers },
+  { id: KNOWLEDGE_TABS.documents, label: KNOWLEDGE_TERMS.documents, icon: Files },
 ];
 
 /**
- * Shared tab bar rendered at the top of both the Knowledge Hubs and Documents views.
- * Clicking a tab navigates between /knowledge and /documents while keeping a single
- * "Knowledge" sidebar item active for both routes.
+ * Switches between Knowledge Hubs and Documents without unmounting either panel.
  */
-export function KnowledgeTabBar({ className }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const isDocuments = location.pathname.startsWith("/documents");
-
+export function KnowledgeTabBar({ activeTab, onTabChange, className }) {
   return (
-    <div
-      role="tablist"
-      aria-label="Knowledge section"
-      className={cn("flex shrink-0 border-b border-border bg-background px-6", className)}
-    >
-      {TABS.map((tab) => {
-        const active = tab.path === "/documents" ? isDocuments : !isDocuments;
-        return (
-          <button
-            key={tab.label}
-            role="tab"
-            type="button"
-            aria-selected={active}
-            onClick={() => navigate(tab.path)}
-            className={cn(
-              "mr-6 flex items-center gap-1.5 border-b-[3px] px-0.5 pb-2.5 pt-2.5 text-sm font-medium transition-colors",
-              active
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <tab.icon className="size-4 shrink-0" />
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
+    <PageUnderlineTabs
+      value={activeTab}
+      onValueChange={onTabChange}
+      tabs={TABS}
+      ariaLabel="Knowledge section"
+      panelIdPrefix={KNOWLEDGE_TAB_PANEL_PREFIX}
+      className={className}
+    />
   );
 }

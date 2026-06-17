@@ -3,26 +3,29 @@ import { useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Bot,
+  ChevronDown,
   FileText,
   GitBranch,
   History,
-  MoreHorizontal,
   Pencil,
   Plus,
   Search,
   Trash2,
   Zap,
 } from "lucide-react";
+import {
+  HubAssistantPanel,
+  HUB_ASSISTANT_PANEL_TABS,
+} from "@/components/features/knowledge/HubAssistantPanel";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -54,22 +57,25 @@ import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 import { HubMiniBarChart } from "@/components/features/knowledge/control-center/HubControlCenterCharts";
 import { HubControlCenterRelationships } from "@/components/features/knowledge/control-center/HubControlCenterRelationships";
 import { HubControlCenterTimeline } from "@/components/features/knowledge/control-center/HubControlCenterTimeline";
+import { KnowledgeHubBackNav } from "@/components/features/knowledge/KnowledgeHubBackNav";
 import {
   filterTimelineEvents,
   getHubTelemetry,
 } from "@/lib/hubTelemetry";
 import { useAgents } from "@/context/AgentsContext";
 import { useFlowCatalog } from "@/context/FlowCatalogContext";
+import { getHubDisplayName } from "@/lib/hubDisplay";
 import { paginateSlice } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
-import { CAPTION, DETAIL_TITLE, PAGE_SUBTITLE } from "@/lib/typography";
+import { CAPTION, PAGE_SUBTITLE } from "@/lib/typography";
+import { PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 
 const HUB_FILES_PAGE_SIZE = 20;
 
 const ALL_HUB_TABS = [
-  { id: "documents", label: KNOWLEDGE_TERMS.documents, icon: FileText },
+  { id: "documents", label: KNOWLEDGE_TERMS.hubSourcesTab, icon: FileText },
   { id: "agents", label: "Agents", icon: Bot },
   { id: "workflows", label: "Workflows", icon: GitBranch },
   { id: "telemetry", label: KNOWLEDGE_TERMS.insightsTab, icon: BarChart3, requiresInsights: true },
@@ -117,7 +123,7 @@ function FilesTablePagination({ page, totalPages, totalItems, onPageChange }) {
                   onPageChange(Math.max(1, currentPage - 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === 1 && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === 1}
@@ -132,7 +138,7 @@ function FilesTablePagination({ page, totalPages, totalItems, onPageChange }) {
                     e.preventDefault();
                     onPageChange(pg);
                   }}
-                  className="h-7 w-7 cursor-pointer text-xs"
+                  className={cn(PAGINATION_CONTROL_CLASS, "w-11")}
                 >
                   {pg}
                 </PaginationLink>
@@ -145,7 +151,7 @@ function FilesTablePagination({ page, totalPages, totalItems, onPageChange }) {
                   onPageChange(Math.min(totalPages, currentPage + 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === totalPages && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === totalPages}
@@ -175,16 +181,18 @@ export function KnowledgeHubControlCenter({
   pendingDownloadCount = 0,
   onDownloadAllPending,
   onBrowseDocumentsLibrary,
-  onOpenLibraryView,
+  onBackToHubs,
+  requestedTab = null,
   className,
 }) {
   const navigate = useNavigate();
   const { can } = usePermissions();
   const { agents } = useAgents();
   const { flows } = useFlowCatalog();
+  const canViewInsights = can("knowledge.insights");
   const hubTabs = useMemo(
-    () => ALL_HUB_TABS.filter((tab) => !tab.requiresInsights || can("knowledge.insights")),
-    [can],
+    () => ALL_HUB_TABS.filter((tab) => !tab.requiresInsights || canViewInsights),
+    [canViewInsights],
   );
   const [activeTab, setActiveTab] = useState("documents");
   const [docSearch, setDocSearch] = useState("");
@@ -194,6 +202,8 @@ export function KnowledgeHubControlCenter({
   const [selectedDocIds, setSelectedDocIds] = useState(() => new Set());
   const [timelineFilter, setTimelineFilter] = useState("all");
   const [timelineSearch, setTimelineSearch] = useState("");
+  const [panelTab, setPanelTab] = useState("ask");
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
   const telemetry = useMemo(
     () => getHubTelemetry(hub, { agents, flows, allFiles }),
@@ -230,6 +240,18 @@ export function KnowledgeHubControlCenter({
   }, [docSearch, docSourceFilter, docStatusFilter, hub?.id]);
 
   useEffect(() => {
+    setPanelTab("ask");
+    setMobilePanelOpen(false);
+  }, [hub?.id]);
+
+  useEffect(() => {
+    if (!requestedTab) return;
+    if (hubTabs.some((tab) => tab.id === requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab, hubTabs]);
+
+  useEffect(() => {
     if (!hubTabs.some((tab) => tab.id === activeTab)) {
       setActiveTab("documents");
     }
@@ -263,16 +285,46 @@ export function KnowledgeHubControlCenter({
     setSelectedDocIds(new Set());
   }
 
+  function openMobilePanel(tab) {
+    setPanelTab(tab);
+    setMobilePanelOpen(true);
+  }
+
+  const assistantPanelProps = {
+    hubId: hub.id,
+    hubName: getHubDisplayName(hubName),
+    hubDescription,
+    allFiles,
+    metadata,
+    summary,
+    linkedAgents,
+    linkedWorkflows,
+    canEdit,
+    tab: panelTab,
+    onTabChange: setPanelTab,
+    onOpenSource: onOpenLibraryFile,
+    onEditHub,
+  };
+
   return (
     <div className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}>
       {/* ── Header ── */}
       <header className="shrink-0 border-b border-border bg-muted/20 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className={cn(DETAIL_TITLE, "truncate")}>
-                {hubName.replace(/\s*\(Draft\)\s*$/i, "").trim()}
-              </h1>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              {onBackToHubs ? (
+                <KnowledgeHubBackNav
+                  onBack={onBackToHubs}
+                  hubTitle={getHubDisplayName(hubName)}
+                  showSeparator={false}
+                  className="min-w-0 shrink-0"
+                />
+              ) : (
+                <h1 className="text-lg font-semibold leading-tight tracking-tight">
+                  {getHubDisplayName(hubName)}
+                </h1>
+              )}
               <Badge
                 variant="outline"
                 className={cn("capitalize", STATUS_STYLES[metadata.status] ?? STATUS_STYLES.published)}
@@ -364,39 +416,37 @@ export function KnowledgeHubControlCenter({
                 Add sources
               </Button>
             ) : null}
+            {canEdit && onPublish && metadata.status === "draft" ? (
+              <Button type="button" size="sm" className="gap-1.5" onClick={onPublish}>
+                <Zap data-icon="inline-start" aria-hidden />
+                Publish hub
+              </Button>
+            ) : null}
             {canEdit && onEditHub ? (
               <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onEditHub}>
                 <Pencil className="size-3.5" />
                 Edit
               </Button>
             ) : null}
-            {canEdit && onPublish && metadata.status === "draft" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Hub actions"
-                    />
-                  }
-                >
-                  <MoreHorizontal className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={onPublish}>
-                      <Zap data-icon="inline-start" aria-hidden />
-                      Publish hub
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
           </div>
         </div>
       </header>
+
+      {/* Mobile relationships — hidden on lg+ where left panel shows */}
+      <Collapsible className="border-b border-border bg-muted/10 lg:hidden">
+        <CollapsibleTrigger className="flex w-full items-center justify-between px-5 py-3 text-left">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Relationships
+          </span>
+          <ChevronDown className="size-4 text-muted-foreground" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-5 pb-4">
+          <HubControlCenterRelationships
+            relationships={relationships}
+            onNavigateDocuments={() => setActiveTab("documents")}
+          />
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* ── Main layout ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -431,7 +481,7 @@ export function KnowledgeHubControlCenter({
               <TabsContent value="documents" className="mt-0 space-y-4">
                 <FileStatusSummaryBar
                   files={allFiles}
-                  title={KNOWLEDGE_TERMS.documents}
+                  title={KNOWLEDGE_TERMS.hubSourcesTab}
                   includeDemoStatuses={showDemoStatuses}
                   activeFilter={docStatusFilter}
                   onFilter={setDocStatusFilter}
@@ -469,11 +519,6 @@ export function KnowledgeHubControlCenter({
                       <SelectItem value="library">In library</SelectItem>
                     </SelectContent>
                   </Select>
-                  {onOpenLibraryView ? (
-                    <Button type="button" variant="outline" size="sm" className="h-9" onClick={onOpenLibraryView}>
-                      View all sources
-                    </Button>
-                  ) : null}
                   {canEdit && selectedDocIds.size > 0 && onDeleteFile ? (
                     <Button type="button" size="sm" variant="destructive" onClick={handleBulkRemove}>
                       Remove ({selectedDocIds.size})
@@ -743,37 +788,42 @@ export function KnowledgeHubControlCenter({
               </TabsContent>
             </div>
           </Tabs>
+
+          <div className="flex shrink-0 items-center gap-1 border-t border-border bg-background px-2 py-2 lg:hidden">
+            {HUB_ASSISTANT_PANEL_TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => openMobilePanel(id)}
+                className={cn(
+                  "flex-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors",
+                  panelTab === id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Right: insights rail — only shown on the Telemetry tab (2xl+) */}
-        {activeTab === "telemetry" && (
-          <div className="hidden w-64 shrink-0 overflow-y-auto border-l border-border bg-muted/10 p-4 2xl:block">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Usage insights</p>
-            <div className="mt-3 space-y-3">
-              <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                <p className="text-[11px] text-muted-foreground">Hub accesses</p>
-                <p className="text-xl font-semibold tabular-nums">{usage.accessCount.toLocaleString()}</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-3 text-sm">
-                <p className="text-[11px] text-muted-foreground">Top document</p>
-                <p className="truncate font-medium">{summary.mostUsedDocument}</p>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-3">
-                <p className="mb-2 text-[11px] text-muted-foreground">Document access frequency</p>
-                <ul className="space-y-1">
-                  {analytics.documentAccessFrequency.slice(0, 4).map((d) => (
-                    <li key={d.name} className="flex justify-between text-[11px]">
-                      <span className="truncate">{d.name}</span>
-                      <span className="tabular-nums">{d.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Right: hub assistant panel (desktop) */}
+        <div className="hidden w-64 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-72">
+          <HubAssistantPanel key={hub.id} {...assistantPanelProps} />
+        </div>
       </div>
 
+      <Sheet open={mobilePanelOpen} onOpenChange={setMobilePanelOpen}>
+        <SheetContent side="bottom" className="h-[min(88vh,720px)] gap-0 p-0">
+          <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
+            <SheetTitle className="text-sm">Hub assistant</SheetTitle>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <HubAssistantPanel key={`mobile-${hub.id}`} {...assistantPanelProps} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

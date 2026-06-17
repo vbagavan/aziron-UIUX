@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useId, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   Sparkles, Bot, Vault, BarChart2, LayoutDashboard, Users, Workflow,
   ChevronDown, ChevronsUpDown, Settings, LogOut,
   UserCircle, ShieldCheck, Clock, Building2, Tag, Store, ChevronRight, ClipboardList, Shield,
   Receipt, FileBarChart2, FileText, CreditCard, FolderKanban, CircleDollarSign,
-  Files, Layers, BookOpen,
+  BookOpen,
 } from "lucide-react";
 import { useAuth, ROLES } from "@/context/AuthContext";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
@@ -67,12 +67,7 @@ const navGroups = [
         icon: BookOpen,
         label: KNOWLEDGE_TERMS.sidebarGroup,
         page: "knowledge",
-        activeFor: ["documents"],
         roles: ["superadmin", "tenantadmin", "tenantuser"],
-        subItems: [
-          { icon: BookOpen, label: KNOWLEDGE_TERMS.hubs, page: "knowledge" },
-          { icon: FileText, label: KNOWLEDGE_TERMS.documents, page: "documents" },
-        ],
       },
       { icon: Store,     label: "Marketplace",    page: "marketplace", roles: ["superadmin", "tenantadmin", "tenantuser"] },
       { icon: Vault,     label: "Vault",           page: "vault",       roles: ["superadmin", "tenantadmin", "tenantuser"] },
@@ -477,13 +472,27 @@ function NavItem({
   role = "superadmin",
   knowledgeNavExtras = null,
 }) {
+  const location = useLocation();
   const displayLabel = navItemDisplayLabel(item, role);
   const { state } = useSidebar();
   const sidebarCollapsed = state === "collapsed";
-  const active = isActive(item.page, activePage, item.activeFor || []);
-  const subActive = item.subItems?.some((s) => s.trackActive !== false && s.page === activePage);
-  const isParentActive = active || subActive;
+  const isKnowledgeDocumentsTab =
+    location.pathname.startsWith("/knowledge") &&
+    new URLSearchParams(location.search).get("tab") === "documents";
   const isKnowledgeGroup = item.page === "knowledge" || item.page === "knowledge-research";
+
+  function isSubItemActive(sub) {
+    if (sub.trackActive === false) return false;
+    if (isKnowledgeGroup && sub.page === "documents") return isKnowledgeDocumentsTab;
+    if (isKnowledgeGroup && sub.page === "knowledge") {
+      return location.pathname.startsWith("/knowledge") && !isKnowledgeDocumentsTab;
+    }
+    return sub.page === activePage;
+  }
+
+  const active = isActive(item.page, activePage, item.activeFor || []);
+  const subActive = item.subItems?.some((s) => isSubItemActive(s));
+  const isParentActive = active || subActive;
 
   const [subOpen, setSubOpen] = useState(!sidebarCollapsed && isParentActive);
   const [showPopover, setShowPopover] = useState(false);
@@ -635,7 +644,7 @@ function NavItem({
               <CollapsibleContent>
                 <SidebarMenuSub role="group" aria-label={displayLabel}>
                   {item.subItems.map((sub) => {
-                    const subIsActive = sub.trackActive !== false && sub.page === activePage;
+                    const subIsActive = isSubItemActive(sub);
                     return (
                       <SidebarMenuSubItem key={`${sub.page}-${sub.label}`}>
                         <SidebarMenuSubButton
@@ -700,7 +709,7 @@ function NavItem({
             style={popoverStyle}
           >
             {item.subItems.map((sub) => {
-              const subIsActive = sub.trackActive !== false && sub.page === activePage;
+              const subIsActive = isSubItemActive(sub);
               return (
                 <button
                   key={sub.label}
@@ -847,7 +856,7 @@ function NavGroup({ group, activePage, onNavigate, role, knowledgeNavExtras }) {
                   onNavigate={onNavigate}
                   role={role}
                   knowledgeNavExtras={
-                    item.page === "knowledge-research" ? knowledgeNavExtras : null
+                    item.page === "knowledge" ? knowledgeNavExtras : null
                   }
                 />
               ))}

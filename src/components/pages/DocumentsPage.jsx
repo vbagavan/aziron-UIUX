@@ -75,17 +75,16 @@ import {
   getSourceMetricColumnLabel,
   getSourceMetricDisplay,
   getSourceProviderLabel,
+  isSingleHubSource,
   resolveSourceCategory,
 } from "@/lib/sourceCategories";
-import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
+import { getFileTypeConfig, getTypeFilterLabel, normalizeDocumentType } from "@/components/features/knowledge/hubFileTypeConfig";
 import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbnail";
 import { AddSourceWizard } from "@/components/features/sources/AddSourceWizard";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
-import { DocumentsHeaderBreadcrumb } from "@/components/features/documents/DocumentsHeaderBreadcrumb";
 import { DocumentsCategoryTabBar } from "@/components/features/documents/DocumentsCategoryTabBar";
-import { KnowledgeTabBar } from "@/components/features/knowledge/KnowledgeTabBar";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
 import { Toast, useToast } from "@/components/ui/Toast";
@@ -99,13 +98,15 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/common/PageHeader";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { getHubDisplayName } from "@/lib/hubDisplay";
+import { LinkingHelpDialog } from "@/components/features/knowledge/LinkingHelpDialog";
 import { getHubLinksForDocument } from "@/data/documentLibrary";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TOOLBAR_CONTROL_CLASS } from "@/lib/listToolbar";
+import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 import { paginateSlice } from "@/lib/pagination";
 import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 
@@ -175,7 +176,7 @@ function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
                   onPageChange(Math.max(1, currentPage - 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === 1 && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === 1}
@@ -190,7 +191,7 @@ function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
                     e.preventDefault();
                     onPageChange(pg);
                   }}
-                  className="h-7 w-7 cursor-pointer text-xs"
+                  className={cn(PAGINATION_CONTROL_CLASS, "w-11")}
                 >
                   {pg}
                 </PaginationLink>
@@ -203,7 +204,7 @@ function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
                   onPageChange(Math.min(totalPages, currentPage + 1));
                 }}
                 className={cn(
-                  "h-7 cursor-pointer text-xs",
+                  PAGINATION_CONTROL_CLASS,
                   currentPage === totalPages && "pointer-events-none opacity-40",
                 )}
                 aria-disabled={currentPage === totalPages}
@@ -213,78 +214,6 @@ function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
         </Pagination>
       )}
       </div>
-    </div>
-  );
-}
-
-function ActiveFilterChips({
-  searchQuery,
-  filterSource,
-  filterType,
-  filterStatus,
-  sourceOptions,
-  typeOptions,
-  onClearSearch,
-  onClearSource,
-  onClearType,
-  onClearStatus,
-  onClearAll,
-}) {
-  const chips = [];
-
-  if (searchQuery.trim()) {
-    chips.push({ key: "search", label: `Search: "${searchQuery.trim()}"`, onClear: onClearSearch });
-  }
-  if (filterSource !== "all") {
-    const label = sourceOptions.find((o) => o.id === filterSource)?.label ?? filterSource;
-    chips.push({ key: "source", label: `Source: ${label}`, onClear: onClearSource });
-  }
-  if (filterType !== "all") {
-    const label = typeOptions.find((o) => o.id === filterType)?.label ?? filterType;
-    chips.push({ key: "type", label: `Type: ${label}`, onClear: onClearType });
-  }
-  if (filterStatus) {
-    const statusLabels = {
-      local: "Local",
-      ready: "Ready",
-      synced: "Synced",
-      processing: "Processing",
-      "sync-failed": "Failed",
-      warning: "Attention",
-      "out-of-sync": "Out of sync",
-      "cloud-reference": "Cloud references",
-    };
-    chips.push({
-      key: "status",
-      label: `Status: ${statusLabels[filterStatus] ?? filterStatus}`,
-      onClear: onClearStatus,
-    });
-  }
-
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      {chips.map((chip) => (
-        <Badge key={chip.key} variant="outline" className="gap-1 pr-1">
-          {chip.label}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="size-4"
-            onClick={chip.onClear}
-            aria-label={`Remove ${chip.label} filter`}
-          >
-            <X aria-hidden />
-          </Button>
-        </Badge>
-      ))}
-      {chips.length > 1 && (
-        <Button type="button" variant="link" size="sm" className="h-auto px-0 text-xs" onClick={onClearAll}>
-          Clear all
-        </Button>
-      )}
     </div>
   );
 }
@@ -305,7 +234,7 @@ const SOURCE_FILTER_OPTIONS = [
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
 function formatHubDisplayName(hubName) {
-  return (hubName ?? "").replace(/\s*\(Draft\)\s*$/i, "").trim();
+  return getHubDisplayName(hubName);
 }
 
 function HubBadge({ hubName }) {
@@ -323,14 +252,15 @@ function HubBadge({ hubName }) {
   );
 }
 
-function HubLinksBadge({ hubLinks = [] }) {
+function HubLinksBadge({ hubLinks = [], record }) {
   if (hubLinks.length === 0) {
-    return <Badge variant="secondary">Standalone</Badge>;
+    return <Badge variant="secondary">Not linked to a hub</Badge>;
   }
 
   const names = hubLinks.map((link) => formatHubDisplayName(link.hubName)).filter(Boolean);
+  const singleHubOnly = isSingleHubSource(record);
 
-  if (hubLinks.length === 1) {
+  if (hubLinks.length === 1 || singleHubOnly) {
     return <HubBadge hubName={names[0]} />;
   }
 
@@ -369,11 +299,12 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlight
       className={cn(
         "group cursor-pointer border-transparent py-0 shadow-none transition-all duration-150 hover:border-border hover:bg-muted/40",
         selectionMode && selected && "border-primary bg-primary/5 ring-2 ring-primary/25",
-        highlighted && "border-primary ring-2 ring-primary/40 animate-pulse",
+        highlighted && "border-primary ring-2 ring-primary/40 motion-safe:animate-pulse",
       )}
       onClick={handleActivate}
       role="button"
       tabIndex={0}
+      aria-label={selectionMode ? `${selected ? "Deselect" : "Select"} ${displayName}` : `Open ${displayName}`}
       onKeyDown={(e) => {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
@@ -428,7 +359,7 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlight
           {cfg.label}{sizeLabel ? ` · ${sizeLabel}` : ""}
         </p>
         <div className="mt-1.5 flex min-w-0 justify-center">
-          <HubLinksBadge hubLinks={hubLinks} />
+          <HubLinksBadge hubLinks={hubLinks} record={file} />
         </div>
       </div>
       </CardContent>
@@ -574,7 +505,7 @@ function DocFileRow({
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
               <SourceBadge record={file} size="sm" />
-              <HubLinksBadge hubLinks={hubLinks} />
+              <HubLinksBadge hubLinks={hubLinks} record={file} />
               <FileSyncStatusIndicator
                 file={file}
                 fileName={displayName}
@@ -608,7 +539,7 @@ function DocFileRow({
       </TableCell>
 
       <TableCell className="hidden sm:table-cell">
-        <HubLinksBadge hubLinks={hubLinks} />
+        <HubLinksBadge hubLinks={hubLinks} record={file} />
       </TableCell>
 
       <TableCell className="hidden text-muted-foreground sm:table-cell">{cfg.label}</TableCell>
@@ -772,7 +703,11 @@ function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
       </EmptyHeader>
       <EmptyContent>
         {canUpload ? (
-          <Button size="sm" onClick={onUpload}>
+          <Button
+            type="button"
+            className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+            onClick={onUpload}
+          >
             <Upload data-icon="inline-start" aria-hidden />
             {KNOWLEDGE_TERMS.addSources}
           </Button>
@@ -793,7 +728,11 @@ function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function DocumentsPage({ onNavigate }) {
+export default function DocumentsPage({
+  onNavigate,
+  embedded = false,
+  onRequestTab,
+}) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkHubId = searchParams.get("linkHub");
@@ -840,6 +779,7 @@ export default function DocumentsPage({ onNavigate }) {
   const [wizardOpen, setWizardOpen]     = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
   const [linkAfterHubCreate, setLinkAfterHubCreate] = useState(null);
+  const [linkingHelpOpen, setLinkingHelpOpen] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState(null);
 
   const linkTargetHub = useMemo(
@@ -890,7 +830,7 @@ export default function DocumentsPage({ onNavigate }) {
     const docs = [];
 
     for (const doc of documents) {
-      const scanned = getHubLinksForDocument(doc.id, hubs);
+      const scanned = getHubLinksForDocument(doc.id, hubs, documents);
       const hubLinks = scanned.length > 0 ? scanned : (doc.hubLinks ?? []);
       docs.push({
         ...doc,
@@ -934,13 +874,19 @@ export default function DocumentsPage({ onNavigate }) {
   }
 
   const typeOptions = useMemo(() => {
-    const types = new Set(allDocs.map((d) => d.type).filter(Boolean));
+    const byType = new Map();
+    for (const doc of allDocs) {
+      if (!doc.type) continue;
+      const id = normalizeDocumentType(doc.type);
+      if (!byType.has(id)) {
+        byType.set(id, getTypeFilterLabel(doc.type));
+      }
+    }
     return [
       { id: "all", label: "All types" },
-      ...[...types].sort().map((t) => ({
-        id: t,
-        label: getFileTypeConfig(t).label ?? t,
-      })),
+      ...[...byType.entries()]
+        .sort(([, a], [, b]) => a.localeCompare(b))
+        .map(([id, label]) => ({ id, label })),
     ];
   }, [allDocs]);
 
@@ -960,7 +906,7 @@ export default function DocumentsPage({ onNavigate }) {
       if (filterSource === "local" && d.source !== "user" && d.source !== "upload") return false;
       if (filterSource === "cloud" && d.source !== "cloud") return false;
       if (filterCategory !== "all" && resolveSourceCategory(d) !== filterCategory) return false;
-      if (filterType !== "all" && d.type !== filterType) return false;
+      if (filterType !== "all" && normalizeDocumentType(d.type) !== filterType) return false;
       if (filterStatus) {
         const status = resolveFileLifecycleStatus(d);
         if (filterStatus === "local") {
@@ -1022,12 +968,6 @@ export default function DocumentsPage({ onNavigate }) {
     return () => window.clearTimeout(timer);
   }, [highlightParam, filteredDocs, searchParams, setSearchParams, highlightIds.size]);
 
-  const hasActiveFilters =
-    Boolean(searchQuery.trim())
-    || filterSource !== "all"
-    || filterType !== "all"
-    || filterStatus !== null;
-
   function clearAllFilters() {
     setSearchQuery("");
     setFilterSource("all");
@@ -1084,7 +1024,19 @@ export default function DocumentsPage({ onNavigate }) {
 
   function handleNavigateToHub(hubId) {
     handleCloseReader();
+    if (onRequestTab) {
+      onRequestTab("hubs", { hubId });
+      return;
+    }
     navigate(`/knowledge/${hubId}`);
+  }
+
+  function openHubsTab() {
+    if (onRequestTab) {
+      onRequestTab("hubs");
+      return;
+    }
+    navigate("/knowledge");
   }
 
   function selectAllVisible() {
@@ -1199,8 +1151,10 @@ export default function DocumentsPage({ onNavigate }) {
     const hub = hubs.find((h) => String(h.id) === String(hubId));
     if (result.linked) {
       showToast({
-        title: "Linked to hub",
-        description: `Document added to "${hub?.name ?? "hub"}".`,
+        title: result.moved ? "Moved to hub" : "Linked to hub",
+        description: result.moved
+          ? `Source moved to "${hub?.name ?? "hub"}".`
+          : `Document added to "${hub?.name ?? "hub"}".`,
         variant: "success",
       });
     } else if (result.reason === "already_linked") {
@@ -1414,6 +1368,7 @@ export default function DocumentsPage({ onNavigate }) {
     };
   }, [readerDoc, documents, hubs, getDocumentHubLinks]);
 
+  // Document reader has its own title + close header — no AppHeader breadcrumb.
   // Toolbar trigger base class (avoids nested button by not using <Button> inside <DropdownMenuTrigger>)
   const triggerBase = cn(
     buttonVariants({ variant: "outline", size: "sm" }),
@@ -1421,35 +1376,33 @@ export default function DocumentsPage({ onNavigate }) {
     "gap-1.5",
   );
 
-  return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-      <Sidebar activePage="documents" onNavigate={onNavigate} />
-
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <AppHeader activePage="documents" onNavigate={onNavigate}>
-          {readerDoc && activeReaderDoc ? (
-            <DocumentsHeaderBreadcrumb
-              fileName={activeReaderDoc.name}
-              hubLinks={activeReaderDoc.hubLinks ?? []}
-              onDocumentsClick={handleCloseReader}
-              onHubClick={(hubId) => handleNavigateToHub(hubId)}
-            />
-          ) : null}
-        </AppHeader>
-
-        <KnowledgeTabBar />
-
-        <main className="flex flex-1 flex-col overflow-hidden">
+  const panelContent = (
+    <main className="flex flex-1 flex-col overflow-hidden">
 
           {/* Page header — hidden in reader view */}
           {!readerDoc && (
           <div className="flex-shrink-0 px-6 py-4">
             <PageHeader
               title={KNOWLEDGE_TERMS.documents}
-              description={KNOWLEDGE_TERMS.documentsPageDescription}
+              description={
+                <>
+                  {KNOWLEDGE_TERMS.documentsPageDescription}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setLinkingHelpOpen(true)}
+                    className="font-medium text-primary underline-offset-2 hover:underline"
+                  >
+                    {KNOWLEDGE_TERMS.documentsLearnMore}
+                  </button>
+                </>
+              }
             >
               {canCreate && (
-                <Button size="sm" onClick={() => setWizardOpen(true)}>
+                <Button
+                  type="button"
+                  className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                  onClick={() => setWizardOpen(true)}
+                >
                   <Upload data-icon="inline-start" aria-hidden />
                   {KNOWLEDGE_TERMS.addSources}
                 </Button>
@@ -1643,15 +1596,39 @@ export default function DocumentsPage({ onNavigate }) {
                 <DatabaseDetailView
                   record={activeReaderDoc}
                   hubLinks={activeReaderDoc?.hubLinks ?? []}
+                  hubs={hubs}
+                  canEdit={canEdit}
+                  canCreate={canCreate}
                   onClose={handleCloseReader}
                   onNavigateToHub={handleNavigateToHub}
+                  onLinkToHub={handleLinkDocToHub}
+                  onUnlinkFromHub={handleUnlinkDocFromHub}
+                  onCreateHub={() => {
+                    if (!canCreate) return;
+                    if (activeReaderDoc?.isLibraryDocument) {
+                      setLinkAfterHubCreate(activeReaderDoc.id);
+                    }
+                    setCreateHubOpen(true);
+                  }}
                 />
               ) : resolveSourceCategory(activeReaderDoc) === "apis" ? (
                 <ApiDetailView
                   record={activeReaderDoc}
                   hubLinks={activeReaderDoc?.hubLinks ?? []}
+                  hubs={hubs}
+                  canEdit={canEdit}
+                  canCreate={canCreate}
                   onClose={handleCloseReader}
                   onNavigateToHub={handleNavigateToHub}
+                  onLinkToHub={handleLinkDocToHub}
+                  onUnlinkFromHub={handleUnlinkDocFromHub}
+                  onCreateHub={() => {
+                    if (!canCreate) return;
+                    if (activeReaderDoc?.isLibraryDocument) {
+                      setLinkAfterHubCreate(activeReaderDoc.id);
+                    }
+                    setCreateHubOpen(true);
+                  }}
                 />
               ) : (
               <DocumentReaderDrawer
@@ -1698,28 +1675,12 @@ export default function DocumentsPage({ onNavigate }) {
                 />
               ) : null}
 
-              {hasActiveFilters ? (
-                <ActiveFilterChips
-                  searchQuery={searchQuery}
-                  filterSource={filterSource}
-                  filterType={filterType}
-                  filterStatus={filterStatus}
-                  sourceOptions={SOURCE_FILTER_OPTIONS}
-                  typeOptions={typeOptions}
-                  onClearSearch={() => setSearchQuery("")}
-                  onClearSource={() => setFilterSource("all")}
-                  onClearType={() => setFilterType("all")}
-                  onClearStatus={() => setFilterStatus(null)}
-                  onClearAll={clearAllFilters}
-                />
-              ) : null}
-
               {allDocs.length === 0 ? (
                 <EmptyDocuments
                   canUpload={canCreate}
                   canCreateHub={canCreate}
                   onUpload={() => canCreate && setWizardOpen(true)}
-                  onBrowseHubs={() => navigate("/knowledge")}
+                  onBrowseHubs={openHubsTab}
                 />
               ) : filteredDocs.length === 0 ? (
                 <Empty className="flex-1 border border-dashed py-12">
@@ -1793,9 +1754,11 @@ export default function DocumentsPage({ onNavigate }) {
             )}
 
           </div>
-        </main>
-      </div>
+    </main>
+  );
 
+  const pageOverlays = (
+    <>
       {/* Floating bulk action bar */}
       {selectionMode && selectedCount > 0 && (
         <BulkActionBar
@@ -1816,6 +1779,8 @@ export default function DocumentsPage({ onNavigate }) {
         onOpenChange={setWizardOpen}
         onComplete={handleSourceAdded}
       />
+
+      <LinkingHelpDialog open={linkingHelpOpen} onOpenChange={setLinkingHelpOpen} />
 
       <KnowledgeHubCreateDialog
         open={createHubOpen}
@@ -1877,6 +1842,28 @@ export default function DocumentsPage({ onNavigate }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden">
+        {panelContent}
+        {pageOverlays}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <Sidebar activePage="knowledge" onNavigate={onNavigate} />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <AppHeader activePage="knowledge" onNavigate={onNavigate} />
+
+        {panelContent}
+        {pageOverlays}
+      </div>
     </div>
   );
 }

@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_LG,
@@ -35,11 +36,11 @@ import {
   computeIndexedRecords,
   deriveSourceName,
   getWizardSteps,
+  applyExpressDefaults,
   STEP_META,
 } from "@/lib/addSourceFlow";
 import {
   ChooseSourceTypeStep,
-  ConfigureSourceStep,
   DestinationStep,
   FilesUploadStep,
   ProcessingStep,
@@ -177,21 +178,30 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
       finish();
       return;
     }
+    if (currentKey === "db-connect" || currentKey === "api-connect" || currentKey === "ent-connect") {
+      setState((prev) => applyExpressDefaults(prev));
+    }
     setStepIndex((i) => Math.min(i + 1, steps.length - 1));
+  }
+
+  function handleSelectSourceType(typeId) {
+    setState((prev) => ({ ...prev, type: typeId }));
+    setStepIndex(1);
   }
 
   async function finish() {
     setFinishing(true);
     try {
-      const dest = state.destination;
-      const sourceName = deriveSourceName(state);
-      const description = state.config.description;
+      const resolvedState = applyExpressDefaults(state);
+      const dest = resolvedState.destination;
+      const sourceName = deriveSourceName(resolvedState);
+      const description = resolvedState.config.description;
       let hubId = null;
       let hubName = null;
       let recordIds = [];
 
       if (state.type === "files") {
-        const files = state.files.items;
+        const files = resolvedState.files.items;
         if (dest.mode === "new-hub") {
           const hub = await addHub(
             createHubPayload({ name: dest.newHubName || sourceName, description, pendingFiles: files }),
@@ -210,7 +220,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
           recordIds = (res.records ?? []).map((r) => r.id).filter(Boolean);
         }
       } else {
-        const records = buildSourceRecords(state);
+        const records = buildSourceRecords(resolvedState);
         if (dest.mode === "new-hub") {
           const hub = await addHub(createHubPayload({ name: dest.newHubName || sourceName, description }));
           hubId = hub.id;
@@ -229,7 +239,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
 
       const nextResult = {
         sourceName,
-        indexedRecords: computeIndexedRecords(state, state.files.items.length),
+        indexedRecords: computeIndexedRecords(resolvedState, resolvedState.files.items.length),
         hubId,
         hubName,
         recordIds,
@@ -254,7 +264,8 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
 
   function renderStep() {
     switch (currentKey) {
-      case "choose-type": return <ChooseSourceTypeStep state={state} update={update} />;
+      case "choose-type":
+        return <ChooseSourceTypeStep state={state} onSelectType={handleSelectSourceType} />;
 
       // Files
       case "upload": return <FilesUploadStep state={state} update={update} />;
@@ -291,7 +302,6 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
       case "ent-sync": return <EnterpriseSyncStep state={state} update={update} />;
 
       // Shared tail
-      case "configure": return <ConfigureSourceStep state={state} update={update} />;
       case "destination": return <DestinationStep state={state} update={update} hubs={hubs} />;
 
       default: return null;
@@ -302,7 +312,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
   const isSuccess = phase === "success";
   const progressValue = isSuccess ? 100 : ((stepIndex + 1) / steps.length) * 100;
   const showBack = !isSuccess && stepIndex > 0;
-  const showContinue = !isSuccess && currentKey !== "processing";
+  const showContinue = !isSuccess && currentKey !== "processing" && currentKey !== "choose-type";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -314,7 +324,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
           </DialogDescription>
           {!isSuccess ? (
             <div className="mt-3 flex items-center gap-3">
-              <Progress value={progressValue} className="h-1.5 flex-1" />
+              <Progress value={progressValue} className="h-1.5 flex-1" aria-label="Wizard progress" />
               <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
                 Step {stepIndex + 1} of {steps.length}
               </span>
@@ -323,14 +333,22 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
         </DialogHeader>
 
         <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
+          {!isSuccess && currentKey !== "choose-type" ? (
+            <Alert className="mb-4 py-2">
+              <Info className="size-4" />
+              <AlertDescription className="text-xs">
+                Demo mode — connections and discovery are simulated. No data leaves your browser.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {isSuccess ? (
             <SuccessStep
               result={result}
               onViewSource={() =>
                 goTo(
                   result?.recordIds?.length
-                    ? `/documents?highlight=${result.recordIds.join(",")}`
-                    : "/documents",
+                    ? `/knowledge?tab=documents&highlight=${result.recordIds.join(",")}`
+                    : "/knowledge?tab=documents",
                 )
               }
               onOpenHub={() => result?.hubId != null && goTo(`/knowledge/${result.hubId}`)}
@@ -360,9 +378,9 @@ export function AddSourceWizard({ open, onOpenChange, onComplete }) {
             <Button type="button" onClick={handleContinue} disabled={!canAdvance() || finishing}>
               {currentKey === "destination" ? (finishing ? "Adding…" : "Add source") : "Continue"}
             </Button>
-          ) : (
+          ) : currentKey === "processing" ? (
             <span className="text-xs text-muted-foreground">Processing…</span>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

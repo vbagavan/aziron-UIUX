@@ -5,7 +5,7 @@ import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { cn } from "@/lib/utils";
 
 const RELATIONSHIP_SECTIONS = [
-  { key: "documents", label: KNOWLEDGE_TERMS.documents, icon: FileText, route: null },
+  { key: "documents", label: KNOWLEDGE_TERMS.hubSourcesTab, icon: FileText, route: null },
   { key: "agents", label: "Agents", icon: Bot, route: "/agents" },
   { key: "workflows", label: "Workflows", icon: GitBranch, route: "/flows" },
 ];

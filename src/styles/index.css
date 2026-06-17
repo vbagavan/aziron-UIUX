@@ -928,6 +928,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse {
+      animation: none !important;
+    }
+  }
   html {
     @apply scroll-smooth font-sans antialiased;
   }
