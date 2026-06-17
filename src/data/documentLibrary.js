@@ -9,7 +9,7 @@ import { createPendingHubFileMetadata } from "@/components/features/knowledge/hu
 import { createPendingSourceGuide } from "@/components/features/knowledge/hubSourceGuide";
 import { isSingleHubSource } from "@/lib/sourceCategories";
 
-export const DOCUMENT_LIBRARY_STORAGE_KEY = "aziron_document_library_v1";
+export const DOCUMENT_LIBRARY_STORAGE_KEY = "aziron_document_library_v2";
 
 const DEMO_NOW = "2026-06-10T09:30:00.000Z";
 const DEMO_WEEK_AGO = "2026-06-03T14:00:00.000Z";
@@ -36,7 +36,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "2 days ago",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 6, hubFileId: "demo-link-db-1", hubName: "My RAG" }],
+    hubLinks: [{ hubId: 2, hubFileId: "demo-link-db-1", hubName: "Database Hub" }],
   },
   {
     id: "demo-db-postgres-orders",
@@ -57,7 +57,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "2 days ago",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 2, hubFileId: "demo-link-db-2", hubName: "Product Documentation" }],
+    hubLinks: [{ hubId: 2, hubFileId: "demo-link-db-2", hubName: "Database Hub" }],
   },
   {
     id: "demo-db-mongo-pageviews",
@@ -79,7 +79,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "Yesterday",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 9, hubFileId: "demo-link-db-3", hubName: "MyDigitalHub" }],
+    hubLinks: [{ hubId: 2, hubFileId: "demo-link-db-3", hubName: "Database Hub" }],
   },
   {
     id: "demo-db-mysql-inventory",
@@ -124,7 +124,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "4h ago",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 6, hubFileId: "demo-link-api-1", hubName: "My RAG" }],
+    hubLinks: [{ hubId: 3, hubFileId: "demo-link-api-1", hubName: "API Hub" }],
   },
   {
     id: "demo-api-stripe-charges",
@@ -149,7 +149,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "2 days ago",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 4, hubFileId: "demo-link-api-2", hubName: "ERP" }],
+    hubLinks: [{ hubId: 3, hubFileId: "demo-link-api-2", hubName: "API Hub" }],
   },
   {
     id: "demo-api-crm-webhook",
@@ -173,7 +173,7 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
     updated: "Just now",
     indexStatus: "stored",
     fileStatus: "success",
-    hubLinks: [{ hubId: 9, hubFileId: "demo-link-api-3", hubName: "MyDigitalHub" }],
+    hubLinks: [{ hubId: 3, hubFileId: "demo-link-api-3", hubName: "API Hub" }],
   },
   {
     id: "demo-api-github-issues",

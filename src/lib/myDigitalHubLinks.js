@@ -1,25 +1,44 @@
-/** Agents and workflows associated with the MyDigitalHub knowledge hub. */
+/** Agents and workflows associated with the Files Hub knowledge hub. */
 
-export const MYDIGITALHUB_SEED_HUB_ID = 9;
+export const FILES_HUB_SEED_ID = 1;
 
-export const MYDIGITALHUB_AGENT_IDS = [20, 21, 22, 23, 24];
+/** @deprecated Use FILES_HUB_SEED_ID */
+export const MYDIGITALHUB_SEED_HUB_ID = FILES_HUB_SEED_ID;
 
-export const MYDIGITALHUB_FLOW_IDS = [8, 9];
+export const FILES_HUB_AGENT_IDS = [20, 21, 22, 23, 24];
 
-export function myDigitalHubSlug(name) {
+/** @deprecated Use FILES_HUB_AGENT_IDS */
+export const MYDIGITALHUB_AGENT_IDS = FILES_HUB_AGENT_IDS;
+
+export const FILES_HUB_FLOW_IDS = [8, 9];
+
+/** @deprecated Use FILES_HUB_FLOW_IDS */
+export const MYDIGITALHUB_FLOW_IDS = FILES_HUB_FLOW_IDS;
+
+export function hubNameSlug(name) {
   return String(name ?? "")
     .trim()
     .replace(/[^a-z0-9]/gi, "")
     .toLowerCase();
 }
 
-export function isMyDigitalHub(hub) {
-  const slug = myDigitalHubSlug(hub?.name);
-  return slug === "mydigitalhub" || slug.includes("mydigitalhub");
+export function isFilesHub(hub) {
+  const slug = hubNameSlug(hub?.name);
+  return slug === "fileshub" || slug.includes("files");
 }
 
+/** @deprecated Use isFilesHub */
+export function isMyDigitalHub(hub) {
+  return isFilesHub(hub);
+}
+
+export function findFilesHub(hubs = []) {
+  return hubs.find(isFilesHub) ?? null;
+}
+
+/** @deprecated Use findFilesHub */
 export function findMyDigitalHub(hubs = []) {
-  return hubs.find(isMyDigitalHub) ?? null;
+  return findFilesHub(hubs);
 }
 
 function hubIdInList(list, hubId) {
@@ -32,20 +51,29 @@ export function withHubId(list, hubId) {
   return [...(list ?? []), hubId];
 }
 
-/** Agents designated for MyDigitalHub (for telemetry when hub id differs from seed). */
+export function filesHubAgents(agents = []) {
+  return agents.filter((a) => FILES_HUB_AGENT_IDS.includes(a.id));
+}
+
+/** @deprecated Use filesHubAgents */
 export function myDigitalHubAgents(agents = []) {
-  return agents.filter((a) => MYDIGITALHUB_AGENT_IDS.includes(a.id));
+  return filesHubAgents(agents);
 }
 
+export function filesHubFlows(flows = []) {
+  return flows.filter((f) => FILES_HUB_FLOW_IDS.includes(f.id));
+}
+
+/** @deprecated Use filesHubFlows */
 export function myDigitalHubFlows(flows = []) {
-  return flows.filter((f) => MYDIGITALHUB_FLOW_IDS.includes(f.id));
+  return filesHubFlows(flows);
 }
 
-export function mergeMyDigitalHubAgents(linkedAgents, allAgents, hub) {
-  if (!isMyDigitalHub(hub)) return linkedAgents;
+export function mergeFilesHubAgents(linkedAgents, allAgents, hub) {
+  if (!isFilesHub(hub)) return linkedAgents;
   const seen = new Set(linkedAgents.map((a) => a.id));
   const merged = [...linkedAgents];
-  for (const agent of myDigitalHubAgents(allAgents)) {
+  for (const agent of filesHubAgents(allAgents)) {
     if (!seen.has(agent.id)) {
       seen.add(agent.id);
       merged.push(agent);
@@ -54,11 +82,16 @@ export function mergeMyDigitalHubAgents(linkedAgents, allAgents, hub) {
   return merged;
 }
 
-export function mergeMyDigitalHubFlows(linkedFlows, allFlows, hub) {
-  if (!isMyDigitalHub(hub)) return linkedFlows;
+/** @deprecated Use mergeFilesHubAgents */
+export function mergeMyDigitalHubAgents(linkedAgents, allAgents, hub) {
+  return mergeFilesHubAgents(linkedAgents, allAgents, hub);
+}
+
+export function mergeFilesHubFlows(linkedFlows, allFlows, hub) {
+  if (!isFilesHub(hub)) return linkedFlows;
   const seen = new Set(linkedFlows.map((f) => f.id));
   const merged = [...linkedFlows];
-  for (const flow of myDigitalHubFlows(allFlows)) {
+  for (const flow of filesHubFlows(allFlows)) {
     if (!seen.has(flow.id)) {
       seen.add(flow.id);
       merged.push(flow);
@@ -67,8 +100,18 @@ export function mergeMyDigitalHubFlows(linkedFlows, allFlows, hub) {
   return merged;
 }
 
-export function myDigitalHubAgentsLinked(hubId, agents = []) {
-  const designated = myDigitalHubAgents(agents);
+/** @deprecated Use mergeFilesHubFlows */
+export function mergeMyDigitalHubFlows(linkedFlows, allFlows, hub) {
+  return mergeFilesHubFlows(linkedFlows, allFlows, hub);
+}
+
+export function filesHubAgentsLinked(hubId, agents = []) {
+  const designated = filesHubAgents(agents);
   if (designated.length === 0) return false;
   return designated.every((a) => hubIdInList(a.knowledgeHubs, hubId));
+}
+
+/** @deprecated Use filesHubAgentsLinked */
+export function myDigitalHubAgentsLinked(hubId, agents = []) {
+  return filesHubAgentsLinked(hubId, agents);
 }

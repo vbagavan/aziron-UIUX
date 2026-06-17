@@ -103,12 +103,12 @@ const CONNECTION_PROFILES = {
     lineage: [
       { id: "sf", label: "Salesforce API", type: "source" },
       { id: "db", label: "Customer DB", type: "database", highlight: true },
-      { id: "hub", label: "Customer Hub", type: "hub" },
+      { id: "hub", label: "Database Hub", type: "hub" },
       { id: "agent", label: "Support Agent", type: "agent" },
       { id: "flow", label: "Escalation Flow", type: "flow" },
     ],
     usage: {
-      hubs: ["Customer Hub", "Revenue Hub", "Support Hub"],
+      hubs: ["Database Hub"],
       agents: ["Support Agent", "Finance Agent", "Sales Agent"],
       flows: ["Renewal Flow", "Invoice Flow", "Churn Prediction Flow"],
     },
@@ -132,11 +132,11 @@ const CONNECTION_PROFILES = {
     lineage: [
       { id: "sdk", label: "Web SDK", type: "source" },
       { id: "db", label: "Analytics DB", type: "database", highlight: true },
-      { id: "hub", label: "MyDigitalHub", type: "hub" },
+      { id: "hub", label: "Database Hub", type: "hub" },
       { id: "agent", label: "Marketing Agent", type: "agent" },
     ],
     usage: {
-      hubs: ["MyDigitalHub", "My RAG"],
+      hubs: ["Database Hub"],
       agents: ["Marketing Agent"],
       flows: ["Campaign Attribution Flow"],
     },
@@ -159,10 +159,10 @@ const CONNECTION_PROFILES = {
     lineage: [
       { id: "erp", label: "ERP Export", type: "source" },
       { id: "db", label: "Warehouse DB", type: "database", highlight: true },
-      { id: "hub", label: "ERP Hub", type: "hub" },
+      { id: "hub", label: "Database Hub", type: "hub" },
     ],
     usage: {
-      hubs: ["ERP"],
+      hubs: ["Database Hub"],
       agents: ["Operations Agent"],
       flows: ["Reorder Alert Flow"],
     },

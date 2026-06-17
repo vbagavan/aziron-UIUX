@@ -40,6 +40,7 @@ import {
   STEP_META,
 } from "@/lib/addSourceFlow";
 import { loadLastSourceType, saveLastSourceType } from "@/lib/wizardPrefs";
+import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
 import {
   ChooseSourceTypeStep,
   DestinationStep,
@@ -126,6 +127,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const [phase, setPhase] = useState("wizard"); // "wizard" | "success"
   const [finishing, setFinishing] = useState(false);
   const [result, setResult] = useState(null);
+  const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
 
   // Reset whenever the dialog closes; restore last source type + hub context on open.
   useEffect(() => {
@@ -274,6 +276,15 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     onOpenChange?.(false);
   }
 
+  function handleDialogOpenChange(next) {
+    if (next) {
+      onOpenChange?.(true);
+      return;
+    }
+    if (filePickerGuard.shouldBlockClose()) return;
+    close();
+  }
+
   function goTo(path) {
     close();
     // defer so the dialog unmount doesn't race the route change
@@ -286,7 +297,13 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
         return <ChooseSourceTypeStep state={state} onSelectType={handleSelectSourceType} />;
 
       // Files
-      case "upload": return <FilesUploadStep state={state} update={update} />;
+      case "upload": return (
+        <FilesUploadStep
+          state={state}
+          update={update}
+          filePickerGuard={filePickerGuard}
+        />
+      );
       case "processing":
         return <ProcessingStep state={state} onDone={() => setStepIndex((i) => i + 1)} />;
 
@@ -333,7 +350,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const showContinue = !isSuccess && currentKey !== "processing" && currentKey !== "choose-type";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className={HUB_DIALOG_CONTENT_LG}>
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
           <DialogTitle>{isSuccess ? "Source successfully added" : meta.title}</DialogTitle>

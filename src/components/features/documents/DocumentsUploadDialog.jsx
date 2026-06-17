@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_TYPES_LABEL } from "@/data/knowledgeHubs";
@@ -44,8 +44,10 @@ import {
   getAllUploadConnections,
   saveUploadSessionConnection,
 } from "@/lib/cloudUploadConnections";
+import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
 
 function LocalUploadPanel({
+  inputId,
   pendingCount,
   dragActive,
   fileTooLarge,
@@ -93,24 +95,24 @@ function LocalUploadPanel({
             <p className="text-sm font-medium text-foreground">{KNOWLEDGE_TERMS.selectFilesPrompt}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{ACCEPTED_FILE_TYPES_LABEL}</p>
           </div>
-          <Button
-            size="sm"
-            type="button"
-            disabled={disabled}
-            onClick={(e) => {
-              e.stopPropagation();
-              onUploadClick();
-            }}
+          <label
+            htmlFor={inputId}
+            className={cn(
+              buttonVariants({ size: "sm" }),
+              disabled ? "pointer-events-none opacity-50" : "cursor-pointer",
+            )}
+            onClick={(e) => e.stopPropagation()}
           >
             <UploadCloud data-icon="inline-start" aria-hidden />
             {KNOWLEDGE_TERMS.browseFiles}
-          </Button>
+          </label>
           <input
+            id={inputId}
             ref={fileInputRef}
             type="file"
             multiple
             accept={ACCEPTED_FILE_EXTENSIONS}
-            className="sr-only"
+            className="hidden"
             onChange={onFileChange}
             tabIndex={-1}
             disabled={disabled}
@@ -209,7 +211,11 @@ export function DocumentsUploadDialog({
 
   const fileInputRef = useRef(null);
   const dragCounterRef = useRef(0);
-  const filePickerOpenRef = useRef(false);
+  const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
+  const uploadInputId = useMemo(
+    () => `documents-upload-input-${Math.random().toString(36).slice(2, 9)}`,
+    [],
+  );
 
   const {
     phase: uploadPhase,
@@ -282,10 +288,7 @@ export function DocumentsUploadDialog({
 
   function openFilePicker() {
     if (isUploading || isComplete) return;
-    filePickerOpenRef.current = true;
-    window.requestAnimationFrame(() => {
-      fileInputRef.current?.click();
-    });
+    filePickerGuard.openFileInput(fileInputRef.current);
   }
 
   function appendUploadFiles(fileList) {
@@ -448,10 +451,7 @@ export function DocumentsUploadDialog({
         open={open}
         onOpenChange={(next) => {
           if (next) return;
-          if (filePickerOpenRef.current) {
-            filePickerOpenRef.current = false;
-            return;
-          }
+          if (filePickerGuard.shouldBlockClose()) return;
           if (isUploading) return;
           handleClose();
         }}
@@ -524,6 +524,7 @@ export function DocumentsUploadDialog({
               <div className="flex flex-col gap-5">
                 <div className="grid min-h-[360px] grid-cols-1 gap-5 lg:grid-cols-2">
                   <LocalUploadPanel
+                    inputId={uploadInputId}
                     pendingCount={pendingFiles.length}
                     dragActive={dragActive}
                     fileTooLarge={fileTooLarge}
@@ -543,11 +544,10 @@ export function DocumentsUploadDialog({
                       setDragActive(false);
                       appendUploadFiles(e.dataTransfer.files);
                     }}
-                    onFileChange={(e) => {
-                      filePickerOpenRef.current = false;
+                    onFileChange={filePickerGuard.onFileInputChange((e) => {
                       appendUploadFiles(e.target.files);
                       e.target.value = "";
-                    }}
+                    })}
                     onUploadClick={openFilePicker}
                   />
                   {rightPanel}

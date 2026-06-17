@@ -12,7 +12,7 @@ import {
 import { agentUsesHub } from "@/lib/agentKnowledge";
 import { flowUsesHub } from "@/lib/workflowKnowledge";
 
-/** Links MyDigitalHub agents/workflows to the workspace hub (by name). */
+/** Links Files Hub agents/workflows to the workspace hub (by name). */
 export function MyDigitalHubRelationshipSync() {
   const { hubs } = useKnowledgeHubs();
   const { agents, patchAgent } = useAgents();

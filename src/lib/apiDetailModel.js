@@ -167,12 +167,12 @@ const API_PROFILES = {
     lineage: [
       { id: "sf", label: "Salesforce CRM", type: "source", highlight: true },
       { id: "etl", label: "Sync pipeline", type: "pipeline" },
-      { id: "hub", label: "Customer Hub", type: "hub" },
+      { id: "hub", label: "API Hub", type: "hub" },
       { id: "agent", label: "Support Agent", type: "agent" },
       { id: "flow", label: "Case routing Flow", type: "flow" },
     ],
     usage: {
-      hubs: ["Customer Hub", "Support Hub", "Revenue Hub"],
+      hubs: ["API Hub"],
       agents: ["Support Agent", "Sales Agent"],
       flows: ["Forecasting Flow", "Case Escalation Flow"],
     },
@@ -211,11 +211,11 @@ const API_PROFILES = {
     endpoints: STRIPE_ENDPOINTS,
     lineage: [
       { id: "stripe", label: "Stripe API", type: "source", highlight: true },
-      { id: "hub", label: "ERP Hub", type: "hub" },
+      { id: "hub", label: "API Hub", type: "hub" },
       { id: "flow", label: "Invoice Flow", type: "flow" },
     ],
     usage: {
-      hubs: ["ERP", "Revenue Hub"],
+      hubs: ["API Hub"],
       agents: ["Finance Agent"],
       flows: ["Invoice Flow", "Dunning Flow"],
     },
@@ -293,10 +293,10 @@ const API_PROFILES = {
     lineage: [
       { id: "crm", label: "CRM System", type: "source" },
       { id: "hook", label: "Inbound Webhook", type: "api", highlight: true },
-      { id: "hub", label: "MyDigitalHub", type: "hub" },
+      { id: "hub", label: "API Hub", type: "hub" },
     ],
     usage: {
-      hubs: ["MyDigitalHub"],
+      hubs: ["API Hub"],
       agents: [],
       flows: ["CRM Sync Flow"],
     },

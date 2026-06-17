@@ -42,7 +42,7 @@ export const INITIAL_FLOWS = [
     success: 99,
     createdAt: "28 Jan 2026",
     visibility: "private",
-    knowledgeHubs: [8, 2],
+    knowledgeHubs: [1],
   },
   {
     id: 2,
@@ -85,7 +85,7 @@ export const INITIAL_FLOWS = [
     success: 91,
     createdAt: "14 Feb 2026",
     visibility: "private",
-    knowledgeHubs: [2],
+    knowledgeHubs: [1],
   },
   {
     id: 4,
@@ -160,14 +160,14 @@ export const INITIAL_FLOWS = [
     success: 96,
     createdAt: "18 Mar 2026",
     visibility: "public",
-    knowledgeHubs: [3, 7],
+    knowledgeHubs: [1, 2],
   },
   {
     id: 8,
     name: "Brand Content Refresh",
     version: "v1.2",
     description:
-      "Reviews MyDigitalHub assets for outdated messaging, suggests rewrites, and queues updates for approval.",
+      "Reviews Files Hub assets for outdated messaging, suggests rewrites, and queues updates for approval.",
     status: "inprogress",
     steps: [
       { label: "Scan", icon: "FileText", color: "var(--primary)" },
@@ -180,14 +180,14 @@ export const INITIAL_FLOWS = [
     success: 94,
     createdAt: "08 Apr 2026",
     visibility: "private",
-    knowledgeHubs: [9],
+    knowledgeHubs: [1],
   },
   {
     id: 9,
     name: "Campaign Launch Pipeline",
     version: "v2.0",
     description:
-      "Pulls briefs from MyDigitalHub, generates channel variants, and publishes approved copy to connected tools.",
+      "Pulls briefs from Files Hub, generates channel variants, and publishes approved copy to connected tools.",
     status: "completed",
     steps: [
       { label: "Ingest", icon: "Database", color: "var(--chart-chart-3)" },
@@ -200,6 +200,6 @@ export const INITIAL_FLOWS = [
     success: 97,
     createdAt: "22 Apr 2026",
     visibility: "private",
-    knowledgeHubs: [9],
+    knowledgeHubs: [1],
   },
 ];

@@ -3,7 +3,7 @@
  * choose-type, files upload, processing, configure, destination, success.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Bot,
   CheckCircle2,
@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -72,10 +72,24 @@ export function ChooseSourceTypeStep({ state, onSelectType }) {
 
 // ─── Flow A — upload files ───────────────────────────────────────────────────
 
-export function FilesUploadStep({ state, update }) {
+export function FilesUploadStep({ state, update, filePickerGuard = null }) {
   const inputRef = useRef(null);
+  const inputId = useId();
   const [dragActive, setDragActive] = useState(false);
   const items = state.files?.items ?? [];
+
+  function openFilePicker() {
+    if (filePickerGuard) {
+      filePickerGuard.openFileInput(inputRef.current);
+      return;
+    }
+    inputRef.current?.click();
+  }
+
+  function handleFileInputChange(e) {
+    addFiles(e.target.files);
+    e.target.value = "";
+  }
 
   function addFiles(fileList) {
     const incoming = Array.from(fileList ?? []).filter(Boolean);
@@ -102,11 +116,11 @@ export function FilesUploadStep({ state, update }) {
         role="button"
         tabIndex={0}
         aria-label="Upload files"
-        onClick={() => inputRef.current?.click()}
+        onClick={openFilePicker}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            inputRef.current?.click();
+            openFilePicker();
           }
         }}
         onDragEnter={() => setDragActive(true)}
@@ -127,26 +141,25 @@ export function FilesUploadStep({ state, update }) {
           <p className="text-sm font-medium text-foreground">Drag &amp; drop files here</p>
           <p className="mt-0.5 text-xs text-muted-foreground">or click to browse your computer</p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            inputRef.current?.click();
-          }}
+        <label
+          htmlFor={inputId}
+          className={cn(buttonVariants({ size: "sm" }), "cursor-pointer")}
+          onClick={(e) => e.stopPropagation()}
         >
           <UploadCloud data-icon="inline-start" aria-hidden />
           Browse files
-        </Button>
+        </label>
         <input
+          id={inputId}
           ref={inputRef}
           type="file"
           multiple
-          className="sr-only"
-          onChange={(e) => {
-            addFiles(e.target.files);
-            e.target.value = "";
-          }}
+          className="hidden"
+          onChange={
+            filePickerGuard
+              ? filePickerGuard.onFileInputChange(handleFileInputChange)
+              : handleFileInputChange
+          }
         />
       </div>
 
