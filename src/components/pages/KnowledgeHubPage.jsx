@@ -900,12 +900,21 @@ export default function KnowledgeHubPage({
                     </EmptyContent>
                   </Empty>
                 ) : viewMode === "grid" ? (
-                  <HubCardGrid
-                    hubs={filteredSorted}
-                    onOpenHub={openHub}
-                    onDeleteRequest={requestDelete}
-                    canDelete={canDelete}
-                  />
+                  <>
+                    <HubCardGrid
+                      hubs={hubPagination.items}
+                      onOpenHub={openHub}
+                      onDeleteRequest={requestDelete}
+                      canDelete={canDelete}
+                    />
+                    <HubTablePagination
+                      page={hubPagination.currentPage}
+                      totalPages={hubPagination.totalPages}
+                      totalItems={hubPagination.totalItems}
+                      itemLabel="hubs"
+                      onPageChange={setListPage}
+                    />
+                  </>
                 ) : (
                   <>
                     {!isEmpty && canDelete && (

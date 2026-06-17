@@ -42,7 +42,8 @@ export function HubControlCenterRelationships({ relationships, onNavigateDocumen
         </p>
       </div>
 
-      {RELATIONSHIP_SECTIONS.map(({ key, label, icon: Icon, route }) => {
+      {RELATIONSHIP_SECTIONS.map(({ key, label, icon, route }) => {
+        const Icon = icon;
         const items = relationships?.[key] ?? [];
         if (items.length === 0) return null;
         const clickable = isRelationshipItemClickable(key);
@@ -79,7 +80,17 @@ export function HubControlCenterRelationships({ relationships, onNavigateDocumen
                 </li>
               ))}
               {items.length > 4 ? (
-                <li className="px-2 text-[10px] text-muted-foreground">+{items.length - 4} more</li>
+                <li>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-2 py-1 text-left text-[10px] font-medium text-primary transition-colors hover:bg-muted/50 hover:underline"
+                    onClick={() =>
+                      key === "documents" ? onNavigateDocuments?.() : navigate(route)
+                    }
+                  >
+                    +{items.length - 4} more
+                  </button>
+                </li>
               ) : null}
             </ul>
             {route ? (

@@ -72,6 +72,7 @@ import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 import { HubMiniBarChart } from "@/components/features/knowledge/control-center/HubControlCenterCharts";
 import { HubControlCenterRelationships } from "@/components/features/knowledge/control-center/HubControlCenterRelationships";
 import { HubControlCenterTimeline } from "@/components/features/knowledge/control-center/HubControlCenterTimeline";
+import { SampleDataNote } from "@/components/features/knowledge/control-center/SampleDataNote";
 import { KnowledgeHubBackNav } from "@/components/features/knowledge/KnowledgeHubBackNav";
 import {
   filterTimelineEvents,
@@ -501,6 +502,61 @@ export function KnowledgeHubControlCenter({
               <p className={CAPTION}>No description yet.</p>
             )}
 
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("documents")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <FileText className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.documents}</span>
+                <span className="text-muted-foreground">{summary.documents === 1 ? "source" : "sources"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("agents")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <Bot className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.agents}</span>
+                <span className="text-muted-foreground">{summary.agents === 1 ? "agent" : "agents"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("workflows")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <GitBranch className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{summary.workflows}</span>
+                <span className="text-muted-foreground">{summary.workflows === 1 ? "workflow" : "workflows"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("knowledge")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <Sparkles className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{assetSummary.active}</span>
+                <span className="text-muted-foreground">{assetSummary.active === 1 ? "asset" : "assets"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("members")}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
+              >
+                <Users className="size-3.5 text-muted-foreground" />
+                <span className="font-semibold tabular-nums text-foreground">{memberCount}</span>
+                <span className="text-muted-foreground">{memberCount === 1 ? "member" : "members"}</span>
+              </button>
+              {summary.lastActivity ? (
+                <span className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  Active {summary.lastActivity}
+                </span>
+              ) : null}
+            </div>
+
             <p className={CAPTION}>
               {metadata.owner?.name ?? "Unknown"}
               <span aria-hidden className="mx-1.5 text-border">·</span>
@@ -702,7 +758,7 @@ export function KnowledgeHubControlCenter({
                     ) : (
                       <>
                         <FileText className="mx-auto size-8 text-muted-foreground/40" />
-                        <p className="mt-2 text-sm font-medium">No documents match</p>
+                        <p className="mt-2 text-sm font-medium">No sources match</p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           Try adjusting search or filters.
                         </p>
@@ -828,7 +884,9 @@ export function KnowledgeHubControlCenter({
                     </Button>
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-xl border border-border">
+                  <div className="space-y-3">
+                    <SampleDataNote>Query, success, and utilization figures are simulated for preview.</SampleDataNote>
+                    <div className="overflow-hidden rounded-xl border border-border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -859,6 +917,7 @@ export function KnowledgeHubControlCenter({
                         ))}
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -866,9 +925,31 @@ export function KnowledgeHubControlCenter({
               {/* Workflows */}
               <TabsContent value="workflows" className="mt-0">
                 {linkedWorkflows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No workflows reference this hub.</p>
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+                      <GitBranch className="size-5 text-muted-foreground/60" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">No workflows connected</p>
+                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                        Reference this hub from a workflow so its steps can retrieve knowledge during a run.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      onClick={() => navigate("/flows")}
+                    >
+                      <GitBranch className="size-3.5" />
+                      Go to Workflows
+                    </Button>
+                  </div>
                 ) : (
-                  <div className="overflow-hidden rounded-xl border border-border">
+                  <div className="space-y-3">
+                    <SampleDataNote>Run and success figures are simulated for preview.</SampleDataNote>
+                    <div className="overflow-hidden rounded-xl border border-border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -898,6 +979,7 @@ export function KnowledgeHubControlCenter({
                         ))}
                       </TableBody>
                     </Table>
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -913,6 +995,21 @@ export function KnowledgeHubControlCenter({
 
               {/* Telemetry */}
               <TabsContent value="telemetry" className="mt-0 space-y-6">
+                {summary.documents === 0 && summary.agents === 0 && summary.workflows === 0 ? (
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
+                    <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+                      <BarChart3 className="size-5 text-muted-foreground/60" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">No insights yet</p>
+                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                        Usage insights appear once this hub has sources and is queried by agents or workflows.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <SampleDataNote />
                 <div className="grid gap-4 lg:grid-cols-3">
                   <div className="rounded-xl border border-border bg-card p-4 lg:col-span-2">
                     <h3 className="text-sm font-semibold">Query volume trend</h3>
@@ -958,6 +1055,8 @@ export function KnowledgeHubControlCenter({
                   <h3 className="text-sm font-semibold">Generation trend</h3>
                   <HubMiniBarChart data={usage.generationTrend} color="var(--chart-chart-4)" className="mt-4" />
                 </div>
+                  </>
+                )}
               </TabsContent>
 
               {/* Timeline */}

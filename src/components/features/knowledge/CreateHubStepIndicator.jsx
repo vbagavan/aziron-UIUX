@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   { id: 1, label: "Add content" },
   { id: 2, label: "Attached files" },
-  { id: 3, label: "Name hub" },
+  { id: 3, label: "Name your hub" },
 ];
 
 export function CreateHubStepIndicator({ currentStep }) {

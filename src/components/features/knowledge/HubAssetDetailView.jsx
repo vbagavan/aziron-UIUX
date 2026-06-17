@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Cloud,
   Download,
@@ -148,7 +149,11 @@ export function HubAssetDetailView({
     setDownloading(true);
     try {
       const ok = await downloadHubFile(hubId, file);
-      if (!ok) window.alert("This file is not available to download yet.");
+      if (!ok) {
+        toast.error("Download unavailable", {
+          description: "This file isn't available to download yet.",
+        });
+      }
     } finally {
       setDownloading(false);
     }

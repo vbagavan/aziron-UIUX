@@ -8,6 +8,7 @@ import {
   rowsNeedingDownload,
 } from "@/components/features/knowledge/hubFileSyncUtils";
 import { KnowledgeHubControlCenter } from "@/components/features/knowledge/control-center/KnowledgeHubControlCenter";
+import { FeatureErrorBoundary } from "@/components/common/FeatureErrorBoundary";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
@@ -394,6 +395,7 @@ export function KnowledgeHubDetailView({
         />
         )
       ) : (
+        <FeatureErrorBoundary key={liveHub.id}>
         <KnowledgeHubControlCenter
           hub={liveHub}
           hubName={name.trim() || liveHub.name}
@@ -413,6 +415,7 @@ export function KnowledgeHubDetailView({
           onBackToHubs={onBackToHubs}
           className="min-h-0 flex-1"
         />
+        </FeatureErrorBoundary>
       )}
 
       {canEdit && (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Building2,
   Check,
@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { formatDisplayDate } from "@/data/knowledgeHubs";
@@ -37,7 +38,10 @@ import {
   HUB_ROLE_META,
   hubRoleCan,
   hubRoleLabel,
+  hubRoleRank,
 } from "@/lib/hubRoles";
+
+const MEMBERS_PAGE_SIZE = 10;
 
 const MATRIX_ROWS = [
   { label: "View sources & assets", action: "sources.view" },
@@ -103,30 +107,53 @@ function TypeBadge({ type }) {
 export function HubMembersTab({ hub, hubRole, onShareClick }) {
   const { updateHubMemberRole, removeHubMember } = useKnowledgeHubs();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [pendingRemove, setPendingRemove] = useState(null);
+  const [pendingDowngrade, setPendingDowngrade] = useState(null);
 
-  const members = useMemo(() => hub?.members ?? [], [hub?.members]);
+  // React Compiler memoizes these derived values; manual useMemo isn't needed.
+  const members = hub?.members ?? [];
   const canManage = hubRoleCan(hubRole, "members.manage");
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const ranked = [...members].sort(
-      (a, b) => (HUB_ROLE_META[b.role]?.rank ?? 0) - (HUB_ROLE_META[a.role]?.rank ?? 0),
-    );
-    if (!q) return ranked;
-    return ranked.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) || (m.email ?? "").toLowerCase().includes(q),
-    );
-  }, [members, search]);
+  const query = search.trim().toLowerCase();
+  const ranked = [...members].sort(
+    (a, b) => (HUB_ROLE_META[b.role]?.rank ?? 0) - (HUB_ROLE_META[a.role]?.rank ?? 0),
+  );
+  const filtered = query
+    ? ranked.filter(
+        (m) =>
+          m.name.toLowerCase().includes(query) ||
+          (m.email ?? "").toLowerCase().includes(query),
+      )
+    : ranked;
 
-  const counts = useMemo(() => {
-    const reach = members.reduce(
-      (sum, m) => sum + (m.principalType === "user" ? 1 : m.memberCount ?? 0),
-      0,
-    );
-    return { principals: members.length, reach };
-  }, [members]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / MEMBERS_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged = filtered.slice(
+    (currentPage - 1) * MEMBERS_PAGE_SIZE,
+    currentPage * MEMBERS_PAGE_SIZE,
+  );
+
+  const reach = members.reduce(
+    (sum, m) => sum + (m.principalType === "user" ? 1 : m.memberCount ?? 0),
+    0,
+  );
+  const counts = { principals: members.length, reach };
+
+  function applyRole(member, role) {
+    updateHubMemberRole(hub.id, member.id, role);
+    toast.success(`${member.name} is now ${hubRoleLabel(role)}`);
+  }
+
+  function handleRoleChange(member, role) {
+    if (role === member.role) return;
+    // Lowering access is consequential — confirm a downgrade before applying.
+    if (hubRoleRank(role) < hubRoleRank(member.role)) {
+      setPendingDowngrade({ member, role });
+      return;
+    }
+    applyRole(member, role);
+  }
 
   return (
     <div className="space-y-5">
@@ -166,7 +193,10 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
       <div className="max-w-xs">
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search members…"
           className="h-9"
         />
@@ -185,7 +215,7 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((member) => {
+            {paged.map((member) => {
               const isOwner = member.role === "owner";
               const editable = canManage && !isOwner;
               return (
@@ -200,7 +230,7 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
                     {editable ? (
                       <Select
                         value={member.role}
-                        onValueChange={(role) => updateHubMemberRole(hub.id, member.id, role)}
+                        onValueChange={(role) => handleRoleChange(member, role)}
                       >
                         <SelectTrigger className="h-8 w-[140px]">
                           <SelectValue />
@@ -256,6 +286,35 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
             ) : null}
           </TableBody>
         </Table>
+        {pageCount > 1 ? (
+          <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+            <span>
+              {filtered.length} members · page {currentPage} of {pageCount}
+            </span>
+            <div className="flex gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7"
+                disabled={currentPage === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7"
+                disabled={currentPage === pageCount}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Permission matrix */}
@@ -282,15 +341,18 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
             {MATRIX_ROWS.map((row) => (
               <TableRow key={row.action}>
                 <TableCell className="text-sm">{row.label}</TableCell>
-                {ASSIGNABLE_HUB_ROLES.map((r) => (
-                  <TableCell key={r} className="text-center">
-                    {hubRoleCan(r, row.action) ? (
-                      <Check className="mx-auto size-4 text-primary" />
-                    ) : (
-                      <Minus className="mx-auto size-4 text-muted-foreground/40" />
-                    )}
-                  </TableCell>
-                ))}
+                {ASSIGNABLE_HUB_ROLES.map((r) => {
+                  const allowed = hubRoleCan(r, row.action);
+                  return (
+                    <TableCell key={r} className="text-center">
+                      {allowed ? (
+                        <Check className="mx-auto size-4 text-primary" role="img" aria-label="Allowed" />
+                      ) : (
+                        <Minus className="mx-auto size-4 text-muted-foreground/40" role="img" aria-label="Not allowed" />
+                      )}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             ))}
           </TableBody>
@@ -308,9 +370,24 @@ export function HubMembersTab({ hub, hubRole, onShareClick }) {
           confirmLabel="Remove"
           onConfirm={() => {
             removeHubMember(hub.id, pendingRemove.id);
+            toast.success(`${pendingRemove.name} removed from this hub`);
             setPendingRemove(null);
           }}
           onCancel={() => setPendingRemove(null)}
+        />
+      ) : null}
+
+      {pendingDowngrade ? (
+        <ConfirmDialog
+          title={`Lower ${pendingDowngrade.member.name} to ${hubRoleLabel(pendingDowngrade.role)}?`}
+          message={`They will lose the abilities of ${hubRoleLabel(pendingDowngrade.member.role)} immediately. You can raise their role again at any time.`}
+          confirmLabel="Change role"
+          confirmVariant="default"
+          onConfirm={() => {
+            applyRole(pendingDowngrade.member, pendingDowngrade.role);
+            setPendingDowngrade(null);
+          }}
+          onCancel={() => setPendingDowngrade(null)}
         />
       ) : null}
     </div>

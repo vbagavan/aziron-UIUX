@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   Bot,
   Copy,
@@ -79,10 +80,20 @@ function ChatAssistantMessage({ message, onCitationClick, onSaveAsNote }) {
         >
           {copied ? <span className="text-[10px] font-medium text-primary">Copied</span> : <Copy size={14} />}
         </button>
-        <button type="button" aria-label="Good response" className="flex h-7 min-w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
+        <button
+          type="button"
+          aria-label="Good response"
+          onClick={() => toast.success("Thanks — feedback noted")}
+          className="flex h-7 min-w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        >
           <ThumbsUp size={14} />
         </button>
-        <button type="button" aria-label="Bad response" className="flex h-7 min-w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
+        <button
+          type="button"
+          aria-label="Bad response"
+          onClick={() => toast("Thanks — we'll use this to improve")}
+          className="flex h-7 min-w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        >
           <ThumbsDown size={14} />
         </button>
         <button
@@ -214,7 +225,13 @@ function HubAskTab({
         </div>
       ) : null}
 
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Assistant conversation"
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
+      >
         <div className="flex-1" />
         {messages.map((msg) =>
           msg.role === "user" ? (
@@ -250,9 +267,10 @@ function HubAskTab({
       <div className="shrink-0 px-4 pb-4 pt-2">
         <div className="overflow-hidden rounded-[12px] border border-border bg-card shadow-[0_4px_24px_0_rgba(37,99,235,0.10)]">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
+              aria-label="Ask about this hub"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -263,7 +281,7 @@ function HubAskTab({
               }}
               placeholder={sourceCount === 0 ? "Add sources to enable chat…" : "Ask about this hub…"}
               disabled={sourceCount === 0}
-              className="flex-1 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 resize-none bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="button"
@@ -280,9 +298,12 @@ function HubAskTab({
               <Send size={14} />
             </button>
           </div>
-          <div className="flex items-center gap-1 px-3 py-2">
+          <div className="flex flex-wrap items-center justify-between gap-1 px-3 py-2">
             <span className="text-xs text-muted-foreground">
               Scope: {focusFile ? "Focused source" : "All hub sources"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Chat isn't saved · use the Knowledge tab to save &amp; share
             </span>
           </div>
         </div>
