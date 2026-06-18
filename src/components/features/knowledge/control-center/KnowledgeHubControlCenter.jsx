@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Activity,
   BarChart3,
   Bot,
   ChevronDown,
@@ -12,19 +13,11 @@ import {
   Plus,
   Search,
   Share2,
-  Sparkles,
-  StickyNote,
   Trash2,
   Users,
   Wand2,
   Zap,
 } from "lucide-react";
-import {
-  HubStudioTab,
-  loadHubNotes,
-} from "@/components/features/knowledge/HubAssistantPanel";
-import { HubNotesPanel } from "@/components/features/knowledge/HubNotesPanel";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +49,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import {
   Pagination,
   PaginationContent,
@@ -99,7 +93,7 @@ import {
   hubRoleLabel,
   resolveHubRole,
 } from "@/lib/hubRoles";
-import { HubKnowledgeTab } from "@/components/features/knowledge/control-center/HubKnowledgeTab";
+import { HubStudioTab } from "@/components/features/knowledge/control-center/HubStudioTab";
 import { HubMembersTab } from "@/components/features/knowledge/control-center/HubMembersTab";
 import { ShareHubDialog } from "@/components/features/knowledge/ShareHubDialog";
 
@@ -107,11 +101,9 @@ const HUB_FILES_PAGE_SIZE = 20;
 
 const ALL_HUB_TABS = [
   { id: "documents", label: KNOWLEDGE_TERMS.hubSourcesTab, icon: FileText },
-  { id: "knowledge", label: KNOWLEDGE_TERMS.hubGeneratedAssetsTab, icon: Sparkles },
-  { id: "agents", label: "Agents", icon: Bot },
-  { id: "workflows", label: "Workflows", icon: GitBranch },
+  { id: "studio", label: KNOWLEDGE_TERMS.hubStudioTab, icon: Wand2 },
   { id: "members", label: "Members", icon: Users },
-  { id: "studio", label: "Studio", icon: Wand2 },
+  { id: "usage", label: "Usage", icon: Activity },
   { id: "telemetry", label: KNOWLEDGE_TERMS.insightsTab, icon: BarChart3, requiresInsights: true },
   { id: "timeline", label: "Timeline", icon: History },
 ];
@@ -286,6 +278,147 @@ function FilesTablePagination({ page, totalPages, totalItems, onPageChange }) {
   );
 }
 
+const HUB_USAGE_TABS = [
+  { id: "agents", label: "Agents", icon: Bot },
+  { id: "workflows", label: "Workflows", icon: GitBranch },
+];
+
+function HubUsageTab({ linkedAgents, linkedWorkflows, onNavigateAgents, onNavigateFlows, onSelectAgent }) {
+  const [activeUsageTab, setActiveUsageTab] = useState("agents");
+
+  const usageTabs = useMemo(
+    () =>
+      HUB_USAGE_TABS.map((tab) => ({
+        ...tab,
+        count: tab.id === "agents" ? linkedAgents.length : linkedWorkflows.length,
+      })),
+    [linkedAgents.length, linkedWorkflows.length],
+  );
+
+  return (
+    <Tabs value={activeUsageTab} onValueChange={setActiveUsageTab} className="flex min-h-0 flex-1 flex-col gap-0">
+      <PageUnderlineTabs
+        value={activeUsageTab}
+        onValueChange={setActiveUsageTab}
+        tabs={usageTabs}
+        ariaLabel="Usage sections"
+        className="px-5"
+      />
+
+      <TabsContent value="agents" className="mt-0 min-h-0 flex-1 px-5 pt-5">
+        {linkedAgents.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
+            <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+              <Bot className="size-5 text-muted-foreground/60" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">No agents connected</p>
+              <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                Attach an agent to this hub so it can retrieve documents during execution.
+              </p>
+            </div>
+            <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onNavigateAgents}>
+              <Bot className="size-3.5" />
+              Go to Agents
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <SampleDataNote>Query, success, and utilization figures are simulated for preview.</SampleDataNote>
+            <div className="overflow-hidden rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Agent</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last execution</TableHead>
+                    <TableHead className="text-right">Queries</TableHead>
+                    <TableHead className="text-right">Success</TableHead>
+                    <TableHead className="text-right">Utilization</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {linkedAgents.map((agent) => (
+                    <TableRow key={agent.id}>
+                      <TableCell>
+                        <button type="button" className="font-medium hover:underline" onClick={() => onSelectAgent(agent.id)}>
+                          {agent.name}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{agent.type}</TableCell>
+                      <TableCell><AgentStatusBadge status={agent.status} /></TableCell>
+                      <TableCell className="text-xs">{agent.lastExecution}</TableCell>
+                      <TableCell className="text-right tabular-nums">{agent.queryVolume}</TableCell>
+                      <TableCell className="text-right tabular-nums">{agent.successRate != null ? `${agent.successRate}%` : "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{agent.utilization}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="workflows" className="mt-0 min-h-0 flex-1 px-5 pt-5">
+        {linkedWorkflows.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
+            <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+              <GitBranch className="size-5 text-muted-foreground/60" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">No workflows connected</p>
+              <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                Reference this hub from a workflow so its steps can retrieve knowledge during a run.
+              </p>
+            </div>
+            <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onNavigateFlows}>
+              <GitBranch className="size-3.5" />
+              Go to Workflows
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <SampleDataNote>Run and success figures are simulated for preview.</SampleDataNote>
+            <div className="overflow-hidden rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Workflow</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last execution</TableHead>
+                    <TableHead className="text-right">Runs</TableHead>
+                    <TableHead className="text-right">Success</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {linkedWorkflows.map((flow) => (
+                    <TableRow key={flow.id}>
+                      <TableCell>
+                        <button type="button" className="font-medium hover:underline" onClick={onNavigateFlows}>
+                          {flow.name}
+                          <span className="ml-1 text-xs text-muted-foreground">{flow.version}</span>
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{flow.type}</TableCell>
+                      <TableCell><AgentStatusBadge status={flow.status} /></TableCell>
+                      <TableCell className="text-xs">{flow.lastExecution}</TableCell>
+                      <TableCell className="text-right tabular-nums">{flow.runs.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{flow.successRate != null ? `${flow.successRate}%` : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 export function KnowledgeHubControlCenter({
   hub,
   hubName,
@@ -294,7 +427,7 @@ export function KnowledgeHubControlCenter({
   canEdit: canEditProp = false,
   showDemoStatuses = false,
   onOpenSources,
-  onOpenLibraryFile,
+  onOpenSource,
   onDeleteFile,
   onDownloadCloudFile,
   onEditHub,
@@ -304,6 +437,7 @@ export function KnowledgeHubControlCenter({
   onBrowseDocumentsLibrary,
   onBackToHubs,
   requestedTab = null,
+  requestedAssetId = null,
   className,
 }) {
   const navigate = useNavigate();
@@ -343,15 +477,6 @@ export function KnowledgeHubControlCenter({
   const [selectedDocIds, setSelectedDocIds] = useState(() => new Set());
   const [timelineFilter, setTimelineFilter] = useState("all");
   const [timelineSearch, setTimelineSearch] = useState("");
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [notes, setNotes] = useState(() => loadHubNotes(hub?.id));
-  const [pendingQuote, setPendingQuote] = useState(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(`hub-notes-${hub?.id}`, JSON.stringify(notes));
-    } catch {}
-  }, [notes, hub?.id]);
 
   const telemetry = useMemo(
     () => getHubTelemetry(hub, { agents, flows, allFiles }),
@@ -388,10 +513,6 @@ export function KnowledgeHubControlCenter({
   }, [docSearch, docSourceFilter, docStatusFilter, hub?.id]);
 
   useEffect(() => {
-    setNotesOpen(false);
-  }, [hub?.id]);
-
-  useEffect(() => {
     if (!requestedTab) return;
     if (hubTabs.some((tab) => tab.id === requestedTab)) {
       setActiveTab(requestedTab);
@@ -419,12 +540,16 @@ export function KnowledgeHubControlCenter({
   const previewing = viewAsRole && viewAsRole !== realHubRole;
 
   const tabCounts = {
-    documents: allFiles.length,
-    knowledge: assetSummary.active,
-    agents: summary.agents,
-    workflows: summary.workflows,
+    documents: telemetry.files.length,
+    studio: assetSummary.active,
+    usage: summary.agents + summary.workflows,
     members: memberCount,
   };
+
+  const hubTabsWithCounts = hubTabs.map((tab) => ({
+    ...tab,
+    count: tabCounts[tab.id],
+  }));
 
   function toggleDocSelection(id) {
     setSelectedDocIds((prev) => {
@@ -442,20 +567,6 @@ export function KnowledgeHubControlCenter({
       if (file) onDeleteFile(file);
     }
     setSelectedDocIds(new Set());
-  }
-
-  function handleAddNote(note) {
-    setNotes((prev) => [{ ...note, id: Date.now(), createdAt: new Date().toISOString() }, ...prev]);
-  }
-  function handleEditNote(updated) {
-    setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
-  }
-  function handleDeleteNote(id) {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-  }
-  function handleSaveStudioAsNote(note) {
-    handleAddNote(note);
-    setNotesOpen(true);
   }
 
   return (
@@ -503,60 +614,6 @@ export function KnowledgeHubControlCenter({
             )}
 
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("documents")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <FileText className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.documents}</span>
-                <span className="text-muted-foreground">{summary.documents === 1 ? "source" : "sources"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("agents")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Bot className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.agents}</span>
-                <span className="text-muted-foreground">{summary.agents === 1 ? "agent" : "agents"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("workflows")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <GitBranch className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{summary.workflows}</span>
-                <span className="text-muted-foreground">{summary.workflows === 1 ? "workflow" : "workflows"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("knowledge")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Sparkles className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{assetSummary.active}</span>
-                <span className="text-muted-foreground">{assetSummary.active === 1 ? "asset" : "assets"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("members")}
-                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs shadow-sm transition-colors hover:bg-muted"
-              >
-                <Users className="size-3.5 text-muted-foreground" />
-                <span className="font-semibold tabular-nums text-foreground">{memberCount}</span>
-                <span className="text-muted-foreground">{memberCount === 1 ? "member" : "members"}</span>
-              </button>
-              {summary.lastActivity ? (
-                <span className="flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
-                  Active {summary.lastActivity}
-                </span>
-              ) : null}
-            </div>
-
             <p className={CAPTION}>
               {metadata.owner?.name ?? "Unknown"}
               <span aria-hidden className="mx-1.5 text-border">·</span>
@@ -567,6 +624,15 @@ export function KnowledgeHubControlCenter({
               <span title={`Created ${metadata.createdAtLabel}`}>
                 Created {metadata.createdAtLabel}
               </span>
+              {summary.lastActivity ? (
+                <>
+                  <span aria-hidden className="mx-1.5 text-border">·</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                    <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                    Active {summary.lastActivity}
+                  </span>
+                </>
+              ) : null}
             </p>
 
             {metadata.tags?.length > 0 ? (
@@ -608,17 +674,6 @@ export function KnowledgeHubControlCenter({
                 Edit
               </Button>
             ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() => setNotesOpen(true)}
-              aria-label="Open notes"
-              title="Notes"
-            >
-              <StickyNote className="size-4" />
-            </Button>
           </div>
         </div>
       </header>
@@ -667,29 +722,14 @@ export function KnowledgeHubControlCenter({
 
         {/* Center: tabs */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
-            <div
-              className="shrink-0 overflow-x-auto border-b border-border px-4 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]"
-              aria-label="Hub sections"
-            >
-              <TabsList className="h-10 w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0">
-                {hubTabs.map(({ id, label, icon: Icon }) => (
-                  <TabsTrigger
-                    key={id}
-                    value={id}
-                    className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    <Icon className="size-3.5" />
-                    {label}
-                    {tabCounts[id] !== undefined ? (
-                      <span className="ml-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground data-[state=active]:bg-primary/10">
-                        {tabCounts[id]}
-                      </span>
-                    ) : null}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col gap-0">
+            <PageUnderlineTabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              tabs={hubTabsWithCounts}
+              ariaLabel="Hub sections"
+              className="px-4"
+            />
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
               {/* Documents */}
@@ -700,6 +740,7 @@ export function KnowledgeHubControlCenter({
                   includeDemoStatuses={showDemoStatuses}
                   activeFilter={docStatusFilter}
                   onFilter={setDocStatusFilter}
+                  hideWhenHealthy
                 />
 
                 {pendingDownloadCount > 0 && canEdit && onDownloadAllPending ? (
@@ -744,7 +785,7 @@ export function KnowledgeHubControlCenter({
 
                 {filteredDocs.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-border py-8 text-center">
-                    {allFiles.length === 0 ? (
+                    {telemetry.files.length === 0 ? (
                       <HubSourcesOnboarding
                         hasSources={false}
                         isPublished={metadata.status !== "draft"}
@@ -760,7 +801,25 @@ export function KnowledgeHubControlCenter({
                         <FileText className="mx-auto size-8 text-muted-foreground/40" />
                         <p className="mt-2 text-sm font-medium">No sources match</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Try adjusting search or filters.
+                          Try adjusting search or filters
+                          {docStatusFilter || docSourceFilter !== "all" || docSearch.trim() ? (
+                            <>
+                              {" "}
+                              or{" "}
+                              <button
+                                type="button"
+                                className="font-medium text-primary underline-offset-2 hover:underline"
+                                onClick={() => {
+                                  setDocSearch("");
+                                  setDocSourceFilter("all");
+                                  setDocStatusFilter(null);
+                                }}
+                              >
+                                clear filters
+                              </button>
+                            </>
+                          ) : null}
+                          .
                         </p>
                       </>
                     )}
@@ -806,8 +865,8 @@ export function KnowledgeHubControlCenter({
                             <TableCell>
                               <button
                                 type="button"
-                                className="min-w-0 truncate text-left text-sm font-medium hover:underline"
-                                onClick={() => onOpenLibraryFile?.(doc.id)}
+                                className="min-w-0 truncate text-left text-sm font-medium text-primary underline-offset-2 hover:underline"
+                                onClick={() => onOpenSource?.(doc.raw)}
                               >
                                 {doc.name}
                               </button>
@@ -845,9 +904,15 @@ export function KnowledgeHubControlCenter({
                 )}
               </TabsContent>
 
-              {/* Knowledge (generated assets) */}
-              <TabsContent value="knowledge" className="mt-0">
-                <HubKnowledgeTab hub={hub} hubRole={hubRole} actor={auth?.user} />
+              {/* Studio (create + assets) */}
+              <TabsContent value="studio" className="mt-0">
+                <HubStudioTab
+                  hub={hub}
+                  hubRole={hubRole}
+                  actor={auth?.user}
+                  allFiles={allFiles}
+                  initialAssetId={requestedAssetId}
+                />
               </TabsContent>
 
               {/* Members */}
@@ -860,136 +925,14 @@ export function KnowledgeHubControlCenter({
               </TabsContent>
 
               {/* Agents */}
-              <TabsContent value="agents" className="mt-0">
-                {linkedAgents.length === 0 ? (
-                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
-                    <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
-                      <Bot className="size-5 text-muted-foreground/60" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">No agents connected</p>
-                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                        Attach an agent to this hub so it can retrieve documents during execution.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => navigate("/agents")}
-                    >
-                      <Bot className="size-3.5" />
-                      Go to Agents
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <SampleDataNote>Query, success, and utilization figures are simulated for preview.</SampleDataNote>
-                    <div className="overflow-hidden rounded-xl border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Agent</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last execution</TableHead>
-                          <TableHead className="text-right">Queries</TableHead>
-                          <TableHead className="text-right">Success</TableHead>
-                          <TableHead className="text-right">Utilization</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {linkedAgents.map((agent) => (
-                          <TableRow key={agent.id}>
-                            <TableCell>
-                              <button type="button" className="font-medium hover:underline" onClick={() => navigate("/agents", { state: { highlightAgentId: agent.id } })}>
-                                {agent.name}
-                              </button>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{agent.type}</TableCell>
-                            <TableCell><AgentStatusBadge status={agent.status} /></TableCell>
-                            <TableCell className="text-xs">{agent.lastExecution}</TableCell>
-                            <TableCell className="text-right tabular-nums">{agent.queryVolume}</TableCell>
-                            <TableCell className="text-right tabular-nums">{agent.successRate != null ? `${agent.successRate}%` : "—"}</TableCell>
-                            <TableCell className="text-right tabular-nums">{agent.utilization}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Workflows */}
-              <TabsContent value="workflows" className="mt-0">
-                {linkedWorkflows.length === 0 ? (
-                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-14 text-center">
-                    <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
-                      <GitBranch className="size-5 text-muted-foreground/60" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">No workflows connected</p>
-                      <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                        Reference this hub from a workflow so its steps can retrieve knowledge during a run.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      onClick={() => navigate("/flows")}
-                    >
-                      <GitBranch className="size-3.5" />
-                      Go to Workflows
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <SampleDataNote>Run and success figures are simulated for preview.</SampleDataNote>
-                    <div className="overflow-hidden rounded-xl border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Workflow</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Last execution</TableHead>
-                          <TableHead className="text-right">Runs</TableHead>
-                          <TableHead className="text-right">Success</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {linkedWorkflows.map((flow) => (
-                          <TableRow key={flow.id}>
-                            <TableCell>
-                              <button type="button" className="font-medium hover:underline" onClick={() => navigate("/flows")}>
-                                {flow.name}
-                                <span className="ml-1 text-xs text-muted-foreground">{flow.version}</span>
-                              </button>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">{flow.type}</TableCell>
-                            <TableCell><AgentStatusBadge status={flow.status} /></TableCell>
-                            <TableCell className="text-xs">{flow.lastExecution}</TableCell>
-                            <TableCell className="text-right tabular-nums">{flow.runs.toLocaleString()}</TableCell>
-                            <TableCell className="text-right tabular-nums">{flow.successRate != null ? `${flow.successRate}%` : "—"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Studio */}
-              <TabsContent value="studio" className="mt-0 flex min-h-0 flex-1 flex-col">
-                <HubStudioTab
-                  hubName={getHubDisplayName(hubName)}
-                  allFiles={allFiles}
-                  onSaveAsNote={handleSaveStudioAsNote}
+              {/* Usage — Agents + Workflows */}
+              <TabsContent value="usage" className="mt-0 -mx-5 flex min-h-0 flex-1 flex-col">
+                <HubUsageTab
+                  linkedAgents={linkedAgents}
+                  linkedWorkflows={linkedWorkflows}
+                  onNavigateAgents={() => navigate("/agents")}
+                  onNavigateFlows={() => navigate("/flows")}
+                  onSelectAgent={(id) => navigate("/agents", { state: { highlightAgentId: id } })}
                 />
               </TabsContent>
 
@@ -1075,26 +1018,6 @@ export function KnowledgeHubControlCenter({
 
         </div>
       </div>
-
-      {/* Notes sheet */}
-      <Sheet open={notesOpen} onOpenChange={setNotesOpen}>
-        <SheetContent side="right" className="w-80 gap-0 p-0 sm:max-w-sm">
-          <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
-            <SheetTitle className="text-sm">Hub notes</SheetTitle>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <HubNotesPanel
-              hubId={hub.id}
-              notes={notes}
-              onAddNote={handleAddNote}
-              onEditNote={handleEditNote}
-              onDeleteNote={handleDeleteNote}
-              pendingQuote={pendingQuote}
-              onClearPendingQuote={() => setPendingQuote(null)}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <ShareHubDialog
         open={shareOpen}

@@ -6,7 +6,9 @@ export const KNOWLEDGE_TERMS = {
   documents: "Documents",
   /** Hub control center tab — distinct from top-level Documents library tab. */
   hubSourcesTab: "Hub sources",
-  /** Hub control center tab for AI-generated summaries, notes, and studio outputs. */
+  /** Hub control center tab — create AI outputs and browse saved assets. */
+  hubStudioTab: "Studio",
+  /** @deprecated Merged into hubStudioTab */
   hubGeneratedAssetsTab: "Generated assets",
   libraryView: "Library",
   controlCenter: "Control Center",

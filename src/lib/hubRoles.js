@@ -63,7 +63,6 @@ export const HUB_ACTION_MIN_ROLE = {
   "assets.view": "viewer",
   "ai.ask": "viewer",
   "ai.generate": "viewer",
-  "notes.create": "viewer",
   "members.view": "viewer",
   // contribute
   "sources.upload": "contributor",

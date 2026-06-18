@@ -1862,8 +1862,8 @@ export function DocumentReaderDrawer({
                 {file.name}
               </h1>
             </div>
-            <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
-              <X className="size-4" />
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Close
             </Button>
           </div>
         </header>

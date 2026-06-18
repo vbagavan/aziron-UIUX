@@ -46,9 +46,7 @@ const MEMBERS_PAGE_SIZE = 10;
 const MATRIX_ROWS = [
   { label: "View sources & assets", action: "sources.view" },
   { label: "Ask AI & generate", action: "ai.generate" },
-  { label: "Create notes", action: "notes.create" },
   { label: "Add sources & connections", action: "sources.upload" },
-  { label: "Pin assets", action: "assets.pin" },
   { label: "Delete sources", action: "sources.delete" },
   { label: "Archive assets", action: "assets.archive" },
   { label: "Manage members & share", action: "members.manage" },

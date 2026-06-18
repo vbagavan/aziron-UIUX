@@ -140,6 +140,21 @@ export const SEED_KNOWLEDGE_HUBS = [
     visibility: "private",
     tags: ["apis", "integrations"],
   },
+  {
+    id: 4,
+    name: "Project Engagement Hub",
+    description:
+      "SOW, RFP, MSA, and related project documents — generate purchase orders, invoices, and deliverables in Studio.",
+    files: 3,
+    collections: 1,
+    storageMB: 2,
+    provider: PROVIDER_LABEL,
+    createdOn: "2026-05-15",
+    updated: "Yesterday",
+    usedBy: 4,
+    visibility: "private",
+    tags: ["projects", "contracts", "sow", "rfp"],
+  },
 ];
 
 /** Map a browser File to a hub file row (stored locally in this prototype). */
@@ -362,12 +377,13 @@ export function buildHubFileInventory(hub) {
   }
 
   if (userCreated) {
+    const visibleUserFiles = userFiles.filter((f) => !f.isSampleDemo);
     return {
-      userFiles,
+      userFiles: visibleUserFiles,
       demoFiles: [],
-      allFiles: userFiles,
-      totalListed: userFiles.length,
-      totalReported: userFiles.length,
+      allFiles: visibleUserFiles,
+      totalListed: visibleUserFiles.length,
+      totalReported: visibleUserFiles.length,
       hasDemoRows: false,
     };
   }
@@ -497,6 +513,8 @@ export function createHubPayload({
   pendingFiles = null,
   oneDriveImport = null,
   cloudImport = null,
+  /** When true, do not inject demo OneDrive rows (e.g. hub will link library docs). */
+  skipDefaultContent = false,
 }) {
   const today = formatIsoDateToday();
   const id = Date.now();
@@ -544,7 +562,7 @@ export function createHubPayload({
   let storageMB =
     filesToHubStats(uploadList).storageMB + hubRecordsToStats(cloudRecords).storageMB;
 
-  if (userFiles.length === 0) {
+  if (userFiles.length === 0 && !skipDefaultContent) {
     const defaults = buildDefaultCloudContent(id);
     userFiles = defaults.userFiles;
     cloudConnections = defaults.cloudConnections;
@@ -603,9 +621,22 @@ export const ASSET_TYPES = {
   insight: { label: "Insight", plural: "Insights", accent: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300" },
   document: { label: "Document", plural: "Documents", accent: "bg-sky-500/10 text-sky-700 dark:text-sky-300" },
   presentation: { label: "Presentation", plural: "Presentations", accent: "bg-amber-500/10 text-amber-800 dark:text-amber-300" },
+  mindmap: { label: "Mind Map", plural: "Mind Maps", accent: "bg-rose-500/10 text-rose-700 dark:text-rose-300" },
+  flashcards: { label: "Flashcards", plural: "Flashcards", accent: "bg-orange-500/10 text-orange-700 dark:text-orange-300" },
+  datatable: { label: "Data Table", plural: "Data Tables", accent: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" },
 };
 
-export const ASSET_TYPE_ORDER = ["note", "summary", "report", "insight", "document", "presentation"];
+export const ASSET_TYPE_ORDER = [
+  "note",
+  "summary",
+  "report",
+  "insight",
+  "document",
+  "presentation",
+  "mindmap",
+  "flashcards",
+  "datatable",
+];
 
 export function assetTypeLabel(type) {
   return ASSET_TYPES[type]?.label ?? "Asset";

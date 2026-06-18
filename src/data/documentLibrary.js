@@ -200,9 +200,70 @@ export const DEMO_CATEGORY_LIBRARY_SOURCES = [
   },
 ];
 
+/** Demo project contract files (SOW, RFP) linked to Project Engagement Hub. */
+export const DEMO_PROJECT_LIBRARY_SOURCES = [
+  {
+    id: "demo-proj-sow-acme-platform",
+    name: "Acme Platform Modernization — SOW v2.1.pdf",
+    type: "PDF",
+    category: "files",
+    sizeKb: 842,
+    source: "user",
+    uploadedAt: DEMO_NOW,
+    created: DEMO_WEEK_AGO,
+    updated: "Yesterday",
+    indexStatus: "stored",
+    fileStatus: "success",
+    projectDocType: "SOW",
+    hubLinks: [
+      { hubId: 4, hubFileId: "demo-link-proj-sow", hubName: "Project Engagement Hub" },
+    ],
+  },
+  {
+    id: "demo-proj-rfp-acme-platform",
+    name: "Acme Platform Modernization — RFP Response.docx",
+    type: "DOCX",
+    category: "files",
+    sizeKb: 612,
+    source: "user",
+    uploadedAt: DEMO_NOW,
+    created: DEMO_WEEK_AGO,
+    updated: "2 days ago",
+    indexStatus: "stored",
+    fileStatus: "success",
+    projectDocType: "Proposal",
+    hubLinks: [
+      { hubId: 4, hubFileId: "demo-link-proj-rfp", hubName: "Project Engagement Hub" },
+    ],
+  },
+  {
+    id: "demo-proj-msa-acme",
+    name: "Acme Corp — Master Service Agreement.pdf",
+    type: "PDF",
+    category: "files",
+    sizeKb: 428,
+    source: "user",
+    uploadedAt: "2026-06-08T11:00:00.000Z",
+    created: "2026-05-20T10:00:00.000Z",
+    updated: "1 week ago",
+    indexStatus: "stored",
+    fileStatus: "success",
+    projectDocType: "MSA",
+    hubLinks: [
+      { hubId: 4, hubFileId: "demo-link-proj-msa", hubName: "Project Engagement Hub" },
+    ],
+  },
+];
+
+/** All fixed-id demo library rows merged on first load. */
+export const DEMO_LIBRARY_SOURCES = [
+  ...DEMO_CATEGORY_LIBRARY_SOURCES,
+  ...DEMO_PROJECT_LIBRARY_SOURCES,
+];
+
 export function mergeDemoCategorySources(documents = []) {
   const ids = new Set(documents.map((d) => d.id));
-  const missing = DEMO_CATEGORY_LIBRARY_SOURCES.filter((d) => !ids.has(d.id));
+  const missing = DEMO_LIBRARY_SOURCES.filter((d) => !ids.has(d.id));
   if (missing.length === 0) return documents;
   return [...documents, ...missing];
 }
@@ -508,7 +569,7 @@ export function syncDemoCategoryHubLinks(hubs, documents = []) {
 
     for (const doc of documents) {
       const metaLinks =
-        DEMO_CATEGORY_LIBRARY_SOURCES.find((d) => d.id === doc.id)?.hubLinks ??
+        DEMO_LIBRARY_SOURCES.find((d) => d.id === doc.id)?.hubLinks ??
         doc.hubLinks ??
         [];
 

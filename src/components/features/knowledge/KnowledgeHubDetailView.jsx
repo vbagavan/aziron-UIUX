@@ -48,7 +48,10 @@ export function KnowledgeHubDetailView({
   canEdit = true,
   canDelete = true,
   onBrowseDocumentsLibrary,
+  onOpenDocument,
   onBackToHubs,
+  requestedTab = null,
+  requestedAssetId = null,
 }) {
   const { getHubById, deleteHubFile, downloadCloudFileToHub, addCloudFilesToHub, addDocumentsToHub, addCategorySourcesToLibrary, hubs, recordHubAccess, updateHub } =
     useKnowledgeHubs();
@@ -249,9 +252,15 @@ export function KnowledgeHubDetailView({
     onFilesAdded?.([], "published");
   }
 
-  function openLibraryFile(fileId) {
-    const file = allFiles.find((f) => f.id === fileId);
-    if (file) setPreviewFile(file);
+  function openHubSource(source) {
+    if (!source) return;
+    const file = allFiles.find((f) => f.id === source.id) ?? source;
+    const openId = file.libraryDocumentId ?? file.id;
+    if (onOpenDocument) {
+      onOpenDocument(openId);
+      return;
+    }
+    navigate(`/knowledge?tab=documents&openSource=${encodeURIComponent(openId)}`);
   }
 
   function handleNavigateToHub(hId) {
@@ -404,7 +413,7 @@ export function KnowledgeHubDetailView({
           canEdit={canEdit}
           showDemoStatuses={showDemoStatuses}
           onOpenSources={canEdit ? () => setChooseSourceOpen(true) : undefined}
-          onOpenLibraryFile={openLibraryFile}
+          onOpenSource={openHubSource}
           onDeleteFile={canEdit ? setFileToDelete : undefined}
           onDownloadCloudFile={handleDownloadCloudFile}
           onEditHub={canEdit ? () => setSettingsOpen(true) : undefined}
@@ -413,6 +422,8 @@ export function KnowledgeHubDetailView({
           onDownloadAllPending={pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined}
           onBrowseDocumentsLibrary={() => browseDocumentsLibrary(liveHub.id)}
           onBackToHubs={onBackToHubs}
+          requestedTab={requestedTab}
+          requestedAssetId={requestedAssetId}
           className="min-h-0 flex-1"
         />
         </FeatureErrorBoundary>

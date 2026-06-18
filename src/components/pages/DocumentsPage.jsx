@@ -745,6 +745,7 @@ export default function DocumentsPage({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const linkHubId = searchParams.get("linkHub");
+  const openSourceParam = searchParams.get("openSource");
   const highlightParam = searchParams.get("highlight");
   const highlightIds = useMemo(() => {
     if (!highlightParam) return new Set();
@@ -787,7 +788,8 @@ export default function DocumentsPage({
   const [readerDoc, setReaderDoc]       = useState(null);
   const [wizardOpen, setWizardOpen]     = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
-  const [linkAfterHubCreate, setLinkAfterHubCreate] = useState(null);
+  const [createHubMode, setCreateHubMode] = useState("full");
+  const [pendingLinkRefs, setPendingLinkRefs] = useState([]);
   const [linkingHelpOpen, setLinkingHelpOpen] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState(null);
 
@@ -866,6 +868,22 @@ export default function DocumentsPage({
 
     return docs;
   }, [documents, hubs]);
+
+  useEffect(() => {
+    if (!openSourceParam || allDocs.length === 0) return;
+
+    const match = allDocs.find(
+      (doc) => doc.id === openSourceParam || doc.libraryDocumentId === openSourceParam,
+    );
+    if (!match) return;
+
+    setReaderDoc(match);
+    setSelectionMode(false);
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("openSource");
+    setSearchParams(next, { replace: true });
+  }, [openSourceParam, allDocs, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (loadSavedViewMode() !== null) return;
@@ -1000,6 +1018,43 @@ export default function DocumentsPage({
       );
   }
 
+  function resolveLinkPreviewNames(refs) {
+    return refs
+      .slice(0, 5)
+      .map((ref) => {
+        if (ref.type === "library") {
+          const doc = allDocs.find((d) => d.isLibraryDocument && d.id === ref.documentId);
+          return doc ? getDocDisplayName(doc) : null;
+        }
+        const doc = allDocs.find((d) => !d.isLibraryDocument && d.hubId === ref.hubId && d.id === ref.fileId);
+        return doc ? getDocDisplayName(doc) : null;
+      })
+      .filter(Boolean);
+  }
+
+  function openCreateHubDialog({ fromSelection = false, singleDocId = null } = {}) {
+    if (!canCreate) return;
+
+    let refs = [];
+    if (fromSelection && selectedKeys.size > 0) {
+      refs = getSelectedDocRefs();
+      setCreateHubMode("quick");
+    } else if (singleDocId) {
+      refs = [{ type: "library", documentId: singleDocId }];
+      setCreateHubMode("quick");
+    } else {
+      setCreateHubMode("full");
+    }
+
+    setPendingLinkRefs(refs);
+    setCreateHubOpen(true);
+  }
+
+  const pendingLinkPreview = useMemo(
+    () => resolveLinkPreviewNames(pendingLinkRefs),
+    [pendingLinkRefs, allDocs],
+  );
+
   function toggleSelect(key) {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
@@ -1109,13 +1164,17 @@ export default function DocumentsPage({
   }
 
   async function handleHubCreated(payload) {
+    const refs =
+      pendingLinkRefs.length > 0 ? [...pendingLinkRefs] : getSelectedDocRefs();
+    const libraryIds = refs.filter((r) => r.type === "library").map((r) => r.documentId);
+    const hubRefs = refs.filter((r) => r.type === "hub");
+    const uniqueIds = [...new Set(libraryIds)];
+
     try {
-      const hub = await addHub(payload);
-      const refs = getSelectedDocRefs();
-      const libraryIds = refs.filter((r) => r.type === "library").map((r) => r.documentId);
-      const hubRefs = refs.filter((r) => r.type === "hub");
-      if (linkAfterHubCreate) libraryIds.push(linkAfterHubCreate);
-      const uniqueIds = [...new Set(libraryIds)];
+      const hub = await addHub({
+        ...payload,
+        skipDefaultContent: refs.length > 0,
+      });
 
       let linkedCount = 0;
       if (uniqueIds.length > 0) {
@@ -1136,6 +1195,12 @@ export default function DocumentsPage({
           description: `"${payload.name}" was created with ${linkedCount} linked document${linkedCount === 1 ? "" : "s"}.`,
           variant: "success",
         });
+      } else if (refs.length > 0) {
+        showToast({
+          title: "Knowledge Hub created",
+          description: `"${payload.name}" is ready. Selected documents were already linked or could not be added.`,
+          variant: "default",
+        });
       } else {
         showToast({
           title: "Knowledge Hub created",
@@ -1143,15 +1208,18 @@ export default function DocumentsPage({
           variant: "success",
         });
       }
+
       setCreateHubOpen(false);
-      setLinkAfterHubCreate(null);
+      setPendingLinkRefs([]);
       exitSelectionMode();
+      handleNavigateToHub(hub.id);
     } catch {
       showToast({
         title: "Could not create hub",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
+      throw new Error("hub_create_failed");
     }
   }
 
@@ -1615,10 +1683,9 @@ export default function DocumentsPage({
                   onUnlinkFromHub={handleUnlinkDocFromHub}
                   onCreateHub={() => {
                     if (!canCreate) return;
-                    if (activeReaderDoc?.isLibraryDocument) {
-                      setLinkAfterHubCreate(activeReaderDoc.id);
-                    }
-                    setCreateHubOpen(true);
+                    openCreateHubDialog({
+                      singleDocId: activeReaderDoc?.isLibraryDocument ? activeReaderDoc.id : null,
+                    });
                   }}
                 />
               ) : resolveSourceCategory(activeReaderDoc) === "apis" ? (
@@ -1634,10 +1701,9 @@ export default function DocumentsPage({
                   onUnlinkFromHub={handleUnlinkDocFromHub}
                   onCreateHub={() => {
                     if (!canCreate) return;
-                    if (activeReaderDoc?.isLibraryDocument) {
-                      setLinkAfterHubCreate(activeReaderDoc.id);
-                    }
-                    setCreateHubOpen(true);
+                    openCreateHubDialog({
+                      singleDocId: activeReaderDoc?.isLibraryDocument ? activeReaderDoc.id : null,
+                    });
                   }}
                 />
               ) : (
@@ -1656,10 +1722,9 @@ export default function DocumentsPage({
                 onRemoveFromLibrary={requestRemoveActiveDocument}
                 onCreateHub={() => {
                   if (!canCreate) return;
-                  if (activeReaderDoc?.isLibraryDocument) {
-                    setLinkAfterHubCreate(activeReaderDoc.id);
-                  }
-                  setCreateHubOpen(true);
+                  openCreateHubDialog({
+                    singleDocId: activeReaderDoc?.isLibraryDocument ? activeReaderDoc.id : null,
+                  });
                 }}
                 onClose={handleCloseReader}
               />
@@ -1778,7 +1843,7 @@ export default function DocumentsPage({
           canEdit={canEdit}
           linkTargetHub={linkTargetHub}
           onClearSelection={clearSelection}
-          onCreateHub={() => setCreateHubOpen(true)}
+          onCreateHub={() => openCreateHubDialog({ fromSelection: true })}
           onAddToHub={handleAddToHub}
           onRemove={requestBulkRemove}
         />
@@ -1795,9 +1860,14 @@ export default function DocumentsPage({
 
       <KnowledgeHubCreateDialog
         open={createHubOpen}
+        mode={createHubMode}
+        linkFromLibraryCount={pendingLinkRefs.length}
+        linkFromLibraryPreview={pendingLinkPreview}
         onOpenChange={(open) => {
           setCreateHubOpen(open);
-          if (!open) setLinkAfterHubCreate(null);
+          if (!open) {
+            setPendingLinkRefs([]);
+          }
         }}
         onCreated={handleHubCreated}
       />

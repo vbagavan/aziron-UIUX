@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, Check, Search, Settings2, Users, X } from "lucide-react";
+import { Building2, Check, Link2, Search, Share2, Users, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,26 +10,15 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { createHubMember } from "@/data/knowledgeHubs";
-import { ASSIGNABLE_HUB_ROLES, HUB_ROLE_META } from "@/lib/hubRoles";
+import { Textarea } from "@/components/ui/textarea";
+import { assetTypeLabel } from "@/data/knowledgeHubs";
 import { HUB_SHARE_DIRECTORY, sharePrincipalInitials } from "@/components/features/knowledge/shareDirectory";
-
-function initials(name) {
-  return sharePrincipalInitials(name);
-}
 
 function PrincipalIcon({ type, name }) {
   if (type === "user") {
     return (
       <Avatar className="size-7">
-        <AvatarFallback className="text-[10px]">{initials(name)}</AvatarFallback>
+        <AvatarFallback className="text-[10px]">{sharePrincipalInitials(name)}</AvatarFallback>
       </Avatar>
     );
   }
@@ -41,30 +30,26 @@ function PrincipalIcon({ type, name }) {
   );
 }
 
-export function ShareHubDialog({
+export function buildHubAssetShareLink(hubId, assetId) {
+  if (!hubId || !assetId) return window.location.href;
+  const url = new URL(`${window.location.origin}/knowledge/${hubId}`);
+  url.searchParams.set("tab", "studio");
+  url.searchParams.set("asset", assetId);
+  return url.toString();
+}
+
+export function ShareAssetDialog({
   open,
   onOpenChange,
-  hub,
-  members = [],
-  actor,
-  onShare,
-  onManageMembers,
+  asset,
+  hubId,
+  hubName,
+  onShared,
 }) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState([]); // {principalType,name,email,memberCount}
-  const [role, setRole] = useState("viewer");
-
-  const existingKeys = useMemo(() => {
-    const set = new Set();
-    for (const m of members) {
-      set.add(
-        m.principalType === "user"
-          ? `user:${(m.email ?? "").toLowerCase()}`
-          : `${m.principalType}:${(m.name ?? "").toLowerCase()}`,
-      );
-    }
-    return set;
-  }, [members]);
+  const [selected, setSelected] = useState([]);
+  const [message, setMessage] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const selectedKeys = useMemo(
     () =>
@@ -85,19 +70,20 @@ export function ShareHubDialog({
         entry.principalType === "user"
           ? `user:${(entry.email ?? "").toLowerCase()}`
           : `${entry.principalType}:${entry.name.toLowerCase()}`;
-      if (existingKeys.has(key) || selectedKeys.has(key)) return false;
+      if (selectedKeys.has(key)) return false;
       if (!q) return true;
       return (
         entry.name.toLowerCase().includes(q) ||
         (entry.email ?? "").toLowerCase().includes(q)
       );
     });
-  }, [query, existingKeys, selectedKeys]);
+  }, [query, selectedKeys]);
 
   function reset() {
     setSelected([]);
     setQuery("");
-    setRole("viewer");
+    setMessage("");
+    setLinkCopied(false);
   }
 
   function handleClose(next) {
@@ -114,35 +100,69 @@ export function ShareHubDialog({
     setSelected((prev) => prev.filter((s) => s !== entry));
   }
 
-  function handleShare() {
+  function handleCopyLink() {
+    const link = buildHubAssetShareLink(hubId, asset?.id);
+    navigator.clipboard.writeText(link).catch(() => {});
+    setLinkCopied(true);
+    window.setTimeout(() => setLinkCopied(false), 2000);
+  }
+
+  async function handleNativeShare() {
+    const content = asset?.body ?? asset?.excerpt ?? "";
+    const link = buildHubAssetShareLink(hubId, asset?.id);
+    const payload = {
+      title: asset?.title ?? "Knowledge Hub asset",
+      text: `${asset?.title ?? "Asset"} from ${hubName ?? "Knowledge Hub"}\n\n${message.trim() ? `${message.trim()}\n\n` : ""}${content.slice(0, 500)}${content.length > 500 ? "…" : ""}\n\n${link}`,
+      url: link,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        onShared?.({ type: "native" });
+        handleClose(false);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }
+
+  function handleSend() {
     if (selected.length === 0) return;
-    const newMembers = selected.map((s) =>
-      createHubMember({
-        principalType: s.principalType,
-        name: s.name,
-        email: s.email ?? null,
-        role,
-        memberCount: s.memberCount ?? null,
-        actor,
-      }),
-    );
-    onShare?.(newMembers);
+    const names = selected.map((s) => s.name).join(", ");
+    onShared?.({
+      type: "recipients",
+      recipients: selected,
+      message: message.trim(),
+      names,
+      link: buildHubAssetShareLink(hubId, asset?.id),
+    });
     reset();
     onOpenChange(false);
   }
+
+  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="flex max-h-[min(90vh,640px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-          <DialogTitle>Share {hub?.name ?? "hub"}</DialogTitle>
+          <DialogTitle>Share asset</DialogTitle>
           <DialogDescription>
-            Sharing happens at the hub level. Anyone you add can access every source
-            and generated asset inside it.
+            Send{" "}
+            <span className="font-medium text-foreground">
+              {asset?.title ?? "this asset"}
+            </span>
+            {hubName ? ` from ${hubName}` : ""}. Recipients with hub access can open it in Studio.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{assetTypeLabel(asset?.type)}</span>
+            {" · "}
+            {asset?.createdByName ?? "Team member"}
+          </div>
+
           {selected.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {selected.map((s, i) => (
@@ -175,10 +195,10 @@ export function ShareHubDialog({
             />
           </div>
 
-          <div className="min-h-[8rem] overflow-y-auto rounded-lg border border-border">
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-border">
             {results.length === 0 ? (
               <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                No matches. Everyone found is already a member.
+                {query.trim() ? "No matches." : "Search to add recipients."}
               </p>
             ) : (
               <ul className="divide-y divide-border">
@@ -198,52 +218,45 @@ export function ShareHubDialog({
                             : `${entry.memberCount} member${entry.memberCount === 1 ? "" : "s"}`}
                         </span>
                       </span>
-                      <Check className="size-4 shrink-0 text-muted-foreground opacity-0" />
                     </button>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="share-asset-message" className="text-xs font-medium text-foreground">
+              Message <span className="font-normal text-muted-foreground">(optional)</span>
+            </label>
+            <Textarea
+              id="share-asset-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Add a note for recipients…"
+              rows={2}
+              className="resize-none text-sm"
+            />
+          </div>
         </div>
 
         <div className="shrink-0 border-t border-border bg-muted/30 px-6 py-4 dark:bg-muted/20">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Role</span>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="h-8 w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ASSIGNABLE_HUB_ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {HUB_ROLE_META[r].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2 sm:justify-end">
-              {onManageMembers ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => {
-                    handleClose(false);
-                    onManageMembers();
-                  }}
-                >
-                  <Settings2 className="size-3.5" />
-                  Manage members
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={handleCopyLink}>
+                {linkCopied ? <Check className="size-3.5 text-emerald-600" /> : <Link2 className="size-3.5" />}
+                {linkCopied ? "Link copied" : "Copy link"}
+              </Button>
+              {canNativeShare ? (
+                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={handleNativeShare}>
+                  <Share2 className="size-3.5" />
+                  System share
                 </Button>
               ) : null}
-              <Button type="button" size="sm" disabled={selected.length === 0} onClick={handleShare}>
-                {selected.length > 0 ? `Share with ${selected.length}` : "Share"}
-              </Button>
             </div>
+            <Button type="button" size="sm" disabled={selected.length === 0} onClick={handleSend}>
+              {selected.length > 0 ? `Share with ${selected.length}` : "Share"}
+            </Button>
           </div>
         </div>
       </DialogContent>

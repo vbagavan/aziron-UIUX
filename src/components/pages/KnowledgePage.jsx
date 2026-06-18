@@ -49,6 +49,13 @@ export default function KnowledgePage({ onNavigate }) {
         next.set("tab", KNOWLEDGE_TABS.documents);
         if (opts.linkHub) {
           next.set("linkHub", String(opts.linkHub));
+        } else {
+          next.delete("linkHub");
+        }
+        if (opts.openSource) {
+          next.set("openSource", String(opts.openSource));
+        } else {
+          next.delete("openSource");
         }
         const query = next.toString();
         setSearchParams(next, { replace: true });
@@ -60,6 +67,7 @@ export default function KnowledgePage({ onNavigate }) {
 
       next.delete("tab");
       next.delete("linkHub");
+      next.delete("openSource");
       const query = next.toString();
 
       if (opts.hubId) {

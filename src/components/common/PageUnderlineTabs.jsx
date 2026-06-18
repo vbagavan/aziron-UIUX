@@ -4,6 +4,20 @@ import { cn } from "@/lib/utils";
 const TAB_BUTTON_CLASS =
   "inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
+function TabCount({ count, active }) {
+  if (count === undefined || count === null) return null;
+  return (
+    <span
+      className={cn(
+        "rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums",
+        active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+      )}
+    >
+      {count}
+    </span>
+  );
+}
+
 /**
  * Page-level underline tabs — matches ApiDetailView, DatabaseDetailView, ConnectionsPanel.
  * Uses plain buttons so active tabs stay flat (no shadcn pill background).
@@ -98,6 +112,7 @@ export function PageUnderlineTabs({
             >
               {Icon ? <Icon className="size-4 shrink-0" aria-hidden /> : null}
               {tab.label}
+              <TabCount count={tab.count} active={active} />
             </button>
           );
         })}

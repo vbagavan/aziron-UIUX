@@ -179,11 +179,46 @@ function Step1Upload({
   );
 }
 
-function Step3NameHub({ formData, attachedFiles, onChange }) {
+function Step3NameHub({
+  formData,
+  attachedFiles,
+  onChange,
+  linkFromLibraryCount = 0,
+  linkFromLibraryPreview = [],
+}) {
   const syncCounts = countSyncStates(attachedFiles);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {linkFromLibraryCount > 0 ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Documents from library</CardTitle>
+            <CardDescription>
+              {linkFromLibraryCount} selected document
+              {linkFromLibraryCount === 1 ? "" : "s"} will be linked to this hub when you create it.
+            </CardDescription>
+          </CardHeader>
+          {linkFromLibraryPreview.length > 0 ? (
+            <CardContent className="pt-0">
+              <ul className="max-h-28 space-y-1 overflow-y-auto text-sm text-muted-foreground">
+                {linkFromLibraryPreview.map((name) => (
+                  <li key={name} className="flex items-start gap-2">
+                    <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="line-clamp-1">{name}</span>
+                  </li>
+                ))}
+                {linkFromLibraryCount > linkFromLibraryPreview.length ? (
+                  <li className="text-xs">
+                    + {linkFromLibraryCount - linkFromLibraryPreview.length} more
+                  </li>
+                ) : null}
+              </ul>
+            </CardContent>
+          ) : null}
+        </Card>
+      ) : null}
+
       {attachedFiles.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
@@ -259,6 +294,8 @@ export function KnowledgeHubCreateDialog({
   onCloudFileSynced,
   onCloudFileSyncFailed,
   mode = "full",
+  linkFromLibraryCount = 0,
+  linkFromLibraryPreview = [],
 }) {
   const isQuick = mode === "quick";
   const [dialogStep, setDialogStep] = useState(1);
@@ -427,14 +464,14 @@ export function KnowledgeHubCreateDialog({
     setAttachedFiles((prev) => mergeAttachedFiles(prev, cloudRows));
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!formData.name.trim()) return;
     const uploadFiles = attachedFiles
       .filter((r) => r.source === "upload" && r.file)
       .map((r) => r.file);
     const cloudImport = attachedRowsToCloudImport(attachedFiles, cloudMeta);
 
-    onCreated?.({
+    const payload = {
       name: formData.name,
       description: formData.description,
       pendingFiles: uploadFiles.length > 0 ? uploadFiles : undefined,
@@ -442,8 +479,14 @@ export function KnowledgeHubCreateDialog({
       cloudImport: cloudImport ?? undefined,
       oneDriveImport:
         cloudImport?.provider === "onedrive" ? cloudImport : undefined,
-    });
-    onOpenChange(false);
+    };
+
+    try {
+      await onCreated?.(payload);
+      onOpenChange(false);
+    } catch {
+      /* parent shows error toast; keep dialog open */
+    }
   }
 
   function goToFilesStep() {
@@ -488,7 +531,9 @@ export function KnowledgeHubCreateDialog({
           <DialogTitle>{isQuick ? "Quick create Knowledge Hub" : "Create Knowledge Hub"}</DialogTitle>
           <DialogDescription>
             {isQuick
-              ? "Name your hub now — add sources from the hub page anytime."
+              ? linkFromLibraryCount > 0
+                ? `Name your hub — ${linkFromLibraryCount} selected document${linkFromLibraryCount === 1 ? "" : "s"} will be linked automatically.`
+                : "Name your hub now — add sources from the hub page anytime."
               : "Store documents your AI agents use for retrieval, reasoning, and workflows."}
           </DialogDescription>
         </DialogHeader>
@@ -499,6 +544,8 @@ export function KnowledgeHubCreateDialog({
               formData={formData}
               attachedFiles={[]}
               onChange={setFormData}
+              linkFromLibraryCount={linkFromLibraryCount}
+              linkFromLibraryPreview={linkFromLibraryPreview}
             />
           ) : (
             <>
@@ -579,6 +626,8 @@ export function KnowledgeHubCreateDialog({
               formData={formData}
               attachedFiles={attachedFiles}
               onChange={setFormData}
+              linkFromLibraryCount={linkFromLibraryCount}
+              linkFromLibraryPreview={linkFromLibraryPreview}
             />
           )}
             </>

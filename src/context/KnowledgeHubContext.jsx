@@ -734,42 +734,72 @@ export function KnowledgeHubProvider({ children }) {
         return { linked: false, reason: "not_found" };
       }
 
-      const targetHub = hubs.find((h) => Number(h.id) === targetId);
-      if (!targetHub) return { linked: false, reason: "hub_not_found" };
+      let linkResult = { linked: false, reason: "hub_not_found" };
 
-      const { hubs: nextHubs, alreadyLinked, moved, hubFileId } = applyLibraryDocumentHubLink(
-        hubs,
-        { libraryDoc, documentId, targetId },
-      );
+      setHubs((prev) => {
+        const targetHub = prev.find((h) => Number(h.id) === targetId);
+        if (!targetHub) return prev;
 
-      if (alreadyLinked) {
-        return { linked: false, reason: "already_linked" };
-      }
+        const { hubs: nextHubs, alreadyLinked, moved, hubFileId } = applyLibraryDocumentHubLink(
+          prev,
+          { libraryDoc, documentId, targetId },
+        );
 
-      setHubs(nextHubs);
+        if (alreadyLinked) {
+          linkResult = { linked: false, reason: "already_linked", hubName: targetHub.name };
+          return prev;
+        }
 
-      return {
-        linked: true,
-        moved,
-        hubFileId,
-        hubName: targetHub.name,
-      };
+        linkResult = {
+          linked: true,
+          moved,
+          hubFileId,
+          hubName: targetHub.name,
+        };
+        return nextHubs;
+      });
+
+      return linkResult;
     },
-    [documents, hubs],
+    [documents],
   );
 
   const linkDocumentsToHub = useCallback(
     async (documentIds, hubId) => {
+      const targetId = Number(hubId);
+      if (Number.isNaN(targetId)) return { linked: [], skipped: documentIds ?? [] };
+
       const linked = [];
       const skipped = [];
-      for (const documentId of documentIds ?? []) {
-        const result = linkDocumentToHub(documentId, hubId);
-        if (result.linked) linked.push(documentId);
-        else skipped.push(documentId);
-      }
+
+      setHubs((prev) => {
+        let next = prev;
+        for (const documentId of documentIds ?? []) {
+          const libraryDoc = documents.find((d) => d.id === documentId);
+          if (!libraryDoc) {
+            skipped.push(documentId);
+            continue;
+          }
+
+          const { hubs: updated, alreadyLinked } = applyLibraryDocumentHubLink(next, {
+            libraryDoc,
+            documentId,
+            targetId,
+          });
+
+          if (alreadyLinked) {
+            skipped.push(documentId);
+          } else {
+            linked.push(documentId);
+            next = updated;
+          }
+        }
+        return next;
+      });
+
       return { linked, skipped };
     },
-    [linkDocumentToHub],
+    [documents],
   );
 
   const unlinkDocumentFromHub = useCallback((documentId, hubId) => {

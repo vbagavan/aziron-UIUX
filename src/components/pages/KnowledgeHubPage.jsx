@@ -9,6 +9,7 @@ import {
   MoreVertical,
   Plus,
   Search,
+  Share2,
   Trash2,
   X,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AppHeader from "@/components/layout/AppHeader";
@@ -51,9 +53,11 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast, useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
+import { useAuth } from "@/context/AuthContext";
 import { formatDisplayDate } from "@/data/knowledgeHubs";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubDetailView } from "@/components/features/knowledge/KnowledgeHubDetailView";
+import { ShareHubDialog } from "@/components/features/knowledge/ShareHubDialog";
 import { KnowledgeHubBackNav } from "@/components/features/knowledge/KnowledgeHubBackNav";
 import { paginateSlice } from "@/lib/pagination";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -285,12 +289,14 @@ function HubTable({
   selectedRows,
   onToggleRow,
   onDeleteRequest,
+  onShareRequest,
   onOpenHub,
   page,
   totalPages,
   totalItems,
   onPageChange,
   canDelete,
+  canShare,
 }) {
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -363,7 +369,7 @@ function HubTable({
                 className="relative"
                 onClick={(e) => e.stopPropagation()}
               >
-                {canDelete && (
+                {(canShare || canDelete) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -380,13 +386,22 @@ function HubTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">
                       <DropdownMenuGroup>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => onDeleteRequest(hub)}
-                        >
-                          <Trash2 data-icon="inline-start" aria-hidden />
-                          Delete
-                        </DropdownMenuItem>
+                        {canShare ? (
+                          <DropdownMenuItem onClick={() => onShareRequest(hub)}>
+                            <Share2 data-icon="inline-start" aria-hidden />
+                            Share
+                          </DropdownMenuItem>
+                        ) : null}
+                        {canShare && canDelete ? <DropdownMenuSeparator /> : null}
+                        {canDelete ? (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onDeleteRequest(hub)}
+                          >
+                            <Trash2 data-icon="inline-start" aria-hidden />
+                            Delete
+                          </DropdownMenuItem>
+                        ) : null}
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -418,10 +433,12 @@ export default function KnowledgeHubPage({
   const navigate = useNavigate();
   const { can } = usePermissions();
   const { agents, setAgents } = useAgents();
+  const { auth } = useAuth();
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
   const canDelete = can("knowledge.delete");
-  const { hubs, addHub, updateHub, deleteHub, deleteHubs, getHubById } =
+  const canShare = canEdit;
+  const { hubs, addHub, updateHub, deleteHub, deleteHubs, getHubById, addHubMembers } =
     useKnowledgeHubs();
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -432,6 +449,7 @@ export default function KnowledgeHubPage({
   const [listPage, setListPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [shareHub, setShareHub] = useState(null);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [detailDraft, setDetailDraft] = useState({
     name: null,
@@ -461,6 +479,8 @@ export default function KnowledgeHubPage({
   }
 
   const detailHub = hubId ? getHubById(hubId) : null;
+  const requestedHubTab = searchParams.get("tab");
+  const requestedAssetId = searchParams.get("asset");
 
   const openDocumentsTab = (opts) => {
     if (onRequestTab) {
@@ -470,6 +490,7 @@ export default function KnowledgeHubPage({
     const params = new URLSearchParams();
     params.set("tab", "documents");
     if (opts?.linkHub) params.set("linkHub", String(opts.linkHub));
+    if (opts?.openSource) params.set("openSource", String(opts.openSource));
     navigate(`/knowledge?${params.toString()}`);
   };
 
@@ -642,6 +663,10 @@ export default function KnowledgeHubPage({
     setConfirmDelete({ type: "single", hub });
   }
 
+  function requestShare(hub) {
+    setShareHub(hub);
+  }
+
   function requestBulkDelete() {
     const targets = hubs.filter((h) => selectedRows.has(h.id));
     if (targets.length === 0) return;
@@ -760,7 +785,10 @@ export default function KnowledgeHubPage({
                 }
                 onNotify={(payload) => showToast(payload)}
                 onBrowseDocumentsLibrary={(id) => openDocumentsTab({ linkHub: id })}
+                onOpenDocument={(sourceId) => openDocumentsTab({ openSource: sourceId })}
                 onBackToHubs={handleKnowledgeHubBreadcrumbClick}
+                requestedTab={requestedHubTab}
+                requestedAssetId={requestedAssetId}
               />
           ) : (
             <div className="flex flex-col gap-4 px-6 py-4 min-h-full">
@@ -939,12 +967,14 @@ export default function KnowledgeHubPage({
                       selectedRows={selectedRows}
                       onToggleRow={toggleRow}
                       onDeleteRequest={requestDelete}
+                      onShareRequest={requestShare}
                       onOpenHub={openHub}
                       page={hubPagination.currentPage}
                       totalPages={hubPagination.totalPages}
                       totalItems={hubPagination.totalItems}
                       onPageChange={setListPage}
                       canDelete={canDelete}
+                      canShare={canShare}
                     />
                   </>
                 )}
@@ -992,6 +1022,32 @@ export default function KnowledgeHubPage({
           onCancel={() => setConfirmDelete(null)}
         />
       )}
+
+      {shareHub ? (
+        <ShareHubDialog
+          open={Boolean(shareHub)}
+          onOpenChange={(open) => {
+            if (!open) setShareHub(null);
+          }}
+          hub={shareHub}
+          members={shareHub.members ?? []}
+          actor={auth?.user}
+          onShare={(newMembers) => {
+            const { added } = addHubMembers(shareHub.id, newMembers) ?? {};
+            showToast({
+              title: "Hub shared",
+              description: `${added ?? newMembers.length} ${(added ?? newMembers.length) === 1 ? "principal" : "principals"} now have access.`,
+              variant: "success",
+            });
+            setShareHub(null);
+          }}
+          onManageMembers={() => {
+            const hubId = shareHub.id;
+            setShareHub(null);
+            openHub(hubId);
+          }}
+        />
+      ) : null}
 
       {leaveConfirmOpen && (
         <ConfirmDialog
