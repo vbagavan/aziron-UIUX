@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import {
   CheckCircle2, XCircle, ArrowRight, Activity, BarChart3, Shield, Share2,
@@ -8,11 +9,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { SourceWizardFooter } from '@/components/features/knowledge/source-intake/SourceWizardFooter'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -159,6 +160,8 @@ function OverviewTab({ conn }) {
 }
 
 function UsedInFlowsTab({ conn }) {
+  const navigate = useNavigate()
+
   if (!conn.usedIn?.length) {
     return (
       <Empty className="border-none py-8">
@@ -185,6 +188,7 @@ function UsedInFlowsTab({ conn }) {
           key={name}
           variant="outline"
           className="h-auto w-full justify-start gap-3 p-3"
+          onClick={() => navigate('/flows')}
         >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
             <Workflow />
@@ -347,7 +351,8 @@ const DETAIL_TABS = [
 ]
 
 export default function ConnectionDetail() {
-  const { detail, closeDetail, setDetailTab, deleteConnection, testConnection, connections } = useConnectionsStore()
+  const navigate = useNavigate()
+  const { detail, closeDetail, setDetailTab, deleteConnection, testConnection, reauthenticateConnection, connections } = useConnectionsStore()
   const { open, connectionId, activeTab } = detail
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -446,11 +451,18 @@ export default function ConnectionDetail() {
               </Tabs>
 
               {(conn.status === 'expired' || conn.status === 'error') && (
-                <DialogFooter className="shrink-0 sm:justify-stretch">
-                  <Button className="w-full sm:w-auto">
+                <SourceWizardFooter className="[&>div]:justify-end">
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() =>
+                      conn.status === 'expired'
+                        ? reauthenticateConnection(conn.id)
+                        : testConnection(conn.id)
+                    }
+                  >
                     {conn.status === 'expired' ? 'Re-authenticate' : 'Retry connection'}
                   </Button>
-                </DialogFooter>
+                </SourceWizardFooter>
               )}
             </>
           ) : (

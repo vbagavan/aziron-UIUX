@@ -9,6 +9,7 @@ import {
   getSourceMetricDisplay,
   getSourceMetricColumnLabel,
   getSourceProviderLabel,
+  getSourceLifecycleMeta,
   isSingleHubSource,
   resolveSourceCategory,
   SOURCE_CATEGORIES,
@@ -53,13 +54,45 @@ export function getSourceDetailsTitle(record) {
 }
 
 /** Rows for `<dl>` detail sections in reader / drawer panels. */
-export function getSourceDetailRows(record) {
+export function getSourceDetailRows(record, { detail } = {}) {
   const category = resolveSourceCategory(record);
+  const lifecycle = getSourceLifecycleMeta(record);
+
+  if (category === "dbs" && detail) {
+    const rows = [
+      { label: "Connection", value: detail.connectionName },
+      { label: "Provider", value: detail.provider },
+      { label: "Environment", value: detail.environment },
+      { label: "Focused table", value: detail.focusedTable },
+      { label: "Status", value: lifecycle.label },
+      { label: "Last sync", value: detail.lastSyncRelative },
+      { label: "Health", value: detail.health },
+      { label: "Source", value: getSourceProviderLabel(record), isBadge: true },
+    ];
+    return rows.filter((r) => r.value != null && r.value !== "");
+  }
+
+  if (category === "apis" && detail) {
+    const rows = [
+      { label: "Connection", value: detail.connectionName },
+      { label: "Version", value: detail.version },
+      { label: "Authentication", value: detail.authentication },
+      { label: "Status", value: detail.status ?? lifecycle.label },
+      { label: "Latency", value: detail.latencyMs != null ? `${detail.latencyMs}ms` : null },
+      { label: "Availability", value: detail.availability },
+      { label: "Last sync", value: detail.lastSyncRelative },
+      { label: "Lifecycle", value: lifecycle.label },
+      { label: "Source", value: getSourceProviderLabel(record), isBadge: true },
+    ];
+    return rows.filter((r) => r.value != null && r.value !== "");
+  }
+
   const metric = getSourceMetricDisplay(record);
   const rows = [
     { label: "Format", value: getSourceFormatLabel(record) },
     { label: "Source", value: getSourceProviderLabel(record) },
     { label: getSourceMetricColumnLabel(category), value: metric.label },
+    { label: "Status", value: lifecycle.label },
   ];
 
   if (record?.uploadedAt) {
@@ -77,18 +110,22 @@ export function getSourceDetailRows(record) {
     rows.push({ label: "Connection", value: record.connectionName });
   }
 
+  if (category === "dbs" && record?.tableName) {
+    rows.push({ label: "Table", value: record.tableName });
+  }
+
   return rows;
 }
 
 export function getSourceHubLinkEmptyMessage(record) {
   const category = resolveSourceCategory(record);
   if (category === "dbs") {
-    return "This database is not linked to a Knowledge Hub yet. Link it to one hub so agents can query it.";
+    return "This database isn't in a Knowledge Hub yet. Link it to one hub so agents can query it.";
   }
   if (category === "apis") {
-    return "This API is not linked to a Knowledge Hub yet. Link it to one hub so agents can call it.";
+    return "This API isn't in a Knowledge Hub yet. Link it to one hub so agents can use it.";
   }
-  return "This file is not linked to any Knowledge Hub yet. Files can belong to multiple hubs.";
+  return "This file isn't in a Knowledge Hub yet. Files can belong to multiple hubs.";
 }
 
 export function getSourceHubLinkPickerHint(record, { allHubsLinked = false } = {}) {

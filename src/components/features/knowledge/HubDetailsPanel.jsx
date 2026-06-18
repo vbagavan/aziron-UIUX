@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { cn } from "@/lib/utils";
 import { getHubTelemetry } from "@/lib/hubTelemetry";
 import { useAgents } from "@/context/AgentsContext";
@@ -209,9 +210,9 @@ export function HubDetailsPanel({
           {files.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border px-6 py-10 text-center">
               <Upload className="mx-auto size-8 text-muted-foreground/50" />
-              <p className="mt-3 text-sm font-medium text-foreground">No documents yet</p>
+              <p className="mt-3 text-sm font-medium text-foreground">{KNOWLEDGE_TERMS.hubSourcesEmptyTitle}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Upload files or connect cloud storage to populate this hub.
+                {KNOWLEDGE_TERMS.hubSourcesEmptyDescription}
               </p>
               {canEdit && onAddFiles ? (
                 <Button type="button" size="sm" className="mt-4 gap-1.5" onClick={onAddFiles}>

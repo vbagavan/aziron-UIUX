@@ -1,4 +1,5 @@
-import { Plus, Search, Filter, MoreHorizontal, RefreshCw, Pencil, LogIn, Trash2, Loader2, Plug } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Search, Filter, MoreHorizontal, RefreshCw, Pencil, LogIn, Trash2, Loader2, Plug, ArrowUpDown } from 'lucide-react'
 import { useConnectionsStore } from '@/lib/connections/store.js'
 import { CATALOG_PROVIDERS, STATUS_CONFIG, CONN_TYPE_TABS } from '@/lib/connections/constants.js'
 import { ConnectionStatusBadge, ConnectionTypeBadge } from './ConnectionBadges.jsx'
@@ -44,9 +45,22 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { KNOWLEDGE_TERMS } from '@/lib/knowledgeTerminology'
 import { cn } from '@/lib/utils'
 
 const STATUS_OPTIONS = ['all', 'active', 'expiring', 'expired', 'error', 'pending']
+
+function connectionRowLabel(conn) {
+  const provider = CATALOG_PROVIDERS.find(p => p.id === conn.providerId)
+  return `${conn.name}, ${provider?.name ?? conn.providerId}, ${conn.status}`
+}
+
+function sortConnections(list, sortDir) {
+  return [...list].sort((a, b) => {
+    const cmp = String(b.addedAt).localeCompare(String(a.addedAt))
+    return sortDir === 'asc' ? -cmp : cmp
+  })
+}
 
 function ConnectionRowActions({ conn }) {
   const { testConnection, deleteConnection, openDetail } = useConnectionsStore()
@@ -54,24 +68,24 @@ function ConnectionRowActions({ conn }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon-sm" aria-label="Connection actions">
+        <Button variant="outline" size="icon-sm" aria-label={`Actions for ${conn.name}`}>
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
+      <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => openDetail(conn.id)}>
             <Pencil data-icon="inline-start" />
-            Edit
+            View details
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => testConnection(conn.id)}>
             <RefreshCw data-icon="inline-start" />
             Test
           </DropdownMenuItem>
           {conn.type === 'oauth' && (
-            <DropdownMenuItem onClick={() => {}}>
+            <DropdownMenuItem onClick={() => openDetail(conn.id, 'permissions')}>
               <LogIn data-icon="inline-start" />
-              Re-auth
+              Update credentials
             </DropdownMenuItem>
           )}
           <DropdownMenuItem variant="destructive" onClick={() => deleteConnection(conn.id)}>
@@ -94,6 +108,7 @@ function ConnectionRow({ conn }) {
       className="cursor-pointer"
       onClick={() => openDetail(conn.id)}
       tabIndex={0}
+      aria-label={connectionRowLabel(conn)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -128,7 +143,7 @@ function ConnectionRow({ conn }) {
 
       <TableCell className="whitespace-nowrap">
         {isLoading ? (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground [&_svg]:size-3.5">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground [&_svg]:size-3.5" role="status" aria-live="polite">
             <Loader2 className="animate-spin" />
             Testing…
           </span>
@@ -155,6 +170,7 @@ function ConnectionMobileCard({ conn }) {
     <div
       role="button"
       tabIndex={0}
+      aria-label={connectionRowLabel(conn)}
       className="flex cursor-pointer flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       onClick={() => openDetail(conn.id)}
       onKeyDown={(e) => {
@@ -181,7 +197,7 @@ function ConnectionMobileCard({ conn }) {
       <div className="flex flex-wrap items-center gap-2">
         <ConnectionTypeBadge type={conn.type} />
         {isLoading ? (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground [&_svg]:size-3.5">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground [&_svg]:size-3.5" role="status" aria-live="polite">
             <Loader2 className="animate-spin" />
             Testing…
           </span>
@@ -222,7 +238,9 @@ function ConnectionsEmptyState({ hasFilters, onAdd, onClear, mobile = false }) {
           <Filter />
         </EmptyMedia>
         <EmptyTitle>No connectors match</EmptyTitle>
-        <EmptyDescription>Try adjusting your search or filters.</EmptyDescription>
+        <EmptyDescription>
+          Try clearing the type tab, status filter, or search. Filters combine — all must match.
+        </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Button variant="link" size="sm" onClick={onClear}>
@@ -238,7 +256,7 @@ function ConnectionsEmptyState({ hasFilters, onAdd, onClear, mobile = false }) {
         </EmptyMedia>
         <EmptyTitle>No connectors yet</EmptyTitle>
         <EmptyDescription>
-          Connect to external services, APIs, and data sources to supercharge your agents and flows.
+          {KNOWLEDGE_TERMS.connectorsEmptyDescription}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
@@ -316,8 +334,13 @@ export default function ConnectionsPanel() {
     connections, loading,
   } = useConnectionsStore()
 
-  const filtered = getFiltered()
-  const hasFilters = !!search || statusFilter !== 'all'
+  const [sortDir, setSortDir] = useState('desc')
+  const baseFiltered = getFiltered()
+  const filtered = useMemo(
+    () => sortConnections(baseFiltered, sortDir),
+    [baseFiltered, sortDir],
+  )
+  const hasFilters = !!search || statusFilter !== 'all' || typeTab !== 'all'
 
   const typeCounts = CONN_TYPE_TABS.reduce((acc, t) => {
     acc[t.key] = t.key === 'all'
@@ -329,6 +352,7 @@ export default function ConnectionsPanel() {
   function clearFilters() {
     setSearch('')
     setStatusFilter('all')
+    setTypeTab('all')
   }
 
   const activeCount = connections.filter(c => c.status === 'active').length
@@ -343,12 +367,19 @@ export default function ConnectionsPanel() {
               ? `${connections.length} connector${connections.length !== 1 ? 's' : ''} · ${activeCount} active`
               : 'Connect to external services and APIs'}
           </p>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {KNOWLEDGE_TERMS.connectorsRegistryHint}
+          </p>
         </div>
         <Button onClick={openWizard} className="w-full shrink-0 sm:w-auto">
           <Plus data-icon="inline-start" />
           New connector
         </Button>
       </div>
+
+      <p className="text-center text-[11px] text-muted-foreground sm:text-left">
+        {KNOWLEDGE_TERMS.connectorsDemoHint}
+      </p>
 
       <Tabs value={typeTab} onValueChange={setTypeTab}>
         <div className="-mx-1 overflow-x-auto px-1 pb-px">
@@ -418,9 +449,28 @@ export default function ConnectionsPanel() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted hover:bg-muted">
-              {['Provider', 'Connection Name', 'Type', 'Added', 'Status', ''].map(h => (
-                <TableHead key={h || 'actions'} className="type-section-eyebrow">
-                  {h}
+              {[
+                { key: 'provider', label: 'Provider' },
+                { key: 'name', label: 'Connection Name' },
+                { key: 'type', label: 'Type' },
+                { key: 'added', label: 'Added', sortable: true },
+                { key: 'status', label: 'Status' },
+                { key: 'actions', label: '' },
+              ].map(({ key, label, sortable }) => (
+                <TableHead key={key} className="type-section-eyebrow">
+                  {sortable ? (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => setSortDir(d => (d === 'desc' ? 'asc' : 'desc'))}
+                      aria-label={`Sort by date ${sortDir === 'desc' ? 'ascending' : 'descending'}`}
+                    >
+                      {label}
+                      <ArrowUpDown className="size-3" aria-hidden />
+                    </button>
+                  ) : (
+                    label
+                  )}
                 </TableHead>
               ))}
             </TableRow>

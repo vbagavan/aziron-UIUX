@@ -10,6 +10,7 @@ import {
   History,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Share2,
   Trash2,
@@ -51,7 +52,9 @@ import {
 } from "@/components/ui/pagination";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
-import { HubFileSyncIcon, hubSyncStatusForRow } from "@/components/features/knowledge/HubFileSyncIcon";
+import { SourceCategoryTabBar } from "@/components/features/sources/shared/SourceCategoryTabBar";
+import { SourceEmptyState } from "@/components/features/sources/shared/SourceEmptyState";
+import { SourceStatusIndicator } from "@/components/features/sources/shared/SourceStatusIndicator";
 import { resolveFileLifecycleStatus } from "@/lib/fileSyncStatus";
 import { HubMiniBarChart } from "@/components/features/knowledge/control-center/HubControlCenterCharts";
 import { HubControlCenterRelationships } from "@/components/features/knowledge/control-center/HubControlCenterRelationships";
@@ -71,12 +74,12 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { getSourceMetricDisplay, getSourceMetricColumnLabel, resolveSourceCategory, resolveCategoryLifecycleStatus } from "@/lib/sourceCategories";
+import { getSourceFormatLabel, SOURCE_LIST_COLUMNS, getHubSourcesSearchPlaceholder } from "@/lib/sourceListModel";
+import { KNOWLEDGE_TERMS, sourcesCountLabel } from "@/lib/knowledgeTerminology";
 import { CAPTION, PAGE_SUBTITLE } from "@/lib/typography";
 import { PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 import { summarizeHubAssets } from "@/data/knowledgeHubs";
-import { getSourceMetricDisplay } from "@/lib/sourceCategories";
-import { getSourceFormatLabel, SOURCE_LIST_COLUMNS, getHubSourcesSearchPlaceholder } from "@/lib/sourceListModel";
 import {
   hubRoleCan,
   resolveHubRole,
@@ -93,39 +96,8 @@ const ALL_HUB_TABS = [
   { id: "members", label: "Members", icon: Users },
   { id: "usage", label: "Usage", icon: Activity },
   { id: "telemetry", label: KNOWLEDGE_TERMS.insightsTab, icon: BarChart3, requiresInsights: true },
-  { id: "timeline", label: "Timeline", icon: History },
+  { id: "timeline", label: KNOWLEDGE_TERMS.hubTimelineTab, icon: History },
 ];
-
-function HubSourcesEmptyState({ canEdit, onAddSources, onBrowseLibrary }) {
-  return (
-    <div className="flex flex-col items-center gap-4 px-6 py-4 text-center">
-      <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
-        <FileText className="size-5 text-muted-foreground/60" aria-hidden />
-      </div>
-      <div className="max-w-md space-y-1">
-        <p className="text-sm font-medium text-foreground">No sources in this hub yet</p>
-        <p className="text-xs text-muted-foreground">
-          Upload files or link documents from the central library.
-        </p>
-      </div>
-      {canEdit ? (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {onAddSources ? (
-            <Button type="button" size="sm" className="gap-1.5" onClick={onAddSources}>
-              <Plus data-icon="inline-start" aria-hidden />
-              Add sources
-            </Button>
-          ) : null}
-          {onBrowseLibrary ? (
-            <Button type="button" size="sm" variant="outline" onClick={onBrowseLibrary}>
-              Browse {KNOWLEDGE_TERMS.documents}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 function AgentStatusBadge({ status }) {
   const variant =
@@ -137,19 +109,20 @@ function AgentStatusBadge({ status }) {
   );
 }
 
-function FilesTablePagination({ page, totalPages, totalItems, onPageChange }) {
+function FilesTablePagination({ page, totalPages, totalItems, category = "all", onPageChange }) {
   if (totalItems === 0) return null;
   const currentPage = Math.min(page, totalPages);
+  const countLabel = sourcesCountLabel(totalItems, category);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5">
       <p className="text-xs text-muted-foreground">
         {totalPages > 1 ? (
           <>
-            {totalItems} documents · page {currentPage} of {totalPages}
+            {countLabel} · page {currentPage} of {totalPages}
           </>
         ) : (
-          <>{totalItems} files</>
+          <>{countLabel}</>
         )}
       </p>
       {totalPages > 1 ? (
@@ -386,6 +359,7 @@ export function KnowledgeHubControlCenter({
   );
   const [activeTab, setActiveTab] = useState("documents");
   const [docSearch, setDocSearch] = useState("");
+  const [docCategoryFilter, setDocCategoryFilter] = useState("all");
   const [docSourceFilter, setDocSourceFilter] = useState("all");
   const [docStatusFilter, setDocStatusFilter] = useState(null);
   const [docPage, setDocPage] = useState(1);
@@ -403,20 +377,28 @@ export function KnowledgeHubControlCenter({
     let list = telemetry.files;
     const q = docSearch.trim().toLowerCase();
     if (q) list = list.filter((d) => d.name.toLowerCase().includes(q));
+    if (docCategoryFilter !== "all") {
+      list = list.filter((d) => resolveSourceCategory(d.raw) === docCategoryFilter);
+    }
     if (docSourceFilter === "cloud") list = list.filter((d) => d.isCloud);
     if (docSourceFilter === "local") list = list.filter((d) => !d.isCloud);
     if (docSourceFilter === "library") list = list.filter((d) => d.libraryDocumentId);
     if (docStatusFilter) {
       list = list.filter((d) => {
-        const status = resolveFileLifecycleStatus(d.raw, { includeDemoStatuses: showDemoStatuses });
-        // "local" filter matches local files; "processing" matches both syncing + processing
+        const category = resolveSourceCategory(d.raw);
+        const status =
+          category === "files"
+            ? resolveFileLifecycleStatus(d.raw, { includeDemoStatuses: showDemoStatuses })
+            : resolveCategoryLifecycleStatus(d.raw, { includeDemoStatuses: showDemoStatuses });
         if (docStatusFilter === "local") return d.raw?.source === "user" || d.raw?.source === "upload";
-        if (docStatusFilter === "processing") return status === "processing" || status === "syncing";
+        if (docStatusFilter === "processing") return status === "processing" || status === "syncing" || status === "fetching";
         return status === docStatusFilter;
       });
     }
     return list;
-  }, [telemetry, docSearch, docSourceFilter, docStatusFilter, showDemoStatuses]);
+  }, [telemetry, docSearch, docCategoryFilter, docSourceFilter, docStatusFilter, showDemoStatuses]);
+
+  const hubMetricColumnLabel = getSourceMetricColumnLabel(docCategoryFilter);
 
   const docPagination = useMemo(
     () => paginateSlice(filteredDocs, docPage, HUB_FILES_PAGE_SIZE),
@@ -425,7 +407,7 @@ export function KnowledgeHubControlCenter({
 
   useEffect(() => {
     setDocPage(1);
-  }, [docSearch, docSourceFilter, docStatusFilter, hub?.id]);
+  }, [docSearch, docCategoryFilter, docSourceFilter, docStatusFilter, hub?.id]);
 
   useEffect(() => {
     if (!requestedTab) return;
@@ -596,7 +578,7 @@ export function KnowledgeHubControlCenter({
       {/* ── Main layout ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left: relationships (lg+) */}
-        <div className="hidden w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/10 p-4 xl:w-64">
+        <div className="hidden lg:block w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/10 p-4 xl:w-64">
           <HubControlCenterRelationships
             relationships={relationships}
             onNavigateDocuments={() => setActiveTab("documents")}
@@ -617,6 +599,12 @@ export function KnowledgeHubControlCenter({
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
               {/* Documents */}
               <TabsContent value="documents" className="mt-0 space-y-4">
+                <SourceCategoryTabBar
+                  value={docCategoryFilter}
+                  onChange={setDocCategoryFilter}
+                  className="px-0"
+                />
+
                 <FileStatusSummaryBar
                   files={allFiles}
                   title={KNOWLEDGE_TERMS.hubSourcesTab}
@@ -654,7 +642,7 @@ export function KnowledgeHubControlCenter({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All sources</SelectItem>
-                      <SelectItem value="local">Local upload</SelectItem>
+                      <SelectItem value="local">{KNOWLEDGE_TERMS.filterUploaded}</SelectItem>
                       <SelectItem value="cloud">Cloud</SelectItem>
                       <SelectItem value="library">In library</SelectItem>
                     </SelectContent>
@@ -667,20 +655,22 @@ export function KnowledgeHubControlCenter({
                 </div>
 
                 {filteredDocs.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border py-8 text-center">
+                  <div className="rounded-xl border border-dashed border-border py-4">
                     {telemetry.files.length === 0 ? (
-                      <HubSourcesEmptyState
+                      <SourceEmptyState
+                        category={docCategoryFilter}
+                        variant="hub"
                         canEdit={canEdit}
                         onAddSources={onOpenSources}
                         onBrowseLibrary={onBrowseDocumentsLibrary}
                       />
                     ) : (
                       <>
-                        <FileText className="mx-auto size-8 text-muted-foreground/40" />
-                        <p className="mt-2 text-sm font-medium">No sources match</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <FileText className="mx-auto mt-4 size-8 text-muted-foreground/40" />
+                        <p className="mt-2 text-center text-sm font-medium">No sources match</p>
+                        <p className="mt-1 text-center text-xs text-muted-foreground">
                           Try adjusting search or filters
-                          {docStatusFilter || docSourceFilter !== "all" || docSearch.trim() ? (
+                          {docStatusFilter || docSourceFilter !== "all" || docCategoryFilter !== "all" || docSearch.trim() ? (
                             <>
                               {" "}
                               or{" "}
@@ -689,6 +679,7 @@ export function KnowledgeHubControlCenter({
                                 className="font-medium text-primary underline-offset-2 hover:underline"
                                 onClick={() => {
                                   setDocSearch("");
+                                  setDocCategoryFilter("all");
                                   setDocSourceFilter("all");
                                   setDocStatusFilter(null);
                                 }}
@@ -709,12 +700,12 @@ export function KnowledgeHubControlCenter({
                         <TableRow>
                           {canEdit ? <TableHead className="w-10" /> : null}
                           <TableHead className="w-10">
-                            <span className="sr-only">Sync status</span>
+                            <span className="sr-only">Status</span>
                           </TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>{SOURCE_LIST_COLUMNS.source}</TableHead>
                           <TableHead>{SOURCE_LIST_COLUMNS.format}</TableHead>
-                          <TableHead className="text-right">{SOURCE_LIST_COLUMNS.metric}</TableHead>
+                          <TableHead className="text-right">{hubMetricColumnLabel}</TableHead>
                           <TableHead>{SOURCE_LIST_COLUMNS.updated}</TableHead>
                           <TableHead className="w-[80px]" />
                         </TableRow>
@@ -733,11 +724,13 @@ export function KnowledgeHubControlCenter({
                               </TableCell>
                             ) : null}
                             <TableCell className="w-10 pr-0">
-                              <HubFileSyncIcon
-                                status={hubSyncStatusForRow(doc.raw, { includeDemoStatuses: showDemoStatuses })}
+                              <SourceStatusIndicator
+                                record={doc.raw}
                                 fileName={doc.name}
                                 canActivate={canEdit && doc.needsSync}
                                 onActivate={onDownloadCloudFile ? () => onDownloadCloudFile(doc.raw) : undefined}
+                                iconOnly
+                                includeDemoStatuses={showDemoStatuses}
                               />
                             </TableCell>
                             <TableCell>
@@ -761,6 +754,19 @@ export function KnowledgeHubControlCenter({
                             <TableCell className="text-xs text-muted-foreground">{doc.modifiedRelative}</TableCell>
                             <TableCell>
                               <div className="flex justify-end gap-1">
+                                {canEdit && doc.isCloud && resolveFileLifecycleStatus(doc.raw) === "error" && onDownloadCloudFile ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    title="Retry sync"
+                                    aria-label={`Retry sync for ${doc.name}`}
+                                    className="text-warning opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                                    onClick={() => onDownloadCloudFile(doc.raw)}
+                                  >
+                                    <RefreshCw className="size-3.5" />
+                                  </Button>
+                                ) : null}
                                 {canEdit && onDeleteFile ? (
                                   <Button type="button" variant="ghost" size="icon-sm" className="text-destructive opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100" onClick={() => onDeleteFile(doc.raw)}>
                                     <Trash2 className="size-3.5" />
@@ -776,6 +782,7 @@ export function KnowledgeHubControlCenter({
                       page={docPagination.currentPage}
                       totalPages={docPagination.totalPages}
                       totalItems={docPagination.totalItems}
+                      category={docCategoryFilter}
                       onPageChange={setDocPage}
                     />
                   </div>
@@ -834,7 +841,9 @@ export function KnowledgeHubControlCenter({
                 <div className="grid gap-4 lg:grid-cols-3">
                   <div className="rounded-xl border border-border bg-card p-4 lg:col-span-2">
                     <h3 className="text-sm font-semibold">Query volume trend</h3>
-                    <HubMiniBarChart data={usage.queryTrend} className="mt-4" height={100} />
+                    <div role="img" aria-label="Bar chart showing query volume over time">
+                      <HubMiniBarChart data={usage.queryTrend} className="mt-4" height={100} />
+                    </div>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-4">
                     <h3 className="text-sm font-semibold">Engagement</h3>
@@ -874,7 +883,9 @@ export function KnowledgeHubControlCenter({
 
                 <div className="rounded-xl border border-border bg-card p-4">
                   <h3 className="text-sm font-semibold">Generation trend</h3>
-                  <HubMiniBarChart data={usage.generationTrend} color="var(--chart-chart-4)" className="mt-4" />
+                  <div role="img" aria-label="Bar chart showing generation trend over time">
+                    <HubMiniBarChart data={usage.generationTrend} color="var(--chart-chart-4)" className="mt-4" />
+                  </div>
                 </div>
                   </>
                 )}

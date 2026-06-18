@@ -65,19 +65,21 @@ export function ContentCaptureDropdown({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          disabled={!canCapture}
-          title={triggerTitle}
-          aria-label={triggerTitle}
-          className={cn(
-            "flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40",
-            triggerClassName,
-          )}
-        >
-          <MoreHorizontal className="size-3.5" />
-        </button>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            disabled={!canCapture}
+            title={triggerTitle}
+            aria-label={triggerTitle}
+            className={cn(
+              "flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40",
+              triggerClassName,
+            )}
+          />
+        }
+      >
+        <MoreHorizontal className="size-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-56">
         <CaptureActionItems

@@ -18,6 +18,7 @@ import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cl
 import ConnectionWizard from "@/components/connections/ConnectionWizard.jsx";
 import { useConnectionsStore } from "@/lib/connections/store.js";
 import { HubAddSourcesMenu } from "@/components/features/knowledge/HubAddSourcesMenu";
+import { HUB_CUSTOM_CONNECTOR_CATALOG_ID } from "@/components/features/knowledge/hubAddSourceConnectors";
 import { HubSettingsSheet } from "@/components/features/knowledge/HubSettingsSheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -67,6 +68,7 @@ export function KnowledgeHubDetailView({
   const [addSourceWizardOpen, setAddSourceWizardOpen] = useState(false);
   const [addSourceProvider, setAddSourceProvider] = useState(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadInitialFiles, setUploadInitialFiles] = useState(null);
   const [uploadBrowseConnection, setUploadBrowseConnection] = useState(null);
   const [chooseSourceOpen, setChooseSourceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -148,8 +150,9 @@ export function KnowledgeHubDetailView({
     }
   }
 
-  function openUploadDialog() {
+  function openUploadDialog(initialFiles = null) {
     setUploadBrowseConnection(null);
+    setUploadInitialFiles(initialFiles?.length ? initialFiles : null);
     setUploadDialogOpen(true);
   }
 
@@ -428,8 +431,13 @@ export function KnowledgeHubDetailView({
           open={uploadDialogOpen}
           onOpenChange={(nextOpen) => {
             setUploadDialogOpen(nextOpen);
-            if (!nextOpen) setUploadBrowseConnection(null);
+            if (!nextOpen) {
+              setUploadBrowseConnection(null);
+              setUploadInitialFiles(null);
+            }
           }}
+          initialLocalFiles={uploadInitialFiles}
+          onInitialLocalFilesConsumed={() => setUploadInitialFiles(null)}
           hubId={liveHub.id}
           hubName={name.trim() || liveHub.name}
           cloudConnections={cloudConnections}
@@ -440,8 +448,8 @@ export function KnowledgeHubDetailView({
           onUploadComplete={(result) => {
             if (result?.allSkipped) {
               onNotify?.({
-                title: "Already linked",
-                description: "Those files are already sources in this hub. Pick new files or close to continue.",
+                title: KNOWLEDGE_TERMS.toastAlreadyInHub,
+                description: KNOWLEDGE_TERMS.uploadSkippedDescription,
               });
               return;
             }
@@ -505,7 +513,9 @@ export function KnowledgeHubDetailView({
         onConnectHubProvider={openHubConnectorWizard}
         onConnectCatalogProvider={openIntegrationsWizardWithProvider}
         onBrowseAllConnectors={openIntegrationsWizard}
-        onCustomConnector={openIntegrationsWizardWithProvider}
+        onCustomConnector={() =>
+          openIntegrationsWizardWithProvider(HUB_CUSTOM_CONNECTOR_CATALOG_ID)
+        }
         onUploadFiles={openUploadDialog}
         onConnectDbProvider={handleConnectDbProvider}
         onBrowseDbConnection={handleBrowseDbConnection}

@@ -377,7 +377,7 @@ export function KnowledgeHubCreateDialog({
                   ? `Name your hub — ${linkFromLibraryCount} selected document${linkFromLibraryCount === 1 ? "" : "s"} will be linked automatically.`
                   : "Name your hub now — add sources from the hub page anytime."
                 : dialogStep === 1
-                  ? "Add sources from your computer or cloud storage, or continue without sources and add them later."
+                  ? KNOWLEDGE_TERMS.createHubStep1Description
                   : KNOWLEDGE_TERMS.createHubStep2Description}
             </DialogDescription>
           </DialogHeader>

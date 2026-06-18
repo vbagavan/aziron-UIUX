@@ -2,20 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   LayoutDashboard,
-  MessageSquare,
   Play,
   Route,
   Settings2,
   Sparkles,
+  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { ApiRightPanel, API_PANEL_TABS } from "@/components/features/apis/ApiRightPanel";
+import { SourceDetailShell } from "@/components/features/sources/shared/SourceDetailShell";
+import { panelTabsWithHubCount } from "@/components/features/sources/shared/sourcePanelUtils";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
 import {
@@ -537,141 +538,84 @@ export function ApiDetailView({
     onOpenPlayground: () => handleOpenPlayground(selectedEndpointId),
   };
 
+  const mobilePanelTabs = useMemo(
+    () => panelTabsWithHubCount(API_PANEL_TABS, hubLinks),
+    [hubLinks],
+  );
+
   return (
-    <div className={cn("flex h-full w-full flex-col bg-background", className)}>
-      <header className="shrink-0 border-b border-border bg-card/50 px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <h1 className="truncate text-xl font-semibold tracking-tight">{detail.title}</h1>
-            <SourceBadge record={record} size="sm" />
-            <Badge variant="outline">{detail.version}</Badge>
-            <Badge
-              variant={detail.status === "Connected" ? "default" : "destructive"}
-              className={detail.status === "Connected" ? "bg-emerald-600" : undefined}
-            >
-              {detail.status}
-            </Badge>
+    <SourceDetailShell
+      title={detail.title}
+      headerBadges={
+        <>
+          <SourceBadge record={record} size="sm" />
+          <Badge variant="outline">{detail.version}</Badge>
+          <Badge
+            variant={detail.status === "Connected" ? "default" : "destructive"}
+            className={detail.status === "Connected" ? "bg-emerald-600" : undefined}
+          >
+            {detail.status}
+          </Badge>
+        </>
+      }
+      onClose={onClose}
+      center={
+        <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col gap-0">
+          <PageUnderlineTabs
+            value={mainTab}
+            onValueChange={setMainTab}
+            tabs={MAIN_TABS}
+            ariaLabel="API sections"
+            className="px-5"
+          />
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
+            <TabsContent value="overview" className="mt-0">
+              <OverviewTab detail={detail} />
+            </TabsContent>
+            <TabsContent value="discover" className="mt-0">
+              <DiscoverTab
+                detail={detail}
+                onAskQuestion={handleAskFromInsight}
+                onOpenPlayground={handleOpenPlayground}
+                onSelectEndpoint={(id) => {
+                  setSelectedEndpointId(id);
+                  setMainTab("endpoints");
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="endpoints" className="mt-0 flex min-h-[480px] flex-col">
+              <EndpointsTab
+                detail={detail}
+                selectedEndpointId={selectedEndpointId}
+                onSelectEndpoint={setSelectedEndpointId}
+                onTryInPlayground={handleOpenPlayground}
+              />
+            </TabsContent>
+            <TabsContent value="usage" className="mt-0">
+              <SourceUsageTab usage={detail.usage} hubLinks={hubLinks} />
+            </TabsContent>
+            <TabsContent value="playground" className="mt-0">
+              <PlaygroundTab
+                detail={detail}
+                selectedEndpointId={selectedEndpointId}
+                onSelectEndpoint={setSelectedEndpointId}
+              />
+            </TabsContent>
+            <TabsContent value="operations" className="mt-0">
+              <OperationsTab detail={detail} />
+            </TabsContent>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => openMobilePanel(panelTab)}
-              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-              title="Open API assistant"
-              aria-label="Open API assistant"
-            >
-              <MessageSquare className="size-4" />
-            </button>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col gap-0">
-            <PageUnderlineTabs
-              value={mainTab}
-              onValueChange={setMainTab}
-              tabs={MAIN_TABS}
-              ariaLabel="API sections"
-              className="px-5"
-            />
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
-              <TabsContent value="overview" className="mt-0">
-                <OverviewTab detail={detail} />
-              </TabsContent>
-              <TabsContent value="discover" className="mt-0">
-                <DiscoverTab
-                  detail={detail}
-                  onAskQuestion={handleAskFromInsight}
-                  onOpenPlayground={handleOpenPlayground}
-                  onSelectEndpoint={(id) => {
-                    setSelectedEndpointId(id);
-                    setMainTab("endpoints");
-                  }}
-                />
-              </TabsContent>
-              <TabsContent value="endpoints" className="mt-0 flex min-h-[480px] flex-col">
-                <EndpointsTab
-                  detail={detail}
-                  selectedEndpointId={selectedEndpointId}
-                  onSelectEndpoint={setSelectedEndpointId}
-                  onTryInPlayground={handleOpenPlayground}
-                />
-              </TabsContent>
-              <TabsContent value="usage" className="mt-0">
-                <SourceUsageTab usage={detail.usage} hubLinks={hubLinks} />
-              </TabsContent>
-              <TabsContent value="playground" className="mt-0">
-                <PlaygroundTab
-                  detail={detail}
-                  selectedEndpointId={selectedEndpointId}
-                  onSelectEndpoint={setSelectedEndpointId}
-                />
-              </TabsContent>
-              <TabsContent value="operations" className="mt-0">
-                <OperationsTab detail={detail} />
-              </TabsContent>
-            </div>
-          </Tabs>
-
-          <div className="flex shrink-0 items-center gap-1 border-t border-border bg-background px-2 py-2 lg:hidden">
-            {API_PANEL_TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => openMobilePanel(id)}
-                className={cn(
-                  "flex-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors",
-                  panelTab === id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {hubLinks.length > 0 && onNavigateToHub ? (
-            <footer className="shrink-0 border-t border-border bg-muted/20 px-5 py-2 lg:hidden">
-              <div className="flex flex-wrap gap-2">
-                {hubLinks.map((link) => (
-                  <Button
-                    key={link.hubId}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => onNavigateToHub(link.hubId)}
-                  >
-                    Open {link.hubName}
-                  </Button>
-                ))}
-              </div>
-            </footer>
-          ) : null}
-        </div>
-
-        <div className="hidden w-64 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-72">
-          <ApiRightPanel key={record?.id} {...panelProps} />
-        </div>
-      </div>
-
-      <Sheet open={mobilePanelOpen} onOpenChange={setMobilePanelOpen}>
-        <SheetContent side="bottom" className="h-[min(88vh,720px)] gap-0 p-0">
-          <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
-            <SheetTitle className="text-sm">API assistant</SheetTitle>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <ApiRightPanel key={`mobile-${record?.id}`} {...panelProps} />
-          </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+        </Tabs>
+      }
+      rightPanel={<ApiRightPanel key={record?.id} {...panelProps} />}
+      mobilePanelOpen={mobilePanelOpen}
+      onMobilePanelOpenChange={setMobilePanelOpen}
+      mobilePanelTitle="API assistant"
+      mobilePanelTabs={mobilePanelTabs}
+      panelTab={panelTab}
+      onOpenMobilePanel={openMobilePanel}
+      className={className}
+    />
   );
 }

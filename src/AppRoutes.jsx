@@ -361,6 +361,7 @@ export default function AppRoutes() {
       <Route path="/vault" element={<VaultPage onNavigate={onNavigate} />} />
       <Route path="/knowledge" element={<KnowledgePage onNavigate={onNavigate} />} />
       <Route path="/knowledge/:hubId" element={<KnowledgePage onNavigate={onNavigate} />} />
+      <Route path="/knowledge/documents" element={<DocumentsRouteRedirect />} />
       <Route path="/documents" element={<DocumentsRouteRedirect />} />
       <Route path="/marketplace" element={<MarketplaceRoute onNavigate={onNavigate} agents={agents} patchAgent={patchAgent} navigate={navigate} />} />
       <Route path="/pulse" element={<PulsePage onNavigate={onNavigate} />} />

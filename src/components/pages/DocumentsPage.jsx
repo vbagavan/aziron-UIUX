@@ -69,7 +69,7 @@ import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { FileStatusSummaryBar } from "@/components/features/knowledge/FileStatusSummaryBar";
-import { FileSyncStatusIndicator } from "@/components/features/knowledge/FileSyncStatusIndicator";
+import { SourceStatusIndicator } from "@/components/features/sources/shared/SourceStatusIndicator";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import {
   getSourceMetricColumnLabel,
@@ -97,7 +97,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/common/PageHeader";
-import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { KNOWLEDGE_TERMS, sourcesCountLabel } from "@/lib/knowledgeTerminology";
 import { getHubDisplayName } from "@/lib/hubDisplay";
 import { LinkingHelpDialog } from "@/components/features/knowledge/LinkingHelpDialog";
 import { getHubLinksForDocument } from "@/data/documentLibrary";
@@ -152,9 +152,10 @@ function loadSavedViewMode() {
 }
 
 /** Table footer pagination — matches Knowledge Hub list. */
-function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
+function DocsTablePagination({ page, totalPages, totalItems, category = "all", onPageChange }) {
   if (totalItems === 0) return null;
   const currentPage = Math.min(page, totalPages);
+  const countLabel = sourcesCountLabel(totalItems, category);
 
   return (
     <div className="mt-4 flex flex-col gap-3">
@@ -163,11 +164,11 @@ function DocsTablePagination({ page, totalPages, totalItems, onPageChange }) {
         <p className="text-xs text-muted-foreground">
         {totalPages > 1 ? (
           <>
-            {totalItems} document{totalItems !== 1 ? "s" : ""} · page {currentPage} of {totalPages}
+            {countLabel} · page {currentPage} of {totalPages}
           </>
         ) : (
           <>
-            {totalItems} document{totalItems !== 1 ? "s" : ""}
+            {countLabel}
           </>
         )}
       </p>
@@ -232,8 +233,8 @@ const SORT_OPTIONS = [
 
 const SOURCE_FILTER_OPTIONS = [
   { id: "all",   label: "All sources"  },
-  { id: "local", label: "Local upload" },
-  { id: "cloud", label: "Cloud import" },
+  { id: "local", label: KNOWLEDGE_TERMS.filterUploaded },
+  { id: "cloud", label: KNOWLEDGE_TERMS.filterFromCloud },
 ];
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
@@ -334,8 +335,8 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlight
 
         {!selectionMode && (
           <div className="absolute right-1.5 top-1.5 z-10">
-            <FileSyncStatusIndicator
-              file={file}
+            <SourceStatusIndicator
+              record={file}
               fileName={displayName}
               compact
               iconOnly
@@ -492,8 +493,8 @@ function DocFileRow({
 
       <TableCell className="hidden text-center sm:table-cell">
         <div className="flex justify-center" onClick={stopRowClick}>
-          <FileSyncStatusIndicator
-            file={file}
+          <SourceStatusIndicator
+            record={file}
             fileName={displayName}
             compact
             iconOnly
@@ -515,8 +516,8 @@ function DocFileRow({
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
               <SourceBadge record={file} size="sm" />
               <HubLinksBadge hubLinks={hubLinks} record={file} />
-              <FileSyncStatusIndicator
-                file={file}
+              <SourceStatusIndicator
+                record={file}
                 fileName={displayName}
                 compact
                 iconOnly
@@ -704,10 +705,9 @@ function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
         <EmptyMedia variant="icon">
           <Files aria-hidden />
         </EmptyMedia>
-        <EmptyTitle>No documents yet</EmptyTitle>
+        <EmptyTitle>{KNOWLEDGE_TERMS.sourcesEmptyLibraryTitle}</EmptyTitle>
         <EmptyDescription>
-          Upload from your computer or import from cloud storage. Link documents to{" "}
-          {KNOWLEDGE_TERMS.hubs.toLowerCase()} anytime.
+          {KNOWLEDGE_TERMS.sourcesEmptyLibraryDescription}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
@@ -770,6 +770,16 @@ export default function DocumentsPage({
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
 
+  const addSourceParam = searchParams.get("addSource");
+
+  useEffect(() => {
+    if (addSourceParam !== "1") return;
+    setWizardOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("addSource");
+    setSearchParams(next, { replace: true });
+  }, [addSourceParam, searchParams, setSearchParams]);
+
   const categoryParam = searchParams.get("category");
   const validCategories = new Set(["all", "files", "dbs", "apis"]);
 
@@ -817,8 +827,8 @@ export default function DocumentsPage({
     if (!linkTargetHub) {
       if (hubs.length > 0) {
         showToast({
-          title: "Hub not found",
-          description: "That Knowledge Hub link is invalid or was removed.",
+          title: KNOWLEDGE_TERMS.toastHubNotFound,
+          description: "Open Documents and try again, or pick a different hub.",
           variant: "destructive",
         });
         const next = new URLSearchParams(searchParams);
@@ -1142,8 +1152,8 @@ export default function DocumentsPage({
       const hub = hubs.find((h) => String(h.id) === String(hubId));
       if (linked === 0) {
         showToast({
-          title: "Already linked",
-          description: `Selected documents are already in "${hub?.name ?? "this hub"}".`,
+          title: KNOWLEDGE_TERMS.toastAlreadyInHub,
+          description: `Selected sources are already in "${hub?.name ?? "this hub"}".`,
           variant: "default",
         });
       } else {
@@ -1156,8 +1166,8 @@ export default function DocumentsPage({
       exitSelectionMode();
     } catch {
       showToast({
-        title: "Could not add documents",
-        description: "Something went wrong. Please try again.",
+        title: KNOWLEDGE_TERMS.toastCouldNotAddSource,
+        description: "Check your selection and try again.",
         variant: "destructive",
       });
     }
@@ -1231,19 +1241,19 @@ export default function DocumentsPage({
         title: result.moved ? "Moved to hub" : "Linked to hub",
         description: result.moved
           ? `Source moved to "${hub?.name ?? "hub"}".`
-          : `Document added to "${hub?.name ?? "hub"}".`,
+          : `Source linked to "${hub?.name ?? "hub"}".`,
         variant: "success",
       });
     } else if (result.reason === "already_linked") {
       showToast({
-        title: "Already linked",
-        description: `This document is already in "${hub?.name ?? "this hub"}".`,
+        title: KNOWLEDGE_TERMS.toastAlreadyInHub,
+        description: `This source is already in "${hub?.name ?? "this hub"}".`,
         variant: "default",
       });
     } else {
       showToast({
-        title: "Could not link document",
-        description: "The document or Knowledge Hub could not be found.",
+        title: KNOWLEDGE_TERMS.toastCouldNotAddSource,
+        description: "The source or Knowledge Hub could not be found.",
         variant: "destructive",
       });
     }
@@ -1254,7 +1264,7 @@ export default function DocumentsPage({
     const hub = hubs.find((h) => String(h.id) === String(hubId));
     showToast({
       title: "Removed from hub",
-      description: `Document unlinked from "${hub?.name ?? "hub"}". It remains in your library.`,
+      description: `Source unlinked from "${hub?.name ?? "hub"}". It remains in Documents.`,
       variant: "success",
     });
   }
@@ -1262,8 +1272,8 @@ export default function DocumentsPage({
   async function handleLinkHubFileToHub(sourceHubId, fileId, targetHubId) {
     if (Number(sourceHubId) === Number(targetHubId)) {
       showToast({
-        title: "Already linked",
-        description: "This document is already in that Knowledge Hub.",
+        title: KNOWLEDGE_TERMS.toastAlreadyInHub,
+        description: "This source is already in that Knowledge Hub.",
         variant: "default",
       });
       return;
@@ -1276,7 +1286,7 @@ export default function DocumentsPage({
       const hub = hubs.find((h) => String(h.id) === String(targetHubId));
       if (copied.length === 0) {
         showToast({
-          title: "Already linked",
+          title: KNOWLEDGE_TERMS.toastAlreadyInHub,
           description: `This document is already in "${hub?.name ?? "this hub"}".`,
           variant: "default",
         });
@@ -1289,7 +1299,8 @@ export default function DocumentsPage({
       }
     } catch {
       showToast({
-        title: "Could not add document",
+        title: KNOWLEDGE_TERMS.toastCouldNotAddSource,
+        description: "Try again or pick a different source.",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
@@ -1590,7 +1601,7 @@ export default function DocumentsPage({
               {allDocs.length > 0 && !readerDoc && (
                 <p className="text-xs text-muted-foreground">
                   {filteredDocs.length === allDocs.length
-                    ? `${allDocs.length} file${allDocs.length !== 1 ? "s" : ""}`
+                    ? sourcesCountLabel(allDocs.length, filterCategory)
                     : `${filteredDocs.length} of ${allDocs.length}`}
                 </p>
               )}
@@ -1799,28 +1810,32 @@ export default function DocumentsPage({
                     page={docsPagination.currentPage}
                     totalPages={docsPagination.totalPages}
                     totalItems={docsPagination.totalItems}
+                    category={filterCategory}
                     onPageChange={setDocsPage}
                   />
                 </>
               ) : (
                 <>
-                  <DocumentsListTable
-                    docs={docsPagination.items}
-                    selectionMode={selectionMode}
-                    selectedKeys={selectedKeys}
-                    highlightedIds={highlightIds}
-                    canEdit={canEdit}
-                    metricColumnLabel={metricColumnLabel}
-                    onToggleSelect={toggleSelect}
-                    onOpen={handleOpenDoc}
-                    onSyncFile={handleSyncFile}
-                    onUnlinkFromHub={handleUnlinkDocFromHub}
-                    onRequestRemove={requestRemoveDoc}
-                  />
+                  <div className="overflow-x-auto">
+                    <DocumentsListTable
+                      docs={docsPagination.items}
+                      selectionMode={selectionMode}
+                      selectedKeys={selectedKeys}
+                      highlightedIds={highlightIds}
+                      canEdit={canEdit}
+                      metricColumnLabel={metricColumnLabel}
+                      onToggleSelect={toggleSelect}
+                      onOpen={handleOpenDoc}
+                      onSyncFile={handleSyncFile}
+                      onUnlinkFromHub={handleUnlinkDocFromHub}
+                      onRequestRemove={requestRemoveDoc}
+                    />
+                  </div>
                   <DocsTablePagination
                     page={docsPagination.currentPage}
                     totalPages={docsPagination.totalPages}
                     totalItems={docsPagination.totalItems}
+                    category={filterCategory}
                     onPageChange={setDocsPage}
                   />
                 </>

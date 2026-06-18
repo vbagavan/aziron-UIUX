@@ -698,10 +698,9 @@ export function HubLibraryView({
             <Empty>
               <EmptyMedia><Files className="size-12 text-muted-foreground/40" /></EmptyMedia>
               <EmptyHeader>
-                <EmptyTitle>No documents yet</EmptyTitle>
+                <EmptyTitle>{KNOWLEDGE_TERMS.sourcesEmptyFilesTitle}</EmptyTitle>
                 <EmptyDescription>
-                  Upload documents or connect a cloud source. You can also link files from the{" "}
-                  {KNOWLEDGE_TERMS.documents.toLowerCase()} library.
+                  {KNOWLEDGE_TERMS.sourcesEmptyFilesDescription}
                 </EmptyDescription>
               </EmptyHeader>
               {canEdit && (

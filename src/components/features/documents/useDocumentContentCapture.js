@@ -222,6 +222,7 @@ export function useDocumentContentCapture({ file, addDocumentsToLibrary, showToa
     dialog,
     pendingReport,
     runCapture,
+    saveAsNote,
     openSelectionMenu,
     closeSelectionMenu,
     closeDialog,

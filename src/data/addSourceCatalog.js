@@ -7,49 +7,33 @@
  */
 
 import {
-  Building2,
-  Cloud,
   Database,
   FileText,
   Zap,
 } from "lucide-react";
 
-/** Step 1 — the five top-level things a user can bring into Aziron. */
+/** Step 1 — three categories aligned with Documents / Knowledge Hub tabs. */
 export const SOURCE_TYPES = [
   {
     id: "files",
-    label: "Files & Documents",
-    description: "Upload PDFs, DOCs, PPTs, images, CSVs",
+    label: "Files",
+    description: "Upload locally or connect OneDrive, Google Drive, SharePoint, and more",
     icon: FileText,
     accent: "#2563eb",
   },
   {
-    id: "cloud",
-    label: "Cloud Storage",
-    description: "OneDrive, Google Drive, SharePoint",
-    icon: Cloud,
-    accent: "#0ea5e9",
-  },
-  {
     id: "databases",
-    label: "Databases",
-    description: "PostgreSQL, MySQL, Snowflake, MongoDB",
+    label: "Database",
+    description: "PostgreSQL, MySQL, Snowflake, MongoDB, and other engines",
     icon: Database,
     accent: "#7c3aed",
   },
   {
     id: "apis",
     label: "APIs",
-    description: "REST APIs, GraphQL, OpenAPI",
+    description: "REST APIs, GraphQL, OpenAPI specs, and webhooks",
     icon: Zap,
     accent: "#d97706",
-  },
-  {
-    id: "enterprise",
-    label: "Enterprise Applications",
-    description: "Salesforce, Jira, Confluence, SAP",
-    icon: Building2,
-    accent: "#059669",
   },
 ];
 

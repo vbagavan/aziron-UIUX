@@ -1,6 +1,6 @@
 /**
  * Connector flow steps for the Add Source wizard:
- * Cloud Storage, Databases, APIs, and Enterprise Applications.
+ * cloud storage (under Files), databases, and APIs.
  *
  * Connections/discovery are simulated (this is a front-end prototype) but the
  * selections collected here drive real library records on finish.
@@ -67,6 +67,15 @@ import {
 import { getAllUploadConnections } from "@/lib/cloudUploadConnections";
 import { cloudProviderLabel } from "@/lib/hubCloudConnections";
 import { getWizardProviderLogo } from "@/lib/wizardProviderLogos";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+
+function dbConnectionReady(conn = {}) {
+  return Boolean(conn.host?.trim() && conn.username?.trim() && conn.name?.trim());
+}
+
+function apiConnectionReady(conn = {}) {
+  return Boolean(conn.baseUrl?.trim() && conn.name?.trim());
+}
 
 function toggleArr(arr = [], id) {
   return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
@@ -121,13 +130,13 @@ function ConnectPanel({ connected, onConnected, title, detail, accountEmail }) {
 }
 
 /** Simulated test/scan button that flips a flag after a short delay. */
-function SimulateButton({ done, onDone, idleLabel, busyLabel, doneLabel, variant = "outline" }) {
+function SimulateButton({ done, onDone, idleLabel, busyLabel, doneLabel, variant = "outline", disabled = false }) {
   const [busy, setBusy] = useState(false);
   return (
     <Button
       type="button"
       variant={done ? "outline" : variant}
-      disabled={busy}
+      disabled={busy || disabled || done}
       onClick={() => {
         if (done) return;
         setBusy(true);
@@ -199,7 +208,7 @@ function ConnectedCloudAccountRow({ connection, onSelect }) {
   );
 }
 
-export function CloudProviderStep({ state, update, onSelectConnected, onBrowseAll }) {
+export function CloudProviderStep({ state, update, onSelectConnected, onBrowseAll, onProviderPick }) {
   const connections = useMemo(() => getAllUploadConnections(), []);
 
   return (
@@ -232,7 +241,10 @@ export function CloudProviderStep({ state, update, onSelectConnected, onBrowseAl
               key={p.id}
               provider={p}
               selected={state.cloud?.provider === p.id}
-              onClick={() => update("cloud", { provider: p.id, connected: false, selected: [] })}
+              onClick={() => {
+                update("cloud", { provider: p.id, connected: false, selected: [] });
+                onProviderPick?.(p.id);
+              }}
             />
           ))}
         </ProviderGrid>
@@ -246,8 +258,8 @@ export function CloudProviderStep({ state, update, onSelectConnected, onBrowseAl
         >
           <LayoutGrid className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-sm font-semibold text-foreground">Browse all connectors</span>
-            <span className="text-xs text-muted-foreground">Search the full integrations catalog</span>
+            <span className="text-sm font-semibold text-foreground">{KNOWLEDGE_TERMS.browseAllConnectorsTitle}</span>
+            <span className="text-xs text-muted-foreground">{KNOWLEDGE_TERMS.browseAllConnectorsDescription}</span>
           </span>
         </button>
       ) : null}
@@ -458,13 +470,16 @@ export function DbConnectStep({ state, update }) {
       <div className="flex items-center gap-3">
         <SimulateButton
           done={state.db?.tested}
+          disabled={!dbConnectionReady(conn)}
           onDone={() => update("db", { tested: true })}
           idleLabel="Test connection"
           busyLabel="Testing…"
           doneLabel="Connection verified"
         />
         {state.db?.tested ? (
-          <span className="text-xs text-success">Reachable · credentials accepted</span>
+          <span className="text-xs text-success" role="status" aria-live="polite">
+            Reachable · credentials accepted
+          </span>
         ) : null}
       </div>
     </div>
@@ -692,13 +707,16 @@ export function ApiConnectStep({ state, update }) {
       <div className="flex items-center gap-3">
         <SimulateButton
           done={state.api?.tested}
+          disabled={!apiConnectionReady(conn)}
           onDone={() => update("api", { tested: true })}
           idleLabel="Test connection"
           busyLabel="Testing…"
           doneLabel="Connection verified"
         />
         {state.api?.tested ? (
-          <span className="text-xs text-success">200 OK · authenticated</span>
+          <span className="text-xs text-success" role="status" aria-live="polite">
+            200 OK · authenticated
+          </span>
         ) : null}
       </div>
     </div>

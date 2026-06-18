@@ -3,7 +3,7 @@
  * Kept presentational — all state lives in the orchestrator.
  */
 
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getWizardProviderLogo } from "@/lib/wizardProviderLogos";
@@ -78,11 +78,15 @@ export function OptionCard({ icon: Icon, accent, title, description, selected, o
       <span
         className={cn(
           "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors",
-          selected ? "border-primary bg-primary text-primary-foreground" : "border-border",
+          selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background",
         )}
         aria-hidden
       >
-        {selected ? <Check className="size-3" strokeWidth={3} /> : null}
+        {selected ? (
+          <Check className="size-3" strokeWidth={3} />
+        ) : (
+          <ChevronRight className="size-3 text-muted-foreground/60" />
+        )}
       </span>
     </button>
   );

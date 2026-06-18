@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  X,
+  Activity,
   ChevronDown,
   ChevronRight,
   Sparkles,
@@ -31,8 +31,11 @@ import {
   Wand2,
   Info,
   StickyNote,
+  X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import {
@@ -44,27 +47,33 @@ import {
 } from "@/components/features/documents/ContentCaptureUI";
 import { useDocumentContentCapture } from "@/components/features/documents/useDocumentContentCapture";
 import { getFileTypeConfig } from "@/components/features/knowledge/hubFileTypeConfig";
-import { formatDisplayDate } from "@/data/knowledgeHubs";
+import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { cn } from "@/lib/utils";
-import { LinkedKnowledgeHubSection } from "@/components/features/knowledge/LinkedKnowledgeHubSection";
-import {
-  getSourceDetailRows,
-  getSourceDetailsTitle,
-} from "@/lib/sourceListModel";
+import { SourceDetailsPanel } from "@/components/features/sources/shared/SourceDetailsPanel";
+import { SourceAskPromptBox } from "@/components/features/sources/shared/SourceAskPromptBox";
+import { SourceDetailShell } from "@/components/features/sources/shared/SourceDetailShell";
+import { panelTabsWithHubCount } from "@/components/features/sources/shared/sourcePanelUtils";
+import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
+import { getSourceLifecycleMeta } from "@/lib/sourceCategories";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePreviewViewer";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const PANEL_TABS = [
   { id: "chapter", label: "Ask AI", icon: MessageSquare },
   { id: "studio", label: "Studio", icon: Wand2 },
-  { id: "notes", label: "Notes", icon: StickyNote },
   { id: "details", label: "Details", icon: Info },
 ];
 
-const CENTER_VIEWS = [
+const FILE_CENTER_TABS = [
   { id: "read", label: "Reader", icon: BookOpen },
-  { id: "preview", label: "Source file", icon: FileText },
+  { id: "preview", label: KNOWLEDGE_TERMS.sourcePreviewTab, icon: FileText },
+  { id: "notes", label: "Notes", icon: StickyNote },
+  { id: "usage", label: "Usage", icon: Activity },
 ];
+
+function panelTabsWithCounts(hubLinks = []) {
+  return panelTabsWithHubCount(PANEL_TABS, hubLinks);
+}
 
 // ─── Content map ──────────────────────────────────────────────────────────────
 
@@ -1065,43 +1074,18 @@ function ChapterTab({ chapter, fileName, onCapture, seedPrompt, onSeedPromptAppl
         </div>
 
         {/* Prompt box — matches agent conversation panel */}
-        <div className="shrink-0 px-4 pb-4 pt-2">
-          <div className="overflow-hidden rounded-[12px] border border-border bg-card shadow-[0_4px_24px_0_rgba(37,99,235,0.10)]">
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                placeholder="Ask about this chapter…"
-                className="flex-1 bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground"
-              />
-              <button
-                type="button"
-                onClick={() => send()}
-                disabled={!input.trim() || loading}
-                aria-label="Send message"
-                className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors",
-                  input.trim() && !loading
-                    ? "border-border bg-primary text-primary-foreground hover:bg-primary"
-                    : "cursor-not-allowed border-border bg-card text-foreground",
-                )}
-              >
-                <Send size={14} />
-              </button>
-            </div>
-            <div className="flex items-center gap-1 px-3 py-2">
-              <span className="text-xs text-muted-foreground">Scope: This chapter</span>
-            </div>
-          </div>
-        </div>
+        <SourceAskPromptBox
+          inputRef={inputRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onSend={() => send()}
+          placeholder="Ask about this chapter…"
+          loading={loading}
+          ariaLabel="Ask about this chapter"
+          footer={
+            <span className="text-xs text-muted-foreground">{KNOWLEDGE_TERMS.askAiSearchingChapter}</span>
+          }
+        />
       </div>
     </div>
   );
@@ -1336,77 +1320,34 @@ function DetailsTab({
   canEdit = true,
   canCreate = true,
 }) {
-  const detailRows = getSourceDetailRows(file ?? {});
-
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      <div className="px-4 py-4">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {getSourceDetailsTitle(file ?? {})}
-        </p>
-        <dl className="space-y-2 text-xs">
-          {detailRows.map(({ label, value }) => (
-            <div key={label} className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="max-w-[58%] truncate text-right font-medium text-foreground" title={String(value)}>
-                {value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      <div className="mx-4 h-px bg-border" />
-
-      <LinkedKnowledgeHubSection
-        record={file}
-        hubLinks={hubLinks}
-        hubs={hubs}
-        canEdit={canEdit}
-        canCreate={canCreate}
-        hubIcon={FileText}
-        onNavigateToHub={onNavigateToHub}
-        onLinkToHub={onLinkToHub}
-        onLinkHubFileToHub={onLinkHubFileToHub}
-        onUnlinkFromHub={onUnlinkFromHub}
-        onRemoveHubFile={onRemoveHubFile}
-        onCreateHub={onCreateHub}
-      />
-
-      {!file?.isLibraryDocument && hubLinks.length > 0 ? (
-        <p className="mx-4 mb-4 rounded-lg border border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-          This file is managed in its Knowledge Hub. Removing it here deletes it from the hub only.
-        </p>
-      ) : null}
-
-      {canEdit ? (
-        <div className="mt-auto border-t border-border px-4 py-4">
-          {file?.isLibraryDocument ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => onRemoveFromLibrary?.()}
-            >
-              <Trash2 className="size-3.5" />
-              Remove from library
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => onRemoveHubFile?.(file.hubId, file.id)}
-            >
-              <Trash2 className="size-3.5" />
-              Remove from hub
-            </Button>
-          )}
-        </div>
-      ) : null}
-    </div>
+    <SourceDetailsPanel
+      record={file}
+      hubLinks={hubLinks}
+      hubs={hubs}
+      canEdit={canEdit}
+      canCreate={canCreate}
+      hubIcon={FileText}
+      footerNote={
+        !file?.isLibraryDocument && hubLinks.length > 0
+          ? KNOWLEDGE_TERMS.fileRemoveFromHubNote
+          : undefined
+      }
+      removeLabel={file?.isLibraryDocument ? "Remove from library" : "Remove from hub"}
+      onRemove={
+        canEdit
+          ? file?.isLibraryDocument
+            ? onRemoveFromLibrary
+            : () => onRemoveHubFile?.(file.hubId, file.id)
+          : undefined
+      }
+      onNavigateToHub={onNavigateToHub}
+      onLinkToHub={onLinkToHub}
+      onLinkHubFileToHub={onLinkHubFileToHub}
+      onUnlinkFromHub={onUnlinkFromHub}
+      onRemoveHubFile={onRemoveHubFile}
+      onCreateHub={onCreateHub}
+    />
   );
 }
 
@@ -1420,9 +1361,11 @@ function nodeSelectionKey(id) {
   return `node:${id}`;
 }
 
-function NotesTab({ notes, nodes, onCreateDocumentFromNotes }) {
+function NotesTab({ notes, nodes, onCreateDocumentFromNotes, onAddNote }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+  const [quickNoteText, setQuickNoteText] = useState("");
 
   const nodeItems = nodes.flatMap((node) =>
     (node.items ?? []).map((item) => ({ ...item, nodeTitle: node.title })),
@@ -1563,10 +1506,55 @@ function NotesTab({ notes, nodes, onCreateDocumentFromNotes }) {
               );
             })}
           </ul>
+        ) : quickNoteOpen ? (
+          <div className="mb-5 flex flex-col gap-2 rounded-lg border border-border bg-background p-3">
+            <textarea
+              autoFocus
+              rows={3}
+              placeholder="Write a note…"
+              value={quickNoteText}
+              onChange={(e) => setQuickNoteText(e.target.value)}
+              className="w-full resize-none rounded-md border border-border bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-foreground outline-none focus:border-primary focus:ring-0 placeholder:text-muted-foreground"
+            />
+            <div className="flex justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => { setQuickNoteOpen(false); setQuickNoteText(""); }}
+                className="rounded-md px-2.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!quickNoteText.trim()}
+                onClick={() => {
+                  if (!quickNoteText.trim()) return;
+                  onAddNote?.(quickNoteText.trim(), null);
+                  setQuickNoteText("");
+                  setQuickNoteOpen(false);
+                }}
+                className="rounded-md bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground transition-opacity disabled:opacity-40"
+              >
+                Save note
+              </button>
+            </div>
+          </div>
         ) : (
-          <p className="mb-5 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center text-[11px] text-muted-foreground">
-            No notes yet. Select text or use capture actions on AI responses to save insights here.
-          </p>
+          <div className="mb-5 flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-5 text-center">
+            <p className="text-[11px] text-muted-foreground">
+              No notes yet. Select text or use capture actions on AI responses to save insights here.
+            </p>
+            {onAddNote ? (
+              <button
+                type="button"
+                onClick={() => setQuickNoteOpen(true)}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <Plus className="size-3" />
+                Add note
+              </button>
+            ) : null}
+          </div>
         )}
 
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -1635,7 +1623,7 @@ function NotesTab({ notes, nodes, onCreateDocumentFromNotes }) {
   );
 }
 
-// ─── Right panel (tabbed: Chapter | Studio | Notes | Details) ─────────────────
+// ─── Right panel (tabbed: Ask AI | Studio | Details) ───────────────────────────
 
 function RightPanel({
   chapter,
@@ -1643,8 +1631,6 @@ function RightPanel({
   file,
   hubLinks,
   hubs,
-  notes,
-  nodes,
   tab,
   onTabChange,
   onNavigateToHub,
@@ -1655,7 +1641,6 @@ function RightPanel({
   onRemoveFromLibrary,
   onCreateHub,
   onCapture,
-  onCreateDocumentFromNotes,
   seedPrompt,
   onSeedPromptApplied,
   canEdit = true,
@@ -1664,28 +1649,14 @@ function RightPanel({
   const [internalTab, setInternalTab] = useState("chapter");
   const activeTab = tab ?? internalTab;
   const setTab = onTabChange ?? setInternalTab;
+  const panelTabs = useMemo(() => panelTabsWithCounts(hubLinks), [hubLinks]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <LinkedKnowledgeHubSection
-        record={file}
-        hubLinks={hubLinks}
-        hubs={hubs}
-        canEdit={canEdit}
-        canCreate={canCreate}
-        hubIcon={FileText}
-        variant="compact"
-        onNavigateToHub={onNavigateToHub}
-        onLinkToHub={onLinkToHub}
-        onLinkHubFileToHub={onLinkHubFileToHub}
-        onUnlinkFromHub={onUnlinkFromHub}
-        onRemoveHubFile={onRemoveHubFile}
-        onCreateHub={onCreateHub}
-      />
       <PageUnderlineTabs
         value={activeTab}
         onValueChange={setTab}
-        tabs={PANEL_TABS}
+        tabs={panelTabs}
         ariaLabel="Document assistant sections"
         className="px-3"
       />
@@ -1700,12 +1671,6 @@ function RightPanel({
         />
       ) : activeTab === "studio" ? (
         <StudioTab chapter={chapter} fileName={fileName} onCapture={canEdit ? onCapture : undefined} />
-      ) : activeTab === "notes" ? (
-        <NotesTab
-          notes={notes}
-          nodes={nodes}
-          onCreateDocumentFromNotes={canEdit ? onCreateDocumentFromNotes : undefined}
-        />
       ) : (
         <DetailsTab
           file={file}
@@ -1832,8 +1797,6 @@ export function DocumentReaderDrawer({
     file,
     hubLinks,
     hubs,
-    notes: capture.notes,
-    nodes: capture.nodes,
     tab: panelTab,
     onTabChange: setPanelTab,
     onNavigateToHub,
@@ -1844,12 +1807,21 @@ export function DocumentReaderDrawer({
     onRemoveFromLibrary,
     onCreateHub,
     onCapture: capture.runCapture,
-    onCreateDocumentFromNotes: capture.openCreateDocumentFromNotes,
     seedPrompt: askSeedPrompt,
     onSeedPromptApplied: handleAskSeedApplied,
     canEdit,
     canCreate,
   };
+
+  const panelTabs = useMemo(() => panelTabsWithCounts(hubLinks), [hubLinks]);
+  const fileLifecycle = useMemo(
+    () => (file ? getSourceLifecycleMeta(file) : null),
+    [file],
+  );
+  const fileTypeConfig = useMemo(
+    () => (file ? getFileTypeConfig(file.type) : null),
+    [file?.type],
+  );
 
   if (!file) return null;
 
@@ -1857,127 +1829,86 @@ export function DocumentReaderDrawer({
 
   return (
     <>
-    <div className="flex h-full w-full flex-col bg-background">
-      {onClose ? (
-        <header className="shrink-0 border-b border-border bg-card/50 px-5 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <BookOpen className="size-3.5" aria-hidden />
-                Document
+      <SourceDetailShell
+        title={file.name}
+        headerBadges={
+          <>
+            <SourceBadge record={file} size="sm" />
+            {fileTypeConfig ? (
+              <Badge variant="outline">{fileTypeConfig.label}</Badge>
+            ) : null}
+            {fileLifecycle ? (
+              <Badge variant={fileLifecycle.badgeVariant}>{fileLifecycle.label}</Badge>
+            ) : null}
+          </>
+        }
+        onClose={onClose}
+        center={
+          chapter ? (
+            <Tabs value={centerView} onValueChange={setCenterView} className="flex min-h-0 flex-1 flex-col gap-0">
+              <PageUnderlineTabs
+                value={centerView}
+                onValueChange={setCenterView}
+                tabs={FILE_CENTER_TABS}
+                ariaLabel="Document sections"
+                className="px-5"
+              />
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+                <TabsContent value="read" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <ChapterReaderView
+                    chapter={chapter}
+                    readingSourceLabel={readingSourceLabel}
+                    canEdit={canEdit}
+                    openSelectionMenu={capture.openSelectionMenu}
+                    scrollRef={scrollRef}
+                  />
+                </TabsContent>
+                <TabsContent value="preview" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <div
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                    onContextMenu={(e) =>
+                      canEdit && capture.openSelectionMenu(e, null, `${file.name} · Source file`)
+                    }
+                  >
+                    <HubFilePreviewViewer
+                      hubId={file.hubId ?? "library"}
+                      file={file}
+                      allFiles={[file]}
+                      showDemoStatuses
+                      showInlinePreview={false}
+                      guideSections={guideSections}
+                      onRequestDownload={handleRequestDownload}
+                      onQuickPrompt={(prompt) => handleGuidePrompt(prompt)}
+                      onSourceGuideReady={handleSourceGuideReady}
+                      className="h-full min-h-0 flex-1"
+                    />
+                  </div>
+                </TabsContent>
+                <TabsContent value="notes" className="mt-0 min-h-0 flex-1 overflow-hidden">
+                  <NotesTab
+                    notes={capture.notes}
+                    nodes={capture.nodes}
+                    onCreateDocumentFromNotes={
+                      canEdit ? capture.openCreateDocumentFromNotes : undefined
+                    }
+                    onAddNote={capture.saveAsNote}
+                  />
+                </TabsContent>
+                <TabsContent value="usage" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
+                  <SourceUsageTab usage={{}} hubLinks={hubLinks} />
+                </TabsContent>
               </div>
-              <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
-                {file.name}
-              </h1>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-        </header>
-      ) : null}
-
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-
-        {/* ── Center: reader + optional source preview ── */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-end border-b border-border bg-muted/10">
-            <PageUnderlineTabs
-              value={centerView}
-              onValueChange={setCenterView}
-              tabs={CENTER_VIEWS}
-              ariaLabel="Document views"
-              className="min-w-0 flex-1 border-b-0 bg-transparent px-4"
-            />
-            <button
-              type="button"
-              onClick={() => openMobilePanel(panelTab)}
-              className="mb-2 mr-3 flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
-              title="Open assistant panel"
-              aria-label="Open assistant panel"
-            >
-              <MessageSquare className="size-4" />
-            </button>
-          </div>
-
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div
-              className={cn(
-                "flex min-h-0 flex-1 flex-col overflow-hidden",
-                centerView !== "read" && "hidden",
-              )}
-            >
-              <ChapterReaderView
-                chapter={chapter}
-                readingSourceLabel={readingSourceLabel}
-                canEdit={canEdit}
-                openSelectionMenu={capture.openSelectionMenu}
-                scrollRef={scrollRef}
-              />
-            </div>
-
-            <div
-              className={cn(
-                "flex min-h-0 flex-1 flex-col overflow-hidden",
-                centerView !== "preview" && "hidden",
-              )}
-              onContextMenu={(e) =>
-                canEdit && capture.openSelectionMenu(e, null, `${file.name} · Source file`)
-              }
-            >
-              <HubFilePreviewViewer
-                hubId={file.hubId ?? "library"}
-                file={file}
-                allFiles={[file]}
-                showDemoStatuses
-                showInlinePreview={false}
-                guideSections={guideSections}
-                onRequestDownload={handleRequestDownload}
-                onQuickPrompt={(prompt) => handleGuidePrompt(prompt)}
-                onSourceGuideReady={handleSourceGuideReady}
-                className="h-full min-h-0 flex-1"
-              />
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1 border-t border-border bg-background px-2 py-2 lg:hidden">
-            {PANEL_TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => openMobilePanel(id)}
-                className={cn(
-                  "flex-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors",
-                  panelTab === id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Right: AI panel (desktop) ── */}
-        {chapter ? (
-          <div className="hidden w-64 shrink-0 border-l border-border bg-muted/10 lg:flex lg:flex-col xl:w-72">
-            <RightPanel key={file?.id} {...panelProps} />
-          </div>
-        ) : null}
-      </div>
-    </div>
-
-    <Sheet open={mobilePanelOpen} onOpenChange={setMobilePanelOpen}>
-      <SheetContent side="bottom" className="h-[min(88vh,720px)] gap-0 p-0">
-        <SheetHeader className="shrink-0 border-b border-border px-4 py-3 text-left">
-          <SheetTitle className="text-sm">Document assistant</SheetTitle>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <RightPanel key={`mobile-${file?.id}`} {...panelProps} />
-        </div>
-      </SheetContent>
-    </Sheet>
+            </Tabs>
+          ) : null
+        }
+        rightPanel={chapter ? <RightPanel key={file?.id} {...panelProps} /> : null}
+        mobilePanelOpen={mobilePanelOpen}
+        onMobilePanelOpenChange={setMobilePanelOpen}
+        mobilePanelTitle="Document assistant"
+        mobilePanelTabs={panelTabs}
+        panelTab={panelTab}
+        onOpenMobilePanel={openMobilePanel}
+      />
 
     <SelectionContextMenu
       menu={capture.selectionMenu}

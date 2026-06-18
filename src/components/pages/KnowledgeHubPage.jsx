@@ -74,6 +74,9 @@ import {
 } from "@/components/ui/empty";
 
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { goToConnectorsCatalog } from "@/lib/connectorsNavigation";
+import { useConnectionsStore } from "@/lib/connections/store.js";
+import { HUB_CUSTOM_CONNECTOR_CATALOG_ID } from "@/components/features/knowledge/hubAddSourceConnectors";
 import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
 import { getHubDisplayName } from "@/lib/hubDisplay";
 
@@ -174,7 +177,7 @@ const HUB_TAG_COLORS = [
   "bg-rose-500/10 text-rose-700 dark:text-rose-300",
 ];
 
-function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete, selectedRows, onToggleRow }) {
+function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete, onShareRequest, canShare, selectedRows, onToggleRow }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {hubs.map((hub, i) => {
@@ -237,15 +240,46 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete, selectedRows
                 <span>{hub.storageMB ?? 0} MB</span>
               </div>
             </div>
-            {canDelete && (
-              <button
-                type="button"
-                aria-label={`Delete ${displayName}`}
-                onClick={() => onDeleteRequest(hub)}
-                className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-100 transition-all hover:bg-muted md:opacity-60 md:group-hover:opacity-100 focus-visible:opacity-100"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
+            {(canDelete || canShare) && (
+              <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`More options for ${displayName}`}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    }
+                  >
+                    <MoreVertical className="size-4" aria-hidden />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuGroup>
+                      {canShare && onShareRequest ? (
+                        <DropdownMenuItem onClick={() => onShareRequest(hub)}>
+                          <Share2 data-icon="inline-start" aria-hidden />
+                          Share hub
+                        </DropdownMenuItem>
+                      ) : null}
+                      {canDelete && onDeleteRequest ? (
+                        <>
+                          {canShare && onShareRequest ? <DropdownMenuSeparator /> : null}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => onDeleteRequest(hub)}
+                          >
+                            <Trash2 data-icon="inline-start" aria-hidden />
+                            Delete hub
+                          </DropdownMenuItem>
+                        </>
+                      ) : null}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
         );
@@ -439,6 +473,8 @@ export default function KnowledgeHubPage({
   const { hubId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const openIntegrationsWizard = useConnectionsStore((s) => s.openWizard);
+  const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
   const { can } = usePermissions();
   const { agents, setAgents } = useAgents();
   const { auth } = useAuth();
@@ -922,6 +958,8 @@ export default function KnowledgeHubPage({
                       onOpenHub={openHub}
                       onDeleteRequest={requestDelete}
                       canDelete={canDelete}
+                      onShareRequest={requestShare}
+                      canShare
                       selectedRows={selectedRows}
                       onToggleRow={toggleRow}
                     />
@@ -991,8 +1029,19 @@ export default function KnowledgeHubPage({
                 : `Could not save "${name}".`,
             )
           }
-          onBrowseAllConnectors={() => navigate("/marketplace")}
-          onCustomConnector={() => navigate("/marketplace")}
+          onBrowseAllConnectors={() =>
+            goToConnectorsCatalog(navigate, {
+              openNew: true,
+              openWizard: openIntegrationsWizard,
+              openWizardWithProvider: openIntegrationsWizardWithProvider,
+            })
+          }
+          onCustomConnector={() =>
+            goToConnectorsCatalog(navigate, {
+              providerId: HUB_CUSTOM_CONNECTOR_CATALOG_ID,
+              openWizardWithProvider: openIntegrationsWizardWithProvider,
+            })
+          }
         />
       )}
 

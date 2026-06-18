@@ -34,10 +34,10 @@ import {
   SUGGESTED_TAGS,
   VISIBILITY_OPTIONS,
 } from "@/data/addSourceCatalog";
-import { deriveSourceName, SOURCE_TYPE_STEP_HINTS } from "@/lib/addSourceFlow";
-import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { LocalComputerDropZone } from "@/components/features/knowledge/source-intake/LocalComputerDropZone";
+import { Separator } from "@/components/ui/separator";
+import { CloudProviderStep } from "@/components/features/sources/connectorFlowSteps";
 import {
   OptionCard,
   RadioRow,
@@ -52,30 +52,111 @@ function formatSize(bytes) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-// ─── Step 1 — choose source type ─────────────────────────────────────────────
+// ─── Step 1 — choose source type (aligned with Documents · Database · APIs tabs) ─
 
 export function ChooseSourceTypeStep({ state, onSelectType }) {
+  const activeId = state.type ?? SOURCE_TYPES[0]?.id;
+  const activeType = SOURCE_TYPES.find((t) => t.id === activeId) ?? SOURCE_TYPES[0];
+
   return (
-    <div className="flex flex-col gap-3">
-      {SOURCE_TYPES.map((type) => (
-        <OptionCard
-          key={type.id}
-          icon={type.icon}
-          accent={type.accent}
-          title={type.label}
-          description={type.description}
-          badge={SOURCE_TYPE_STEP_HINTS[type.id]}
-          selected={state.type === type.id}
-          onClick={() => onSelectType?.(type.id)}
-        />
-      ))}
+    <div className="flex flex-col gap-5">
+      <div className="flex gap-1 border-b border-border" role="radiogroup" aria-label="Source category">
+        {SOURCE_TYPES.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={activeId === id}
+            onClick={() => onSelectType?.(id)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+              activeId === id
+                ? "border-primary text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4 shrink-0" aria-hidden />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeType ? (
+        <div className="rounded-xl border border-border bg-muted/20 px-5 py-4">
+          <div className="flex items-start gap-4">
+            <span
+              className="flex size-12 shrink-0 items-center justify-center rounded-xl"
+              style={{
+                backgroundColor: activeType.accent ? `${activeType.accent}1a` : undefined,
+                color: activeType.accent,
+              }}
+              aria-hidden
+            >
+              <activeType.icon className="size-6" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-semibold text-foreground">{activeType.label}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                {activeType.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <p className="text-center text-xs text-muted-foreground">
+        These match the tabs in Documents.
+      </p>
     </div>
   );
 }
 
-// ─── Flow A — upload files ───────────────────────────────────────────────────
+// ─── Flow A — files intake (upload + cloud) ──────────────────────────────────
 
-export function FilesUploadStep({ state, update, filePickerGuard = null }) {
+export function FilesIntakeStep({
+  state,
+  update,
+  filePickerGuard = null,
+  onSelectConnected,
+  onBrowseAll,
+  onProviderPick,
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <WizardSection
+        title="From your computer"
+        hint="Upload PDFs, documents, spreadsheets, and images from this device."
+      >
+        <FilesUploadStep state={state} update={update} filePickerGuard={filePickerGuard} compact />
+      </WizardSection>
+
+      <div className="relative flex items-center">
+        <Separator className="flex-1" />
+        <span className="px-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          or
+        </span>
+        <Separator className="flex-1" />
+      </div>
+
+      <WizardSection
+        title="From cloud storage"
+        hint="Connect OneDrive, Google Drive, SharePoint, or browse the integrations catalog."
+      >
+        <CloudProviderStep
+          state={state}
+          update={update}
+          onSelectConnected={onSelectConnected}
+          onBrowseAll={onBrowseAll}
+          onProviderPick={onProviderPick}
+        />
+      </WizardSection>
+    </div>
+  );
+}
+
+// ─── Flow A — upload files only ──────────────────────────────────────────────
+
+export function FilesUploadStep({ state, update, filePickerGuard = null, compact = false }) {
   const inputRef = useRef(null);
   const inputId = useId();
   const [dragActive, setDragActive] = useState(false);
@@ -120,6 +201,7 @@ export function FilesUploadStep({ state, update, filePickerGuard = null }) {
         dragActive={dragActive}
         fileTooLarge={fileTooLarge}
         filePickerGuard={filePickerGuard}
+        className={compact ? "min-h-0" : undefined}
         onDragEnter={() => setDragActive(true)}
         onDragLeave={() => setDragActive(false)}
         onDrop={(e) => {
@@ -411,9 +493,11 @@ export function SuccessStep({ result, onViewSource, onOpenHub, onCreateAgent, on
         <CheckCircle2 className="size-7 text-success" aria-hidden />
       </div>
       <div>
-        <p className="text-lg font-semibold text-foreground">Source successfully added</p>
+        <p className="text-lg font-semibold text-foreground">{KNOWLEDGE_TERMS.addSourceSuccessTitle}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your source is indexed and ready to use across Aziron.
+          {result.hubName
+            ? `${result.sourceName} is in Documents and linked to ${result.hubName}.`
+            : `${result.sourceName} is in Documents.`}
         </p>
       </div>
 
@@ -428,7 +512,7 @@ export function SuccessStep({ result, onViewSource, onOpenHub, onCreateAgent, on
         <div className="grid grid-cols-2 gap-2">
           <Button type="button" variant="outline" onClick={onViewSource}>
             <Library data-icon="inline-start" aria-hidden />
-            View source
+            {KNOWLEDGE_TERMS.viewInDocuments}
           </Button>
           <Button
             type="button"

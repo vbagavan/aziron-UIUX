@@ -13,7 +13,7 @@ export const SOURCE_CATEGORIES = {
 
 export const SOURCE_KINDS = {
   // Files
-  "local-upload": { id: "local-upload", label: "Local upload", category: "files" },
+  "local-upload": { id: "local-upload", label: "Uploaded", category: "files" },
   "cloud-storage": { id: "cloud-storage", label: "Cloud storage", category: "files" },
   // DBs
   sql: { id: "sql", label: "SQL", category: "dbs" },

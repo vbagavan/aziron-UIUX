@@ -2,7 +2,7 @@
  * AddSourceWizard — the unified Source Onboarding experience.
  *
  * A single reusable modal that walks a user through bringing any source
- * (files, cloud storage, databases, APIs, enterprise apps) into Aziron and
+ * (files including cloud storage, databases, APIs) into Aziron and
  * routing it to the document library and/or a Knowledge Hub. Connection and
  * discovery are simulated; selections persist as real library records so the
  * success screen's actions (View source / Open hub) work end-to-end.
@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_LG,
@@ -45,9 +46,14 @@ import {
   saveLastSourceType,
 } from "@/lib/wizardPrefs";
 import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
+import { SOURCE_TYPES } from "@/data/addSourceCatalog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useConnectionsStore } from "@/lib/connections/store.js";
+import { goToConnectorsCatalog } from "@/lib/connectorsNavigation";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import {
   ChooseSourceTypeStep,
-  FilesUploadStep,
+  FilesIntakeStep,
   ProcessingStep,
   SuccessStep,
 } from "@/components/features/sources/coreFlowSteps";
@@ -68,11 +74,6 @@ import {
   DbSelectDataStep,
   DbSelectStep,
   DbSyncStep,
-  EnterpriseConnectStep,
-  EnterpriseDiscoverStep,
-  EnterpriseObjectsStep,
-  EnterpriseSelectStep,
-  EnterpriseSyncStep,
 } from "@/components/features/sources/connectorFlowSteps";
 
 function initialState({ defaultHubId } = {}) {
@@ -82,7 +83,7 @@ function initialState({ defaultHubId } = {}) {
 
   return {
     type: null,
-    files: { items: [] },
+    files: { items: [], intakeMode: "upload" },
     cloud: {
       provider: null,
       connected: false,
@@ -134,7 +135,10 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState(null);
   const [result, setResult] = useState(null);
+  const [dismissConfirmOpen, setDismissConfirmOpen] = useState(false);
   const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
+  const openIntegrationsWizard = useConnectionsStore((s) => s.openWizard);
+  const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
 
   // Reset whenever the dialog closes; restore preferences + context on open.
   useEffect(() => {
@@ -145,12 +149,13 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       setFinishing(false);
       setFinishError(null);
       setResult(null);
+      setDismissConfirmOpen(false);
       return;
     }
 
     setState({
       ...initialState({ defaultHubId }),
-      type: defaultSourceType ?? null,
+      type: defaultSourceType ?? "files",
     });
     setStepIndex(0);
     setPhase("wizard");
@@ -160,8 +165,8 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   }, [open, defaultHubId, defaultSourceType]);
 
   const steps = useMemo(
-    () => getWizardStepsForContext(state.type, { skipChooseType }),
-    [state.type, skipChooseType],
+    () => getWizardStepsForContext(state.type, state, { skipChooseType }),
+    [state, skipChooseType],
   );
   const currentKey = steps[stepIndex] ?? "choose-type";
 
@@ -175,20 +180,27 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     const s = state;
     switch (currentKey) {
       case "choose-type": return Boolean(s.type);
+      case "files-intake":
+        return s.type === "files" && s.files?.intakeMode !== "cloud" && (s.files.items?.length ?? 0) > 0;
       case "upload": return (s.files.items?.length ?? 0) > 0;
       case "cloud-provider": return Boolean(s.cloud.provider);
       case "cloud-connect": return Boolean(s.cloud.connected);
       case "cloud-browse": return (s.cloud.selected?.length ?? 0) > 0;
       case "db-select": return Boolean(s.db.provider);
-      case "db-connect": return Boolean(s.db.tested);
+      case "db-connect": {
+        if (!s.db?.tested) return false;
+        const conn = s.db?.connection ?? {};
+        return Boolean(conn.host?.trim() && conn.username?.trim() && conn.name?.trim());
+      }
       case "db-data": return (s.db.selectedTableIds?.length ?? 0) > 0;
       case "db-ai": return s.db.embedStrategy === "full" || (s.db.columnIds?.length ?? 0) > 0;
       case "api-type": return Boolean(s.api.apiType);
-      case "api-connect": return Boolean(s.api.tested);
+      case "api-connect": {
+        if (!s.api?.tested) return false;
+        const conn = s.api?.connection ?? {};
+        return Boolean(conn.baseUrl?.trim() && conn.name?.trim());
+      }
       case "api-objects": return (s.api.objectIds?.length ?? 0) > 0;
-      case "ent-select": return Boolean(s.ent.app);
-      case "ent-connect": return Boolean(s.ent.connected);
-      case "ent-objects": return (s.ent.objectIds?.length ?? 0) > 0;
       default: return true; // discovery / sync / ai / configure
     }
   }
@@ -207,7 +219,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       finish();
       return;
     }
-    if (currentKey === "db-connect" || currentKey === "api-connect" || currentKey === "ent-connect") {
+    if (currentKey === "db-connect" || currentKey === "api-connect") {
       setState((prev) => applyExpressDefaults(prev));
     }
     setStepIndex((i) => Math.min(i + 1, steps.length - 1));
@@ -216,8 +228,47 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   function handleSelectSourceType(typeId) {
     saveLastSourceType(typeId);
     setFinishError(null);
-    setState((prev) => ({ ...prev, type: typeId }));
-    setStepIndex(skipChooseType ? 0 : 1);
+    setState((prev) => ({
+      ...prev,
+      type: typeId,
+      files: { ...prev.files, intakeMode: "upload", items: typeId === "files" ? prev.files?.items ?? [] : [] },
+    }));
+  }
+
+  function handleStartCloudFlow(nextState) {
+    const resolved = nextState ?? state;
+    const nextSteps = getWizardStepsForContext(resolved.type, resolved, { skipChooseType });
+    const targetKey = resolved.cloud?.connected ? "cloud-browse" : "cloud-connect";
+    const index = nextSteps.indexOf(targetKey);
+    if (index >= 0) setStepIndex(index);
+  }
+
+  function handleSelectCloudProvider(providerId) {
+    setFinishError(null);
+    setState((prev) => {
+      const next = {
+        ...prev,
+        type: "files",
+        files: { ...prev.files, intakeMode: "cloud" },
+        cloud: { ...prev.cloud, provider: providerId, connected: false, selected: [] },
+      };
+      window.setTimeout(() => handleStartCloudFlow(next), 0);
+      return next;
+    });
+  }
+
+  function handleSelectConnectedCloudAccount(connection) {
+    setFinishError(null);
+    setState((prev) => {
+      const next = {
+        ...prev,
+        type: "files",
+        files: { ...prev.files, intakeMode: "cloud" },
+        cloud: { ...prev.cloud, provider: connection.provider, connected: true, selected: [] },
+      };
+      window.setTimeout(() => handleStartCloudFlow(next), 0);
+      return next;
+    });
   }
 
   async function finish() {
@@ -232,7 +283,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       let hubName = null;
       let recordIds = [];
 
-      if (resolvedState.type === "files") {
+      if (resolvedState.type === "files" && resolvedState.files?.intakeMode !== "cloud") {
         const files = resolvedState.files.items ?? [];
         if (files.length === 0) {
           throw new Error("Select at least one file to upload.");
@@ -306,7 +357,17 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   }
 
   function close() {
+    setDismissConfirmOpen(false);
     onOpenChange?.(false);
+  }
+
+  function requestClose() {
+    if (filePickerGuard.shouldBlockClose()) return;
+    if (phase === "success" || stepIndex === 0) {
+      close();
+      return;
+    }
+    setDismissConfirmOpen(true);
   }
 
   function handleDialogOpenChange(next) {
@@ -314,8 +375,21 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       onOpenChange?.(true);
       return;
     }
-    if (filePickerGuard.shouldBlockClose()) return;
+    requestClose();
+  }
+
+  function browseConnectorsCatalog({ providerId = null } = {}) {
     close();
+    window.setTimeout(
+      () =>
+        goToConnectorsCatalog(navigate, {
+          openNew: !providerId,
+          providerId,
+          openWizard: openIntegrationsWizard,
+          openWizardWithProvider: openIntegrationsWizardWithProvider,
+        }),
+      0,
+    );
   }
 
   function goTo(path) {
@@ -324,44 +398,48 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     window.setTimeout(() => navigate(path), 0);
   }
 
-  function handleSelectConnectedCloudAccount(connection) {
-    setFinishError(null);
-    setState((prev) => ({
-      ...prev,
-      type: "cloud",
-      cloud: { ...prev.cloud, provider: connection.provider, connected: true, selected: [] },
-    }));
-    // Jump directly to cloud-browse, skipping the cloud-connect authorization step
-    const cloudSteps = getWizardStepsForContext("cloud", { skipChooseType });
-    const browseIndex = cloudSteps.indexOf("cloud-browse");
-    setStepIndex(browseIndex >= 0 ? browseIndex : 1);
-  }
-
   function renderStep() {
     switch (currentKey) {
       case "choose-type":
         return <ChooseSourceTypeStep state={state} onSelectType={handleSelectSourceType} />;
 
-      // Files
-      case "upload": return (
-        <FilesUploadStep
-          state={state}
-          update={update}
-          filePickerGuard={filePickerGuard}
-        />
-      );
+      // Files (upload + cloud)
+      case "files-intake":
+        return (
+          <FilesIntakeStep
+            state={state}
+            update={update}
+            filePickerGuard={filePickerGuard}
+            onSelectConnected={handleSelectConnectedCloudAccount}
+            onBrowseAll={() => browseConnectorsCatalog()}
+            onProviderPick={handleSelectCloudProvider}
+          />
+        );
+      case "upload":
+        return (
+          <FilesIntakeStep
+            state={state}
+            update={update}
+            filePickerGuard={filePickerGuard}
+            onSelectConnected={handleSelectConnectedCloudAccount}
+            onBrowseAll={() => browseConnectorsCatalog()}
+            onProviderPick={handleSelectCloudProvider}
+          />
+        );
       case "processing":
         return <ProcessingStep state={state} onDone={() => setStepIndex((i) => i + 1)} />;
 
-      // Cloud
-      case "cloud-provider": return (
-        <CloudProviderStep
-          state={state}
-          update={update}
-          onSelectConnected={handleSelectConnectedCloudAccount}
-          onBrowseAll={() => { close(); window.setTimeout(() => navigate("/platform/marketplace"), 0); }}
-        />
-      );
+      // Cloud (under Files)
+      case "cloud-provider":
+        return (
+          <CloudProviderStep
+            state={state}
+            update={update}
+            onSelectConnected={handleSelectConnectedCloudAccount}
+            onBrowseAll={() => browseConnectorsCatalog()}
+            onProviderPick={handleSelectCloudProvider}
+          />
+        );
       case "cloud-connect": return <CloudConnectStep state={state} update={update} />;
       case "cloud-browse": return <CloudBrowseStep state={state} update={update} />;
       case "cloud-sync": return <CloudSyncStep state={state} update={update} />;
@@ -382,13 +460,6 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       case "api-sync": return <ApiSyncStep state={state} update={update} />;
       case "api-ai": return <ApiAiStep state={state} update={update} />;
 
-      // Enterprise
-      case "ent-select": return <EnterpriseSelectStep state={state} update={update} />;
-      case "ent-connect": return <EnterpriseConnectStep state={state} update={update} />;
-      case "ent-discover": return <EnterpriseDiscoverStep state={state} />;
-      case "ent-objects": return <EnterpriseObjectsStep state={state} update={update} />;
-      case "ent-sync": return <EnterpriseSyncStep state={state} update={update} />;
-
       default: return null;
     }
   }
@@ -397,20 +468,35 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const isSuccess = phase === "success";
   const progressValue = isSuccess ? 100 : ((stepIndex + 1) / steps.length) * 100;
   const showBack = !isSuccess && stepIndex > 0;
-  const showContinue = !isSuccess && currentKey !== "choose-type";
+  const showContinue = !isSuccess && (currentKey !== "choose-type" || Boolean(state.type));
+  const activeCategory = SOURCE_TYPES.find((t) => t.id === state.type);
+  const ActiveCategoryIcon = activeCategory?.icon;
 
   const showDemoBanner =
-    !isSuccess && currentKey !== "choose-type" && currentKey !== "upload";
-  const useWideDialog = !isSuccess && (currentKey === "choose-type" || currentKey === "upload");
+    !isSuccess && currentKey !== "choose-type" && currentKey !== "files-intake" && currentKey !== "upload";
+  const useWideDialog =
+    !isSuccess && (currentKey === "choose-type" || currentKey === "files-intake" || currentKey === "upload");
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className={useWideDialog ? HUB_DIALOG_CONTENT_XL : HUB_DIALOG_CONTENT_LG}>
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-          <DialogTitle>{isSuccess ? "Source successfully added" : meta.title}</DialogTitle>
-          <DialogDescription>
-            {isSuccess ? "Your source is now part of the Aziron ecosystem." : meta.subtitle}
-          </DialogDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <DialogTitle>
+                {isSuccess ? KNOWLEDGE_TERMS.addSourceSuccessTitle : meta.title}
+              </DialogTitle>
+              <DialogDescription>
+                {isSuccess ? KNOWLEDGE_TERMS.addSourceSuccessDescription : meta.subtitle}
+              </DialogDescription>
+            </div>
+            {!isSuccess && activeCategory && currentKey !== "choose-type" ? (
+              <Badge variant="outline" className="shrink-0 gap-1.5 py-1">
+                {ActiveCategoryIcon ? <ActiveCategoryIcon className="size-3.5" aria-hidden /> : null}
+                {activeCategory.label}
+              </Badge>
+            ) : null}
+          </div>
           {!isSuccess ? (
             <div className="mt-3 flex items-center gap-3">
               <Progress value={progressValue} className="h-1.5 flex-1" aria-label="Wizard progress" />
@@ -423,12 +509,9 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
 
         <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
           {!isSuccess && showDemoBanner ? (
-            <Alert className="mb-4 py-2">
-              <Info className="size-4" />
-              <AlertDescription className="text-xs">
-                Demo mode — connections and discovery are simulated. No data leaves your browser.
-              </AlertDescription>
-            </Alert>
+            <p className="mb-4 text-center text-[11px] text-muted-foreground">
+              {KNOWLEDGE_TERMS.demoModeHint}
+            </p>
           ) : null}
           {finishError ? (
             <Alert variant="destructive" className="mb-4 py-2">
@@ -463,7 +546,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
               Back
             </Button>
           ) : (
-            <Button type="button" variant="ghost" onClick={close} disabled={finishing}>
+            <Button type="button" variant="ghost" onClick={requestClose} disabled={finishing}>
               Cancel
             </Button>
           )}
@@ -472,11 +555,28 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
             <Button type="button" onClick={close}>Done</Button>
           ) : showContinue ? (
             <Button type="button" onClick={handleContinue} disabled={!canAdvance() || finishing}>
-              {isFinishStep ? (finishing ? "Adding…" : "Add source") : "Continue"}
+              {currentKey === "choose-type"
+                ? "Continue"
+                : isFinishStep
+                  ? finishing
+                    ? "Adding…"
+                    : "Add source"
+                  : "Continue"}
             </Button>
           ) : null}
         </SourceWizardFooter>
       </DialogContent>
+
+      {dismissConfirmOpen ? (
+        <ConfirmDialog
+          title={KNOWLEDGE_TERMS.wizardDiscardTitle}
+          message={KNOWLEDGE_TERMS.wizardDiscardMessage}
+          confirmLabel="Discard"
+          confirmVariant="destructive"
+          onConfirm={close}
+          onCancel={() => setDismissConfirmOpen(false)}
+        />
+      ) : null}
     </Dialog>
   );
 }

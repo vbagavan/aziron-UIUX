@@ -34,10 +34,11 @@ export function LocalComputerDropZone({
   }
 
   return (
-    <div className={cn("flex min-h-[320px] flex-col gap-4", className)}>
+    <div className={cn("flex flex-col gap-4", className?.includes("min-h-0") ? "min-h-0" : "min-h-[320px]")}>
       <div
         className={cn(
-          "flex min-h-[280px] flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-6 transition-colors",
+          "flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-6 transition-colors",
+          className?.includes("min-h-0") ? "min-h-[200px]" : "min-h-[280px]",
           disabled && "cursor-not-allowed opacity-60",
           dragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
         )}

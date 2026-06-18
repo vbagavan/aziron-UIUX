@@ -16,6 +16,7 @@ import {
   getHubFileDisplayFields,
 } from "@/components/features/knowledge/hubFileMetadata";
 import { downloadHubFile } from "@/components/features/knowledge/hubFileDownload";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 
 function HeroCover({ hubId, file, cfg, onPreview }) {
   return (
@@ -119,7 +120,7 @@ export function HubAssetDetailView({
     [file, hubName, cfg.label],
   );
 
-  const sourceLabel = file.source === "cloud" ? "Cloud sync" : "Local upload";
+  const sourceLabel = file.source === "cloud" ? "Cloud sync" : KNOWLEDGE_TERMS.filterUploaded;
   const showCollection = allFiles.length > 1;
 
   const metaCells = useMemo(

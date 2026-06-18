@@ -33,6 +33,7 @@ import { AddApiSourcePanel } from "@/components/features/knowledge/sources/AddAp
 import { AddDbSourcePanel } from "@/components/features/knowledge/sources/AddDbSourcePanel";
 import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
 import { SOURCE_CATEGORIES } from "@/lib/sourceCategories";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { cloudProviderLabel } from "@/lib/hubCloudConnections";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,12 @@ function UploadDropZone({ onUpload }) {
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef(null);
 
+  function handleFiles(fileList) {
+    const files = Array.from(fileList ?? []).filter(Boolean);
+    if (files.length === 0) return;
+    onUpload?.(files);
+  }
+
   return (
     <div
       role="button"
@@ -84,7 +91,7 @@ function UploadDropZone({ onUpload }) {
       onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
       onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); setDragActive(false); onUpload?.(); }}
+      onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFiles(e.dataTransfer.files); }}
     >
       <UploadCloud className="size-8 text-muted-foreground" strokeWidth={1.5} aria-hidden />
       <div>
@@ -98,7 +105,10 @@ function UploadDropZone({ onUpload }) {
         type="file"
         multiple
         className="hidden"
-        onChange={(e) => { e.target.value = ""; onUpload?.(); }}
+        onChange={(e) => {
+          handleFiles(e.target.files);
+          e.target.value = "";
+        }}
       />
     </div>
   );
@@ -238,14 +248,14 @@ function FilesSourcePanel({
             <div className="flex flex-col gap-2">
               <SourceOptionRow
                 icon={LayoutGrid}
-                title="Browse all connectors"
-                description="Search the full integrations catalog"
+                title={KNOWLEDGE_TERMS.browseAllConnectorsTitle}
+                description={KNOWLEDGE_TERMS.browseAllConnectorsDescription}
                 onClick={onBrowseAll}
               />
               <SourceOptionRow
                 icon={Wrench}
-                title="Custom connector"
-                description="Connect an MCP server or custom integration"
+                title={KNOWLEDGE_TERMS.customConnectorTitle}
+                description={KNOWLEDGE_TERMS.customConnectorDescription}
                 onClick={onCustom}
               />
             </div>
@@ -329,9 +339,9 @@ export function HubAddSourcesMenu({
     closeAndRun(() => onCustomConnector(HUB_CUSTOM_CONNECTOR_CATALOG_ID));
   }
 
-  function handleUpload() {
+  function handleUpload(files) {
     if (!onUploadFiles) return;
-    closeAndRun(onUploadFiles);
+    closeAndRun(() => onUploadFiles(files));
   }
 
   function handleBrowseConnection(connection) {

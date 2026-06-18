@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Check, Eye, EyeOff, ChevronLeft, Loader2, CheckCircle2, AlertCircle,
@@ -8,7 +9,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Field,
@@ -29,66 +30,89 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import VaultSecurityNote from './VaultSecurityNote.jsx'
 import ProviderAvatar from './ProviderAvatar.jsx'
-import { useConnectionsStore } from '@/lib/connections/store.js'
+import { useConnectionsStore, providerCredentialsComplete } from '@/lib/connections/store.js'
 import { CATALOG_PROVIDERS } from '@/lib/connections/constants.js'
+import { KNOWLEDGE_TERMS } from '@/lib/knowledgeTerminology'
+import { HUB_DIALOG_CONTENT_XL, HUB_DIALOG_BODY_SCROLL } from '@/components/features/knowledge/hubDialogSizes'
+import { SourceWizardFooter } from '@/components/features/knowledge/source-intake/SourceWizardFooter'
 import { cn } from '@/lib/utils'
 
-const WIZARD_STEPS = ['Catalog', 'Configure', 'Scope', 'Credentials']
+const WIZARD_STEP_COUNT = 4
 
-function WizardStepper({ step }) {
-  const currentLabel = WIZARD_STEPS[step - 1] ?? WIZARD_STEPS[0]
+const CONNECTION_STEP_META = {
+  1: {
+    title: 'Choose a provider',
+    subtitle: 'Connect to an external service or data source',
+    short: 'Catalog',
+  },
+  2: {
+    title: 'Configure connection',
+    subtitle: 'Name this connection and set its visibility',
+    short: 'Configure',
+  },
+  3: {
+    title: 'Permission scope',
+    subtitle: 'Control what level of access to grant',
+    short: 'Scope',
+  },
+  4: {
+    title: 'Add credentials',
+    subtitle: 'Enter and test your credentials before saving',
+    subtitleOauth: 'Authorize via OAuth, then save the connection',
+    short: 'Credentials',
+  },
+}
+
+function WizardDialogHeader({ step, provider }) {
+  const isSuccess = step === 5
+  const { wizard, connections } = useConnectionsStore()
+  const newConn = connections.find(c => c.id === wizard.newConnectionId)
+  const meta = CONNECTION_STEP_META[step] ?? CONNECTION_STEP_META[1]
+  const progressValue = isSuccess ? 100 : (step / WIZARD_STEP_COUNT) * 100
+  const isOauth = provider?.type === 'oauth'
 
   return (
-    <div
-      className="flex shrink-0 flex-col gap-3 border-b border-border px-4 py-4 sm:px-6"
-      aria-label={`Step ${step} of ${WIZARD_STEPS.length}: ${currentLabel}`}
-    >
-      <div className="flex items-center">
-        {WIZARD_STEPS.map((label, i) => {
-          const n = i + 1
-          const done = n < step
-          const current = n === step
-          return (
-            <div key={label} className="flex min-w-0 flex-1 items-center last:flex-none">
-              <div
-                className={cn(
-                  'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors',
-                  done && 'bg-primary text-primary-foreground',
-                  current && !done && 'bg-primary text-primary-foreground ring-4 ring-ring',
-                  !done && !current && 'bg-muted text-muted-foreground',
-                )}
-                aria-hidden
-              >
-                {done ? <Check strokeWidth={3} /> : n}
-              </div>
-              {i < WIZARD_STEPS.length - 1 && (
-                <div
-                  className={cn(
-                    'mx-1.5 h-0.5 min-w-3 flex-1 rounded-full transition-colors',
-                    n < step ? 'bg-primary' : 'bg-border',
-                  )}
-                  aria-hidden
-                />
-              )}
-            </div>
-          )
-        })}
+    <DialogHeader className="shrink-0 border-b border-border px-4 py-4 sm:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <DialogTitle>{isSuccess ? 'Connection added!' : meta.title}</DialogTitle>
+          <DialogDescription>
+            {isSuccess ? (
+              <>
+                <span className="font-medium text-foreground">{newConn?.name ?? provider?.name}</span>
+                {' '}is ready to use in your flows, agents, and Knowledge sources.
+              </>
+            ) : step === 4 && isOauth ? (
+              meta.subtitleOauth
+            ) : (
+              meta.subtitle
+            )}
+          </DialogDescription>
+        </div>
+        {!isSuccess && step > 1 && provider ? (
+          <Badge variant="outline" className="shrink-0 gap-1.5 py-1">
+            <ProviderAvatar providerId={provider.id} size="sm" className="size-4" />
+            {provider.name}
+          </Badge>
+        ) : null}
       </div>
-
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">
-          Step {step} of {WIZARD_STEPS.length}
-        </span>
-        <span className="truncate font-medium text-foreground">{currentLabel}</span>
-      </div>
-    </div>
+      {!isSuccess ? (
+        <div className="mt-3 flex items-center gap-3">
+          <Progress value={progressValue} className="h-1.5 flex-1" aria-label="Wizard progress" />
+          <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+            Step {step} of {WIZARD_STEP_COUNT} · {meta.short}
+          </span>
+        </div>
+      ) : null}
+    </DialogHeader>
   )
 }
 
 function Step1Catalog() {
-  const { wizard, setWizardField, wizardNext } = useConnectionsStore()
+  const { wizard, setWizardField } = useConnectionsStore()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
 
@@ -102,16 +126,13 @@ function Step1Catalog() {
 
   function selectProvider(provider) {
     setWizardField('selectedProvider', provider)
-    wizardNext()
+    if (!wizard.name?.trim()) {
+      setWizardField('name', provider.name)
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <DialogHeader className="p-0 text-left">
-        <DialogTitle className="text-base">Choose a provider</DialogTitle>
-        <DialogDescription>Connect to an external service or data source</DialogDescription>
-      </DialogHeader>
-
       <InputGroup>
         <InputGroupAddon align="inline-start">
           <Search />
@@ -174,11 +195,6 @@ function Step2Configure() {
 
   return (
     <div className="flex flex-col gap-5">
-      <DialogHeader className="p-0 text-left">
-        <DialogTitle className="text-base">Configure connection</DialogTitle>
-        <DialogDescription>Name this connection and set its visibility</DialogDescription>
-      </DialogHeader>
-
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted p-3 sm:flex-row sm:items-center">
         <ProviderAvatar providerId={provider?.id} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
@@ -259,11 +275,6 @@ function Step3Scope() {
 
   return (
     <div className="flex flex-col gap-5">
-      <DialogHeader className="p-0 text-left">
-        <DialogTitle className="text-base">Permission scope</DialogTitle>
-        <DialogDescription>Control what level of access to grant</DialogDescription>
-      </DialogHeader>
-
       <div className="flex flex-col gap-2">
         {SCOPE_OPTIONS.map(({ id, label, tag, icon: Icon, desc }) => {
           const disabled = id === 'custom' && !isOauth
@@ -320,8 +331,9 @@ function Step3Scope() {
 }
 
 function SecretField({ field }) {
+  const { wizard, setWizardCredential } = useConnectionsStore()
   const [show, setShow] = useState(false)
-  const [val, setVal] = useState('')
+  const val = wizard.credentials?.[field.key] ?? ''
 
   return (
     <Field>
@@ -331,7 +343,7 @@ function SecretField({ field }) {
           id={field.key}
           type={show || !field.secret ? 'text' : 'password'}
           value={val}
-          onChange={e => setVal(e.target.value)}
+          onChange={e => setWizardCredential(field.key, e.target.value)}
           placeholder={field.placeholder}
           autoComplete="off"
           className="font-mono"
@@ -355,8 +367,10 @@ function SecretField({ field }) {
 }
 
 function OAuthField() {
-  const { wizard } = useConnectionsStore()
+  const { wizard, authorizeOAuth } = useConnectionsStore()
   const provider = wizard.selectedProvider
+  const busy = wizard.testStatus === 'testing'
+  const done = wizard.oauthAuthorized
 
   return (
     <div className="flex flex-col items-center gap-4 py-4">
@@ -364,13 +378,22 @@ function OAuthField() {
       <div className="text-center">
         <p className="text-sm font-semibold text-foreground">Authorize with {provider?.name}</p>
         <p className="mx-auto mt-1 max-w-[260px] text-xs leading-relaxed text-muted-foreground">
-          You&apos;ll be redirected to {provider?.name} to grant access. The token will be stored encrypted in Aziron Vault.
+          In production you&apos;d be redirected to {provider?.name} to grant access. Tokens are stored encrypted in Aziron Vault.
         </p>
       </div>
-      <Button type="button" onClick={e => e.preventDefault()}>
-        <ArrowRight data-icon="inline-start" />
-        Connect to {provider?.name}
-      </Button>
+      {done ? (
+        <Alert className="w-full border-success-ring bg-success py-2 text-success-foreground">
+          <CheckCircle2 />
+          <AlertDescription role="status" aria-live="polite">
+            {wizard.testMessage || KNOWLEDGE_TERMS.oauthAuthorizeSuccess}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Button type="button" disabled={busy} onClick={() => authorizeOAuth()}>
+          {busy ? <Loader2 className="animate-spin" data-icon="inline-start" /> : <ArrowRight data-icon="inline-start" />}
+          {busy ? 'Authorizing…' : `Continue to ${provider?.name} (demo)`}
+        </Button>
+      )}
     </div>
   )
 }
@@ -382,13 +405,6 @@ function Step4Credentials() {
 
   return (
     <div className="flex flex-col gap-5">
-      <DialogHeader className="p-0 text-left">
-        <DialogTitle className="text-base">Add credentials</DialogTitle>
-        <DialogDescription>
-          {isOauth ? 'Authorize via OAuth redirect' : 'Enter your API credentials below'}
-        </DialogDescription>
-      </DialogHeader>
-
       {isOauth ? (
         <OAuthField />
       ) : (
@@ -402,7 +418,7 @@ function Step4Credentials() {
               type="button"
               variant="outline"
               onClick={testCredentials}
-              disabled={wizard.testStatus === 'testing'}
+              disabled={wizard.testStatus === 'testing' || !providerCredentialsComplete(provider, wizard.credentials)}
             >
               {wizard.testStatus === 'testing' ? (
                 <Loader2 className="animate-spin" data-icon="inline-start" />
@@ -415,13 +431,13 @@ function Step4Credentials() {
             {wizard.testStatus === 'success' && (
               <Alert className="w-full min-w-0 flex-1 border-success-ring bg-success py-2 text-success-foreground sm:w-auto">
                 <CheckCircle2 />
-                <AlertDescription>{wizard.testMessage}</AlertDescription>
+                <AlertDescription role="status" aria-live="polite">{wizard.testMessage}</AlertDescription>
               </Alert>
             )}
             {wizard.testStatus === 'error' && (
               <Alert variant="destructive" className="w-full min-w-0 flex-1 py-2 sm:w-auto">
                 <AlertCircle />
-                <AlertDescription>{wizard.testMessage}</AlertDescription>
+                <AlertDescription role="status" aria-live="polite">{wizard.testMessage}</AlertDescription>
               </Alert>
             )}
           </div>
@@ -434,13 +450,24 @@ function Step4Credentials() {
 }
 
 function Step5Success() {
-  const { wizard, resetWizard, openDetail, connections } = useConnectionsStore()
+  const navigate = useNavigate()
+  const { wizard, resetWizard, openDetail, openWizard, connections } = useConnectionsStore()
   const provider = wizard.selectedProvider
   const newConn = connections.find(c => c.id === wizard.newConnectionId)
 
   function handleViewDetail() {
     resetWizard()
     if (newConn) openDetail(newConn.id)
+  }
+
+  function handleAddSource() {
+    resetWizard()
+    navigate('/knowledge?tab=documents&addSource=1')
+  }
+
+  function handleOpenHubs() {
+    resetWizard()
+    navigate('/knowledge')
   }
 
   return (
@@ -460,14 +487,6 @@ function Step5Success() {
         </motion.div>
       </motion.div>
 
-      <DialogHeader className="p-0 text-center">
-        <DialogTitle className="text-lg">Connection added!</DialogTitle>
-        <DialogDescription>
-          <span className="font-medium text-foreground">{newConn?.name ?? provider?.name}</span>
-          {' '}is ready to use in your flows and agents.
-        </DialogDescription>
-      </DialogHeader>
-
       <div className="w-full divide-y divide-border rounded-lg border border-border bg-card">
         {[
           { label: 'Provider', value: provider?.name },
@@ -484,22 +503,19 @@ function Step5Success() {
       </div>
 
       <div className="flex w-full flex-col gap-2">
-        <Button onClick={handleViewDetail} className="w-full">
+        <Button onClick={handleAddSource} className="w-full">
+          {KNOWLEDGE_TERMS.connectorSuccessHandoffDocuments}
+        </Button>
+        <Button variant="outline" onClick={handleOpenHubs} className="w-full">
+          {KNOWLEDGE_TERMS.connectorSuccessHandoffHub}
+        </Button>
+        <Button variant="outline" onClick={handleViewDetail} className="w-full">
           View connection details
         </Button>
         <Button variant="outline" onClick={resetWizard} className="w-full">
           Done
         </Button>
-        <Button
-          variant="link"
-          size="sm"
-          onClick={() => {
-            const store = useConnectionsStore.getState()
-            store.setWizardField('step', 1)
-            store.setWizardField('direction', 1)
-            store.setWizardField('selectedProvider', null)
-          }}
-        >
+        <Button variant="link" size="sm" onClick={() => openWizard()}>
           <Plus data-icon="inline-start" />
           Add another connection
         </Button>
@@ -530,16 +546,16 @@ function AnimatedStep({ step, direction }) {
 
 function WizardFooter() {
   const { wizard, wizardBack, wizardNext, saveConnection, resetWizard } = useConnectionsStore()
-  const { step, selectedProvider, testStatus, saving } = wizard
+  const { step, selectedProvider, testStatus, saving, oauthAuthorized, name } = wizard
   const isOauth = selectedProvider?.type === 'oauth'
 
   if (step === 5) return null
 
   const canProceed = {
     1: !!selectedProvider,
-    2: true,
+    2: Boolean(name?.trim()),
     3: true,
-    4: isOauth ? true : (testStatus === 'success' || testStatus === null),
+    4: isOauth ? oauthAuthorized : testStatus === 'success',
   }[step]
 
   const nextLabel = { 1: 'Next', 2: 'Next', 3: 'Next', 4: 'Save connection' }[step]
@@ -554,12 +570,11 @@ function WizardFooter() {
   }
 
   return (
-    <DialogFooter className="flex shrink-0 flex-row items-center justify-between gap-2 sm:justify-between">
+    <SourceWizardFooter>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         onClick={step === 1 ? resetWizard : wizardBack}
-        className="min-w-0 flex-1 sm:flex-none"
       >
         {step === 1 ? (
           <>Cancel</>
@@ -571,36 +586,60 @@ function WizardFooter() {
         )}
       </Button>
 
-      <Button type="button" onClick={handleNext} disabled={!canProceed || saving} className="min-w-0 flex-1 sm:flex-none">
+      <Button type="button" onClick={handleNext} disabled={!canProceed || saving}>
         {saving && <Loader2 className="animate-spin" data-icon="inline-start" />}
         {nextLabel}
       </Button>
-    </DialogFooter>
+    </SourceWizardFooter>
   )
 }
 
 export default function ConnectionWizard() {
   const { wizard, resetWizard } = useConnectionsStore()
-  const { open, step, direction } = wizard
+  const { open, step, direction, selectedProvider } = wizard
+  const [dismissConfirmOpen, setDismissConfirmOpen] = useState(false)
+
+  function requestClose() {
+    if (step > 1 && step < 5) {
+      setDismissConfirmOpen(true)
+      return
+    }
+    resetWizard()
+  }
 
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v) resetWizard() }}>
+    <>
+    <Dialog open={open} onOpenChange={v => { if (!v) requestClose() }}>
       <DialogContent
         showCloseButton
-        className="flex h-[min(92vh,calc(100dvh-2rem))] max-h-[min(92vh,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
+        className={HUB_DIALOG_CONTENT_XL}
       >
-        <DialogHeader className="sr-only">
-          <DialogTitle>New connector</DialogTitle>
-          <DialogDescription>
-            Step {step} of {WIZARD_STEPS.length} — add a new external connection
-          </DialogDescription>
-        </DialogHeader>
-        {step < 5 && <WizardStepper step={step} />}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5">
+        <WizardDialogHeader step={step} provider={selectedProvider} />
+        <div className={cn(HUB_DIALOG_BODY_SCROLL, 'px-4 py-4 sm:px-6 sm:py-5')}>
+          {step < 5 ? (
+            <p className="mb-4 text-center text-[11px] text-muted-foreground">
+              {KNOWLEDGE_TERMS.connectorsDemoHint}
+            </p>
+          ) : null}
           <AnimatedStep step={step} direction={direction} />
         </div>
         <WizardFooter />
       </DialogContent>
     </Dialog>
+
+    {dismissConfirmOpen ? (
+      <ConfirmDialog
+        title={KNOWLEDGE_TERMS.wizardDiscardTitle}
+        message={KNOWLEDGE_TERMS.wizardDiscardMessage}
+        confirmLabel="Discard"
+        confirmVariant="destructive"
+        onConfirm={() => {
+          setDismissConfirmOpen(false)
+          resetWizard()
+        }}
+        onCancel={() => setDismissConfirmOpen(false)}
+      />
+    ) : null}
+    </>
   )
 }

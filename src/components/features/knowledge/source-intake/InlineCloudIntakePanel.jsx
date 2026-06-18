@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +8,10 @@ import {
 import { GoogleDriveConnectionWizard } from "@/components/features/knowledge/googledrive/GoogleDriveConnectionWizard";
 import { OneDriveConnectionWizard } from "@/components/features/knowledge/onedrive/OneDriveConnectionWizard";
 import { getKnowledgeHubCloudProviderLabel } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
-import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { getCloudProviderConfig } from "@/components/features/knowledge/cloud/cloudProviderConfig";
+import { KNOWLEDGE_TERMS, cloudBreadcrumbBrowseLabel } from "@/lib/knowledgeTerminology";
 import { CloudProviderPickerPanel } from "./CloudProviderPickerPanel";
+import { CloudIntakeBreadcrumb } from "./CloudIntakeBreadcrumb";
 
 /** Panel modes within a single dialog — no stacked modals. */
 const MODES = {
@@ -66,8 +68,31 @@ export function InlineCloudIntakePanel({
     setConnectProvider(null);
   }
 
-  if (mode === MODES.picker) {
+  const breadcrumbSegments = useMemo(() => {
+    const root = KNOWLEDGE_TERMS.cloudBreadcrumbConnections;
+    if (mode === MODES.chooseProvider) {
+      return [root, KNOWLEDGE_TERMS.cloudBreadcrumbConnectProvider];
+    }
+    if (mode === MODES.connectWizard && connectProvider) {
+      return [root, `Connect ${getKnowledgeHubCloudProviderLabel(connectProvider)}`];
+    }
+    if (mode === MODES.picker) {
+      return [root, cloudBreadcrumbBrowseLabel(getCloudProviderConfig(pickerProvider).label)];
+    }
+    return null;
+  }, [mode, connectProvider, pickerProvider]);
+
+  function wrapWithBreadcrumb(content) {
     return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <CloudIntakeBreadcrumb segments={breadcrumbSegments} />
+        <div className="flex min-h-0 flex-1 flex-col">{content}</div>
+      </div>
+    );
+  }
+
+  if (mode === MODES.picker) {
+    return wrapWithBreadcrumb(
       <CloudFilePickerPanel
         provider={pickerProvider}
         connection={pickerConnection}
@@ -78,18 +103,17 @@ export function InlineCloudIntakePanel({
         onAddConnection={() => startConnectWizard(pickerProvider)}
         onAddFiles={(selected, connection) => {
           onAddFromPicker?.(selected, connection);
-          setMode(MODES.connections);
         }}
-      />
+      />,
     );
   }
 
   if (mode === MODES.chooseProvider) {
-    return (
+    return wrapWithBreadcrumb(
       <CloudProviderPickerPanel
         onBack={() => setMode(MODES.connections)}
         onSelectProvider={startConnectWizard}
-      />
+      />,
     );
   }
 
@@ -100,7 +124,7 @@ export function InlineCloudIntakePanel({
         ? GoogleDriveConnectionWizard
         : OneDriveConnectionWizard;
 
-    return (
+    return wrapWithBreadcrumb(
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
           <Button
@@ -129,7 +153,7 @@ export function InlineCloudIntakePanel({
             onStepMetaChange={handleWizardStepMeta}
           />
         </div>
-      </div>
+      </div>,
     );
   }
 

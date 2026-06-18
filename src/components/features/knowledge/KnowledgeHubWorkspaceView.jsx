@@ -76,6 +76,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useKnowledgeHubsOptional } from "@/context/KnowledgeHubContext";
 import { cn } from "@/lib/utils";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { getHubFileSourceLabel, getHubFileStatus } from "@/data/knowledgeHubs";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,7 +97,7 @@ const STUDIO_TOOLS = [
 const CENTER_TABS = [
   { id: "overview",  label: "Overview" },
   { id: "details",   label: "Details" },
-  { id: "preview",   label: "Source Guide" },
+  { id: "preview",   label: KNOWLEDGE_TERMS.sourcePreviewTab },
   { id: "studio",    label: "Studio" },
   { id: "notes",     label: "Notes" },
 ];

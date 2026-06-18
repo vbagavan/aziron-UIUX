@@ -3,12 +3,13 @@
 const LAST_SOURCE_TYPE_KEY = "aziron_add_source_last_type";
 const LAST_DEST_MODE_KEY = "aziron_add_source_last_dest";
 
-const VALID_SOURCE_TYPES = new Set(["files", "cloud", "databases", "apis", "enterprise"]);
+const VALID_SOURCE_TYPES = new Set(["files", "databases", "apis"]);
 const VALID_DEST_MODES = new Set(["documents", "new-hub", "existing-hub"]);
 
 export function loadLastSourceType() {
   try {
     const value = localStorage.getItem(LAST_SOURCE_TYPE_KEY);
+    if (value === "cloud" || value === "enterprise") return "files";
     if (value && VALID_SOURCE_TYPES.has(value)) return value;
   } catch {
     /* ignore */

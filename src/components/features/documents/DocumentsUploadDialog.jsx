@@ -30,6 +30,7 @@ import {
 import { useSourceUploadProgress } from "@/components/features/knowledge/useSourceUploadProgress";
 import { SourceIntakeTabs } from "@/components/features/knowledge/source-intake/SourceIntakeTabs";
 import { SourceAddedPanel } from "@/components/features/knowledge/source-intake/SourceAddedPanel";
+import { SourceWizardFooter } from "@/components/features/knowledge/source-intake/SourceWizardFooter";
 import { InlineCloudIntakePanel } from "@/components/features/knowledge/source-intake/InlineCloudIntakePanel";
 import {
   KNOWLEDGE_TERMS,
@@ -54,6 +55,8 @@ export function DocumentsUploadDialog({
   initialBrowseConnection = null,
   excludeExternalIds = [],
   excludeNames = [],
+  initialLocalFiles = null,
+  onInitialLocalFilesConsumed = null,
 }) {
   const isHubTarget = hubId != null;
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -147,6 +150,12 @@ export function DocumentsUploadDialog({
     setInitialCloudConnection(initialBrowseConnection);
     setCloudPanelReset((n) => n + 1);
   }, [open, initialBrowseConnection?.id, initialBrowseConnection?.provider, isUploading, isComplete]);
+
+  useEffect(() => {
+    if (!open || !initialLocalFiles?.length || isUploading || isComplete) return;
+    appendUploadFiles(initialLocalFiles);
+    onInitialLocalFilesConsumed?.();
+  }, [open, initialLocalFiles, isUploading, isComplete, onInitialLocalFilesConsumed]);
 
   useEffect(() => {
     const count = attachedFiles.length;
@@ -455,7 +464,7 @@ export function DocumentsUploadDialog({
           ) : null}
 
           {!isComplete && (
-            <div className="flex items-center justify-between border-t border-border px-6 py-4">
+            <SourceWizardFooter>
               <Button variant="ghost" onClick={handleClose} disabled={isUploading}>
                 Cancel
               </Button>
@@ -468,24 +477,25 @@ export function DocumentsUploadDialog({
                   {addSourcesConfirmLabel(importableCount, { hub: isHubTarget })}
                 </Button>
               )}
-            </div>
+            </SourceWizardFooter>
           )}
 
           {isComplete && !uploadResult?.success ? (
-            <div className="flex items-center justify-between border-t border-border px-6 py-4">
+            <SourceWizardFooter>
               <Button variant="ghost" onClick={handleClose}>
                 Close
               </Button>
               {uploadResult?.hasError ? (
                 <Button onClick={() => retryFailed()}>Retry failed</Button>
               ) : null}
-            </div>
+            </SourceWizardFooter>
           ) : null}
 
           {isComplete && uploadResult?.allSkipped ? (
-            <div className="flex items-center justify-end border-t border-border px-6 py-4">
+            <SourceWizardFooter>
+              <span aria-hidden />
               <Button onClick={handleClose}>Close</Button>
-            </div>
+            </SourceWizardFooter>
           ) : null}
         </DialogContent>
       </Dialog>

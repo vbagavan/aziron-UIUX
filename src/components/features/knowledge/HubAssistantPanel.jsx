@@ -21,6 +21,7 @@ import {
   mockHubAssistantReply,
 } from "@/lib/hubAssistantModel";
 import { CAPTION, SECTION_EYEBROW } from "@/lib/typography";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { cn } from "@/lib/utils";
 
 export const HUB_ASSISTANT_PANEL_TABS = [
@@ -221,7 +222,7 @@ function HubAskTab({
 
       {sourceCount === 0 ? (
         <div className="mx-4 mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
-          Add at least one source to ask questions.
+          {KNOWLEDGE_TERMS.hubAssistantEmptySources}
         </div>
       ) : null}
 
@@ -279,7 +280,7 @@ function HubAskTab({
                   send();
                 }
               }}
-              placeholder={sourceCount === 0 ? "Add sources to enable chat…" : "Ask about this hub…"}
+              placeholder={sourceCount === 0 ? "Add a source to start asking questions…" : "Ask about this hub…"}
               disabled={sourceCount === 0}
               className="flex-1 resize-none bg-transparent text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
             />
@@ -300,10 +301,10 @@ function HubAskTab({
           </div>
           <div className="flex flex-wrap items-center justify-between gap-1 px-3 py-2">
             <span className="text-xs text-muted-foreground">
-              Scope: {focusFile ? "Focused source" : "All hub sources"}
+              {focusFile ? KNOWLEDGE_TERMS.askAiSearchingHubFocused : KNOWLEDGE_TERMS.askAiSearchingHubAll}
             </span>
             <span className="text-[11px] text-muted-foreground">
-              Chat isn't saved · use the Knowledge tab to save &amp; share
+              {KNOWLEDGE_TERMS.hubAssistantChatNotSaved}
             </span>
           </div>
         </div>

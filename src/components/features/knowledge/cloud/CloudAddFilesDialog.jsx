@@ -57,6 +57,7 @@ export function CloudAddFilesDialog({
             excludeExternalIds={excludeExternalIds}
             excludeNames={excludeNames}
             onAddFiles={handleAddFiles}
+            addMode="batch"
             showBackButton={false}
             embedded
             addButtonLabel={KNOWLEDGE_TERMS.addToSelection}

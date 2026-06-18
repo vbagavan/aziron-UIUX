@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   UserCircle, SwatchBook, KeyRound, Bell, LayoutGrid, HelpCircle,
   ChevronRight, Check, X, CheckCheck, Filter, SlidersHorizontal,
@@ -12,19 +13,24 @@ import { useTheme } from "@/context/ThemeContext";
 import AppHeader from "@/components/layout/AppHeader";
 import Sidebar from "@/components/layout/Sidebar";
 import ConnectionsPanel from "@/components/connections/ConnectionsPanel.jsx";
+import { useConnectionsStore } from "@/lib/connections/store.js";
+import { CONNECTORS_SECTION } from "@/lib/connectorsNavigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 
 // ─── Settings nav ──────────────────────────────────────────────────────────────
 
 const SETTINGS_NAV = [
-  { icon: UserCircle,  label: "Account",      id: "account"      },
-  { icon: SwatchBook,  label: "Appearance",   id: "appearance"   },
-  { icon: KeyRound,    label: "API Keys",     id: "api-keys"     },
-  { icon: Bell,        label: "Notifications",id: "notifications"},
-  { icon: LayoutGrid,  label: "Connectors", id: "connectors" },
-  { icon: CreditCard,  label: "Subscription", id: "subscription" },
-  { icon: HelpCircle,  label: "Support",      id: "support"      },
+  { icon: UserCircle,  label: "Account",       id: "account",       comingSoon: true },
+  { icon: SwatchBook,  label: "Appearance",    id: "appearance" },
+  { icon: KeyRound,    label: "API Keys",      id: "api-keys",      comingSoon: true },
+  { icon: Bell,        label: "Notifications", id: "notifications" },
+  { icon: LayoutGrid,  label: "Connectors",    id: "connectors",    permission: "settings.connectors" },
+  { icon: CreditCard,  label: "Subscription",  id: "subscription" },
+  { icon: HelpCircle,  label: "Support",       id: "support",       comingSoon: true },
 ];
 
 // ─── Appearance assets ────────────────────────────────────────────────────────
@@ -644,10 +650,111 @@ function PlaceholderPanel({section}){
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function SettingsAppearancePage({ onNavigate, initialSection="appearance" }){
-  const [activeSection, setActiveSection] = useState(initialSection);
+const VALID_SECTIONS = new Set(SETTINGS_NAV.map((n) => n.id));
 
-  const activeLabel = SETTINGS_NAV.find(n=>n.id===activeSection)?.label ?? activeSection;
+function SettingsConnectorsUnavailable() {
+  return (
+    <div className="flex flex-col gap-2 py-6">
+      <h2 className="text-lg font-medium leading-7 text-foreground">Connectors</h2>
+      <p className="text-sm text-muted-foreground">
+        You don&apos;t have permission to manage workspace connectors. Contact your administrator if you need access.
+      </p>
+    </div>
+  );
+}
+
+export default function SettingsAppearancePage({ onNavigate, initialSection = "appearance" }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { can } = usePermissions();
+  const canManageConnectors = can("settings.connectors");
+  const visibleNav = SETTINGS_NAV.filter(
+    (item) => !item.permission || can(item.permission),
+  );
+  const sectionFromUrl = searchParams.get("section");
+  const resolvedInitial =
+    sectionFromUrl && visibleNav.some((n) => n.id === sectionFromUrl)
+      ? sectionFromUrl
+      : initialSection;
+  const [activeSection, setActiveSection] = useState(resolvedInitial);
+  const openWizard = useConnectionsStore((s) => s.openWizard);
+  const openWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
+  const handledCatalogKeyRef = useRef(null);
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (section && visibleNav.some((n) => n.id === section)) {
+      setActiveSection(section);
+      return;
+    }
+    if (section === CONNECTORS_SECTION && !canManageConnectors) {
+      setActiveSection("appearance");
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("section", "appearance");
+          next.delete("new");
+          next.delete("provider");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }, [searchParams, visibleNav, canManageConnectors, setSearchParams]);
+
+  useEffect(() => {
+    if (activeSection !== CONNECTORS_SECTION || !canManageConnectors) return;
+
+    const providerId = searchParams.get("provider");
+    const openNew = searchParams.get("new") === "1";
+    const catalogKey = `${providerId ?? ""}:${openNew ? "new" : ""}`;
+
+    if (!providerId && !openNew) {
+      handledCatalogKeyRef.current = null;
+      return;
+    }
+
+    if (handledCatalogKeyRef.current === catalogKey) return;
+    handledCatalogKeyRef.current = catalogKey;
+
+    if (providerId) {
+      openWizardWithProvider(providerId);
+    } else {
+      window.setTimeout(() => openWizard(), 0);
+    }
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("provider");
+        next.delete("new");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [activeSection, searchParams, canManageConnectors, openWizard, openWizardWithProvider, setSearchParams]);
+
+  function selectSection(id) {
+    setActiveSection(id);
+    if (id !== CONNECTORS_SECTION) {
+      handledCatalogKeyRef.current = null;
+    }
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("section", id);
+        next.delete("new");
+        next.delete("provider");
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  const activeLabel = visibleNav.find((n) => n.id === activeSection)?.label ?? activeSection;
+  const pageSubtitle =
+    activeSection === CONNECTORS_SECTION
+      ? KNOWLEDGE_TERMS.connectorsSettingsDescription
+      : "Manage your preferences";
 
   return(
     <main className="flex h-full min-h-0 w-full flex-1 overflow-hidden bg-background">
@@ -668,7 +775,7 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
         <div className="flex flex-col flex-1 min-h-0 overflow-y-auto px-4 py-4 gap-4 sm:px-6">
           <div className="flex flex-col gap-0">
             <h1 className="type-page-title">Settings</h1>
-            <p className="text-sm text-muted-foreground leading-5">Manage your preferences</p>
+            <p className="text-sm text-muted-foreground leading-5">{pageSubtitle}</p>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-start">
@@ -677,15 +784,15 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
               aria-label="Settings sections"
               className="flex shrink-0 gap-1 overflow-x-auto pb-1 lg:w-[216px] lg:flex-col lg:overflow-visible lg:pb-0"
             >
-              {SETTINGS_NAV.map(({icon:Icon,label,id})=>{
-                const isActive = activeSection===id;
+              {visibleNav.map(({ icon: Icon, label, id, comingSoon }) => {
+                const isActive = activeSection === id;
                 return (
                   <Button
                     key={id}
                     type="button"
                     variant="ghost"
-                    onClick={()=>setActiveSection(id)}
-                    aria-current={isActive?"page":undefined}
+                    onClick={() => selectSection(id)}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "h-8 shrink-0 justify-start gap-2 rounded-md border-l-2 pl-1.5 pr-3 text-sm font-normal lg:w-full lg:pr-2",
                       isActive
@@ -695,6 +802,11 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
                   >
                     <Icon className={cn("size-4 shrink-0", isActive && "text-primary")} />
                     <span className="whitespace-nowrap">{label}</span>
+                    {comingSoon ? (
+                      <Badge variant="outline" className="ml-auto hidden text-[10px] lg:inline-flex">
+                        Soon
+                      </Badge>
+                    ) : null}
                   </Button>
                 );
               })}
@@ -705,7 +817,8 @@ export default function SettingsAppearancePage({ onNavigate, initialSection="app
               {activeSection==="appearance"    && <AppearancePanel/>}
               {activeSection==="notifications" && <NotificationsPanel/>}
               {activeSection==="subscription"  && <SubscriptionPanel/>}
-              {activeSection==="connectors"    && <ConnectionsPanel/>}
+              {activeSection === "connectors" && canManageConnectors ? <ConnectionsPanel /> : null}
+              {activeSection === "connectors" && !canManageConnectors ? <SettingsConnectorsUnavailable /> : null}
               {!["appearance","notifications","subscription","connectors"].includes(activeSection) && <PlaceholderPanel section={activeSection}/>}
             </div>
           </div>

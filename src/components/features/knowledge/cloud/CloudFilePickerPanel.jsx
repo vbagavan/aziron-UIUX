@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Cloud, FolderOpen, LayoutGrid, Search, Wrench } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { CloudConnectionSwitcher } from "./CloudConnectionSwitcher";
 import { CloudFilePickerTable } from "./CloudFilePickerTable";
 import { getCloudProviderConfig } from "./cloudProviderConfig";
-import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { KNOWLEDGE_TERMS, cloudFileAddedToast, cloudFilesAddedToast } from "@/lib/knowledgeTerminology";
 
 function providerLabel(provider) {
   return provider === "google-drive" ? "Google Drive" : "OneDrive";
@@ -30,8 +31,12 @@ export function CloudFilePickerPanel({
   onAddConnection,
   onAddFiles,
   addButtonLabel = KNOWLEDGE_TERMS.addToSelection,
+  /** immediate: add each file on select; batch: select then confirm with footer button */
+  addMode = "immediate",
   showBackButton = true,
   embedded = false,
+  /** Show a toast when files are added in immediate mode */
+  notifyOnAdd = true,
 }) {
   const config = getCloudProviderConfig(provider);
   const connectionOptions = useMemo(
@@ -86,7 +91,29 @@ export function CloudFilePickerPanel({
     return () => window.clearTimeout(timer);
   }, [connection?.id, provider]);
 
+  const isImmediateAdd = addMode === "immediate";
+
+  function notifyAdded(files) {
+    if (!notifyOnAdd || !isImmediateAdd || !files?.length) return;
+    if (files.length === 1) {
+      toast.success(cloudFileAddedToast(files[0].name));
+    } else {
+      toast.success(cloudFilesAddedToast(files.length));
+    }
+  }
+
+  function addFilesImmediate(files) {
+    if (!files?.length) return;
+    onAddFiles?.(files, activeConnection);
+    notifyAdded(files);
+  }
+
   function handleToggle(id) {
+    if (isImmediateAdd) {
+      const file = selectableFiles.find((f) => f.id === id);
+      if (file) addFilesImmediate([file]);
+      return;
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -96,11 +123,22 @@ export function CloudFilePickerPanel({
   }
 
   function handleToggleAll(e) {
+    if (isImmediateAdd) {
+      if (e.target.checked && selectableFiles.length > 0) {
+        addFilesImmediate(selectableFiles);
+      }
+      return;
+    }
     if (e.target.checked) {
       setSelectedIds(new Set(selectableFiles.map((f) => f.id)));
     } else {
       setSelectedIds(new Set());
     }
+  }
+
+  function handleActivateFile(file) {
+    if (!isImmediateAdd || !file || file.type === "folder") return;
+    addFilesImmediate([file]);
   }
 
   function handleSwitchConnection(conn) {
@@ -144,7 +182,9 @@ export function CloudFilePickerPanel({
               Browse {config.label}
             </p>
             <p className="truncate text-[11px] text-muted-foreground">
-              Select files to add to your upload
+              {isImmediateAdd
+                ? KNOWLEDGE_TERMS.cloudPickerImmediateHint
+                : "Select files to add to your upload"}
             </p>
           </div>
         </div>
@@ -196,6 +236,7 @@ export function CloudFilePickerPanel({
               search={fileSearch}
               onToggleFile={handleToggle}
               onToggleAll={handleToggleAll}
+              onActivateFile={isImmediateAdd ? handleActivateFile : undefined}
             />
           </div>
         )}
@@ -203,18 +244,22 @@ export function CloudFilePickerPanel({
 
       <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/25 px-3 py-2.5">
         <span className="text-xs text-muted-foreground">
-          {selectedIds.size > 0
-            ? `${selectedIds.size} file${selectedIds.size === 1 ? "" : "s"} selected`
-            : "Select files to import"}
+          {isImmediateAdd
+            ? KNOWLEDGE_TERMS.cloudPickerAddedHint
+            : selectedIds.size > 0
+              ? `${selectedIds.size} file${selectedIds.size === 1 ? "" : "s"} selected`
+              : "Select files to import"}
         </span>
-        <Button
-          type="button"
-          size="sm"
-          disabled={phase !== "picker" || selectedIds.size === 0}
-          onClick={handleAddSelected}
-        >
-          {addButtonLabel}
-        </Button>
+        {!isImmediateAdd ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={phase !== "picker" || selectedIds.size === 0}
+            onClick={handleAddSelected}
+          >
+            {addButtonLabel}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -330,8 +375,8 @@ export function CloudConnectionsPanel({
                 >
                   <LayoutGrid className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-sm font-semibold text-foreground">Browse all connectors</span>
-                    <span className="text-xs text-muted-foreground">Search the full integrations catalog</span>
+                    <span className="text-sm font-semibold text-foreground">{KNOWLEDGE_TERMS.browseAllConnectorsTitle}</span>
+                    <span className="text-xs text-muted-foreground">{KNOWLEDGE_TERMS.browseAllConnectorsDescription}</span>
                   </span>
                 </button>
               ) : null}

@@ -12,10 +12,19 @@ const INITIAL_WIZARD = {
   name:             '',
   isPrivate:        false,
   scope:            'full',     // 'full' | 'read' | 'custom'
+  credentials:      {},         // field key → value (cleared on wizard reset)
+  oauthAuthorized:  false,
   testStatus:       null,       // null | 'testing' | 'success' | 'error'
   testMessage:      '',
   saving:           false,
   newConnectionId:  null,       // set after successful creation
+}
+
+function providerCredentialsComplete(provider, credentials = {}) {
+  if (!provider) return false
+  if (provider.type === 'oauth') return true
+  const fields = provider.fields ?? []
+  return fields.every((field) => String(credentials[field.key] ?? '').trim().length > 0)
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -69,6 +78,7 @@ export const useConnectionsStore = create((set, get) => ({
         open: true,
         step: selectedProvider ? 2 : 1,
         selectedProvider,
+        name: selectedProvider?.name ?? '',
       },
     })
   },
@@ -92,13 +102,58 @@ export const useConnectionsStore = create((set, get) => ({
   setWizardField: (field, value) =>
     set(s => ({ wizard: { ...s.wizard, [field]: value } })),
 
+  setWizardCredential: (key, value) =>
+    set(s => ({
+      wizard: {
+        ...s.wizard,
+        credentials: { ...s.wizard.credentials, [key]: value },
+        testStatus: null,
+        testMessage: '',
+        oauthAuthorized: false,
+      },
+    })),
+
   setTestStatus: (testStatus, testMessage = '') =>
     set(s => ({ wizard: { ...s.wizard, testStatus, testMessage } })),
 
-  // ── Credential test (no credential state stored) ──────────────────────────
+  authorizeOAuth: async () => {
+    const { wizard } = get()
+    if (!wizard.selectedProvider) return
+    set(s => ({
+      wizard: {
+        ...s.wizard,
+        testStatus: 'testing',
+        testMessage: '',
+        oauthAuthorized: false,
+      },
+    }))
+    await new Promise(r => setTimeout(r, 1200))
+    set(s => ({
+      wizard: {
+        ...s.wizard,
+        oauthAuthorized: true,
+        testStatus: 'success',
+        testMessage: 'Authorization simulated — ready to save.',
+      },
+    }))
+  },
+
+  // ── Credential test (no credential state stored after save) ─────────────────
   testCredentials: async () => {
+    const { wizard } = get()
+    const provider = wizard.selectedProvider
+    if (!providerCredentialsComplete(provider, wizard.credentials)) {
+      set(s => ({
+        wizard: {
+          ...s.wizard,
+          testStatus: 'error',
+          testMessage: 'Fill in all required credential fields before testing.',
+        },
+      }))
+      return
+    }
+
     set(s => ({ wizard: { ...s.wizard, testStatus: 'testing', testMessage: '' } }))
-    // Simulate API call — credentials are submitted directly, not held in state
     await new Promise(r => setTimeout(r, 1800))
     const pass = Math.random() > 0.2
     set(s => ({
@@ -113,6 +168,11 @@ export const useConnectionsStore = create((set, get) => ({
   // ── Save connection (step 4 → 5) ──────────────────────────────────────────
   saveConnection: async () => {
     const { wizard } = get()
+    const provider = wizard.selectedProvider
+    const isOauth = provider?.type === 'oauth'
+    if (isOauth && !wizard.oauthAuthorized) return
+    if (!isOauth && wizard.testStatus !== 'success') return
+
     set(s => ({ wizard: { ...s.wizard, saving: true } }))
     await new Promise(r => setTimeout(r, 1200))
 
@@ -135,7 +195,17 @@ export const useConnectionsStore = create((set, get) => ({
 
     set(s => ({
       connections: [newConn, ...s.connections],
-      wizard: { ...s.wizard, saving: false, step: 5, direction: 1, newConnectionId: newConn.id },
+      wizard: {
+        ...INITIAL_WIZARD,
+        open: true,
+        step: 5,
+        direction: 1,
+        selectedProvider: wizard.selectedProvider,
+        name: wizard.name,
+        isPrivate: wizard.isPrivate,
+        scope: wizard.scope,
+        newConnectionId: newConn.id,
+      },
     }))
   },
 
@@ -161,9 +231,13 @@ export const useConnectionsStore = create((set, get) => ({
     }))
   },
 
+  reauthenticateConnection: async (id) => {
+    await get().testConnection(id)
+  },
+
   // ── Detail panel ──────────────────────────────────────────────────────────
-  openDetail: (connectionId) =>
-    set({ detail: { open: true, connectionId, activeTab: 'overview' } }),
+  openDetail: (connectionId, activeTab = 'overview') =>
+    set({ detail: { open: true, connectionId, activeTab } }),
 
   closeDetail: () =>
     set({ detail: { open: false, connectionId: null, activeTab: 'overview' } }),
@@ -171,3 +245,5 @@ export const useConnectionsStore = create((set, get) => ({
   setDetailTab: (tab) =>
     set(s => ({ detail: { ...s.detail, activeTab: tab } })),
 }))
+
+export { providerCredentialsComplete }

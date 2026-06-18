@@ -30,6 +30,7 @@ export function CloudFilePickerTable({
   search = "",
   onToggleFile,
   onToggleAll,
+  onActivateFile,
 }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set(getFolderIds(files)));
 
@@ -133,11 +134,13 @@ export function CloudFilePickerTable({
                         className={cn(
                           "min-w-0 truncate text-left font-medium text-foreground",
                           isFolder && !searchRows && "hover:text-primary",
+                          !isFolder && onActivateFile && "cursor-pointer hover:text-primary",
                         )}
                         onClick={() => {
                           if (isFolder && !searchRows) toggleExpand(node.id);
+                          else if (!isFolder) onActivateFile?.(node);
                         }}
-                        disabled={!isFolder || !!searchRows}
+                        disabled={isFolder && !!searchRows}
                       >
                         {displayName}
                       </button>
