@@ -8,6 +8,7 @@ import {
   FileText,
   GitBranch,
   History,
+  PanelLeftClose,
   Pencil,
   Plus,
   RefreshCw,
@@ -348,6 +349,7 @@ export function KnowledgeHubControlCenter({
 
   const hubRole = useMemo(() => resolveHubRole(hub, auth?.user), [hub, auth?.user]);
   const [shareOpen, setShareOpen] = useState(false);
+  const [relationshipsCollapsed, setRelationshipsCollapsed] = useState(false);
 
   // File editing is the org-level permission AND the hub role allowing uploads.
   const canEdit = canEditProp && hubRoleCan(hubRole, "sources.upload");
@@ -578,12 +580,51 @@ export function KnowledgeHubControlCenter({
       {/* ── Main layout ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left: relationships (lg+) */}
-        <div className="hidden lg:block w-56 shrink-0 overflow-y-auto border-r border-border bg-muted/10 p-4 xl:w-64">
-          <HubControlCenterRelationships
-            relationships={relationships}
-            onNavigateDocuments={() => setActiveTab("documents")}
-          />
-        </div>
+        {relationshipsCollapsed ? (
+          <aside className="hidden h-full min-h-0 w-11 shrink-0 flex-col items-center self-stretch border-r border-border bg-muted/10 py-3 lg:flex">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setRelationshipsCollapsed(false)}
+              aria-label="Expand relationships"
+            >
+              <PanelLeftClose className="size-4 rotate-180" />
+            </Button>
+            <span className="mt-4 rotate-180 text-xs font-semibold text-muted-foreground [writing-mode:vertical-rl]">
+              Relationships
+            </span>
+          </aside>
+        ) : (
+          <aside className="hidden h-full min-h-0 w-56 shrink-0 flex-col self-stretch overflow-hidden border-r border-border bg-muted/10 lg:flex xl:w-64">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Relationships
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  How this hub connects across the platform
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setRelationshipsCollapsed(true)}
+                aria-label="Collapse relationships"
+              >
+                <PanelLeftClose className="size-4" />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4">
+              <HubControlCenterRelationships
+                relationships={relationships}
+                onNavigateDocuments={() => setActiveTab("documents")}
+                hideHeading
+              />
+            </div>
+          </aside>
+        )}
 
         {/* Center: tabs */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

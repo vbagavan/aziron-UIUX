@@ -28,19 +28,21 @@ function isRelationshipItemClickable(key) {
   return key === "documents" || key === "agents" || key === "workflows";
 }
 
-export function HubControlCenterRelationships({ relationships, onNavigateDocuments, className }) {
+export function HubControlCenterRelationships({ relationships, onNavigateDocuments, className, hideHeading = false }) {
   const navigate = useNavigate();
 
   return (
     <aside className={cn("flex flex-col gap-4", className)}>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Relationships
-        </p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
-          How this hub connects across the platform
-        </p>
-      </div>
+      {!hideHeading ? (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Relationships
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            How this hub connects across the platform
+          </p>
+        </div>
+      ) : null}
 
       {RELATIONSHIP_SECTIONS.map(({ key, label, icon, route }) => {
         const Icon = icon;
