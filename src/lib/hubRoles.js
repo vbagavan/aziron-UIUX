@@ -99,9 +99,8 @@ export function hubCan(role) {
  *   1. Explicit membership for this user → that role (so a user listed at a
  *      lower role is genuinely restricted).
  *   2. Otherwise Owner. This is a single-tenant prototype where the viewing
- *      user is the workspace owner of every hub; the "View as" control is how
- *      lower roles are previewed. This also preserves the pre-feature behaviour
- *      where seed hubs were fully editable.
+ *      user is the workspace owner of every hub unless explicitly listed at a
+ *      lower membership role.
  */
 export function resolveHubRole(hub, user) {
   if (!hub) return "viewer";

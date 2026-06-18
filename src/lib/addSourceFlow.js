@@ -23,20 +23,20 @@ import {
 
 /** Ordered step keys per source type (after Step 1 "choose-type"). */
 export const FLOW_STEPS = {
-  files: ["upload", "destination"],
-  cloud: ["cloud-provider", "cloud-connect", "cloud-browse", "destination"],
-  databases: ["db-select", "db-connect", "db-data", "destination"],
-  apis: ["api-type", "api-connect", "api-objects", "destination"],
-  enterprise: ["ent-select", "ent-connect", "ent-objects", "destination"],
+  files: ["upload"],
+  cloud: ["cloud-provider", "cloud-connect", "cloud-browse"],
+  databases: ["db-select", "db-connect", "db-data"],
+  apis: ["api-type", "api-connect", "api-objects"],
+  enterprise: ["ent-select", "ent-connect", "ent-objects"],
 };
 
 /** Approximate wizard length shown on the source-type chooser. */
 export const SOURCE_TYPE_STEP_HINTS = {
-  files: "~2 steps",
-  cloud: "~4 steps",
-  databases: "~4 steps",
-  apis: "~4 steps",
-  enterprise: "~4 steps",
+  files: "~1 step",
+  cloud: "~3 steps",
+  databases: "~3 steps",
+  apis: "~3 steps",
+  enterprise: "~3 steps",
 };
 
 export const STEP_META = {
@@ -76,7 +76,6 @@ export const STEP_META = {
   "ent-sync": { title: "Sync strategy", subtitle: "When Aziron should fetch data" },
 
   // Shared tail
-  destination: { title: "Destination", subtitle: "Where should this source live?" },
 };
 
 export function getFlowSteps(type) {
@@ -91,13 +90,11 @@ export function getWizardSteps(type) {
 /**
  * Step list with optional context-aware exclusions.
  * - skipChooseType: omit "choose-type" when the caller pre-selects the source type
- * - skipDestination: omit "destination" when the target hub is already known
  */
-export function getWizardStepsForContext(type, { skipChooseType = false, skipDestination = false } = {}) {
+export function getWizardStepsForContext(type, { skipChooseType = false } = {}) {
   if (!type) return skipChooseType ? [] : ["choose-type"];
   const flowSteps = getFlowSteps(type);
-  const steps = skipChooseType ? [...flowSteps] : ["choose-type", ...flowSteps];
-  return skipDestination ? steps.filter((k) => k !== "destination") : steps;
+  return skipChooseType ? [...flowSteps] : ["choose-type", ...flowSteps];
 }
 
 /** Apply recommended defaults when express connector steps are skipped. */

@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
+const dialogOverlayVariants = {
+  default: "bg-overlay",
+  destructive: "bg-overlay-destructive",
+}
+
 function Dialog({
   ...props
 }) {
@@ -33,13 +38,15 @@ function DialogClose({
 
 function DialogOverlay({
   className,
+  variant = "default",
   ...props
 }) {
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
+        "fixed inset-0 isolate z-50 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
+        dialogOverlayVariants[variant] ?? dialogOverlayVariants.default,
         className
       )}
       {...props} />
@@ -50,11 +57,12 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  overlayVariant = "default",
   ...props
 }) {
   return (
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay variant={overlayVariant} />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(

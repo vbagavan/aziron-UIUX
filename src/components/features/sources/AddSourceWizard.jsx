@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   HUB_DIALOG_BODY_SCROLL,
   HUB_DIALOG_CONTENT_LG,
+  HUB_DIALOG_CONTENT_XL,
 } from "@/components/features/knowledge/hubDialogSizes";
+import { SourceWizardFooter } from "@/components/features/knowledge/source-intake/SourceWizardFooter";
 import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { createHubPayload } from "@/data/knowledgeHubs";
@@ -40,15 +42,11 @@ import {
   STEP_META,
 } from "@/lib/addSourceFlow";
 import {
-  loadLastSourceType,
   saveLastSourceType,
-  loadLastDestinationMode,
-  saveLastDestinationMode,
 } from "@/lib/wizardPrefs";
 import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
 import {
   ChooseSourceTypeStep,
-  DestinationStep,
   FilesUploadStep,
   ProcessingStep,
   SuccessStep,
@@ -127,14 +125,14 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     addCategorySourcesToLibrary,
   } = useKnowledgeHubs();
 
-  // Derived flags from props — stable for the lifetime of a given render
-  const skipDestination = Boolean(defaultHubId);
+  // When defaultHubId is set, sources attach to that hub; otherwise they go to Documents.
   const skipChooseType = Boolean(defaultSourceType);
 
   const [state, setState] = useState(initialState);
   const [stepIndex, setStepIndex] = useState(0);
   const [phase, setPhase] = useState("wizard"); // "wizard" | "success"
   const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState(null);
   const [result, setResult] = useState(null);
   const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
 
@@ -145,32 +143,25 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       setStepIndex(0);
       setPhase("wizard");
       setFinishing(false);
+      setFinishError(null);
       setResult(null);
       return;
     }
 
-    const lastType = loadLastSourceType();
-    const resolvedType = defaultSourceType ?? lastType ?? null;
-
-    // Only restore last destination when hub isn't pre-locked by the caller
-    const lastDestMode = !defaultHubId ? loadLastDestinationMode() : null;
-
     setState({
       ...initialState({ defaultHubId }),
-      type: resolvedType,
-      ...(lastDestMode
-        ? { destination: { mode: lastDestMode, hubId: null, newHubName: "" } }
-        : {}),
+      type: defaultSourceType ?? null,
     });
     setStepIndex(0);
     setPhase("wizard");
     setFinishing(false);
+    setFinishError(null);
     setResult(null);
   }, [open, defaultHubId, defaultSourceType]);
 
   const steps = useMemo(
-    () => getWizardStepsForContext(state.type, { skipChooseType, skipDestination }),
-    [state.type, skipChooseType, skipDestination],
+    () => getWizardStepsForContext(state.type, { skipChooseType }),
+    [state.type, skipChooseType],
   );
   const currentKey = steps[stepIndex] ?? "choose-type";
 
@@ -198,22 +189,20 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       case "ent-select": return Boolean(s.ent.app);
       case "ent-connect": return Boolean(s.ent.connected);
       case "ent-objects": return (s.ent.objectIds?.length ?? 0) > 0;
-      case "destination":
-        if (s.destination.mode === "new-hub") return Boolean(s.destination.newHubName.trim());
-        if (s.destination.mode === "existing-hub") return Boolean(s.destination.hubId);
-        return true;
       default: return true; // discovery / sync / ai / configure
     }
   }
 
   const isLastStep = stepIndex === steps.length - 1;
-  const isFinishStep = currentKey === "destination" || (skipDestination && isLastStep);
+  const isFinishStep = isLastStep;
 
   function handleBack() {
+    setFinishError(null);
     setStepIndex(Math.max(0, stepIndex - 1));
   }
 
   function handleContinue() {
+    setFinishError(null);
     if (isFinishStep) {
       finish();
       return;
@@ -226,27 +215,29 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
 
   function handleSelectSourceType(typeId) {
     saveLastSourceType(typeId);
+    setFinishError(null);
     setState((prev) => ({ ...prev, type: typeId }));
-    setStepIndex(1);
+    setStepIndex(skipChooseType ? 0 : 1);
   }
 
   async function finish() {
     setFinishing(true);
+    setFinishError(null);
     try {
       const resolvedState = applyExpressDefaults(state);
       const dest = resolvedState.destination;
-
-      if (!skipDestination) {
-        saveLastDestinationMode(dest.mode);
-      }
       const sourceName = deriveSourceName(resolvedState);
       const description = resolvedState.config.description;
       let hubId = null;
       let hubName = null;
       let recordIds = [];
 
-      if (state.type === "files") {
-        const files = resolvedState.files.items;
+      if (resolvedState.type === "files") {
+        const files = resolvedState.files.items ?? [];
+        if (files.length === 0) {
+          throw new Error("Select at least one file to upload.");
+        }
+
         if (dest.mode === "new-hub") {
           const hub = await addHub(
             createHubPayload({ name: dest.newHubName || sourceName, description, pendingFiles: files }),
@@ -256,12 +247,27 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
           recordIds = (hub.userFiles ?? []).map((f) => f.libraryDocumentId ?? f.id).filter(Boolean);
         } else if (dest.mode === "existing-hub") {
           const res = await addDocumentsToHub(dest.hubId, { files });
+          if (res?.error) throw new Error(res.error);
+          if ((res.added ?? []).length === 0) {
+            throw new Error(
+              res.skippedDuplicates > 0
+                ? "These files are already linked to this hub."
+                : "No files were added to this hub.",
+            );
+          }
           const hub = hubs.find((h) => String(h.id) === String(dest.hubId));
           hubId = dest.hubId;
           hubName = hub?.name ?? null;
           recordIds = (res.records ?? []).map((r) => r.libraryDocumentId ?? r.id).filter(Boolean);
         } else {
           const res = await addDocumentsToLibrary({ files });
+          if ((res.added ?? []).length === 0) {
+            throw new Error(
+              res.rejected > 0
+                ? `${res.rejected} file${res.rejected === 1 ? "" : "s"} exceeded the size limit.`
+                : "No files were added to your library.",
+            );
+          }
           recordIds = (res.records ?? []).map((r) => r.id).filter(Boolean);
         }
       } else {
@@ -292,6 +298,8 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       setResult(nextResult);
       setPhase("success");
       onComplete?.(nextResult);
+    } catch (error) {
+      setFinishError(error instanceof Error ? error.message : "Could not add source.");
     } finally {
       setFinishing(false);
     }
@@ -316,6 +324,19 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     window.setTimeout(() => navigate(path), 0);
   }
 
+  function handleSelectConnectedCloudAccount(connection) {
+    setFinishError(null);
+    setState((prev) => ({
+      ...prev,
+      type: "cloud",
+      cloud: { ...prev.cloud, provider: connection.provider, connected: true, selected: [] },
+    }));
+    // Jump directly to cloud-browse, skipping the cloud-connect authorization step
+    const cloudSteps = getWizardStepsForContext("cloud", { skipChooseType });
+    const browseIndex = cloudSteps.indexOf("cloud-browse");
+    setStepIndex(browseIndex >= 0 ? browseIndex : 1);
+  }
+
   function renderStep() {
     switch (currentKey) {
       case "choose-type":
@@ -333,7 +354,14 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
         return <ProcessingStep state={state} onDone={() => setStepIndex((i) => i + 1)} />;
 
       // Cloud
-      case "cloud-provider": return <CloudProviderStep state={state} update={update} />;
+      case "cloud-provider": return (
+        <CloudProviderStep
+          state={state}
+          update={update}
+          onSelectConnected={handleSelectConnectedCloudAccount}
+          onBrowseAll={() => { close(); window.setTimeout(() => navigate("/platform/marketplace"), 0); }}
+        />
+      );
       case "cloud-connect": return <CloudConnectStep state={state} update={update} />;
       case "cloud-browse": return <CloudBrowseStep state={state} update={update} />;
       case "cloud-sync": return <CloudSyncStep state={state} update={update} />;
@@ -361,9 +389,6 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
       case "ent-objects": return <EnterpriseObjectsStep state={state} update={update} />;
       case "ent-sync": return <EnterpriseSyncStep state={state} update={update} />;
 
-      // Shared tail
-      case "destination": return <DestinationStep state={state} update={update} hubs={hubs} />;
-
       default: return null;
     }
   }
@@ -374,9 +399,13 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const showBack = !isSuccess && stepIndex > 0;
   const showContinue = !isSuccess && currentKey !== "choose-type";
 
+  const showDemoBanner =
+    !isSuccess && currentKey !== "choose-type" && currentKey !== "upload";
+  const useWideDialog = !isSuccess && (currentKey === "choose-type" || currentKey === "upload");
+
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className={HUB_DIALOG_CONTENT_LG}>
+      <DialogContent className={useWideDialog ? HUB_DIALOG_CONTENT_XL : HUB_DIALOG_CONTENT_LG}>
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
           <DialogTitle>{isSuccess ? "Source successfully added" : meta.title}</DialogTitle>
           <DialogDescription>
@@ -393,12 +422,19 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
         </DialogHeader>
 
         <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
-          {!isSuccess && currentKey !== "choose-type" ? (
+          {!isSuccess && showDemoBanner ? (
             <Alert className="mb-4 py-2">
               <Info className="size-4" />
               <AlertDescription className="text-xs">
                 Demo mode — connections and discovery are simulated. No data leaves your browser.
               </AlertDescription>
+            </Alert>
+          ) : null}
+          {finishError ? (
+            <Alert variant="destructive" className="mb-4 py-2">
+              <AlertTriangle className="size-4" />
+              <AlertTitle className="text-sm">Could not add source</AlertTitle>
+              <AlertDescription className="text-xs">{finishError}</AlertDescription>
             </Alert>
           ) : null}
           {isSuccess ? (
@@ -420,7 +456,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-4">
+        <SourceWizardFooter>
           {showBack ? (
             <Button type="button" variant="ghost" onClick={handleBack} disabled={finishing}>
               <ArrowLeft data-icon="inline-start" aria-hidden />
@@ -439,7 +475,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
               {isFinishStep ? (finishing ? "Adding…" : "Add source") : "Continue"}
             </Button>
           ) : null}
-        </div>
+        </SourceWizardFooter>
       </DialogContent>
     </Dialog>
   );

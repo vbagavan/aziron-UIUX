@@ -587,7 +587,7 @@ export function createHubPayload({
     owner: { name: "You", email: "you@workspace.local", role: "Owner" },
     usedBy: 0,
     visibility: "private",
-    status: "draft",
+    status: "published",
     tags: [],
     isUserCreated: true,
     userFiles,

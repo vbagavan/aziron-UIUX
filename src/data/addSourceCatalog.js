@@ -68,9 +68,9 @@ export const CLOUD_PROVIDERS = [
   { id: "google-drive", label: "Google Drive", short: "GD", color: "#1a73e8" },
   { id: "onedrive", label: "OneDrive", short: "OD", color: "#0364b8" },
   { id: "sharepoint", label: "SharePoint", short: "SP", color: "#038387" },
+  { id: "aws-s3", label: "AWS S3", short: "S3", color: "#ff9900" },
   { id: "dropbox", label: "Dropbox", short: "DB", color: "#0061ff" },
   { id: "box", label: "Box", short: "BX", color: "#0061d5" },
-  { id: "notion", label: "Notion", short: "No", color: "#111111" },
 ];
 
 export const CLOUD_IMPORT_MODES = [

@@ -28,8 +28,12 @@ import {
   MessageSquare,
   BookOpen,
   Trash2,
+  Wand2,
+  Info,
+  StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import {
   ContentCaptureDropdown,
@@ -51,10 +55,10 @@ import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePre
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const PANEL_TABS = [
-  { id: "chapter", label: "Ask AI" },
-  { id: "studio", label: "Studio" },
-  { id: "notes", label: "Notes" },
-  { id: "details", label: "Details" },
+  { id: "chapter", label: "Ask AI", icon: MessageSquare },
+  { id: "studio", label: "Studio", icon: Wand2 },
+  { id: "notes", label: "Notes", icon: StickyNote },
+  { id: "details", label: "Details", icon: Info },
 ];
 
 const CENTER_VIEWS = [
@@ -1663,24 +1667,28 @@ function RightPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Tab toggle */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-2.5">
-        {PANEL_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
-              activeTab === id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <LinkedKnowledgeHubSection
+        record={file}
+        hubLinks={hubLinks}
+        hubs={hubs}
+        canEdit={canEdit}
+        canCreate={canCreate}
+        hubIcon={FileText}
+        variant="compact"
+        onNavigateToHub={onNavigateToHub}
+        onLinkToHub={onLinkToHub}
+        onLinkHubFileToHub={onLinkHubFileToHub}
+        onUnlinkFromHub={onUnlinkFromHub}
+        onRemoveHubFile={onRemoveHubFile}
+        onCreateHub={onCreateHub}
+      />
+      <PageUnderlineTabs
+        value={activeTab}
+        onValueChange={setTab}
+        tabs={PANEL_TABS}
+        ariaLabel="Document assistant sections"
+        className="px-3"
+      />
 
       {activeTab === "chapter" ? (
         <ChapterTab
@@ -1873,27 +1881,18 @@ export function DocumentReaderDrawer({
 
         {/* ── Center: reader + optional source preview ── */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center gap-1 border-b border-border bg-muted/10 px-4 py-2">
-            {CENTER_VIEWS.map(({ id, label, icon: ViewIcon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setCenterView(id)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                  centerView === id
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <ViewIcon className="size-3.5" />
-                {label}
-              </button>
-            ))}
+          <div className="flex shrink-0 items-end border-b border-border bg-muted/10">
+            <PageUnderlineTabs
+              value={centerView}
+              onValueChange={setCenterView}
+              tabs={CENTER_VIEWS}
+              ariaLabel="Document views"
+              className="min-w-0 flex-1 border-b-0 bg-transparent px-4"
+            />
             <button
               type="button"
               onClick={() => openMobilePanel(panelTab)}
-              className="ml-auto flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors lg:hidden"
+              className="mb-2 mr-3 flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
               title="Open assistant panel"
               aria-label="Open assistant panel"
             >

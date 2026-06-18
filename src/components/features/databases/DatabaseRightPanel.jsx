@@ -3,11 +3,14 @@ import {
   Bot,
   ChevronDown,
   Database,
+  Info,
+  MessageSquare,
   RotateCcw,
   Send,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { LinkedKnowledgeHubSection } from "@/components/features/knowledge/LinkedKnowledgeHubSection";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { getSourceLifecycleMeta } from "@/lib/sourceCategories";
@@ -16,8 +19,8 @@ import { CAPTION, SECTION_EYEBROW } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 const PANEL_TABS = [
-  { id: "ask", label: "Ask AI" },
-  { id: "details", label: "Details" },
+  { id: "ask", label: "Ask AI", icon: MessageSquare },
+  { id: "details", label: "Details", icon: Info },
 ];
 
 function ChatMessage({ message }) {
@@ -300,23 +303,13 @@ export function DatabaseRightPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-2.5">
-        {PANEL_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
-              activeTab === id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <PageUnderlineTabs
+        value={activeTab}
+        onValueChange={setTab}
+        tabs={PANEL_TABS}
+        ariaLabel="Database assistant sections"
+        className="px-3"
+      />
 
       {activeTab === "ask" ? (
         <DatabaseAskTab

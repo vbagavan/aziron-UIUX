@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
 import {
+  Activity,
+  Bookmark,
+  History,
+  LayoutDashboard,
   MessageSquare,
   Sparkles,
   Table2,
+  Terminal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
@@ -18,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { DatabaseRightPanel, DATABASE_PANEL_TABS } from "@/components/features/databases/DatabaseRightPanel";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
@@ -29,18 +35,18 @@ import { CAPTION, METRIC_VALUE, SECTION_EYEBROW } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 const MAIN_TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "discover", label: "Discover" },
-  { id: "schema", label: "Schema" },
-  { id: "usage", label: "Usage" },
-  { id: "query", label: "Query Studio" },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "discover", label: "Discover", icon: Sparkles },
+  { id: "schema", label: "Schema", icon: Table2 },
+  { id: "usage", label: "Usage", icon: Activity },
+  { id: "query", label: "Query Studio", icon: Terminal },
 ];
 
 const QUERY_MODES = [
-  { id: "sql", label: "SQL" },
-  { id: "natural", label: "Natural Language" },
-  { id: "saved", label: "Saved Queries" },
-  { id: "history", label: "History" },
+  { id: "sql", label: "SQL", icon: Terminal },
+  { id: "natural", label: "Natural Language", icon: Sparkles },
+  { id: "saved", label: "Saved Queries", icon: Bookmark },
+  { id: "history", label: "History", icon: History },
 ];
 
 function MetricCard({ label, value }) {
@@ -331,16 +337,16 @@ function QueryStudioTab({ detail }) {
 
   return (
     <div className="space-y-4">
-      <Tabs value={mode} onValueChange={setMode}>
-        <TabsList className="h-9 w-full justify-start overflow-x-auto">
-          {QUERY_MODES.map((m) => (
-            <TabsTrigger key={m.id} value={m.id} className="text-xs">
-              {m.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={mode} onValueChange={setMode} className="flex flex-col gap-0">
+        <PageUnderlineTabs
+          value={mode}
+          onValueChange={setMode}
+          tabs={QUERY_MODES}
+          ariaLabel="Query studio modes"
+          className="px-0"
+        />
 
-        <TabsContent value="natural" className="mt-4 space-y-3">
+        <TabsContent value="natural" className="mt-0 space-y-3 pt-4">
           <p className={CAPTION}>Ask in plain language — AI generates SQL.</p>
           <Textarea
             value={nlPrompt}
@@ -355,7 +361,7 @@ function QueryStudioTab({ detail }) {
           </Button>
         </TabsContent>
 
-        <TabsContent value="sql" className="mt-4 space-y-3">
+        <TabsContent value="sql" className="mt-0 space-y-3 pt-4">
           <Textarea
             value={sql}
             onChange={(e) => setSql(e.target.value)}
@@ -368,7 +374,7 @@ function QueryStudioTab({ detail }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="saved" className="mt-4 space-y-2">
+        <TabsContent value="saved" className="mt-0 space-y-2 pt-4">
           {detail.savedQueries.map((q) => (
             <button
               key={q.id}
@@ -385,7 +391,7 @@ function QueryStudioTab({ detail }) {
           ))}
         </TabsContent>
 
-        <TabsContent value="history" className="mt-4 space-y-2">
+        <TabsContent value="history" className="mt-0 space-y-2 pt-4">
           {detail.queryHistory.map((h) => (
             <button
               key={h.id}
@@ -496,22 +502,16 @@ export function DatabaseDetailView({
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-5">
-              <TabsList className="h-10 w-max min-w-0 justify-start rounded-none bg-transparent p-0">
-                {MAIN_TABS.map((tab) => (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className="rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
+          <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col gap-0">
+            <PageUnderlineTabs
+              value={mainTab}
+              onValueChange={setMainTab}
+              tabs={MAIN_TABS}
+              ariaLabel="Database sections"
+              className="px-5"
+            />
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
               <TabsContent value="overview" className="mt-0">
                 <OverviewTab detail={detail} />
               </TabsContent>

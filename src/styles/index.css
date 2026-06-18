@@ -84,6 +84,10 @@
   --opacity-90: oklch(1 0 0 / 0.1);
   --opacity-100: oklch(1 0 0 / 0);
 
+  /* Modal / sheet scrims — foreground-tinted, theme-aware */
+  --overlay: oklch(0.145 0.04 266 / 0.55);
+  --overlay-destructive: oklch(0.145 0.04 266 / 0.72);
+
   /* Elevation */
   --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.04);
   --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.06);
@@ -140,6 +144,9 @@
   --secondary-foreground: oklch(0.869 0.02 253);
   --destructive: oklch(0.577 0.215 27.3);
   --destructive-foreground: oklch(1 0 0);
+
+  --overlay: oklch(0.05 0.02 265 / 0.68);
+  --overlay-destructive: oklch(0.02 0 0 / 0.82);
 
   --sidebar: oklch(0.22 0.035 260);
   --sidebar-foreground: oklch(0.87 0.02 252);
@@ -705,6 +712,8 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-overlay-destructive: var(--overlay-destructive);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

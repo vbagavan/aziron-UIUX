@@ -40,7 +40,24 @@ export const KNOWLEDGE_TERMS = {
   uploadCompleteDescription: "Your files are ready in the document library.",
   uploadFailed: "Some uploads failed",
   uploadFailedDescription: "Retry failed files or close and try again.",
+  uploadSkippedTitle: "Already linked to this hub",
+  uploadSkippedDescription:
+    "These files are already sources in this hub. Close to continue, or pick files that are not linked yet.",
+  uploadReadyHint: "Review your selection below, then confirm to add sources to this hub.",
   uploadingSources: "Adding sources…",
+  createHubStepAddSources: "Add sources",
+  createHubStepNameHub: "Name your hub",
+  continueWithoutSources: "Continue without sources",
+  createKnowledgeHub: "Create Knowledge Hub",
+  createHubSourcesHint: "You can add more files anytime on the hub page.",
+  /** Step 2 review card — replaces "Attachment summary". */
+  sourcesIncluded: "Sources included",
+  createHubSourcesIncludedDescription:
+    "These sources will be linked to your library and this hub when you create it.",
+  createHubNameRequiredHint: "Enter a hub name to continue",
+  createHubStep2Description: "Give your hub a name. Review included sources below.",
+  createHubSourcesReadyInLibrary: "ready in library",
+  createHubCloudLinksPending: "cloud link(s) — finish saving from the hub page after create",
 };
 
 export function addSourcesDialogTitle({ hubName } = {}) {

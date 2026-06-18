@@ -502,10 +502,6 @@ function HubDetailsTab({ hubName, hubDescription, metadata, summary, linkedAgent
           <dd className="text-right font-medium text-foreground">{hubName}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-muted-foreground">Status</dt>
-          <dd className="font-medium capitalize text-foreground">{metadata?.status ?? "—"}</dd>
-        </div>
-        <div className="flex justify-between gap-2">
           <dt className="text-muted-foreground">Owner</dt>
           <dd className="font-medium text-foreground">{metadata?.owner?.name ?? "Unknown"}</dd>
         </div>

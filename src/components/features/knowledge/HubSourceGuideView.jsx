@@ -16,8 +16,15 @@ import { HubFileMetadataPanel } from "@/components/features/knowledge/HubFileMet
 import { HubKnowledgeGraph } from "@/components/features/knowledge/HubKnowledgeGraph";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { cn } from "@/lib/utils";
+
+const GUIDE_TABS = [
+  { id: "guide", label: "Guide", icon: Sparkles },
+  { id: "discover", label: "Discover", icon: Compass },
+  { id: "graph", label: "Graph", icon: Network },
+];
 
 function SectionCard({ title, icon: Icon, children, className }) {
   return (
@@ -106,23 +113,14 @@ export function HubSourceGuideView({
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-border px-4 pt-2">
-          <TabsList className="h-9 w-full justify-start gap-1 rounded-none bg-transparent p-0">
-            <TabsTrigger value="guide" className="gap-1.5 text-xs">
-              <Sparkles className="size-3.5" />
-              Guide
-            </TabsTrigger>
-            <TabsTrigger value="discover" className="gap-1.5 text-xs">
-              <Compass className="size-3.5" />
-              Discover
-            </TabsTrigger>
-            <TabsTrigger value="graph" className="gap-1.5 text-xs">
-              <Network className="size-3.5" />
-              Graph
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col gap-0">
+        <PageUnderlineTabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          tabs={GUIDE_TABS}
+          ariaLabel="Source guide sections"
+          className="px-4"
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
           <TabsContent value="guide" className="mt-0 flex flex-col gap-4 p-4">

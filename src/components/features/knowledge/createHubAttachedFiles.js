@@ -88,13 +88,15 @@ export function attachedRowsToCloudImports(rows, metasByProvider = {}) {
         connection: meta.connection ?? null,
         connectionName: meta.connectionName ?? `${label} connection`,
         authMethod: meta.authMethod,
-        selectedFiles: providerRows.map((r) => ({
-          ...r.pickerFile,
-          syncStatus: r.syncStatus,
-          localBlobId: r.localBlobId ?? null,
-          draftBlobId: r.draftBlobId ?? null,
-          syncedAt: r.syncedAt ?? null,
-        })),
+        selectedFiles: providerRows
+          .filter((r) => r.pickerFile || r.name)
+          .map((r) => ({
+            ...(r.pickerFile ?? { id: r.id, name: r.name }),
+            syncStatus: r.syncStatus,
+            localBlobId: r.localBlobId ?? null,
+            draftBlobId: r.draftBlobId ?? null,
+            syncedAt: r.syncedAt ?? null,
+          })),
       };
     })
     .filter(Boolean);
@@ -128,13 +130,15 @@ export function attachedRowsToCloudImport(rows, connectionMeta) {
     connection: connectionMeta?.connection ?? null,
     connectionName: connectionMeta?.connectionName ?? `${label} connection`,
     authMethod: connectionMeta?.authMethod,
-    selectedFiles: cloudRows.map((r) => ({
-      ...r.pickerFile,
-      syncStatus: r.syncStatus,
-      localBlobId: r.localBlobId ?? null,
-      draftBlobId: r.draftBlobId ?? null,
-      syncedAt: r.syncedAt ?? null,
-    })),
+    selectedFiles: cloudRows
+      .filter((r) => r.pickerFile || r.name)
+      .map((r) => ({
+        ...(r.pickerFile ?? { id: r.id, name: r.name }),
+        syncStatus: r.syncStatus,
+        localBlobId: r.localBlobId ?? null,
+        draftBlobId: r.draftBlobId ?? null,
+        syncedAt: r.syncedAt ?? null,
+      })),
   };
 }
 

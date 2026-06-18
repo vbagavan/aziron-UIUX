@@ -6,10 +6,13 @@
  * selections collected here drive real library records on finish.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
+  Cloud,
   Database,
+  FolderOpen,
+  LayoutGrid,
   ListTree,
   Loader2,
   Plug,
@@ -61,6 +64,9 @@ import {
   StatTile,
   WizardSection,
 } from "@/components/features/sources/wizardPrimitives";
+import { getAllUploadConnections } from "@/lib/cloudUploadConnections";
+import { cloudProviderLabel } from "@/lib/hubCloudConnections";
+import { getWizardProviderLogo } from "@/lib/wizardProviderLogos";
 
 function toggleArr(arr = [], id) {
   return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
@@ -164,20 +170,88 @@ function ScanningState({ label }) {
 
 // ═══ CLOUD STORAGE ═══════════════════════════════════════════════════════════
 
-export function CloudProviderStep({ state, update }) {
+function ConnectedCloudAccountRow({ connection, onSelect }) {
+  const logoSrc = getWizardProviderLogo(connection.provider);
   return (
-    <WizardSection title="Cloud providers" hint="Pick the storage account you'd like to import from.">
-      <ProviderGrid>
-        {CLOUD_PROVIDERS.map((p) => (
-          <ProviderTile
-            key={p.id}
-            provider={p}
-            selected={state.cloud?.provider === p.id}
-            onClick={() => update("cloud", { provider: p.id, connected: false, selected: [] })}
-          />
-        ))}
-      </ProviderGrid>
-    </WizardSection>
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-muted/40"
+    >
+      {logoSrc ? (
+        <img src={logoSrc} alt="" className="size-8 shrink-0 object-contain" draggable={false} />
+      ) : (
+        <Cloud className="size-8 shrink-0 text-muted-foreground" aria-hidden />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{connection.name}</p>
+        <p className="truncate text-[11px] text-muted-foreground">
+          {cloudProviderLabel(connection.provider)}
+          {connection.connectedBy ? ` · ${connection.connectedBy}` : ""}
+          {connection.connectedAt ? ` · ${connection.connectedAt}` : ""}
+        </p>
+      </div>
+      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
+        <FolderOpen className="size-3.5" aria-hidden />
+        Browse
+      </span>
+    </button>
+  );
+}
+
+export function CloudProviderStep({ state, update, onSelectConnected, onBrowseAll }) {
+  const connections = useMemo(() => getAllUploadConnections(), []);
+
+  return (
+    <div className="flex flex-col gap-5">
+      {connections.length > 0 ? (
+        <WizardSection
+          title="Connected accounts"
+          action={
+            <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+              {connections.length}
+            </span>
+          }
+        >
+          <div className="flex flex-col gap-2">
+            {connections.map((conn) => (
+              <ConnectedCloudAccountRow
+                key={`${conn.provider}-${conn.id ?? conn.name}`}
+                connection={conn}
+                onSelect={() => onSelectConnected?.(conn)}
+              />
+            ))}
+          </div>
+        </WizardSection>
+      ) : null}
+
+      <WizardSection title="Cloud storage" hint="Pick a provider to connect a new account.">
+        <ProviderGrid>
+          {CLOUD_PROVIDERS.map((p) => (
+            <ProviderTile
+              key={p.id}
+              provider={p}
+              selected={state.cloud?.provider === p.id}
+              onClick={() => update("cloud", { provider: p.id, connected: false, selected: [] })}
+            />
+          ))}
+        </ProviderGrid>
+      </WizardSection>
+
+      {onBrowseAll ? (
+        <button
+          type="button"
+          onClick={onBrowseAll}
+          className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-3 py-3 text-left transition-colors hover:border-primary/30 hover:bg-muted/40"
+        >
+          <LayoutGrid className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-sm font-semibold text-foreground">Browse all connectors</span>
+            <span className="text-xs text-muted-foreground">Search the full integrations catalog</span>
+          </span>
+        </button>
+      ) : null}
+    </div>
   );
 }
 

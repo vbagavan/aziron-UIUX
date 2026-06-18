@@ -5,7 +5,6 @@ import {
   BarChart3,
   Bot,
   ChevronDown,
-  Eye,
   FileText,
   GitBranch,
   History,
@@ -16,7 +15,6 @@ import {
   Trash2,
   Users,
   Wand2,
-  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,14 +24,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -88,9 +78,7 @@ import { summarizeHubAssets } from "@/data/knowledgeHubs";
 import { getSourceMetricDisplay } from "@/lib/sourceCategories";
 import { getSourceFormatLabel, SOURCE_LIST_COLUMNS, getHubSourcesSearchPlaceholder } from "@/lib/sourceListModel";
 import {
-  HUB_ROLE_META,
   hubRoleCan,
-  hubRoleLabel,
   resolveHubRole,
 } from "@/lib/hubRoles";
 import { HubStudioTab } from "@/components/features/knowledge/control-center/HubStudioTab";
@@ -108,94 +96,32 @@ const ALL_HUB_TABS = [
   { id: "timeline", label: "Timeline", icon: History },
 ];
 
-const STATUS_STYLES = {
-  draft: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30",
-  published: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30",
-  archived: "bg-muted text-muted-foreground border-border",
-};
-
-function HubSourcesOnboarding({
-  hasSources,
-  isPublished,
-  linkedAgentCount,
-  canEdit,
-  onAddSources,
-  onPublish,
-  onBrowseLibrary,
-  onViewAgents,
-}) {
-  const steps = [
-    {
-      id: "sources",
-      label: "Add sources",
-      detail: "Upload files or connect cloud storage to this hub.",
-      done: hasSources,
-      action: onAddSources,
-      actionLabel: "Add sources",
-    },
-    {
-      id: "publish",
-      label: "Activate hub",
-      detail: "Make this hub available to agents and workflows.",
-      done: isPublished,
-      action: onPublish,
-      actionLabel: "Activate hub",
-      hidden: !canEdit || isPublished,
-    },
-    {
-      id: "agents",
-      label: "Link an agent",
-      detail: "Connect an agent so it can retrieve from this hub.",
-      done: linkedAgentCount > 0,
-      action: onViewAgents,
-      actionLabel: "View agents",
-    },
-  ].filter((step) => !step.hidden);
-
-  const completed = steps.filter((step) => step.done).length;
-
+function HubSourcesEmptyState({ canEdit, onAddSources, onBrowseLibrary }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 text-left">
-      <p className="text-sm font-semibold text-foreground">Get this hub ready</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {completed} of {steps.length} steps complete
-      </p>
-      <ol className="mt-4 flex flex-col gap-3">
-        {steps.map((step, index) => (
-          <li key={step.id} className="flex gap-3">
-            <span
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                step.done
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                  : "bg-muted text-muted-foreground",
-              )}
-              aria-hidden
-            >
-              {step.done ? "✓" : index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground">{step.label}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{step.detail}</p>
-              {!step.done && step.action && canEdit ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={index === 0 ? "default" : "outline"}
-                  className="mt-2 h-8"
-                  onClick={step.action}
-                >
-                  {step.actionLabel}
-                </Button>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ol>
-      {!hasSources && onBrowseLibrary ? (
-        <Button type="button" size="sm" variant="ghost" className="mt-4 h-8" onClick={onBrowseLibrary}>
-          Browse {KNOWLEDGE_TERMS.documents} library
-        </Button>
+    <div className="flex flex-col items-center gap-4 px-6 py-4 text-center">
+      <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-muted/40">
+        <FileText className="size-5 text-muted-foreground/60" aria-hidden />
+      </div>
+      <div className="max-w-md space-y-1">
+        <p className="text-sm font-medium text-foreground">No sources in this hub yet</p>
+        <p className="text-xs text-muted-foreground">
+          Upload files or link documents from the central library.
+        </p>
+      </div>
+      {canEdit ? (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {onAddSources ? (
+            <Button type="button" size="sm" className="gap-1.5" onClick={onAddSources}>
+              <Plus data-icon="inline-start" aria-hidden />
+              Add sources
+            </Button>
+          ) : null}
+          {onBrowseLibrary ? (
+            <Button type="button" size="sm" variant="outline" onClick={onBrowseLibrary}>
+              Browse {KNOWLEDGE_TERMS.documents}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -431,7 +357,6 @@ export function KnowledgeHubControlCenter({
   onDeleteFile,
   onDownloadCloudFile,
   onEditHub,
-  onPublish,
   pendingDownloadCount = 0,
   onDownloadAllPending,
   onBrowseDocumentsLibrary,
@@ -448,21 +373,11 @@ export function KnowledgeHubControlCenter({
   const { flows } = useFlowCatalog();
   const canViewInsights = can("knowledge.insights");
 
-  // Effective per-hub role. `viewAsRole` lets Editors/Owner preview the hub as a
-  // lower role to confirm the RBAC gates without leaving their account.
-  const realHubRole = useMemo(() => resolveHubRole(hub, auth?.user), [hub, auth?.user]);
-  // Keep the preview scoped to the current hub without a reset effect: a stored
-  // hubId mismatch means we navigated away, so the preview falls back to null.
-  const [viewAs, setViewAs] = useState({ hubId: null, role: null });
-  const viewAsRole = viewAs.hubId === hub?.id ? viewAs.role : null;
-  const setViewAsRole = (role) => setViewAs({ hubId: hub?.id, role });
-  const hubRole = viewAsRole ?? realHubRole;
+  const hubRole = useMemo(() => resolveHubRole(hub, auth?.user), [hub, auth?.user]);
   const [shareOpen, setShareOpen] = useState(false);
 
   // File editing is the org-level permission AND the hub role allowing uploads.
-  // Outside a preview these are equal, so live behaviour is unchanged.
   const canEdit = canEditProp && hubRoleCan(hubRole, "sources.upload");
-  const canManageMembers = hubRoleCan(hubRole, "members.manage");
   const canShare = hubRoleCan(hubRole, "hub.share");
 
   const hubTabs = useMemo(
@@ -537,7 +452,6 @@ export function KnowledgeHubControlCenter({
 
   const assetSummary = summarizeHubAssets(hub);
   const memberCount = (hub.members ?? []).length;
-  const previewing = viewAsRole && viewAsRole !== realHubRole;
 
   const tabCounts = {
     documents: telemetry.files.length,
@@ -588,12 +502,6 @@ export function KnowledgeHubControlCenter({
                   {getHubDisplayName(hubName)}
                 </h1>
               )}
-              <Badge
-                variant="outline"
-                className={cn("capitalize", STATUS_STYLES[metadata.status] ?? STATUS_STYLES.published)}
-              >
-                {metadata.status}
-              </Badge>
             </div>
 
             {hubDescription ? (
@@ -647,9 +555,6 @@ export function KnowledgeHubControlCenter({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {canManageMembers ? (
-              <ViewAsMenu value={viewAsRole} realRole={realHubRole} onChange={setViewAsRole} />
-            ) : null}
             {canShare ? (
               <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setShareOpen(true)}>
                 <Share2 className="size-3.5" />
@@ -660,12 +565,6 @@ export function KnowledgeHubControlCenter({
               <Button type="button" size="sm" className="gap-1.5" onClick={onOpenSources}>
                 <Plus data-icon="inline-start" aria-hidden />
                 Add sources
-              </Button>
-            ) : null}
-            {canEdit && onPublish && metadata.status === "draft" ? (
-              <Button type="button" size="sm" className="gap-1.5" onClick={onPublish}>
-                <Zap data-icon="inline-start" aria-hidden />
-                Activate hub
               </Button>
             ) : null}
             {canEdit && onEditHub ? (
@@ -693,22 +592,6 @@ export function KnowledgeHubControlCenter({
           />
         </CollapsibleContent>
       </Collapsible>
-
-      {previewing ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-5 py-2 text-xs text-amber-800 dark:text-amber-300">
-          <span className="flex items-center gap-1.5">
-            <Eye className="size-3.5" />
-            Previewing this hub as a <strong>{hubRoleLabel(hubRole)}</strong>. Actions are gated to that role.
-          </span>
-          <button
-            type="button"
-            onClick={() => setViewAsRole(null)}
-            className="font-medium underline-offset-2 hover:underline"
-          >
-            Exit preview
-          </button>
-        </div>
-      ) : null}
 
       {/* ── Main layout ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -786,15 +669,10 @@ export function KnowledgeHubControlCenter({
                 {filteredDocs.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-border py-8 text-center">
                     {telemetry.files.length === 0 ? (
-                      <HubSourcesOnboarding
-                        hasSources={false}
-                        isPublished={metadata.status !== "draft"}
-                        linkedAgentCount={summary.agents}
+                      <HubSourcesEmptyState
                         canEdit={canEdit}
                         onAddSources={onOpenSources}
-                        onPublish={onPublish}
                         onBrowseLibrary={onBrowseDocumentsLibrary}
-                        onViewAgents={() => setActiveTab("agents")}
                       />
                     ) : (
                       <>
@@ -1035,38 +913,5 @@ export function KnowledgeHubControlCenter({
         onManageMembers={() => setActiveTab("members")}
       />
     </div>
-  );
-}
-
-const VIEW_AS_ROLES = ["owner", "editor", "contributor", "viewer"];
-
-/** Editor/Owner-only control to preview the hub as a lower role (RBAC check). */
-function ViewAsMenu({ value, realRole, onChange }) {
-  const active = value ?? realRole;
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button type="button" variant="outline" size="sm" className="gap-1.5" />}
-      >
-        <Eye className="size-3.5" />
-        View as: {hubRoleLabel(active)}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Preview permissions as</DropdownMenuLabel>
-          {VIEW_AS_ROLES.map((r) => (
-            <DropdownMenuItem
-              key={r}
-              onClick={() => onChange(r === realRole ? null : r)}
-            >
-              {HUB_ROLE_META[r]?.label ?? r}
-              {r === realRole ? (
-                <span className="ml-auto text-[10px] text-muted-foreground">Your role</span>
-              ) : null}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

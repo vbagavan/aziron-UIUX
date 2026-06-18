@@ -9,12 +9,12 @@ import {
   CheckCircle2,
   Database,
   Library,
-  UploadCloud,
   Workflow,
   X,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -35,6 +35,9 @@ import {
   VISIBILITY_OPTIONS,
 } from "@/data/addSourceCatalog";
 import { deriveSourceName, SOURCE_TYPE_STEP_HINTS } from "@/lib/addSourceFlow";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
+import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { LocalComputerDropZone } from "@/components/features/knowledge/source-intake/LocalComputerDropZone";
 import {
   OptionCard,
   RadioRow,
@@ -76,15 +79,8 @@ export function FilesUploadStep({ state, update, filePickerGuard = null }) {
   const inputRef = useRef(null);
   const inputId = useId();
   const [dragActive, setDragActive] = useState(false);
+  const [fileTooLarge, setFileTooLarge] = useState(false);
   const items = state.files?.items ?? [];
-
-  function openFilePicker() {
-    if (filePickerGuard) {
-      filePickerGuard.openFileInput(inputRef.current);
-      return;
-    }
-    inputRef.current?.click();
-  }
 
   function handleFileInputChange(e) {
     addFiles(e.target.files);
@@ -94,9 +90,15 @@ export function FilesUploadStep({ state, update, filePickerGuard = null }) {
   function addFiles(fileList) {
     const incoming = Array.from(fileList ?? []).filter(Boolean);
     if (!incoming.length) return;
+    const { valid, rejected } = partitionUploadFiles(incoming);
+    if (rejected.length > 0) {
+      setFileTooLarge(true);
+    }
+    if (valid.length === 0) return;
+
     const existing = new Set(items.map((f) => `${f.name}:${f.size}`));
     const merged = [...items];
-    for (const f of incoming) {
+    for (const f of valid) {
       const key = `${f.name}:${f.size}`;
       if (!existing.has(key)) {
         merged.push(f);
@@ -112,56 +114,21 @@ export function FilesUploadStep({ state, update, filePickerGuard = null }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Upload files"
-        onClick={openFilePicker}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openFilePicker();
-          }
-        }}
+      <LocalComputerDropZone
+        inputId={inputId}
+        fileInputRef={inputRef}
+        dragActive={dragActive}
+        fileTooLarge={fileTooLarge}
+        filePickerGuard={filePickerGuard}
         onDragEnter={() => setDragActive(true)}
         onDragLeave={() => setDragActive(false)}
-        onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
           setDragActive(false);
           addFiles(e.dataTransfer.files);
         }}
-        className={cn(
-          "flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-center transition-colors",
-          dragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30",
-        )}
-      >
-        <UploadCloud size={40} strokeWidth={1.5} className="text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-foreground">Drag &amp; drop files here</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">or click to browse your computer</p>
-        </div>
-        <label
-          htmlFor={inputId}
-          className={cn(buttonVariants({ size: "sm" }), "cursor-pointer")}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <UploadCloud data-icon="inline-start" aria-hidden />
-          Browse files
-        </label>
-        <input
-          id={inputId}
-          ref={inputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={
-            filePickerGuard
-              ? filePickerGuard.onFileInputChange(handleFileInputChange)
-              : handleFileInputChange
-          }
-        />
-      </div>
+        onFileChange={handleFileInputChange}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-xs font-medium text-muted-foreground">Supported formats:</span>
@@ -173,14 +140,13 @@ export function FilesUploadStep({ state, update, filePickerGuard = null }) {
       </div>
 
       {items.length > 0 ? (
-        <WizardSection title={`Selected files (${items.length})`}>
+        <WizardSection title={`${KNOWLEDGE_TERMS.selectedSources} (${items.length})`}>
           <ul className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
             {items.map((file, i) => (
               <li
                 key={`${file.name}-${i}`}
                 className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2"
               >
-                <UploadCloud className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{file.name}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">{formatSize(file.size)}</span>
                 <Button

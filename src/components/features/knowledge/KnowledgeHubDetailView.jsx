@@ -247,11 +247,6 @@ export function KnowledgeHubDetailView({
     onSave?.({ name: name.trim(), description: description.trim() });
   }
 
-  function handlePublish() {
-    updateHub(liveHub.id, { status: "published" });
-    onFilesAdded?.([], "published");
-  }
-
   function openHubSource(source) {
     if (!source) return;
     const file = allFiles.find((f) => f.id === source.id) ?? source;
@@ -417,7 +412,6 @@ export function KnowledgeHubDetailView({
           onDeleteFile={canEdit ? setFileToDelete : undefined}
           onDownloadCloudFile={handleDownloadCloudFile}
           onEditHub={canEdit ? () => setSettingsOpen(true) : undefined}
-          onPublish={canEdit ? handlePublish : undefined}
           pendingDownloadCount={pendingDownloadRows.length}
           onDownloadAllPending={pendingDownloadRows.length > 0 ? handleDownloadAllLinked : undefined}
           onBrowseDocumentsLibrary={() => browseDocumentsLibrary(liveHub.id)}
@@ -442,8 +436,15 @@ export function KnowledgeHubDetailView({
           initialBrowseConnection={uploadBrowseConnection}
           excludeExternalIds={cloudPickerExcludeExternalIds}
           excludeNames={cloudPickerExcludeNames}
-          onUpload={(payload) => addDocumentsToHub(liveHub.id, payload)}
+          onUpload={(payload) => addDocumentsToHub(liveHub?.id, payload)}
           onUploadComplete={(result) => {
+            if (result?.allSkipped) {
+              onNotify?.({
+                title: "Already linked",
+                description: "Those files are already sources in this hub. Pick new files or close to continue.",
+              });
+              return;
+            }
             if (result?.hasError && !result?.success) {
               handleUploadError();
               return;

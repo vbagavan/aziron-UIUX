@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
+  LayoutDashboard,
   MessageSquare,
   Play,
+  Route,
+  Settings2,
   Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { ApiRightPanel, API_PANEL_TABS } from "@/components/features/apis/ApiRightPanel";
 import { SourceBadge } from "@/components/features/knowledge/SourceBadge";
 import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
@@ -21,12 +26,12 @@ import { CAPTION, METRIC_VALUE, SECTION_EYEBROW } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 const MAIN_TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "discover", label: "Discover" },
-  { id: "endpoints", label: "Endpoints" },
-  { id: "usage", label: "Usage" },
-  { id: "playground", label: "Playground" },
-  { id: "operations", label: "Operations" },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "discover", label: "Discover", icon: Sparkles },
+  { id: "endpoints", label: "Endpoints", icon: Route },
+  { id: "usage", label: "Usage", icon: Activity },
+  { id: "playground", label: "Playground", icon: Play },
+  { id: "operations", label: "Operations", icon: Settings2 },
 ];
 
 const METHOD_STYLES = {
@@ -566,22 +571,16 @@ export function ApiDetailView({
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-5">
-              <TabsList className="h-10 w-max min-w-0 justify-start rounded-none bg-transparent p-0">
-                {MAIN_TABS.map((tab) => (
-                  <TabsTrigger
-                    key={tab.id}
-                    value={tab.id}
-                    className="rounded-none border-b-2 border-transparent px-3 data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                  >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
+          <Tabs value={mainTab} onValueChange={setMainTab} className="flex min-h-0 flex-1 flex-col gap-0">
+            <PageUnderlineTabs
+              value={mainTab}
+              onValueChange={setMainTab}
+              tabs={MAIN_TABS}
+              ariaLabel="API sections"
+              className="px-5"
+            />
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
               <TabsContent value="overview" className="mt-0">
                 <OverviewTab detail={detail} />
               </TabsContent>

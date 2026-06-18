@@ -24,7 +24,11 @@ export function ConfirmDialog({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent showCloseButton={false} className="gap-0 overflow-hidden p-0 sm:max-w-[340px]">
+      <DialogContent
+        showCloseButton={false}
+        overlayVariant={confirmVariant === "destructive" ? "destructive" : "default"}
+        className="gap-0 overflow-hidden p-0 sm:max-w-[340px]"
+      >
         <DialogHeader className="flex flex-col items-center gap-3 border-b-0 px-6 pt-6 pb-0 text-center">
           <div className="flex size-14 items-center justify-center rounded-full bg-muted">
             <div className="flex size-9 items-center justify-center rounded-full bg-destructive text-destructive-foreground">

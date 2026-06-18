@@ -8,6 +8,7 @@ import {
 export function HubSourceUploadRow({ upload, onCancel, onRetry }) {
   const isError = upload.status === "error";
   const isDone = upload.status === "done";
+  const isSkipped = upload.status === "skipped";
 
   return (
     <li>
@@ -34,12 +35,14 @@ export function HubSourceUploadRow({ upload, onCancel, onRetry }) {
               </div>
               <p className="text-[10px] tabular-nums text-muted-foreground">
                 {isError
-                  ? "Upload failed."
-                  : isDone
-                    ? "Added"
-                    : upload.isCloudBatch
-                      ? "Importing from cloud…"
-                      : `${formatUploadBytes(upload.loaded)} of ${formatUploadBytes(upload.total)}`}
+                  ? upload.errorMessage ?? "Upload failed."
+                  : isSkipped
+                    ? "Already in this hub."
+                    : isDone
+                      ? "Added"
+                      : upload.isCloudBatch
+                        ? "Importing from cloud…"
+                        : `${formatUploadBytes(upload.loaded)} of ${formatUploadBytes(upload.total)}`}
               </p>
             </div>
           </div>

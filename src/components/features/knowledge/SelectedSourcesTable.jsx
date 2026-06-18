@@ -1,5 +1,10 @@
-import { X } from "lucide-react";
+import { X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -26,6 +31,7 @@ export function SelectedSourcesTable({
   className,
   compact = false,
   maxHeightClass = "max-h-48",
+  showHeader = true,
 }) {
   if (!attachedFiles?.length) return null;
 
@@ -35,17 +41,19 @@ export function SelectedSourcesTable({
 
   return (
     <div className={cn("overflow-hidden rounded-xl border border-border bg-muted/20", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-        <p className="text-xs font-semibold text-foreground">
-          {KNOWLEDGE_TERMS.selectedSources}
-          <span className="ml-1.5 font-normal text-muted-foreground">
-            ({attachedFiles.length} total
-            {localCount > 0 ? ` · ${localCount} local` : ""}
-            {cloudCount > 0 ? ` · ${cloudCount} cloud` : ""}
-            {` · ${totalSizeMb} MB`})
-          </span>
-        </p>
-      </div>
+      {showHeader ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+          <p className="text-xs font-semibold text-foreground">
+            {KNOWLEDGE_TERMS.selectedSources}
+            <span className="ml-1.5 font-normal text-muted-foreground">
+              ({attachedFiles.length} total
+              {localCount > 0 ? ` · ${localCount} local` : ""}
+              {cloudCount > 0 ? ` · ${cloudCount} cloud` : ""}
+              {` · ${totalSizeMb} MB`})
+            </span>
+          </p>
+        </div>
+      ) : null}
 
       <div className={cn("overflow-y-auto", maxHeightClass)}>
         <Table>
@@ -105,5 +113,46 @@ export function SelectedSourcesTable({
         </Table>
       </div>
     </div>
+  );
+}
+
+export function SelectedSourcesCollapsible({
+  attachedFiles,
+  onRemove,
+  open,
+  onOpenChange,
+}) {
+  if (!attachedFiles?.length) return null;
+
+  const count = attachedFiles.length;
+  const totalSizeMb = totalAttachedSizeMb(attachedFiles);
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={onOpenChange}
+      className="shrink-0 border-t border-border bg-muted/10"
+    >
+      <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 px-6 py-3 text-left transition-colors hover:bg-muted/20">
+        <span className="text-sm font-medium text-foreground">
+          {count} source{count === 1 ? "" : "s"} selected
+          <span className="ml-1.5 font-normal text-muted-foreground">· {totalSizeMb} MB</span>
+        </span>
+        <ChevronDown
+          className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-6 pb-4">
+        <SelectedSourcesTable
+          attachedFiles={attachedFiles}
+          onRemove={onRemove}
+          compact
+          showHeader={false}
+          maxHeightClass="max-h-40"
+          className="border-0 bg-transparent"
+        />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

@@ -11,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { normalizeSourceUsage } from "@/lib/sourceUsageModel";
 import { mergeSourceUsage } from "@/lib/sourceListModel";
 
@@ -59,20 +60,12 @@ export function SourceUsageTab({ usage, hubLinks = [] }) {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col gap-0">
-      <div className="shrink-0 overflow-x-auto border-b border-border">
-        <TabsList className="h-10 w-max min-w-full justify-start rounded-none bg-transparent p-0">
-          {USAGE_TABS.map(({ id, label, icon: Icon }) => (
-            <TabsTrigger
-              key={id}
-              value={id}
-              className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-            >
-              <Icon className="size-3.5" aria-hidden />
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+      <PageUnderlineTabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        tabs={USAGE_TABS}
+        ariaLabel="Source usage sections"
+      />
 
       <TabsContent value="hubs" className="mt-0 min-h-0 flex-1 pt-4">
         {hubs.length === 0 ? (

@@ -3,27 +3,84 @@ import { createPendingUploadEntry } from "@/components/features/knowledge/hubUpl
 
 const MIN_UPLOAD_MS = 700;
 
-function tickProgress(entry, start, updateItem, cancelledRef) {
-  return new Promise((resolve) => {
-    const step = () => {
-      if (cancelledRef.current.has(entry.id)) {
-        resolve();
-        return;
-      }
-      const elapsed = Date.now() - start;
-      const simulated = Math.min(92, (elapsed / MIN_UPLOAD_MS) * 92);
-      updateItem(entry.id, {
-        loaded: Math.round(entry.total * (simulated / 100)),
-        progress: simulated,
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function applyBatchItemStatus(updateItem, batchItems, status, { errorMessage } = {}) {
+  for (const item of batchItems) {
+    if (status === "error") {
+      updateItem(item.id, {
+        status: "error",
+        progress: 0,
+        loaded: 0,
+        ...(errorMessage ? { errorMessage } : {}),
       });
-      if (simulated < 92) {
-        window.setTimeout(step, 50);
-      } else {
-        resolve();
-      }
-    };
-    step();
-  });
+      continue;
+    }
+
+    if (status === "skipped") {
+      updateItem(item.id, {
+        status: "skipped",
+        progress: 100,
+        loaded: item.isCloudBatch ? item.total : item.total,
+      });
+      continue;
+    }
+
+    updateItem(item.id, {
+      status: "done",
+      progress: 100,
+      loaded: item.total,
+    });
+  }
+}
+
+async function simulateBatchProgress(batchItems, updateItem, cancelledRef) {
+  const start = Date.now();
+
+  while (Date.now() - start < MIN_UPLOAD_MS) {
+    if (batchItems.every((item) => cancelledRef.current.has(item.id))) return;
+
+    const elapsed = Date.now() - start;
+    const ratio = Math.min(1, elapsed / MIN_UPLOAD_MS);
+    const progress = Math.min(92, Math.round(ratio * 92));
+
+    for (const item of batchItems) {
+      if (cancelledRef.current.has(item.id)) continue;
+      updateItem(item.id, {
+        status: "uploading",
+        progress,
+        loaded: item.isCloudBatch ? 0 : Math.round((item.total ?? 0) * (progress / 100)),
+      });
+    }
+
+    await sleep(50);
+  }
+}
+
+function buildFinalResult(uploadResult, skippedLocal = 0) {
+  const added = uploadResult?.added ?? [];
+  const records = uploadResult?.records ?? [];
+  const rejected = (uploadResult?.rejected ?? 0) + (skippedLocal ?? 0);
+  const skippedDuplicates = uploadResult?.skippedDuplicates ?? 0;
+  const allSkipped = Boolean(uploadResult?.allSkipped);
+  const hasError = Boolean(uploadResult?.error) || (added.length === 0 && !allSkipped);
+  const partial =
+    added.length > 0 && skippedDuplicates > 0 && !hasError && !allSkipped;
+
+  return {
+    added,
+    records,
+    rejected,
+    skippedLocal,
+    skippedDuplicates,
+    allSkipped,
+    partial,
+    hasError,
+    success: added.length > 0 || allSkipped,
+    errorMessage: uploadResult?.error ?? null,
+  };
 }
 
 export function useSourceUploadProgress({ onUpload }) {
@@ -31,6 +88,7 @@ export function useSourceUploadProgress({ onUpload }) {
   const [items, setItems] = useState([]);
   const [result, setResult] = useState(null);
   const cancelledRef = useRef(new Set());
+  const lastPayloadRef = useRef(null);
 
   const updateItem = useCallback((id, patch) => {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
@@ -38,80 +96,17 @@ export function useSourceUploadProgress({ onUpload }) {
 
   const reset = useCallback(() => {
     cancelledRef.current.clear();
+    lastPayloadRef.current = null;
     setPhase("idle");
     setItems([]);
     setResult(null);
   }, []);
 
-  const uploadLocalFile = useCallback(
-    async (entry) => {
-      const start = Date.now();
-      await tickProgress(entry, start, updateItem, cancelledRef);
-
-      try {
-        if (cancelledRef.current.has(entry.id)) return null;
-        const uploadResult = await onUpload?.({
-          files: [entry.file],
-          cloudImports: [],
-          skippedLocal: 0,
-        });
-
-        const remaining = Math.max(0, MIN_UPLOAD_MS - (Date.now() - start));
-        if (remaining > 0) {
-          await new Promise((resolve) => window.setTimeout(resolve, remaining));
-        }
-
-        if (cancelledRef.current.has(entry.id)) return null;
-
-        updateItem(entry.id, { loaded: entry.total, progress: 100, status: "done" });
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
-        return uploadResult;
-      } catch {
-        updateItem(entry.id, { status: "error", progress: 0, loaded: 0 });
-        return null;
-      }
-    },
-    [onUpload, updateItem],
-  );
-
-  const uploadCloudBatch = useCallback(
-    async (entry, cloudImports) => {
-      const start = Date.now();
-      updateItem(entry.id, { status: "uploading", progress: 8, loaded: 0 });
-
-      try {
-        if (cancelledRef.current.has(entry.id)) return null;
-
-        const interval = window.setInterval(() => {
-          if (cancelledRef.current.has(entry.id)) return;
-          const elapsed = Date.now() - start;
-          const simulated = Math.min(90, 8 + (elapsed / MIN_UPLOAD_MS) * 82);
-          updateItem(entry.id, { progress: simulated });
-        }, 50);
-
-        const uploadResult = await onUpload?.({
-          files: [],
-          cloudImports,
-          skippedLocal: 0,
-        });
-
-        window.clearInterval(interval);
-
-        if (cancelledRef.current.has(entry.id)) return null;
-
-        updateItem(entry.id, { progress: 100, status: "done" });
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
-        return uploadResult;
-      } catch {
-        updateItem(entry.id, { status: "error", progress: 0 });
-        return null;
-      }
-    },
-    [onUpload, updateItem],
-  );
-
   const runUpload = useCallback(
     async ({ files = [], cloudImports = [], skippedLocal = 0 } = {}) => {
+      const payload = { files, cloudImports, skippedLocal };
+      lastPayloadRef.current = payload;
+
       cancelledRef.current.clear();
       setPhase("uploading");
       setResult(null);
@@ -136,80 +131,83 @@ export function useSourceUploadProgress({ onUpload }) {
         });
       }
 
+      if (batchItems.length === 0) {
+        const emptyResult = {
+          added: [],
+          records: [],
+          rejected: skippedLocal ?? 0,
+          skippedLocal,
+          skippedDuplicates: 0,
+          allSkipped: false,
+          partial: false,
+          hasError: false,
+          success: false,
+          errorMessage: null,
+        };
+        setItems([]);
+        setResult(emptyResult);
+        setPhase("done");
+        return emptyResult;
+      }
+
       setItems(batchItems);
 
-      const uploadResults = [];
-      for (const entry of localEntries) {
-        const uploadResult = await uploadLocalFile(entry);
-        if (uploadResult) uploadResults.push(uploadResult);
+      const progressTask = simulateBatchProgress(batchItems, updateItem, cancelledRef);
+
+      try {
+        const uploadResult = await onUpload?.(payload);
+        await progressTask;
+
+        if (uploadResult?.error) {
+          applyBatchItemStatus(updateItem, batchItems, "error", {
+            errorMessage: uploadResult.error,
+          });
+        } else if (uploadResult?.allSkipped) {
+          applyBatchItemStatus(updateItem, batchItems, "skipped");
+        } else if ((uploadResult?.added ?? []).length === 0) {
+          applyBatchItemStatus(updateItem, batchItems, "error", {
+            errorMessage: "No files were added.",
+          });
+        } else {
+          applyBatchItemStatus(updateItem, batchItems, "done");
+        }
+
+        await sleep(120);
+
+        const finalResult = buildFinalResult(uploadResult, skippedLocal);
+        setResult(finalResult);
+        setPhase(finalResult.hasError && finalResult.added.length === 0 ? "error" : "done");
+        return finalResult;
+      } catch (error) {
+        await progressTask;
+        applyBatchItemStatus(updateItem, batchItems, "error", {
+          errorMessage: error instanceof Error ? error.message : "Upload failed",
+        });
+
+        const finalResult = {
+          added: [],
+          records: [],
+          rejected: skippedLocal ?? 0,
+          skippedLocal,
+          skippedDuplicates: 0,
+          allSkipped: false,
+          partial: false,
+          hasError: true,
+          success: false,
+          errorMessage: error instanceof Error ? error.message : "Upload failed",
+        };
+        setResult(finalResult);
+        setPhase("error");
+        return finalResult;
       }
-
-      const cloudEntry = batchItems.find((item) => item.isCloudBatch);
-      if (cloudEntry) {
-        const cloudResult = await uploadCloudBatch(cloudEntry, cloudImports);
-        if (cloudResult) uploadResults.push(cloudResult);
-      }
-
-      const added = uploadResults.flatMap((r) => r?.added ?? []);
-      const records = uploadResults.flatMap((r) => r?.records ?? []);
-      const rejected =
-        uploadResults.reduce((sum, r) => sum + (r?.rejected ?? 0), 0) + (skippedLocal ?? 0);
-      const hasError = batchItems.some((item) => item.status === "error");
-
-      const finalResult = {
-        added,
-        records,
-        rejected,
-        skippedLocal,
-        hasError,
-        success: added.length > 0,
-      };
-
-      setResult(finalResult);
-      setPhase(hasError && added.length === 0 ? "error" : "done");
-      return finalResult;
     },
-    [uploadCloudBatch, uploadLocalFile],
+    [onUpload, updateItem],
   );
 
   const retryFailed = useCallback(async () => {
-    const failedLocals = items.filter((item) => item.status === "error" && item.file);
-    const failedCloud = items.find((item) => item.status === "error" && item.isCloudBatch);
-
-    if (failedLocals.length === 0 && !failedCloud) return null;
-
-    setPhase("uploading");
-
-    const uploadResults = [];
-    for (const entry of failedLocals) {
-      updateItem(entry.id, { status: "uploading", progress: 0, loaded: 0 });
-      const uploadResult = await uploadLocalFile(entry);
-      if (uploadResult) uploadResults.push(uploadResult);
-    }
-
-    if (failedCloud) {
-      updateItem(failedCloud.id, { status: "uploading", progress: 0, loaded: 0 });
-      const cloudResult = await uploadCloudBatch(failedCloud, failedCloud.cloudImports);
-      if (cloudResult) uploadResults.push(cloudResult);
-    }
-
-    const added = [...(result?.added ?? []), ...uploadResults.flatMap((r) => r?.added ?? [])];
-    const records = [...(result?.records ?? []), ...uploadResults.flatMap((r) => r?.records ?? [])];
-    const stillFailed = items.some((item) => item.status === "error");
-
-    const finalResult = {
-      added,
-      records,
-      rejected: result?.rejected ?? 0,
-      skippedLocal: result?.skippedLocal ?? 0,
-      hasError: stillFailed,
-      success: added.length > 0,
-    };
-
-    setResult(finalResult);
-    setPhase(stillFailed && added.length === 0 ? "error" : "done");
-    return finalResult;
-  }, [items, result, updateItem, uploadCloudBatch, uploadLocalFile]);
+    if (!lastPayloadRef.current) return null;
+    return runUpload(lastPayloadRef.current);
+  }, [runUpload]);
 
   return {
     phase,

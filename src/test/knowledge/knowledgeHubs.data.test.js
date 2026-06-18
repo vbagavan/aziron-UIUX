@@ -431,7 +431,7 @@ describe('createHubPayload', () => {
     expect(hub.name).toBe('My Hub');
     expect(hub.description).toBe('Test hub');
     expect(hub.isUserCreated).toBe(true);
-    expect(hub.status).toBe('draft');
+    expect(hub.status).toBe('published');
     expect(hub.visibility).toBe('private');
     expect(hub.members).toHaveLength(1);
     expect(hub.members[0].role).toBe('owner');

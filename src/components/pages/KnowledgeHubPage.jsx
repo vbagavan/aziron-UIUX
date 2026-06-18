@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Bot,
@@ -75,7 +75,7 @@ import {
 
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { TOOLBAR_CONTROL_CLASS, PAGINATION_CONTROL_CLASS } from "@/lib/listToolbar";
-import { getHubDisplayName, isHubDraft } from "@/lib/hubDisplay";
+import { getHubDisplayName } from "@/lib/hubDisplay";
 
 const HUB_LIST_PAGE_SIZE = 20;
 const HUB_VIEW_KEY = "knowledge_hubs_view_mode";
@@ -174,17 +174,33 @@ const HUB_TAG_COLORS = [
   "bg-rose-500/10 text-rose-700 dark:text-rose-300",
 ];
 
-function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
+function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete, selectedRows, onToggleRow }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {hubs.map((hub, i) => {
         const accent = HUB_TAG_COLORS[i % HUB_TAG_COLORS.length];
         const displayName = getHubDisplayName(hub);
+        const isSelected = selectedRows?.has(hub.id) ?? false;
         return (
           <div
             key={hub.id}
-            className="group relative rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
+            className={cn(
+              "group relative rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md",
+              isSelected && "border-primary/40 bg-primary/5",
+            )}
           >
+            {onToggleRow && (
+              <div className="absolute left-3 top-3 z-10">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleRow(hub.id)}
+                  aria-label={`Select ${displayName}`}
+                  className="size-4 cursor-pointer rounded border-border accent-primary"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
             <div
               role="button"
               tabIndex={0}
@@ -195,16 +211,16 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
                   onOpenHub(hub.id);
                 }
               }}
-              className="flex cursor-pointer flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card rounded-xl"
+              className={cn(
+                "flex cursor-pointer flex-col p-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card rounded-xl",
+                onToggleRow && "pl-10",
+              )}
             >
               <div className={cn("mb-3 flex size-10 items-center justify-center rounded-lg", accent)}>
                 <Database className="size-5" aria-hidden />
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
-                {isHubDraft(hub) && (
-                  <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
-                )}
               </div>
               {hub.description && (
                 <p className="mt-1 line-clamp-2 text-xs text-muted-foreground" title={hub.description}>{hub.description}</p>
@@ -226,7 +242,7 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
                 type="button"
                 aria-label={`Delete ${displayName}`}
                 onClick={() => onDeleteRequest(hub)}
-                className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-60 transition-all hover:bg-muted hover:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
+                className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground opacity-100 transition-all hover:bg-muted md:opacity-60 md:group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -238,7 +254,7 @@ function HubCardGrid({ hubs, onOpenHub, onDeleteRequest, canDelete }) {
   );
 }
 
-function EmptyState({ onQuickCreate, onFullCreate, onBrowseDocuments }) {
+function EmptyState({ onCreate, onBrowseDocuments }) {
   return (
     <div className="flex min-h-[400px] flex-1 flex-col items-center justify-center gap-3 py-16">
       <svg width="130" height="123" viewBox="0 0 130 123" fill="none" aria-hidden="true">
@@ -259,8 +275,8 @@ function EmptyState({ onQuickCreate, onFullCreate, onBrowseDocuments }) {
         and workflows. Or upload to {KNOWLEDGE_TERMS.documents.toLowerCase()} and link later.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {onQuickCreate ? (
-          <Button size="sm" onClick={onQuickCreate} className="gap-1.5">
+        {onCreate ? (
+          <Button size="sm" onClick={onCreate} className="gap-1.5">
             <Plus size={16} />
             Create {KNOWLEDGE_TERMS.hubSingular.toLowerCase()}
           </Button>
@@ -269,11 +285,6 @@ function EmptyState({ onQuickCreate, onFullCreate, onBrowseDocuments }) {
             You have view-only access to {KNOWLEDGE_TERMS.hubs.toLowerCase()}.
           </p>
         )}
-        {onFullCreate ? (
-          <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onFullCreate}>
-            Create with sources
-          </Button>
-        ) : null}
         {onBrowseDocuments ? (
           <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={onBrowseDocuments}>
             Go to {KNOWLEDGE_TERMS.documents}
@@ -338,9 +349,6 @@ function HubTable({
               <TableCell>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="font-medium text-foreground">{getHubDisplayName(hub)}</span>
-                  {isHubDraft(hub) && (
-                    <Badge variant="outline" className="shrink-0 border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">Draft</Badge>
-                  )}
                 </div>
                 {hub.description && (
                   <p
@@ -443,8 +451,8 @@ export default function KnowledgeHubPage({
   const { toasts, showToast, dismissToast } = useToast();
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMode, setCreateMode] = useState("full");
   const [listSearch, setListSearch] = useState("");
+  const searchInputRef = useRef(null);
   const [sortBy, setSortBy] = useState("newest");
   const [listPage, setListPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState(new Set());
@@ -468,13 +476,7 @@ export default function KnowledgeHubPage({
     }
   }, [viewMode]);
 
-  function openQuickCreate() {
-    setCreateMode("quick");
-    setCreateOpen(true);
-  }
-
-  function openFullCreate() {
-    setCreateMode("full");
+  function openCreate() {
     setCreateOpen(true);
   }
 
@@ -584,10 +586,6 @@ export default function KnowledgeHubPage({
   }
 
   function handleFilesAdded(names, provider, { skipped = 0 } = {}) {
-    if (provider === "published") {
-      showToast("Knowledge Hub published and available to agents and workflows.");
-      return;
-    }
     if (!names?.length) return;
     const label =
       provider === "google-drive"
@@ -625,8 +623,8 @@ export default function KnowledgeHubPage({
         : "";
     showToast(
       totalFiles > 0
-        ? `Knowledge Hub “${hub.name}” created with ${totalFiles} file${totalFiles === 1 ? "" : "s"}${cloudNote}.`
-        : `Knowledge Hub “${hub.name}” created.`,
+        ? `Knowledge Hub "${hub.name}" created with ${totalFiles} file${totalFiles === 1 ? "" : "s"}${cloudNote}.`
+        : `Knowledge Hub "${hub.name}" created.`,
     );
     navigate(`/knowledge/${hub.id}`);
   }
@@ -693,7 +691,7 @@ export default function KnowledgeHubPage({
       const hub = confirmDelete.hub;
       deleteHub(hub.id);
       detachHubFromAgents([hub.id]);
-      showToast(`Knowledge Hub “${hub.name}” deleted.`);
+      showToast(`Knowledge Hub "${hub.name}" deleted.`);
       if (hubId && String(hub.id) === String(hubId)) navigate("/knowledge");
     } else {
       const ids = confirmDelete.hubs.map((h) => h.id);
@@ -724,8 +722,8 @@ export default function KnowledgeHubPage({
     const used = countAgentsUsingHub(hub.id, agents);
     const linked = agentsUsingHub(hub.id, agents).map((a) => a.name);
     return used > 0
-      ? `Delete “${hub.name}”? It is used by ${used} agent${used === 1 ? "" : "s"} (${linked.join(", ")}). Detach from agents first or proceed.`
-      : `Delete “${hub.name}”? This cannot be undone.`;
+      ? `Delete "${hub.name}"? It is used by ${used} agent${used === 1 ? "" : "s"} (${linked.join(", ")}). Detach from agents first or proceed.`
+      : `Delete "${hub.name}"? This cannot be undone.`;
   }
 
   if (hubId && !detailHub) {
@@ -765,21 +763,21 @@ export default function KnowledgeHubPage({
                 onSave={(patch) => {
                   updateHub(detailHub.id, patch);
                   setDetailDraft({ name: patch.name, detailsDirty: false });
-                  showToast(`Knowledge Hub “${patch.name}” updated.`);
+                  showToast(`Knowledge Hub "${patch.name}" updated.`);
                 }}
                 onDelete={() => requestDelete(detailHub)}
                 onFilesAdded={handleFilesAdded}
                 onFileDeleted={(name) =>
-                  showToast(`“${name}” removed from hub.`)
+                  showToast(`"${name}" removed from hub.`)
                 }
                 onCloudFileSynced={(name) =>
-                  showToast(`“${name}” downloaded and stored in this knowledge base.`)
+                  showToast(`"${name}" downloaded and stored in this knowledge base.`)
                 }
                 onCloudFileSyncFailed={(name, error) =>
                   showToast(
                     error
-                      ? `Could not download “${name}”: ${error}`
-                      : `Could not download “${name}”.`,
+                      ? `Could not download "${name}": ${error}`
+                      : `Could not download "${name}".`,
                     { variant: "destructive" },
                   )
                 }
@@ -797,14 +795,24 @@ export default function KnowledgeHubPage({
                   title="Knowledge Hubs"
                   description="Manage every knowledge hub in your workspace — document stores your agents use for retrieval."
                 >
+                    {canCreate && (
+                      <Button
+                        onClick={openCreate}
+                        className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
+                      >
+                        <Plus size={16} />
+                        Create {KNOWLEDGE_TERMS.hubSingular.toLowerCase()}
+                      </Button>
+                    )}
                     {!isEmpty && (
-                      <>
-                        <div className="relative h-8 w-[220px]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative h-8 w-[180px] sm:w-[220px]">
                           <Search
                             className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
                             aria-hidden
                           />
                           <Input
+                            ref={searchInputRef}
                             value={listSearch}
                             onChange={(e) => setListSearch(e.target.value)}
                             placeholder="Search hubs…"
@@ -819,7 +827,7 @@ export default function KnowledgeHubPage({
                               type="button"
                               variant="ghost"
                               size="icon-xs"
-                              onClick={() => setListSearch("")}
+                              onClick={() => { setListSearch(""); searchInputRef.current?.focus(); }}
                               aria-label="Clear search"
                               className="absolute right-0.5 top-1/2 size-7 -translate-y-1/2 text-muted-foreground"
                             >
@@ -829,8 +837,8 @@ export default function KnowledgeHubPage({
                         </div>
                         <Select value={sortBy} onValueChange={setSortBy}>
                           <SelectTrigger
-                            className={cn(TOOLBAR_CONTROL_CLASS, "w-[180px] py-0")}
-                            aria-label="Sort Knowledge Hubs"
+                            className={cn(TOOLBAR_CONTROL_CLASS, "w-[140px] py-0 sm:w-[180px]")}
+                            aria-label={`Sort Knowledge Hubs, currently: ${SORT_OPTIONS.find((o) => o.id === sortBy)?.label ?? sortBy}`}
                           >
                             <SelectValue placeholder="Sort by" />
                           </SelectTrigger>
@@ -842,12 +850,12 @@ export default function KnowledgeHubPage({
                             ))}
                           </SelectContent>
                         </Select>
-                        <div className={cn("flex items-center rounded-lg border border-border/60 bg-background p-0.5", TOOLBAR_CONTROL_CLASS)}>
+                        <div className={cn("hidden sm:flex items-center rounded-lg border border-border/60 bg-background p-0.5", TOOLBAR_CONTROL_CLASS)}>
                           <Button
                             type="button"
                             variant={viewMode === "table" ? "secondary" : "ghost"}
                             size="icon-sm"
-                            aria-label="Table view"
+                            aria-label={viewMode === "table" ? "Currently in table view" : "Switch to table view"}
                             aria-pressed={viewMode === "table"}
                             onClick={() => setViewMode("table")}
                           >
@@ -857,33 +865,14 @@ export default function KnowledgeHubPage({
                             type="button"
                             variant={viewMode === "grid" ? "secondary" : "ghost"}
                             size="icon-sm"
-                            aria-label="Grid view"
+                            aria-label={viewMode === "grid" ? "Currently in grid view" : "Switch to grid view"}
                             aria-pressed={viewMode === "grid"}
                             onClick={() => setViewMode("grid")}
                           >
                             <Grid2x2 className="size-3.5" aria-hidden />
                           </Button>
                         </div>
-                      </>
-                    )}
-                    {canCreate && (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={openFullCreate}
-                          className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
-                        >
-                          Create with sources
-                        </Button>
-                        <Button
-                          onClick={openQuickCreate}
-                          className="h-8 shrink-0 gap-1.5 px-3 text-sm font-semibold leading-none"
-                        >
-                          <Plus size={16} />
-                          Create {KNOWLEDGE_TERMS.hubSingular.toLowerCase()}
-                        </Button>
-                      </>
+                      </div>
                     )}
                 </PageHeader>
 
@@ -906,8 +895,7 @@ export default function KnowledgeHubPage({
 
                 {isEmpty ? (
                   <EmptyState
-                    onQuickCreate={canCreate ? openQuickCreate : undefined}
-                    onFullCreate={canCreate ? openFullCreate : undefined}
+                    onCreate={canCreate ? openCreate : undefined}
                     onBrowseDocuments={() => openDocumentsTab()}
                   />
                 ) : filteredSorted.length === 0 ? (
@@ -934,6 +922,8 @@ export default function KnowledgeHubPage({
                       onOpenHub={openHub}
                       onDeleteRequest={requestDelete}
                       canDelete={canDelete}
+                      selectedRows={selectedRows}
+                      onToggleRow={toggleRow}
                     />
                     <HubTablePagination
                       page={hubPagination.currentPage}
@@ -989,19 +979,20 @@ export default function KnowledgeHubPage({
       {canCreate && (
         <KnowledgeHubCreateDialog
           open={createOpen}
-          mode={createMode}
           onOpenChange={setCreateOpen}
           onCreated={handleCreated}
           onCloudFileSynced={(name) =>
-            showToast(`“${name}” saved to your knowledge base.`)
+            showToast(`"${name}" saved to your knowledge base.`)
           }
           onCloudFileSyncFailed={(name, error) =>
             showToast(
               error
-                ? `Could not save “${name}”: ${error}`
-                : `Could not save “${name}”.`,
+                ? `Could not save "${name}": ${error}`
+                : `Could not save "${name}".`,
             )
           }
+          onBrowseAllConnectors={() => navigate("/marketplace")}
+          onCustomConnector={() => navigate("/marketplace")}
         />
       )}
 

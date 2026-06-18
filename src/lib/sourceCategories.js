@@ -57,6 +57,7 @@ export const DB_SOURCE_CONNECTORS = [
   { id: "postgresql", label: "PostgreSQL", kind: "sql", enabled: true },
   { id: "mysql", label: "MySQL", kind: "sql", enabled: true },
   { id: "mongodb", label: "MongoDB", kind: "nosql", enabled: true },
+  { id: "snowflake", label: "Snowflake", kind: "sql", enabled: true },
 ];
 
 /** Connectors shown in the Add sources → APIs tab */

@@ -24,6 +24,7 @@ import {
   saveKnowledgeHubFile,
 } from "@/lib/knowledgeHubFileStorage";
 import { isSingleHubSource } from "@/lib/sourceCategories";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
 import { useAgentsOptional } from "@/context/AgentsContext";
 import {
   fileToLibraryRecord,
@@ -253,141 +254,181 @@ export function KnowledgeHubProvider({ children }) {
   const addDocumentsToHub = useCallback(async (hubId, { files = [], cloudImport, cloudImports } = {}) => {
     const targetId = Number(hubId);
     if (Number.isNaN(targetId)) {
-      return { added: [], rejected: 0, records: [] };
+      return { added: [], rejected: 0, records: [], skippedDuplicates: 0, allSkipped: false };
     }
 
-    const incoming = Array.from(files ?? []);
-    const { valid, rejected } = partitionUploadFiles(incoming);
-    const imports = cloudImports?.length
-      ? cloudImports
-      : cloudImport
-        ? [cloudImport]
-        : [];
-    const cloudRecords = imports.flatMap((imp) => resolveCloudImportToLibraryRecords(imp));
-    const newRecords = [];
+    try {
+      const incoming = Array.from(files ?? []);
+      const { valid, rejected } = partitionUploadFiles(incoming);
+      const imports = cloudImports?.length
+        ? cloudImports
+        : cloudImport
+          ? [cloudImport]
+          : [];
+      const cloudRecords = imports
+        .flatMap((imp) => resolveCloudImportToLibraryRecords(imp))
+        .filter((record) => Boolean(record?.name?.trim()));
+      const newRecords = [];
 
-    for (const file of valid) {
-      const record = fileToLibraryRecord(file);
-      const blobKey = documentLibraryBlobKey(record.id);
-      try {
-        await saveKnowledgeHubFile(blobKey, file, file.name);
+      for (const file of valid) {
+        const record = fileToLibraryRecord(file);
+        const blobKey = documentLibraryBlobKey(record.id);
+        try {
+          await saveKnowledgeHubFile(blobKey, file, file.name);
+          newRecords.push({
+            ...record,
+            localBlobId: blobKey,
+            syncStatus: "stored",
+            fileStatus: "success",
+            indexStatus: "stored",
+            metadata: createPendingHubFileMetadata(record.name),
+            sourceGuide: createPendingSourceGuide(),
+          });
+        } catch {
+          newRecords.push(record);
+        }
+      }
+
+      for (const record of cloudRecords) {
         newRecords.push({
           ...record,
-          localBlobId: blobKey,
-          syncStatus: "stored",
-          fileStatus: "success",
-          indexStatus: "stored",
           metadata: createPendingHubFileMetadata(record.name),
           sourceGuide: createPendingSourceGuide(),
         });
-      } catch {
-        newRecords.push(record);
       }
-    }
 
-    for (const record of cloudRecords) {
-      newRecords.push({
-        ...record,
-        metadata: createPendingHubFileMetadata(record.name),
-        sourceGuide: createPendingSourceGuide(),
-      });
-    }
-
-    if (newRecords.length === 0) {
-      return { added: [], rejected: rejected.length, records: [] };
-    }
-
-    let hubFiles = [];
-    setHubs((prev) => {
-      const targetHub = prev.find((h) => Number(h.id) === targetId);
-      if (!targetHub) return prev;
-
-      const existingNames = new Set((targetHub.userFiles ?? []).map((f) => f.name.toLowerCase()));
-      const existingExternal = new Set(
-        (targetHub.userFiles ?? [])
-          .map((f) => f.externalFileId)
-          .filter(Boolean),
-      );
-      const existingLibraryIds = new Set(
-        (targetHub.userFiles ?? [])
-          .map((f) => f.libraryDocumentId)
-          .filter(Boolean),
-      );
-
-      const toLink = newRecords.filter((doc) => {
-        if (existingLibraryIds.has(doc.id)) return false;
-        if (doc.externalFileId && existingExternal.has(doc.externalFileId)) return false;
-        if (existingNames.has(doc.name.toLowerCase())) return false;
-        return true;
-      });
-
-      hubFiles = toLink.map((doc) => libraryRecordToHubFile(doc, targetId));
-
-      if (hubFiles.length === 0) return prev;
-
-      const addedKb = hubFiles.reduce((sum, f) => sum + (f.sizeKb ?? 0), 0);
-      const cloudConnections = (() => {
-        const conn = imports[0]?.connection ?? cloudImport?.connection;
-        if (!conn) return targetHub.cloudConnections ?? [];
-        const existing = targetHub.cloudConnections ?? [];
-        if (existing.some((c) => c.id === conn.id || c.provider === conn.provider)) {
-          return existing;
-        }
-        return [...existing, conn];
-      })();
-
-      return prev.map((h) => {
-        if (Number(h.id) !== targetId) return h;
-        const userFiles = [...(h.userFiles ?? []), ...hubFiles];
+      if (newRecords.length === 0) {
         return {
-          ...h,
-          userFiles,
-          cloudConnections,
-          files: userFiles.length,
-          collections: userFiles.length > 0 ? 1 : 0,
-          storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
-          updated: "Just now",
-          updatedAt: new Date().toISOString(),
-          isUserCreated: true,
+          added: [],
+          rejected: rejected.length,
+          records: [],
+          skippedDuplicates: 0,
+          allSkipped: false,
         };
-      });
-    });
+      }
 
-    const linkedDocIds = new Set(hubFiles.map((f) => f.libraryDocumentId));
-    const docsToAdd = newRecords.filter((d) => linkedDocIds.has(d.id));
+      const normalizeName = (name) => (name ?? "").trim().toLowerCase();
 
-    if (docsToAdd.length > 0) {
-      setDocuments((prev) => [...prev, ...docsToAdd]);
-    }
+      let hubFiles = [];
+      let hubFound = false;
+      setHubs((prev) => {
+        const targetHub = prev.find((h) => Number(h.id) === targetId);
+        if (!targetHub) return prev;
+        hubFound = true;
 
-    const enriched = docsToAdd.filter((r) => r.localBlobId);
-    if (enriched.length > 0) {
-      queueMicrotask(() => {
-        enrichStoredHubFiles(
-          targetId,
-          enriched.map((doc) => {
-            const hubFile = hubFiles.find((f) => f.libraryDocumentId === doc.id);
-            return hubFile ?? doc;
-          }),
-          updateHubFile,
+        const existingNames = new Set(
+          (targetHub.userFiles ?? []).map((f) => normalizeName(f.name)).filter(Boolean),
         );
-        enrichStoredHubFiles(
-          "library",
-          enriched,
-          (_hubId, fileId, patch) => {
-            setDocuments((prev) =>
-              prev.map((d) => (d.id === fileId ? { ...d, ...patch } : d)),
-            );
-          },
+        const existingExternal = new Set(
+          (targetHub.userFiles ?? [])
+            .map((f) => f.externalFileId)
+            .filter(Boolean),
         );
-      });
-    }
+        const existingLibraryIds = new Set(
+          (targetHub.userFiles ?? [])
+            .map((f) => f.libraryDocumentId)
+            .filter(Boolean),
+        );
 
-    return {
-      added: hubFiles.map((f) => f.name),
-      rejected: rejected.length,
-      records: hubFiles,
-    };
+        const toLink = newRecords.filter((doc) => {
+          if (existingLibraryIds.has(doc.id)) return false;
+          if (doc.externalFileId && existingExternal.has(doc.externalFileId)) return false;
+          const docName = normalizeName(doc.name);
+          if (docName && existingNames.has(docName)) return false;
+          return true;
+        });
+
+        hubFiles = toLink.map((doc) => libraryRecordToHubFile(doc, targetId));
+
+        if (hubFiles.length === 0) return prev;
+
+        const addedKb = hubFiles.reduce((sum, f) => sum + (f.sizeKb ?? 0), 0);
+        const cloudConnections = (() => {
+          const conn = imports[0]?.connection ?? cloudImport?.connection;
+          if (!conn) return targetHub.cloudConnections ?? [];
+          const existing = targetHub.cloudConnections ?? [];
+          if (existing.some((c) => c.id === conn.id || c.provider === conn.provider)) {
+            return existing;
+          }
+          return [...existing, conn];
+        })();
+
+        return prev.map((h) => {
+          if (Number(h.id) !== targetId) return h;
+          const userFiles = [...(h.userFiles ?? []), ...hubFiles];
+          return {
+            ...h,
+            userFiles,
+            cloudConnections,
+            files: userFiles.length,
+            collections: userFiles.length > 0 ? 1 : 0,
+            storageMB: (h.storageMB ?? 0) + Math.max(0, Math.round(addedKb / 1024)),
+            updated: "Just now",
+            updatedAt: new Date().toISOString(),
+            isUserCreated: true,
+          };
+        });
+      });
+
+      if (!hubFound) {
+        return {
+          added: [],
+          rejected: rejected.length,
+          records: [],
+          skippedDuplicates: 0,
+          allSkipped: false,
+          error: "Hub not found. Close this dialog and reopen the hub.",
+        };
+      }
+
+      const linkedDocIds = new Set(hubFiles.map((f) => f.libraryDocumentId));
+      const docsToAdd = newRecords.filter((d) => linkedDocIds.has(d.id));
+      const skippedDuplicates = Math.max(0, newRecords.length - hubFiles.length - rejected.length);
+
+      if (docsToAdd.length > 0) {
+        setDocuments((prev) => [...prev, ...docsToAdd]);
+      }
+
+      const enriched = docsToAdd.filter((r) => r.localBlobId);
+      if (enriched.length > 0) {
+        queueMicrotask(() => {
+          enrichStoredHubFiles(
+            targetId,
+            enriched.map((doc) => {
+              const hubFile = hubFiles.find((f) => f.libraryDocumentId === doc.id);
+              return hubFile ?? doc;
+            }),
+            updateHubFile,
+          );
+          enrichStoredHubFiles(
+            "library",
+            enriched,
+            (_hubId, fileId, patch) => {
+              setDocuments((prev) =>
+                prev.map((d) => (d.id === fileId ? { ...d, ...patch } : d)),
+              );
+            },
+          );
+        });
+      }
+
+      return {
+        added: hubFiles.map((f) => f.name),
+        rejected: rejected.length,
+        records: hubFiles,
+        skippedDuplicates,
+        allSkipped: hubFiles.length === 0 && newRecords.length > 0,
+      };
+    } catch (error) {
+      return {
+        added: [],
+        rejected: 0,
+        records: [],
+        skippedDuplicates: 0,
+        allSkipped: false,
+        error: error instanceof Error ? error.message : "Upload failed",
+      };
+    }
   }, [updateHubFile]);
 
   const addCloudFilesToHub = useCallback(

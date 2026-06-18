@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Cloud,
   Database,
@@ -6,7 +6,7 @@ import {
   FolderOpen,
   LayoutGrid,
   Plus,
-  Upload,
+  UploadCloud,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -64,6 +64,46 @@ function SourceOptionRow({ icon: Icon, title, description, onClick }) {
   );
 }
 
+function UploadDropZone({ onUpload }) {
+  const [dragActive, setDragActive] = useState(false);
+  const inputRef = useRef(null);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upload files from your computer"
+      className={cn(
+        "flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-5 text-center transition-colors cursor-pointer",
+        dragActive
+          ? "border-primary bg-primary/5"
+          : "border-border hover:border-primary/40 hover:bg-muted/20",
+      )}
+      onClick={() => { inputRef.current?.click(); }}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
+      onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); setDragActive(false); onUpload?.(); }}
+    >
+      <UploadCloud className="size-8 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+      <div>
+        <p className="text-sm font-semibold text-foreground">Upload files</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Drag &amp; drop or click to browse from your computer
+        </p>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => { e.target.value = ""; onUpload?.(); }}
+      />
+    </div>
+  );
+}
+
 function ConnectedAccountRow({ connection, onBrowse }) {
   const config = getCloudProviderConfig(connection.provider);
   return (
@@ -109,12 +149,7 @@ function FilesSourcePanel({
     <div className="flex flex-col gap-4">
       {!hideUploadOption ? (
         <>
-          <SourceOptionRow
-            icon={Upload}
-            title="Upload files"
-            description="Add documents from your computer"
-            onClick={onUpload}
-          />
+          <UploadDropZone onUpload={onUpload} />
           <Separator />
         </>
       ) : null}
@@ -371,10 +406,12 @@ export function HubAddSourcesMenu({
             </div>
           </div>
 
-          <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4")}>
-            <p className="mb-4 text-sm text-muted-foreground">
-              {categoryDescriptions[activeCategory]}
-            </p>
+          <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-4 pb-6")}>
+            {activeCategory === "files" ? (
+              <p className="mb-4 text-sm text-muted-foreground">
+                {categoryDescriptions.files}
+              </p>
+            ) : null}
 
             {activeCategory === "files" ? (
               <FilesSourcePanel

@@ -6,6 +6,7 @@ import {
   getSourceHubLinkEmptyMessage,
   getSourceHubLinkPickerHint,
 } from "@/lib/sourceListModel";
+import { cn } from "@/lib/utils";
 
 /**
  * Hub link list + picker for detail side panels (files, APIs, databases).
@@ -18,6 +19,7 @@ export function LinkedKnowledgeHubSection({
   canCreate = true,
   hubIcon: HubIcon,
   emptyMessage,
+  variant = "full",
   onNavigateToHub,
   onLinkToHub,
   onLinkHubFileToHub,
@@ -36,6 +38,8 @@ export function LinkedKnowledgeHubSection({
   const showPicker = canLink && availableHubs.length > 0;
   const pickerLabel = singleHub && hubLinked ? "Change hub" : "Add to hub";
   const resolvedEmptyMessage = emptyMessage ?? getSourceHubLinkEmptyMessage(record);
+  const isCompact = variant === "compact";
+  const sectionTitle = singleHub ? "Knowledge Hub" : "Linked Knowledge Hubs";
 
   function handleSelectHub(hub) {
     if (record?.isLibraryDocument === true && record?.id && onLinkToHub) {
@@ -57,35 +61,94 @@ export function LinkedKnowledgeHubSection({
     }
   }
 
+  const pickerButton = showPicker ? (
+    <KnowledgeHubSearchPicker
+      hubs={availableHubs}
+      align="end"
+      emptyHint={getSourceHubLinkPickerHint(record, { allHubsLinked })}
+      onSelect={handleSelectHub}
+      onRequestCreate={canCreate ? onCreateHub : undefined}
+      renderTrigger={({ toggle }) => (
+        <Button
+          type="button"
+          variant={isCompact ? "ghost" : "outline"}
+          size="sm"
+          className={cn(
+            "gap-1 text-[11px]",
+            isCompact ? "h-6 px-1.5" : "h-7 px-2",
+          )}
+          onClick={toggle}
+          disabled={!canEdit || allHubsLinked}
+        >
+          <Plus className="size-3" />
+          {isCompact ? "Add" : pickerLabel}
+          {!isCompact ? <ChevronDown className="size-3 opacity-60" /> : null}
+        </Button>
+      )}
+    />
+  ) : null;
+
+  if (isCompact) {
+    return (
+      <div className="shrink-0 border-b border-border bg-muted/20 px-3 py-2.5">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {sectionTitle}
+          </p>
+          {pickerButton}
+        </div>
+        {hubLinks.length === 0 ? (
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{resolvedEmptyMessage}</p>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {hubLinks.map((link) => (
+              <li key={`${link.hubId}-${link.hubFileId}`}>
+                <div className="flex items-center gap-0.5 rounded-md border border-border bg-background pl-2 pr-0.5 py-1">
+                  <HubIcon className="size-3 shrink-0 text-primary" aria-hidden />
+                  <span className="max-w-[120px] truncate text-[11px] font-medium text-foreground">
+                    {link.hubName}
+                  </span>
+                  {onNavigateToHub ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label={`Open ${link.hubName}`}
+                      title="Open hub"
+                      onClick={() => onNavigateToHub(link.hubId)}
+                    >
+                      <ExternalLink className="size-3" />
+                    </Button>
+                  ) : null}
+                  {(onUnlinkFromHub || onRemoveHubFile) && canEdit ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label={`Remove from ${link.hubName}`}
+                      title="Remove from hub"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => handleUnlink(link)}
+                    >
+                      <Unlink className="size-3" />
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {singleHub ? "Knowledge Hub" : "Linked Knowledge Hubs"}
+          {sectionTitle}
         </p>
-        {showPicker ? (
-          <KnowledgeHubSearchPicker
-            hubs={availableHubs}
-            align="end"
-            emptyHint={getSourceHubLinkPickerHint(record, { allHubsLinked })}
-            onSelect={handleSelectHub}
-            onRequestCreate={canCreate ? onCreateHub : undefined}
-            renderTrigger={({ toggle }) => (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1 px-2 text-[11px]"
-                onClick={toggle}
-                disabled={!canEdit || allHubsLinked}
-              >
-                <Plus className="size-3" />
-                {pickerLabel}
-                <ChevronDown className="size-3 opacity-60" />
-              </Button>
-            )}
-          />
-        ) : null}
+        {pickerButton}
       </div>
 
       {hubLinks.length === 0 ? (
