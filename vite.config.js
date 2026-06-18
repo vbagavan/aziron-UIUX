@@ -12,8 +12,17 @@ export default defineConfig({
     },
   },
   server: {
-    host: true, // bind to 0.0.0.0 so the app is reachable by LAN IP, not just localhost
+    host: true,
     port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
     strictPort: true,
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+    css: false,
   },
 })

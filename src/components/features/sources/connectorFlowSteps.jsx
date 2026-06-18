@@ -291,7 +291,11 @@ export function DbSelectStep({ state, update }) {
               update("db", {
                 provider: p.id,
                 tested: false,
-                connection: { ...state.db?.connection, port: p.defaultPort },
+                connection: {
+                  ...state.db?.connection,
+                  port: p.defaultPort,
+                  name: state.db?.connection?.name || p.label,
+                },
               })
             }
           />
@@ -550,7 +554,11 @@ export function ApiTypeStep({ state, update }) {
             key={t.id}
             provider={t}
             selected={state.api?.apiType === t.id}
-            onClick={() => update("api", { apiType: t.id, tested: false })}
+            onClick={() => update("api", {
+              apiType: t.id,
+              tested: false,
+              connection: { ...state.api?.connection, name: state.api?.connection?.name || t.label },
+            })}
           />
         ))}
       </ProviderGrid>

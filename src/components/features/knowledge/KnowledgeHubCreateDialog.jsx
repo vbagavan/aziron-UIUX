@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   UploadCloud,
   AlertTriangle,
@@ -55,6 +55,8 @@ import {
 } from "./createHubAttachedFiles";
 
 import { partitionUploadFiles } from "@/lib/hubUploadLimits";
+import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
+
 const TOTAL_STEPS = 3;
 
 function draftBlobKey(rowId) {
@@ -272,6 +274,7 @@ export function KnowledgeHubCreateDialog({
   const [cloudAddOpen, setCloudAddOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const fileInputRef = useRef(null);
+  const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
 
   const cloudProvider = cloudMeta?.provider ?? "onedrive";
   const cloudConfig = getCloudProviderConfig(cloudProvider);
@@ -467,8 +470,14 @@ export function KnowledgeHubCreateDialog({
     .map((r) => r.pickerFile.id);
   const existingFileNames = attachedFiles.map((r) => r.name);
 
+  function handleDialogOpenChange(next) {
+    if (next) { onOpenChange(next); return; }
+    if (filePickerGuard.shouldBlockClose()) return;
+    onOpenChange(next);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className={isQuick ? undefined : HUB_DIALOG_CONTENT_XL}>
         <DialogHeader className="border-b border-border px-6 py-4">
           {!isQuick ? (
@@ -523,11 +532,11 @@ export function KnowledgeHubCreateDialog({
                 setDragActive(false);
                 addFiles(e.dataTransfer.files);
               }}
-              onFileChange={(e) => {
+              onFileChange={filePickerGuard.onFileInputChange((e) => {
                 addFiles(e.target.files);
                 e.target.value = "";
-              }}
-              onUploadClick={() => fileInputRef.current?.click()}
+              })}
+              onUploadClick={() => filePickerGuard.openFileInput(fileInputRef.current)}
               onRemoveFile={(index) => {
                 const removed = pendingFiles[index];
                 setPendingFiles((prev) => prev.filter((_, i) => i !== index));

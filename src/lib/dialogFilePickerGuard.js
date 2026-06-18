@@ -18,6 +18,7 @@ export function createDialogFilePickerGuard() {
 
   function openFileInput(inputEl) {
     if (!inputEl) return;
+    if (pickerActive) return; // already open — ignore bubbled input click re-entry
     pickerActive = true;
     clearFocusListener();
     focusListener = () => {

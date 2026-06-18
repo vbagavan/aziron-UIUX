@@ -23,8 +23,8 @@ import {
 
 /** Ordered step keys per source type (after Step 1 "choose-type"). */
 export const FLOW_STEPS = {
-  files: ["upload", "processing", "destination"],
-  cloud: ["cloud-provider", "cloud-connect", "cloud-browse", "cloud-sync", "destination"],
+  files: ["upload", "destination"],
+  cloud: ["cloud-provider", "cloud-connect", "cloud-browse", "destination"],
   databases: ["db-select", "db-connect", "db-data", "destination"],
   apis: ["api-type", "api-connect", "api-objects", "destination"],
   enterprise: ["ent-select", "ent-connect", "ent-objects", "destination"],
@@ -32,11 +32,11 @@ export const FLOW_STEPS = {
 
 /** Approximate wizard length shown on the source-type chooser. */
 export const SOURCE_TYPE_STEP_HINTS = {
-  files: "~3 steps",
-  cloud: "~6 steps",
+  files: "~2 steps",
+  cloud: "~4 steps",
   databases: "~4 steps",
   apis: "~4 steps",
-  enterprise: "~5 steps",
+  enterprise: "~4 steps",
 };
 
 export const STEP_META = {
@@ -86,6 +86,18 @@ export function getFlowSteps(type) {
 /** Full ordered key list for a type, including the leading choose-type step. */
 export function getWizardSteps(type) {
   return type ? ["choose-type", ...getFlowSteps(type)] : ["choose-type"];
+}
+
+/**
+ * Step list with optional context-aware exclusions.
+ * - skipChooseType: omit "choose-type" when the caller pre-selects the source type
+ * - skipDestination: omit "destination" when the target hub is already known
+ */
+export function getWizardStepsForContext(type, { skipChooseType = false, skipDestination = false } = {}) {
+  if (!type) return skipChooseType ? [] : ["choose-type"];
+  const flowSteps = getFlowSteps(type);
+  const steps = skipChooseType ? [...flowSteps] : ["choose-type", ...flowSteps];
+  return skipDestination ? steps.filter((k) => k !== "destination") : steps;
 }
 
 /** Apply recommended defaults when express connector steps are skipped. */

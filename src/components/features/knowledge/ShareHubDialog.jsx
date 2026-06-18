@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Building2, Check, Search, Settings2, User, Users, X } from "lucide-react";
+import { Building2, Check, Search, Settings2, Users, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -49,11 +49,6 @@ const DIRECTORY = {
   ],
 };
 
-const PRINCIPAL_TABS = [
-  { id: "user", label: "People", icon: User },
-  { id: "team", label: "Teams", icon: Users },
-  { id: "department", label: "Departments", icon: Building2 },
-];
 
 function initials(name) {
   return (name ?? "")
@@ -90,7 +85,6 @@ export function ShareHubDialog({
   onShare,
   onManageMembers,
 }) {
-  const [tab, setTab] = useState("user");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState([]); // {principalType,name,email,memberCount}
   const [role, setRole] = useState("viewer");
@@ -121,27 +115,23 @@ export function ShareHubDialog({
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return DIRECTORY[tab]
-      .map((entry) => ({ ...entry, principalType: tab }))
+    return DIRECTORY.user
+      .map((entry) => ({ ...entry, principalType: "user" }))
       .filter((entry) => {
-        const key =
-          tab === "user"
-            ? `user:${(entry.email ?? "").toLowerCase()}`
-            : `${tab}:${entry.name.toLowerCase()}`;
+        const key = `user:${(entry.email ?? "").toLowerCase()}`;
         if (existingKeys.has(key) || selectedKeys.has(key)) return false;
         if (!q) return true;
         return (
           entry.name.toLowerCase().includes(q) ||
-          (entry.email ?? "").toLowerCase().includes(q)
+          entry.email.toLowerCase().includes(q)
         );
       });
-  }, [tab, query, existingKeys, selectedKeys]);
+  }, [query, existingKeys, selectedKeys]);
 
   function reset() {
     setSelected([]);
     setQuery("");
     setRole("viewer");
-    setTab("user");
   }
 
   function handleClose(next) {
@@ -192,31 +182,6 @@ export function ShareHubDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
-          <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
-            {PRINCIPAL_TABS.map(({ id, label, icon }) => {
-              const Icon = icon;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setTab(id);
-                    setQuery("");
-                  }}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-                    tab === id
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-3.5" />
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
           {selected.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {selected.map((s, i) => (
@@ -244,7 +209,7 @@ export function ShareHubDialog({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${PRINCIPAL_TABS.find((t) => t.id === tab)?.label.toLowerCase()}…`}
+              placeholder="Search people…"
               className="h-9 pl-8"
             />
           </div>

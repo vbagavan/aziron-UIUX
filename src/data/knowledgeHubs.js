@@ -790,7 +790,9 @@ function buildDemoAssets(hub) {
   const seed = hashSeed(`a-${hub.id}`);
   const count = Math.min(36, Math.max(5, Math.round((hub.files ?? 8) / 3) + 4));
   const owner = hub.owner ?? DEFAULT_HUB_OWNER;
-  const baseTime = new Date(hub.createdAt ?? `${hub.createdOn}T12:00:00.000Z`).getTime();
+  const rawDate = hub.createdAt ?? (hub.createdOn ? `${hub.createdOn}T12:00:00.000Z` : null);
+  const parsedTime = rawDate ? new Date(rawDate).getTime() : NaN;
+  const baseTime = Number.isNaN(parsedTime) ? Date.now() - 30 * 24 * 3600 * 1000 : parsedTime;
   const assets = [];
   for (let i = 0; i < count; i += 1) {
     const tpl = DEMO_ASSET_TEMPLATES[(seed + i) % DEMO_ASSET_TEMPLATES.length];

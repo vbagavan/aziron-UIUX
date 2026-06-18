@@ -143,11 +143,11 @@ function HubSourcesOnboarding({
     },
     {
       id: "publish",
-      label: "Publish hub",
+      label: "Activate hub",
       detail: "Make this hub available to agents and workflows.",
       done: isPublished,
       action: onPublish,
-      actionLabel: "Publish hub",
+      actionLabel: "Activate hub",
       hidden: !canEdit || isPublished,
     },
     {
@@ -599,7 +599,7 @@ export function KnowledgeHubControlCenter({
             {canEdit && onPublish && metadata.status === "draft" ? (
               <Button type="button" size="sm" className="gap-1.5" onClick={onPublish}>
                 <Zap data-icon="inline-start" aria-hidden />
-                Publish hub
+                Activate hub
               </Button>
             ) : null}
             {canEdit && onEditHub ? (

@@ -35,11 +35,16 @@ import {
   buildSourceRecords,
   computeIndexedRecords,
   deriveSourceName,
-  getWizardSteps,
+  getWizardStepsForContext,
   applyExpressDefaults,
   STEP_META,
 } from "@/lib/addSourceFlow";
-import { loadLastSourceType, saveLastSourceType } from "@/lib/wizardPrefs";
+import {
+  loadLastSourceType,
+  saveLastSourceType,
+  loadLastDestinationMode,
+  saveLastDestinationMode,
+} from "@/lib/wizardPrefs";
 import { createDialogFilePickerGuard } from "@/lib/dialogFilePickerGuard";
 import {
   ChooseSourceTypeStep,
@@ -112,7 +117,7 @@ function initialState({ defaultHubId } = {}) {
   };
 }
 
-export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId = null }) {
+export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId = null, defaultSourceType = null }) {
   const navigate = useNavigate();
   const {
     hubs,
@@ -122,6 +127,10 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     addCategorySourcesToLibrary,
   } = useKnowledgeHubs();
 
+  // Derived flags from props — stable for the lifetime of a given render
+  const skipDestination = Boolean(defaultHubId);
+  const skipChooseType = Boolean(defaultSourceType);
+
   const [state, setState] = useState(initialState);
   const [stepIndex, setStepIndex] = useState(0);
   const [phase, setPhase] = useState("wizard"); // "wizard" | "success"
@@ -129,7 +138,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const [result, setResult] = useState(null);
   const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
 
-  // Reset whenever the dialog closes; restore last source type + hub context on open.
+  // Reset whenever the dialog closes; restore preferences + context on open.
   useEffect(() => {
     if (!open) {
       setState(initialState());
@@ -141,17 +150,28 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     }
 
     const lastType = loadLastSourceType();
+    const resolvedType = defaultSourceType ?? lastType ?? null;
+
+    // Only restore last destination when hub isn't pre-locked by the caller
+    const lastDestMode = !defaultHubId ? loadLastDestinationMode() : null;
+
     setState({
       ...initialState({ defaultHubId }),
-      ...(lastType ? { type: lastType } : {}),
+      type: resolvedType,
+      ...(lastDestMode
+        ? { destination: { mode: lastDestMode, hubId: null, newHubName: "" } }
+        : {}),
     });
     setStepIndex(0);
     setPhase("wizard");
     setFinishing(false);
     setResult(null);
-  }, [open, defaultHubId]);
+  }, [open, defaultHubId, defaultSourceType]);
 
-  const steps = useMemo(() => getWizardSteps(state.type), [state.type]);
+  const steps = useMemo(
+    () => getWizardStepsForContext(state.type, { skipChooseType, skipDestination }),
+    [state.type, skipChooseType, skipDestination],
+  );
   const currentKey = steps[stepIndex] ?? "choose-type";
 
   function update(section, partial) {
@@ -186,14 +206,15 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     }
   }
 
+  const isLastStep = stepIndex === steps.length - 1;
+  const isFinishStep = currentKey === "destination" || (skipDestination && isLastStep);
+
   function handleBack() {
-    let target = stepIndex - 1;
-    if (steps[target] === "processing") target -= 1; // don't replay the processing animation
-    setStepIndex(Math.max(0, target));
+    setStepIndex(Math.max(0, stepIndex - 1));
   }
 
   function handleContinue() {
-    if (currentKey === "destination") {
+    if (isFinishStep) {
       finish();
       return;
     }
@@ -214,6 +235,10 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     try {
       const resolvedState = applyExpressDefaults(state);
       const dest = resolvedState.destination;
+
+      if (!skipDestination) {
+        saveLastDestinationMode(dest.mode);
+      }
       const sourceName = deriveSourceName(resolvedState);
       const description = resolvedState.config.description;
       let hubId = null;
@@ -347,7 +372,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   const isSuccess = phase === "success";
   const progressValue = isSuccess ? 100 : ((stepIndex + 1) / steps.length) * 100;
   const showBack = !isSuccess && stepIndex > 0;
-  const showContinue = !isSuccess && currentKey !== "processing" && currentKey !== "choose-type";
+  const showContinue = !isSuccess && currentKey !== "choose-type";
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
@@ -411,10 +436,8 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
             <Button type="button" onClick={close}>Done</Button>
           ) : showContinue ? (
             <Button type="button" onClick={handleContinue} disabled={!canAdvance() || finishing}>
-              {currentKey === "destination" ? (finishing ? "Adding…" : "Add source") : "Continue"}
+              {isFinishStep ? (finishing ? "Adding…" : "Add source") : "Continue"}
             </Button>
-          ) : currentKey === "processing" ? (
-            <span className="text-xs text-muted-foreground">Processing…</span>
           ) : null}
         </div>
       </DialogContent>
