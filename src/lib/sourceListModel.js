@@ -20,7 +20,7 @@ export const SOURCE_LIST_COLUMNS = {
   status: "Status",
   name: "Name",
   source: "Source",
-  hubs: "Hubs",
+  hubs: "Knowledge Hubs",
   format: "Format",
   metric: "Size",
   updated: "Updated",

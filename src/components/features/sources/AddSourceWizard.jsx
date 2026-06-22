@@ -1,36 +1,28 @@
 /**
- * AddSourceWizard — the unified Source Onboarding experience.
+ * Add Source Command Center (Phase 1 shell).
  *
- * A single reusable modal that walks a user through bringing any source
- * (files including cloud storage, databases, APIs) into Aziron and
- * routing it to the document library and/or a Knowledge Hub. Connection and
- * discovery are simulated; selections persist as real library records so the
- * success screen's actions (View source / Open hub) work end-to-end.
- *
- * Self-sufficient: pulls persistence + hubs from KnowledgeHubContext and
- * navigation from the router, so any entry point only needs `open`/`onOpenChange`.
+ * Right slide-over panel with sticky confirm strip and in-place success
+ * (toast + list highlight via onComplete). Reuses step components and
+ * addSourceFlow persistence — only the shell UX changed from modal wizard.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   HUB_DIALOG_BODY_SCROLL,
-  HUB_DIALOG_CONTENT_LG,
-  HUB_DIALOG_CONTENT_XL,
 } from "@/components/features/knowledge/hubDialogSizes";
-import { SourceWizardFooter } from "@/components/features/knowledge/source-intake/SourceWizardFooter";
+import { AddSourceConfirmStrip } from "@/components/features/sources/AddSourceConfirmStrip";
 import { cn } from "@/lib/utils";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import { createHubPayload } from "@/data/knowledgeHubs";
@@ -38,6 +30,10 @@ import {
   buildSourceRecords,
   computeIndexedRecords,
   deriveSourceName,
+  getExpressSettingsSummary,
+  getWizardConfirmSummary,
+  getWizardFinishLabel,
+  getWizardProgress,
   getWizardStepsForContext,
   applyExpressDefaults,
   STEP_META,
@@ -55,8 +51,8 @@ import {
   ChooseSourceTypeStep,
   FilesIntakeStep,
   ProcessingStep,
-  SuccessStep,
 } from "@/components/features/sources/coreFlowSteps";
+import { WizardDemoHint } from "@/components/features/sources/wizardPrimitives";
 import {
   ApiAiStep,
   ApiConnectStep,
@@ -128,14 +124,17 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
 
   // When defaultHubId is set, sources attach to that hub; otherwise they go to Documents.
   const skipChooseType = Boolean(defaultSourceType);
+  // Generic entry (no pre-selected type): land on files intake — the dominant
+  // path — instead of the category chooser, which is still reachable via Back.
+  const isGenericEntry = !defaultSourceType;
 
   const [state, setState] = useState(initialState);
   const [stepIndex, setStepIndex] = useState(0);
-  const [phase, setPhase] = useState("wizard"); // "wizard" | "success"
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState(null);
-  const [result, setResult] = useState(null);
   const [dismissConfirmOpen, setDismissConfirmOpen] = useState(false);
+  const [leaveConnectorsConfirmOpen, setLeaveConnectorsConfirmOpen] = useState(false);
+  const [pendingConnectorNav, setPendingConnectorNav] = useState(null);
   const filePickerGuard = useMemo(() => createDialogFilePickerGuard(), []);
   const openIntegrationsWizard = useConnectionsStore((s) => s.openWizard);
   const openIntegrationsWizardWithProvider = useConnectionsStore((s) => s.openWizardWithProvider);
@@ -145,24 +144,25 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
     if (!open) {
       setState(initialState());
       setStepIndex(0);
-      setPhase("wizard");
       setFinishing(false);
       setFinishError(null);
-      setResult(null);
       setDismissConfirmOpen(false);
+      setLeaveConnectorsConfirmOpen(false);
+      setPendingConnectorNav(null);
       return;
     }
 
-    setState({
+    const opened = {
       ...initialState({ defaultHubId }),
       type: defaultSourceType ?? "files",
-    });
-    setStepIndex(0);
-    setPhase("wizard");
+    };
+    setState(opened);
+    const openedSteps = getWizardStepsForContext(opened.type, opened, { skipChooseType });
+    const landingIndex = isGenericEntry ? Math.max(0, openedSteps.indexOf("files-intake")) : 0;
+    setStepIndex(landingIndex);
     setFinishing(false);
     setFinishError(null);
-    setResult(null);
-  }, [open, defaultHubId, defaultSourceType]);
+  }, [open, defaultHubId, defaultSourceType, isGenericEntry, skipChooseType]);
 
   const steps = useMemo(
     () => getWizardStepsForContext(state.type, state, { skipChooseType }),
@@ -211,6 +211,16 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   function handleBack() {
     setFinishError(null);
     setStepIndex(Math.max(0, stepIndex - 1));
+  }
+
+  const canChooseDifferentType = isGenericEntry && steps.includes("choose-type");
+
+  function handleChooseDifferentType() {
+    const idx = steps.indexOf("choose-type");
+    if (idx >= 0) {
+      setFinishError(null);
+      setStepIndex(idx);
+    }
   }
 
   function handleContinue() {
@@ -345,10 +355,11 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
         hubId,
         hubName,
         recordIds,
+        sourceType: resolvedState.type,
+        intakeMode: resolvedState.files?.intakeMode,
       };
-      setResult(nextResult);
-      setPhase("success");
       onComplete?.(nextResult);
+      close();
     } catch (error) {
       setFinishError(error instanceof Error ? error.message : "Could not add source.");
     } finally {
@@ -363,14 +374,19 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
 
   function requestClose() {
     if (filePickerGuard.shouldBlockClose()) return;
-    if (phase === "success" || stepIndex === 0) {
+    const onPristineFilesLanding =
+      isGenericEntry &&
+      currentKey === "files-intake" &&
+      state.files?.intakeMode !== "cloud" &&
+      (state.files?.items?.length ?? 0) === 0;
+    if (stepIndex === 0 || onPristineFilesLanding) {
       close();
       return;
     }
     setDismissConfirmOpen(true);
   }
 
-  function handleDialogOpenChange(next) {
+  function handleSheetOpenChange(next) {
     if (next) {
       onOpenChange?.(true);
       return;
@@ -379,6 +395,14 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   }
 
   function browseConnectorsCatalog({ providerId = null } = {}) {
+    setPendingConnectorNav({ providerId });
+    setLeaveConnectorsConfirmOpen(true);
+  }
+
+  function confirmLeaveToConnectors() {
+    const { providerId = null } = pendingConnectorNav ?? {};
+    setLeaveConnectorsConfirmOpen(false);
+    setPendingConnectorNav(null);
     close();
     window.setTimeout(
       () =>
@@ -390,12 +414,6 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
         }),
       0,
     );
-  }
-
-  function goTo(path) {
-    close();
-    // defer so the dialog unmount doesn't race the route change
-    window.setTimeout(() => navigate(path), 0);
   }
 
   function renderStep() {
@@ -413,6 +431,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
             onSelectConnected={handleSelectConnectedCloudAccount}
             onBrowseAll={() => browseConnectorsCatalog()}
             onProviderPick={handleSelectCloudProvider}
+            onChooseDifferentType={canChooseDifferentType ? handleChooseDifferentType : undefined}
           />
         );
       case "upload":
@@ -424,6 +443,7 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
             onSelectConnected={handleSelectConnectedCloudAccount}
             onBrowseAll={() => browseConnectorsCatalog()}
             onProviderPick={handleSelectCloudProvider}
+            onChooseDifferentType={canChooseDifferentType ? handleChooseDifferentType : undefined}
           />
         );
       case "processing":
@@ -465,54 +485,66 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
   }
 
   const meta = STEP_META[currentKey] ?? STEP_META["choose-type"];
-  const isSuccess = phase === "success";
-  const progressValue = isSuccess ? 100 : ((stepIndex + 1) / steps.length) * 100;
-  const showBack = !isSuccess && stepIndex > 0;
-  const showContinue = !isSuccess && (currentKey !== "choose-type" || Boolean(state.type));
+  const progress = getWizardProgress(steps, stepIndex, currentKey);
+  const { stepNumber, total: countableTotal, ariaValueNow, ariaValueText } = progress;
+  const progressValue = (stepNumber / countableTotal) * 100;
+  const showBack = stepIndex > 0;
+  const showContinue = currentKey !== "choose-type" || Boolean(state.type);
+  const expressSummaryLines = isFinishStep ? getExpressSettingsSummary(state) : [];
+  const finishLabel = getWizardFinishLabel(state, { finishing });
+  const confirmSummary = getWizardConfirmSummary(state, hubs);
   const activeCategory = SOURCE_TYPES.find((t) => t.id === state.type);
   const ActiveCategoryIcon = activeCategory?.icon;
 
   const showDemoBanner =
-    !isSuccess && currentKey !== "choose-type" && currentKey !== "files-intake" && currentKey !== "upload";
-  const useWideDialog =
-    !isSuccess && (currentKey === "choose-type" || currentKey === "files-intake" || currentKey === "upload");
+    currentKey !== "choose-type"
+    && (
+      currentKey === "files-intake"
+      || currentKey === "upload"
+      || currentKey === "cloud-connect"
+      || currentKey === "cloud-browse"
+      || currentKey === "db-connect"
+      || currentKey === "api-connect"
+    );
 
   return (
-    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className={useWideDialog ? HUB_DIALOG_CONTENT_XL : HUB_DIALOG_CONTENT_LG}>
-        <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+      <SheetContent
+        side="right"
+        showCloseButton
+        className="flex w-full max-w-[100vw] flex-col gap-0 border-l p-0 sm:max-w-[480px]"
+      >
+        <SheetHeader className="shrink-0 space-y-0 border-b border-border px-6 py-4 pr-14">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <DialogTitle>
-                {isSuccess ? KNOWLEDGE_TERMS.addSourceSuccessTitle : meta.title}
-              </DialogTitle>
-              <DialogDescription>
-                {isSuccess ? KNOWLEDGE_TERMS.addSourceSuccessDescription : meta.subtitle}
-              </DialogDescription>
+              <SheetTitle className="text-lg font-semibold">{meta.title}</SheetTitle>
+              <SheetDescription>{meta.subtitle}</SheetDescription>
             </div>
-            {!isSuccess && activeCategory && currentKey !== "choose-type" ? (
+            {activeCategory && currentKey !== "choose-type" ? (
               <Badge variant="outline" className="shrink-0 gap-1.5 py-1">
                 {ActiveCategoryIcon ? <ActiveCategoryIcon className="size-3.5" aria-hidden /> : null}
                 {activeCategory.label}
               </Badge>
             ) : null}
           </div>
-          {!isSuccess ? (
-            <div className="mt-3 flex items-center gap-3">
-              <Progress value={progressValue} className="h-1.5 flex-1" aria-label="Wizard progress" />
-              <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-                Step {stepIndex + 1} of {steps.length}
-              </span>
-            </div>
-          ) : null}
-        </DialogHeader>
+          <div className="mt-3 flex items-center gap-3">
+            <Progress
+              value={progressValue}
+              className="h-1.5 flex-1"
+              aria-label="Add sources progress"
+              aria-valuenow={ariaValueNow}
+              aria-valuemin={1}
+              aria-valuemax={countableTotal}
+              aria-valuetext={ariaValueText}
+            />
+            <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+              Step {stepNumber} of {countableTotal}
+            </span>
+          </div>
+        </SheetHeader>
 
-        <div className={cn(HUB_DIALOG_BODY_SCROLL, "px-6 py-5")}>
-          {!isSuccess && showDemoBanner ? (
-            <p className="mb-4 text-center text-[11px] text-muted-foreground">
-              {KNOWLEDGE_TERMS.demoModeHint}
-            </p>
-          ) : null}
+        <div className={cn(HUB_DIALOG_BODY_SCROLL, "flex-1 px-6 py-5")}>
+          {showDemoBanner ? <WizardDemoHint className="mb-4" /> : null}
           {finishError ? (
             <Alert variant="destructive" className="mb-4 py-2">
               <AlertTriangle className="size-4" />
@@ -520,52 +552,23 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
               <AlertDescription className="text-xs">{finishError}</AlertDescription>
             </Alert>
           ) : null}
-          {isSuccess ? (
-            <SuccessStep
-              result={result}
-              onViewSource={() =>
-                goTo(
-                  result?.recordIds?.length
-                    ? `/knowledge?tab=documents&highlight=${result.recordIds.join(",")}`
-                    : "/knowledge?tab=documents",
-                )
-              }
-              onOpenHub={() => result?.hubId != null && goTo(`/knowledge/${result.hubId}`)}
-              onCreateAgent={() => goTo("/agents/create")}
-              onCreateFlow={() => goTo("/create-flow")}
-            />
-          ) : (
-            renderStep()
-          )}
+          {renderStep()}
         </div>
 
-        <SourceWizardFooter>
-          {showBack ? (
-            <Button type="button" variant="ghost" onClick={handleBack} disabled={finishing}>
-              <ArrowLeft data-icon="inline-start" aria-hidden />
-              Back
-            </Button>
-          ) : (
-            <Button type="button" variant="ghost" onClick={requestClose} disabled={finishing}>
-              Cancel
-            </Button>
-          )}
-
-          {isSuccess ? (
-            <Button type="button" onClick={close}>Done</Button>
-          ) : showContinue ? (
-            <Button type="button" onClick={handleContinue} disabled={!canAdvance() || finishing}>
-              {currentKey === "choose-type"
-                ? "Continue"
-                : isFinishStep
-                  ? finishing
-                    ? "Adding…"
-                    : "Add source"
-                  : "Continue"}
-            </Button>
-          ) : null}
-        </SourceWizardFooter>
-      </DialogContent>
+        <AddSourceConfirmStrip
+          summary={confirmSummary}
+          finishLabel={finishLabel}
+          expressSummaryLines={expressSummaryLines}
+          showBack={showBack}
+          showContinue={showContinue}
+          isFinishStep={isFinishStep}
+          canAdvance={canAdvance()}
+          finishing={finishing}
+          onBack={handleBack}
+          onCancel={requestClose}
+          onContinue={handleContinue}
+        />
+      </SheetContent>
 
       {dismissConfirmOpen ? (
         <ConfirmDialog
@@ -577,6 +580,19 @@ export function AddSourceWizard({ open, onOpenChange, onComplete, defaultHubId =
           onCancel={() => setDismissConfirmOpen(false)}
         />
       ) : null}
-    </Dialog>
+
+      {leaveConnectorsConfirmOpen ? (
+        <ConfirmDialog
+          title={KNOWLEDGE_TERMS.wizardBrowseConnectorsLeaveTitle}
+          message={KNOWLEDGE_TERMS.wizardBrowseConnectorsLeaveMessage}
+          confirmLabel="Go to Connectors"
+          onConfirm={confirmLeaveToConnectors}
+          onCancel={() => {
+            setLeaveConnectorsConfirmOpen(false);
+            setPendingConnectorNav(null);
+          }}
+        />
+      ) : null}
+    </Sheet>
   );
 }

@@ -8,7 +8,7 @@ import { CLOUD_PROVIDER_LABELS, FILE_LIFECYCLE_META, resolveFileLifecycleStatus 
 export const SOURCE_CATEGORIES = {
   files: { id: "files", label: "Files", icon: "file" },
   dbs: { id: "dbs", label: "Database", icon: "database" },
-  apis: { id: "apis", label: "APIs", icon: "api" },
+  apis: { id: "apis", label: "Others", icon: "other" },
 };
 
 export const SOURCE_KINDS = {
@@ -49,7 +49,7 @@ export const CATEGORY_FILTER_OPTIONS = [
   { id: "all", label: "All" },
   { id: "files", label: "Files" },
   { id: "dbs", label: "Database" },
-  { id: "apis", label: "APIs" },
+  { id: "apis", label: "Others" },
 ];
 
 /** Connectors shown in the Add sources → DBs tab */

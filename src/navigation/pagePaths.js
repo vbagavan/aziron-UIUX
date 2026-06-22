@@ -19,7 +19,7 @@ export const PAGE_PATH = {
   vault: "/vault",
   knowledge: "/knowledge",
   "knowledge-research": "/knowledge",
-  documents: "/knowledge?tab=documents",
+  documents: "/knowledge",
   marketplace: "/marketplace",
   pulse: "/pulse",
   tenants: "/tenants",

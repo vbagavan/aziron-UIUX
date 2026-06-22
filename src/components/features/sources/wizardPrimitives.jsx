@@ -3,6 +3,7 @@
  * Kept presentational — all state lives in the orchestrator.
  */
 
+import { forwardRef, useRef } from "react";
 import { Check, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -152,12 +153,26 @@ export function ProviderGrid({ children, className }) {
 }
 
 /** Radio-style row (single-select): filled dot + label + description. */
-export function RadioRow({ label, description, selected, onClick, trailing }) {
+export const RadioRow = forwardRef(function RadioRow(
+  {
+    label,
+    description,
+    selected,
+    onClick,
+    trailing,
+    tabIndex,
+    onKeyDown,
+  },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type="button"
       role="radio"
       aria-checked={selected}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-left transition-colors",
@@ -183,6 +198,56 @@ export function RadioRow({ label, description, selected, onClick, trailing }) {
       </span>
       {trailing}
     </button>
+  );
+});
+export function RadioGroup({ label, value, options, onChange, className }) {
+  const refs = useRef([]);
+
+  function focusOption(index) {
+    refs.current[index]?.focus();
+  }
+
+  function handleKeyDown(e, index) {
+    const last = options.length - 1;
+    if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const next = index >= last ? 0 : index + 1;
+      onChange(options[next].id);
+      focusOption(next);
+    } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const prev = index <= 0 ? last : index - 1;
+      onChange(options[prev].id);
+      focusOption(prev);
+    }
+  }
+
+  return (
+    <div role="radiogroup" aria-label={label} className={cn("flex flex-col gap-2", className)}>
+      {options.map((opt, index) => (
+        <RadioRow
+          key={opt.id}
+          ref={(el) => {
+            refs.current[index] = el;
+          }}
+          label={opt.label}
+          description={opt.description}
+          selected={value === opt.id}
+          tabIndex={value === opt.id ? 0 : -1}
+          onKeyDown={(e) => handleKeyDown(e, index)}
+          onClick={() => onChange(opt.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Prototype/demo banner for simulated connector steps. */
+export function WizardDemoHint({ className }) {
+  return (
+    <p className={cn("text-center text-xs text-muted-foreground", className)}>
+      Demo: connections are simulated. Nothing is sent to a server.
+    </p>
   );
 }
 

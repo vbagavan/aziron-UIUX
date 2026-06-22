@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Files,
@@ -6,6 +6,7 @@ import {
   Upload,
   LayoutGrid,
   List,
+  PanelLeft,
   Filter,
   Check,
   X,
@@ -19,6 +20,8 @@ import {
   RefreshCw,
   Unlink,
   ExternalLink,
+  Link2,
+  BookOpen,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,9 +84,24 @@ import {
 import { getFileTypeConfig, getTypeFilterLabel, normalizeDocumentType } from "@/components/features/knowledge/hubFileTypeConfig";
 import { HubFileThumbnail } from "@/components/features/knowledge/HubFileThumbnail";
 import { AddSourceWizard } from "@/components/features/sources/AddSourceWizard";
+import { filterCategoryToWizardType } from "@/lib/addSourceFlow";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
+import { KnowledgeWorkspaceToolbar } from "@/components/features/knowledge/KnowledgeWorkspaceToolbar";
+import { KnowledgeSourcesBreakdown } from "@/components/features/knowledge/KnowledgeSourcesBreakdown";
+import {
+  HUB_WORKSPACE_VIEWS,
+  KnowledgeHubViewTabs,
+} from "@/components/features/knowledge/KnowledgeHubViewTabs";
+import { KnowledgeHubInsightsPanel } from "@/components/features/knowledge/KnowledgeHubInsightsPanel";
+import {
+  KNOWLEDGE_SOURCE_DRAG_MIME,
+  docToSourceRef,
+  setSourceDragData,
+} from "@/components/features/knowledge/knowledgeSourceDrag";
+import { partitionUploadFiles } from "@/lib/hubUploadLimits";
+import { RAIL_WIDTH_COLLAPSED, RAIL_WIDTH_EXPANDED } from "@/lib/knowledgeWorkspacePrefs";
 import { DocumentsCategoryTabBar } from "@/components/features/documents/DocumentsCategoryTabBar";
 import { KnowledgeHubCreateDialog } from "@/components/features/knowledge/KnowledgeHubCreateDialog";
 import { KnowledgeHubSearchPicker } from "@/components/common/KnowledgeHubSearchPicker";
@@ -243,23 +261,98 @@ function formatHubDisplayName(hubName) {
   return getHubDisplayName(hubName);
 }
 
-function HubBadge({ hubName }) {
+function HubBadge({ hubName, hubId, onNavigateToHub }) {
   const displayName = formatHubDisplayName(hubName);
+  const badge = (
+    <Badge variant="outline" className="max-w-[120px]">
+      <Database data-icon="inline-start" aria-hidden />
+      <span className="truncate">{displayName}</span>
+    </Badge>
+  );
+
+  if (!onNavigateToHub || !hubId) {
+    return (
+      <Tooltip>
+        <TooltipTrigger render={<span className="inline-flex min-w-0 max-w-full" />}>
+          {badge}
+        </TooltipTrigger>
+        <TooltipContent>{displayName}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <Tooltip>
-      <TooltipTrigger render={<span className="inline-flex min-w-0 max-w-full" />}>
-        <Badge variant="outline" className="max-w-[120px]">
-          <Database data-icon="inline-start" aria-hidden />
-          <span className="truncate">{displayName}</span>
-        </Badge>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex min-w-0 max-w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigateToHub(hubId);
+            }}
+          />
+        }
+      >
+        {badge}
       </TooltipTrigger>
-      <TooltipContent>{displayName}</TooltipContent>
+      <TooltipContent>View in {displayName}</TooltipContent>
     </Tooltip>
   );
 }
 
-function HubLinksBadge({ hubLinks = [], record }) {
+function HubCountBadge({ count, hubName, hubId, onNavigateToHub }) {
+  if (count === 0) {
+    return null;
+  }
+  const singular = count === 1;
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onNavigateToHub?.(hubId);
+      }}
+      className="inline-flex min-h-[24px] items-center gap-1 rounded-full bg-primary/10 px-2 text-[12px] font-medium text-primary transition-colors hover:bg-primary/15"
+      title={singular ? `1 Hub` : `${count} Hubs`}
+    >
+      <BookOpen className="size-3 shrink-0" aria-hidden />
+      {count} Hub{singular ? "" : "s"}
+    </button>
+  );
+}
+
+function HubLinksBadge({
+  hubLinks = [],
+  record,
+  canEdit,
+  hubs,
+  onLinkToHub,
+  onNavigateToHub,
+}) {
   if (hubLinks.length === 0) {
+    if (canEdit && onLinkToHub && hubs?.length) {
+      return (
+        <KnowledgeHubSearchPicker
+          hubs={hubs}
+          onSelect={(hub) => onLinkToHub(record, hub.id)}
+          renderTrigger={({ toggle }) => (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggle();
+              }}
+              className="inline-flex min-h-[24px] max-w-full items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 transition-colors hover:bg-amber-500/15 dark:text-amber-200"
+            >
+              <Link2 className="mr-1 size-3 shrink-0" aria-hidden />
+              Link to hub
+            </button>
+          )}
+        />
+      );
+    }
     return (
       <Badge variant="secondary">
         {isSingleHubSource(record) ? `${KNOWLEDGE_TERMS.sourceNotLinked} to a hub` : KNOWLEDGE_TERMS.sourceNotLinked}
@@ -271,7 +364,13 @@ function HubLinksBadge({ hubLinks = [], record }) {
   const singleHubOnly = isSingleHubSource(record);
 
   if (hubLinks.length === 1 || singleHubOnly) {
-    return <HubBadge hubName={names[0]} />;
+    return (
+      <HubBadge
+        hubName={names[0]}
+        hubId={hubLinks[0]?.hubId}
+        onNavigateToHub={onNavigateToHub}
+      />
+    );
   }
 
   const linkedSummary = names.join(", ");
@@ -279,7 +378,11 @@ function HubLinksBadge({ hubLinks = [], record }) {
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="inline-flex min-w-0 max-w-full items-center gap-1" />}>
-        <HubBadge hubName={names[0]} />
+        <HubBadge
+          hubName={names[0]}
+          hubId={hubLinks[0]?.hubId}
+          onNavigateToHub={onNavigateToHub}
+        />
         <Badge variant="secondary" className="shrink-0">
           +{hubLinks.length - 1}
         </Badge>
@@ -293,21 +396,55 @@ function HubLinksBadge({ hubLinks = [], record }) {
 
 // ─── File card (grid view) ────────────────────────────────────────────────────
 
-function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlighted, onToggleSelect, onOpen, canEdit, onSyncFile }) {
+function DocFileCard({
+  hubId,
+  file,
+  hubLinks,
+  hubs,
+  selectionMode,
+  selected,
+  highlighted,
+  onToggleSelect,
+  onOpen,
+  canEdit,
+  onSyncFile,
+  sourceDragEnabled = false,
+  onSourceDragChange,
+  onLinkToHub,
+  onNavigateToHub,
+}) {
   const cfg = getFileTypeConfig(file.type);
   const sizeLabel = formatFileSize(file.sizeKb);
-  const displayName = getDocDisplayName(file);
 
   function handleActivate() {
     if (selectionMode) onToggleSelect(docKey(file));
     else onOpen?.(file);
   }
 
+  function handleDragStart(e) {
+    if (!sourceDragEnabled || selectionMode) return;
+    const ref = docToSourceRef(file);
+    if (!ref) return;
+    e.stopPropagation();
+    setSourceDragData(e.dataTransfer, ref);
+    onSourceDragChange?.(true);
+  }
+
+  function handleDragEnd() {
+    onSourceDragChange?.(false);
+  }
+
+  const displayName = getDocDisplayName(file);
+
   return (
     <Card
       data-doc-id={file.id}
+      draggable={sourceDragEnabled && !selectionMode}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       className={cn(
         "group cursor-pointer border-transparent py-0 shadow-none transition-all duration-150 hover:border-border hover:bg-muted/40",
+        sourceDragEnabled && !selectionMode && "cursor-grab active:cursor-grabbing",
         selectionMode && selected && "border-primary bg-primary/5 ring-2 ring-primary/25",
         highlighted && "border-primary ring-2 ring-primary/40 motion-safe:animate-pulse",
       )}
@@ -332,6 +469,53 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlight
           iconSize="size-5"
           imgClassName="p-1"
         />
+
+        {!selectionMode && canEdit && (
+          <div className="absolute right-1 top-1 z-10 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon-xs"
+                    className="size-6 bg-background/90 shadow-sm"
+                    aria-label={`Actions for ${displayName}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                }
+              >
+                <MoreHorizontal className="size-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => onOpen?.(file)}>
+                    <ExternalLink data-icon="inline-start" aria-hidden />
+                    Open in reader
+                  </DropdownMenuItem>
+                  {onLinkToHub ? (
+                    <KnowledgeHubSearchPicker
+                      hubs={hubs}
+                      onSelect={(hub) => onLinkToHub(file, hub.id)}
+                      renderTrigger={({ toggle }) => (
+                        <DropdownMenuItem onClick={toggle}>
+                          <Link2 data-icon="inline-start" aria-hidden />
+                          Link to hub
+                        </DropdownMenuItem>
+                      )}
+                    />
+                  ) : null}
+                  {canEdit && file.source === "cloud" && onSyncFile ? (
+                    <DropdownMenuItem onClick={() => onSyncFile(file)}>
+                      <RefreshCw data-icon="inline-start" aria-hidden />
+                      Sync from cloud
+                    </DropdownMenuItem>
+                  ) : null}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
         {!selectionMode && (
           <div className="absolute right-1.5 top-1.5 z-10">
@@ -368,8 +552,20 @@ function DocFileCard({ hubId, file, hubLinks, selectionMode, selected, highlight
         <p className="mt-0.5 text-xs text-muted-foreground">
           {cfg.label}{sizeLabel ? ` · ${sizeLabel}` : ""}
         </p>
+        {file.updated ? (
+          <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+            Updated {file.updated}
+          </p>
+        ) : null}
         <div className="mt-1.5 flex min-w-0 justify-center">
-          <HubLinksBadge hubLinks={hubLinks} record={file} />
+          <HubLinksBadge
+            hubLinks={hubLinks}
+            record={file}
+            canEdit={canEdit}
+            hubs={hubs}
+            onLinkToHub={onLinkToHub}
+            onNavigateToHub={onNavigateToHub}
+          />
         </div>
       </div>
       </CardContent>
@@ -391,6 +587,11 @@ function DocumentsListTable({
   onSyncFile,
   onUnlinkFromHub,
   onRequestRemove,
+  sourceDragEnabled = false,
+  onSourceDragChange,
+  hubs,
+  onLinkToHub,
+  onNavigateToHub,
 }) {
   return (
     <Table>
@@ -422,6 +623,11 @@ function DocumentsListTable({
             onSyncFile={onSyncFile}
             onUnlinkFromHub={onUnlinkFromHub}
             onRequestRemove={onRequestRemove}
+            sourceDragEnabled={sourceDragEnabled}
+            onSourceDragChange={onSourceDragChange}
+            hubs={hubs}
+            onLinkToHub={onLinkToHub}
+            onNavigateToHub={onNavigateToHub}
           />
         ))}
       </TableBody>
@@ -442,6 +648,11 @@ function DocFileRow({
   onSyncFile,
   onUnlinkFromHub,
   onRequestRemove,
+  sourceDragEnabled = false,
+  onSourceDragChange,
+  hubs,
+  onLinkToHub,
+  onNavigateToHub,
 }) {
   const cfg = getFileTypeConfig(file.type);
   const Icon = cfg.icon;
@@ -460,11 +671,31 @@ function DocFileRow({
     e.stopPropagation();
   }
 
+  function handleDragStart(e) {
+    if (!sourceDragEnabled || selectionMode) return;
+    const ref = docToSourceRef(file);
+    if (!ref) return;
+    e.stopPropagation();
+    setSourceDragData(e.dataTransfer, ref);
+    onSourceDragChange?.(true);
+  }
+
+  function handleDragEnd() {
+    onSourceDragChange?.(false);
+  }
+
   return (
     <TableRow
       data-doc-id={file.id}
+      draggable={sourceDragEnabled && !selectionMode}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       data-state={selected ? "selected" : undefined}
-      className={cn("cursor-pointer", highlighted && "bg-primary/5 ring-2 ring-inset ring-primary/40")}
+      className={cn(
+        "cursor-pointer",
+        sourceDragEnabled && !selectionMode && "cursor-grab active:cursor-grabbing",
+        highlighted && "bg-primary/5 ring-2 ring-inset ring-primary/40",
+      )}
       onClick={handleActivate}
       onKeyDown={(e) => {
         if (e.key === " " || e.key === "Enter") {
@@ -515,7 +746,14 @@ function DocFileRow({
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 sm:hidden">
               <SourceBadge record={file} size="sm" />
-              <HubLinksBadge hubLinks={hubLinks} record={file} />
+              <HubLinksBadge
+                hubLinks={hubLinks}
+                record={file}
+                canEdit={canEdit}
+                hubs={hubs}
+                onLinkToHub={onLinkToHub}
+                onNavigateToHub={onNavigateToHub}
+              />
               <SourceStatusIndicator
                 record={file}
                 fileName={displayName}
@@ -549,7 +787,36 @@ function DocFileRow({
       </TableCell>
 
       <TableCell className="hidden sm:table-cell">
-        <HubLinksBadge hubLinks={hubLinks} record={file} />
+        {hubLinks.length > 0 ? (
+          <HubCountBadge
+            count={hubLinks.length}
+            hubName={hubLinks[0]?.hubName}
+            hubId={hubLinks[0]?.hubId}
+            onNavigateToHub={onNavigateToHub}
+          />
+        ) : canEdit && onLinkToHub && hubs?.length ? (
+          <KnowledgeHubSearchPicker
+            hubs={hubs}
+            onSelect={(hub) => onLinkToHub(file, hub.id)}
+            renderTrigger={({ toggle }) => (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggle();
+                }}
+                className="inline-flex min-h-[24px] items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 text-[12px] font-medium text-amber-800 transition-colors hover:bg-amber-500/15 dark:text-amber-200"
+              >
+                <Link2 className="size-3 shrink-0" aria-hidden />
+                Link
+              </button>
+            )}
+          />
+        ) : (
+          <Badge variant="secondary" className="text-[11px]">
+            Not linked
+          </Badge>
+        )}
       </TableCell>
 
       <TableCell className="hidden text-muted-foreground sm:table-cell">{getSourceFormatLabel(file)}</TableCell>
@@ -580,6 +847,18 @@ function DocFileRow({
                   <ExternalLink data-icon="inline-start" aria-hidden />
                   Open in reader
                 </DropdownMenuItem>
+                {canEdit && onLinkToHub ? (
+                  <KnowledgeHubSearchPicker
+                    hubs={hubs}
+                    onSelect={(hub) => onLinkToHub(file, hub.id)}
+                    renderTrigger={({ toggle }) => (
+                      <DropdownMenuItem onClick={toggle}>
+                        <Link2 data-icon="inline-start" aria-hidden />
+                        Link to hub
+                      </DropdownMenuItem>
+                    )}
+                  />
+                ) : null}
                 {canEdit && isCloud && onSyncFile ? (
                   <DropdownMenuItem onClick={() => onSyncFile(file)}>
                     <RefreshCw data-icon="inline-start" aria-hidden />
@@ -630,9 +909,23 @@ function BulkActionBar({
   onCreateHub,
   onAddToHub,
   onRemove,
+  workspaceMode = false,
+  railCollapsed = false,
 }) {
+  const railOffset = workspaceMode
+    ? railCollapsed
+      ? RAIL_WIDTH_COLLAPSED
+      : RAIL_WIDTH_EXPANDED
+    : 0;
+
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 pointer-events-none">
+    <div
+      className="fixed bottom-6 z-50 pointer-events-none"
+      style={{
+        left: railOffset > 0 ? `calc(${railOffset}px + (100% - ${railOffset}px) / 2)` : "50%",
+        transform: "translateX(-50%)",
+      }}
+    >
       <Card className="pointer-events-auto border-border py-0 shadow-2xl">
         <CardContent className="flex items-center gap-2 px-4 py-2.5">
         <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
@@ -696,6 +989,35 @@ function BulkActionBar({
   );
 }
 
+function ScopedHubEmpty({ hubName, onViewAllSources, onAddSources, canCreate }) {
+  return (
+    <Empty className="flex-1 border border-dashed py-16">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Database aria-hidden />
+        </EmptyMedia>
+        <EmptyTitle>No sources in {hubName} yet</EmptyTitle>
+        <EmptyDescription>
+          Drag sources from All Sources onto this hub, or upload new files here.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent className="flex flex-wrap gap-2">
+        {onViewAllSources ? (
+          <Button type="button" variant="outline" size="sm" onClick={onViewAllSources}>
+            View all sources
+          </Button>
+        ) : null}
+        {canCreate && onAddSources ? (
+          <Button type="button" size="sm" onClick={onAddSources}>
+            <Upload data-icon="inline-start" aria-hidden />
+            Add sources
+          </Button>
+        ) : null}
+      </EmptyContent>
+    </Empty>
+  );
+}
+
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyDocuments({ onUpload, onBrowseHubs, canUpload, canCreateHub }) {
@@ -741,6 +1063,17 @@ export default function DocumentsPage({
   onNavigate,
   embedded = false,
   onRequestTab,
+  workspaceMode = false,
+  scopeHubId = "all",
+  scopeTitle,
+  scopeDescription,
+  railCollapsed = false,
+  onRailToggle,
+  onOpenMobileRail,
+  toastApi,
+  hideToastHost = false,
+  onSourceDragChange,
+  onScopeChange,
 }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -756,6 +1089,8 @@ export default function DocumentsPage({
     hubs,
     documents,
     addHub,
+    addDocumentsToHub,
+    addDocumentsToLibrary,
     linkDocumentsToHub,
     linkDocumentToHub,
     unlinkDocumentFromHub,
@@ -766,7 +1101,10 @@ export default function DocumentsPage({
     downloadCloudFileToHub,
     downloadCloudFileToLibrary,
   } = useKnowledgeHubs();
-  const { toasts, showToast, dismissToast } = useToast();
+  const internalToast = useToast();
+  const showToast = toastApi?.showToast ?? internalToast.showToast;
+  const dismissToast = toastApi?.dismissToast ?? internalToast.dismissToast;
+  const toasts = toastApi?.toasts ?? internalToast.toasts;
   const canCreate = can("knowledge.create");
   const canEdit = can("knowledge.edit");
 
@@ -779,6 +1117,17 @@ export default function DocumentsPage({
     next.delete("addSource");
     setSearchParams(next, { replace: true });
   }, [addSourceParam, searchParams, setSearchParams]);
+
+  const createHubParam = searchParams.get("create");
+
+  useEffect(() => {
+    if (!workspaceMode || createHubParam !== "1" || !canCreate) return;
+    setCreateHubOpen(true);
+    setCreateHubMode("full");
+    const next = new URLSearchParams(searchParams);
+    next.delete("create");
+    setSearchParams(next, { replace: true });
+  }, [workspaceMode, createHubParam, canCreate, searchParams, setSearchParams]);
 
   const categoryParam = searchParams.get("category");
   const validCategories = new Set(["all", "files", "dbs", "apis"]);
@@ -793,6 +1142,7 @@ export default function DocumentsPage({
   );
   const [filterType, setFilterType]     = useState("all");
   const [filterStatus, setFilterStatus] = useState(null);
+  const [filterUnlinked, setFilterUnlinked] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [readerDoc, setReaderDoc]       = useState(null);
@@ -802,11 +1152,120 @@ export default function DocumentsPage({
   const [pendingLinkRefs, setPendingLinkRefs] = useState([]);
   const [linkingHelpOpen, setLinkingHelpOpen] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState(null);
+  const [hubWorkspaceView, setHubWorkspaceView] = useState(HUB_WORKSPACE_VIEWS.sources);
+  const [readerAskSeed, setReaderAskSeed] = useState("");
+  const listScrollRef = useRef(null);
+  const savedListScrollTop = useRef(0);
+  const [fileDropActive, setFileDropActive] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const fileDragDepth = useRef(0);
+
+  const isHubScoped = workspaceMode && scopeHubId && scopeHubId !== "all";
+  const showHubInsights = isHubScoped && hubWorkspaceView === HUB_WORKSPACE_VIEWS.insights;
+  const sourceDragEnabled = workspaceMode && canEdit;
+
+  useEffect(() => {
+    if (!isHubScoped && hubWorkspaceView !== HUB_WORKSPACE_VIEWS.sources) {
+      setHubWorkspaceView(HUB_WORKSPACE_VIEWS.sources);
+    }
+  }, [isHubScoped, hubWorkspaceView]);
 
   const linkTargetHub = useMemo(
     () => hubs.find((h) => String(h.id) === String(linkHubId)),
     [hubs, linkHubId],
   );
+
+  // ── Drag files from the OS onto the list to upload (no wizard) ─────────────
+  const fileDropDestName = isHubScoped ? (scopeTitle ?? "this hub") : "Documents";
+
+  function isOsFileDrag(e) {
+    const types = e?.dataTransfer?.types;
+    if (!types) return false;
+    const list = Array.from(types);
+    // Native file drags expose a "Files" type; ignore internal source-row drags.
+    return list.includes("Files") && !list.includes(KNOWLEDGE_SOURCE_DRAG_MIME);
+  }
+
+  async function handleDroppedFiles(fileList) {
+    const incoming = Array.from(fileList ?? []).filter(Boolean);
+    if (incoming.length === 0) return;
+
+    const { valid, rejected } = partitionUploadFiles(incoming);
+    if (valid.length === 0) {
+      showToast({
+        title: "Files too large",
+        description: `${rejected} file${rejected === 1 ? "" : "s"} exceeded the size limit.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const res = isHubScoped
+      ? await addDocumentsToHub(scopeHubId, { files: valid })
+      : await addDocumentsToLibrary({ files: valid });
+
+    if (res?.error) {
+      showToast({ title: "Couldn’t add files", description: res.error, variant: "destructive" });
+      return;
+    }
+
+    const addedCount = res.added?.length ?? 0;
+    if (addedCount === 0) {
+      const dupe = isHubScoped && (res.skippedDuplicates ?? 0) > 0;
+      showToast({
+        title: dupe ? "Already in this hub" : "Nothing added",
+        description: dupe
+          ? "These files are already linked here."
+          : "No files were added.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const ids = (res.records ?? [])
+      .map((r) => r.libraryDocumentId ?? r.id)
+      .filter(Boolean);
+    if (ids.length > 0) {
+      const next = new URLSearchParams(searchParams);
+      next.set("highlight", ids.join(","));
+      setSearchParams(next, { replace: true });
+    }
+
+    showToast({
+      title: `Added to ${fileDropDestName}`,
+      description: `${addedCount} file${addedCount === 1 ? "" : "s"} uploaded${
+        rejected > 0 ? `, ${rejected} skipped (too large)` : ""
+      }.`,
+      variant: "success",
+    });
+  }
+
+  function handleContentDragEnter(e) {
+    if (readerDoc || !canCreate || !isOsFileDrag(e)) return;
+    e.preventDefault();
+    fileDragDepth.current += 1;
+    setFileDropActive(true);
+  }
+
+  function handleContentDragOver(e) {
+    if (!fileDropActive || !isOsFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleContentDragLeave() {
+    if (!fileDropActive) return;
+    fileDragDepth.current = Math.max(0, fileDragDepth.current - 1);
+    if (fileDragDepth.current === 0) setFileDropActive(false);
+  }
+
+  function handleContentDrop(e) {
+    if (readerDoc || !canCreate || !isOsFileDrag(e)) return;
+    e.preventDefault();
+    fileDragDepth.current = 0;
+    setFileDropActive(false);
+    handleDroppedFiles(e.dataTransfer.files);
+  }
 
   function setFilterCategory(id) {
     setFilterCategoryState(id);
@@ -843,7 +1302,7 @@ export default function DocumentsPage({
 
   useEffect(() => {
     setDocsPage(1);
-  }, [searchQuery, filterSource, filterCategory, filterType, filterStatus, sortBy]);
+  }, [searchQuery, filterSource, filterCategory, filterType, filterStatus, filterUnlinked, sortBy]);
 
   // ── Flat document list: library + legacy hub-only files ───────────────────
 
@@ -927,9 +1386,17 @@ export default function DocumentsPage({
     ];
   }, [allDocs]);
 
-  const filteredDocs = useMemo(() => {
+  const scopeFilteredDocs = useMemo(() => {
+    if (!workspaceMode || !scopeHubId || scopeHubId === "all") return allDocs;
+    return allDocs.filter((d) =>
+      d.hubLinks?.some((l) => String(l.hubId) === String(scopeHubId)),
+    );
+  }, [allDocs, workspaceMode, scopeHubId]);
+
+  const categoryFilteredDocs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    let list = allDocs.filter((d) => {
+    return scopeFilteredDocs.filter((d) => {
+      if (filterUnlinked && (d.hubLinks?.length ?? 0) > 0) return false;
       const hubLabel = d.hubLinks?.map((l) => l.hubName).join(" ") ?? "";
       const displayName = getDocDisplayName(d).toLowerCase();
       if (
@@ -942,11 +1409,19 @@ export default function DocumentsPage({
       }
       if (filterSource === "local" && d.source !== "user" && d.source !== "upload") return false;
       if (filterSource === "cloud" && d.source !== "cloud") return false;
-      if (filterCategory !== "all" && resolveSourceCategory(d) !== filterCategory) return false;
       if (filterType !== "all" && normalizeDocumentType(d.type) !== filterType) return false;
       if (filterStatus) {
         const status = resolveFileLifecycleStatus(d);
-        if (filterStatus === "local") {
+        if (filterStatus === "attention") {
+          const needsAttention =
+            status === "processing" ||
+            status === "syncing" ||
+            status === "failed" ||
+            status === "warning" ||
+            status === "out_of_sync" ||
+            status === "linked";
+          if (!needsAttention) return false;
+        } else if (filterStatus === "local") {
           if (d.source !== "user" && d.source !== "upload") return false;
         } else if (filterStatus === "processing") {
           if (status !== "processing" && status !== "syncing") return false;
@@ -956,6 +1431,20 @@ export default function DocumentsPage({
       }
       return true;
     });
+  }, [
+    scopeFilteredDocs,
+    searchQuery,
+    filterSource,
+    filterType,
+    filterStatus,
+    filterUnlinked,
+  ]);
+
+  const filteredDocs = useMemo(() => {
+    let list = categoryFilteredDocs;
+    if (filterCategory !== "all") {
+      list = list.filter((d) => resolveSourceCategory(d) === filterCategory);
+    }
     return [...list].sort((a, b) => {
       if (sortBy === "name") return (a.name ?? "").localeCompare(b.name ?? "");
       if (sortBy === "size") return (b.sizeKb ?? 0) - (a.sizeKb ?? 0);
@@ -968,12 +1457,39 @@ export default function DocumentsPage({
       }
       return (b.uploadedAt ?? b.created ?? "").localeCompare(a.uploadedAt ?? a.created ?? "");
     });
-  }, [allDocs, searchQuery, filterSource, filterCategory, filterType, filterStatus, sortBy]);
+  }, [
+    categoryFilteredDocs,
+    filterCategory,
+    sortBy,
+  ]);
 
   const docsPagination = useMemo(
     () => paginateSlice(filteredDocs, docsPage, DOCS_PAGE_SIZE),
     [filteredDocs, docsPage],
   );
+
+  const unlinkedCount = useMemo(
+    () => allDocs.filter((d) => (d.hubLinks?.length ?? 0) === 0).length,
+    [allDocs],
+  );
+
+  const showGroupedList =
+    workspaceMode && scopeHubId === "all" && !filterUnlinked && viewMode === "list";
+
+  const listSections = useMemo(() => {
+    const docs = docsPagination.items;
+    if (!showGroupedList) return [{ id: "all", label: null, docs }];
+    const unlinked = docs.filter((d) => (d.hubLinks?.length ?? 0) === 0);
+    const linked = docs.filter((d) => (d.hubLinks?.length ?? 0) > 0);
+    const sections = [];
+    if (unlinked.length) {
+      sections.push({ id: "unlinked", label: `Not linked (${unlinked.length})`, docs: unlinked });
+    }
+    if (linked.length) {
+      sections.push({ id: "linked", label: `Linked (${linked.length})`, docs: linked });
+    }
+    return sections.length ? sections : [{ id: "all", label: null, docs }];
+  }, [docsPagination.items, showGroupedList]);
 
   useEffect(() => {
     if (highlightIds.size === 0) return undefined;
@@ -1011,6 +1527,7 @@ export default function DocumentsPage({
     setFilterCategory("all");
     setFilterType("all");
     setFilterStatus(null);
+    setFilterUnlinked(false);
     setDocsPage(1);
   }
 
@@ -1089,11 +1606,21 @@ export default function DocumentsPage({
   }
 
   function handleOpenDoc(doc) {
+    if (listScrollRef.current) {
+      savedListScrollTop.current = listScrollRef.current.scrollTop;
+    }
+    setReaderAskSeed("");
     setReaderDoc(doc);
   }
 
   function handleCloseReader() {
     setReaderDoc(null);
+    setReaderAskSeed("");
+    window.requestAnimationFrame(() => {
+      if (listScrollRef.current) {
+        listScrollRef.current.scrollTop = savedListScrollTop.current;
+      }
+    });
   }
 
   function handleNavigateToHub(hubId) {
@@ -1124,10 +1651,17 @@ export default function DocumentsPage({
 
   function handleSourceAdded(result) {
     if (!result) return;
-    const where = result.hubName ? `"${result.hubName}"` : "your document library";
+    const n = result.recordIds?.length ?? 1;
+    if (result.recordIds?.length) {
+      const next = new URLSearchParams(searchParams);
+      next.set("highlight", result.recordIds.join(","));
+      setSearchParams(next, { replace: true });
+    }
     showToast({
-      title: "Source added",
-      description: `${result.sourceName} added to ${where}.`,
+      title: n === 1 ? "1 source added" : `${n} sources added`,
+      description: result.hubName
+        ? `Linked to ${result.hubName}. Highlighted in the list below.`
+        : "Now in All Sources — highlighted in the list below.",
       variant: "success",
     });
   }
@@ -1259,6 +1793,44 @@ export default function DocumentsPage({
     }
   }
 
+  async function handleLinkSourceToHub(record, hubId) {
+    if (!record || !hubId) return;
+    if (record.isLibraryDocument) {
+      await handleLinkDocToHub(record.id, hubId);
+    } else {
+      await handleLinkHubFileToHub(record.hubId, record.id, hubId);
+    }
+  }
+
+  function handleNavigateToScope(hubId) {
+    if (workspaceMode && onScopeChange) {
+      onScopeChange(String(hubId));
+      return;
+    }
+    handleNavigateToHub(hubId);
+  }
+
+  function handleInsightFindSources(query) {
+    setHubWorkspaceView(HUB_WORKSPACE_VIEWS.sources);
+    setSearchQuery(query ?? "");
+    setDocsPage(1);
+  }
+
+  function handleInsightSuggestedQuestion(question) {
+    const target =
+      filteredDocs.find((d) => resolveSourceCategory(d) === "files") ?? filteredDocs[0];
+    if (!target) {
+      showToast({
+        title: "Add a source first",
+        description: "Upload or link a document to ask questions about this hub.",
+        variant: "default",
+      });
+      return;
+    }
+    setReaderAskSeed(question);
+    handleOpenDoc(target);
+  }
+
   async function handleUnlinkDocFromHub(documentId, hubId) {
     unlinkDocumentFromHub(documentId, hubId);
     const hub = hubs.find((h) => String(h.id) === String(hubId));
@@ -1300,7 +1872,6 @@ export default function DocumentsPage({
     } catch {
       showToast({
         title: KNOWLEDGE_TERMS.toastCouldNotAddSource,
-        description: "Try again or pick a different source.",
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       });
@@ -1468,7 +2039,123 @@ export default function DocumentsPage({
     <main className="flex flex-1 flex-col overflow-hidden">
 
           {/* Page header — hidden in reader view */}
-          {!readerDoc && (
+          {!readerDoc && workspaceMode ? (
+            <div className="flex-shrink-0 px-7 pb-0 pt-6">
+              <div className="flex items-start gap-4">
+                {onRailToggle && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="mt-6 hidden shrink-0 text-muted-foreground lg:inline-flex"
+                    onClick={onRailToggle}
+                    title="Toggle scope rail"
+                    aria-label="Toggle scope rail"
+                    aria-pressed={railCollapsed}
+                  >
+                    <PanelLeft className="size-4" aria-hidden />
+                  </Button>
+                )}
+                {onOpenMobileRail && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="mt-6 shrink-0 text-muted-foreground lg:hidden"
+                    onClick={onOpenMobileRail}
+                    title="Open scope rail"
+                    aria-label="Open scope rail"
+                  >
+                    <PanelLeft className="size-4" aria-hidden />
+                  </Button>
+                )}
+                <PageHeader
+                  className="min-w-0 flex-1"
+                  title={scopeTitle ?? "All Sources"}
+                  description={scopeDescription}
+                >
+                  {canCreate && (
+                    <Button
+                      type="button"
+                      className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                      aria-haspopup="dialog"
+                      onClick={() => setWizardOpen(true)}
+                    >
+                      <Upload data-icon="inline-start" aria-hidden />
+                      {KNOWLEDGE_TERMS.addSources}
+                    </Button>
+                  )}
+                </PageHeader>
+              </div>
+              <KnowledgeWorkspaceToolbar
+                className="mt-5"
+                filterCategory={filterCategory}
+                onFilterCategoryChange={setFilterCategory}
+                filterSource={filterSource}
+                onFilterSourceChange={setFilterSource}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                sortBy={sortBy}
+                onSortByChange={setSortBy}
+                filterStatus={filterStatus}
+                onFilterStatusChange={setFilterStatus}
+                filterUnlinked={filterUnlinked}
+                onFilterUnlinkedChange={setFilterUnlinked}
+                unlinkedCount={unlinkedCount}
+                resultCount={filteredDocs.length}
+                totalCount={categoryFilteredDocs.length}
+                onOpenLinkingHelp={() => setLinkingHelpOpen(true)}
+              />
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {isHubScoped && (
+                  <KnowledgeHubViewTabs
+                    value={hubWorkspaceView}
+                    onChange={setHubWorkspaceView}
+                    className="border-b-0 pb-0"
+                  />
+                )}
+                <div className="ml-auto flex flex-wrap items-center gap-2.5">
+                  <KnowledgeSourcesBreakdown
+                    mode="trigger"
+                    open={breakdownOpen}
+                    onOpenChange={setBreakdownOpen}
+                    docs={categoryFilteredDocs}
+                    activeStatusFilter={filterStatus}
+                    onFilterStatus={(status) => {
+                      setFilterStatus(status === "attention" ? "attention" : status);
+                      setDocsPage(1);
+                    }}
+                    onClearStatusFilter={() => {
+                      setFilterStatus(null);
+                      setDocsPage(1);
+                    }}
+                  />
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      variant={selectionMode ? "default" : "outline"}
+                      size="sm"
+                      className={cn(TOOLBAR_CONTROL_CLASS, "h-8 gap-1.5 px-3 text-xs")}
+                      onClick={() => {
+                        if (selectionMode) exitSelectionMode();
+                        else enterSelectionMode();
+                      }}
+                    >
+                      {selectionMode ? "Done" : "Select"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <KnowledgeSourcesBreakdown
+                mode="panel"
+                open={breakdownOpen}
+                docs={categoryFilteredDocs}
+                className="mt-3.5"
+              />
+            </div>
+          ) : !readerDoc ? (
           <div className="flex-shrink-0 px-6 py-4">
             <PageHeader
               title={KNOWLEDGE_TERMS.documents}
@@ -1489,6 +2176,7 @@ export default function DocumentsPage({
                 <Button
                   type="button"
                   className={cn(TOOLBAR_CONTROL_CLASS, "gap-1.5 px-3")}
+                  aria-haspopup="dialog"
                   onClick={() => setWizardOpen(true)}
                 >
                   <Upload data-icon="inline-start" aria-hidden />
@@ -1497,17 +2185,17 @@ export default function DocumentsPage({
               )}
             </PageHeader>
           </div>
-          )}
+          ) : null}
 
-          {!readerDoc && (
+          {!readerDoc && !workspaceMode && (
             <DocumentsCategoryTabBar
               value={filterCategory}
               onChange={setFilterCategory}
             />
           )}
 
-          {/* Toolbar — hidden in reader view */}
-          {!readerDoc && (
+          {/* Toolbar — hidden in reader view and workspace mode */}
+          {!readerDoc && !workspaceMode && (
           <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-y border-border bg-muted/20 px-6 py-2">
 
             <InputGroup className={cn("min-w-[180px] flex-1 max-w-[280px]", TOOLBAR_CONTROL_CLASS)}>
@@ -1600,9 +2288,9 @@ export default function DocumentsPage({
             <div className="ml-auto flex items-center gap-3">
               {allDocs.length > 0 && !readerDoc && (
                 <p className="text-xs text-muted-foreground">
-                  {filteredDocs.length === allDocs.length
-                    ? sourcesCountLabel(allDocs.length, filterCategory)
-                    : `${filteredDocs.length} of ${allDocs.length}`}
+                  {filteredDocs.length === categoryFilteredDocs.length
+                    ? sourcesCountLabel(categoryFilteredDocs.length, filterCategory)
+                    : `${filteredDocs.length} of ${categoryFilteredDocs.length}`}
                 </p>
               )}
 
@@ -1647,13 +2335,20 @@ export default function DocumentsPage({
           )}
 
           {selectionMode && !readerDoc && (
-            <div className="flex shrink-0 items-center gap-3 border-b border-border bg-muted/30 px-6 py-2">
+            <div
+              className={cn(
+                "flex shrink-0 items-center gap-3 border-b border-border bg-muted/30 py-2",
+                workspaceMode ? "px-7" : "px-6",
+              )}
+            >
               <span className="text-xs font-medium text-foreground">
                 {linkTargetHub
                   ? `Select documents to link to "${linkTargetHub.name}"`
-                  : selectedCount === 0
-                    ? "Click or tap documents to select"
-                    : `${selectedCount} selected`}
+                  : workspaceMode && selectedCount === 0
+                    ? "Select sources, then Add to Hub — or drag onto a hub in the sidebar"
+                    : selectedCount === 0
+                      ? "Click or tap documents to select"
+                      : `${selectedCount} selected`}
               </span>
               {filteredDocs.length > 0 && selectedCount < filteredDocs.length && (
                 <Button
@@ -1679,7 +2374,28 @@ export default function DocumentsPage({
           )}
 
           {/* Content area */}
-          <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div
+            className="relative flex min-h-0 flex-1 overflow-hidden"
+            onDragEnter={handleContentDragEnter}
+            onDragOver={handleContentDragOver}
+            onDragLeave={handleContentDragLeave}
+            onDrop={handleContentDrop}
+          >
+            {fileDropActive && !readerDoc && canCreate ? (
+              <div className="pointer-events-none absolute inset-3 z-30 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-primary/5 backdrop-blur-[1px]">
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Upload className="size-6" aria-hidden />
+                </span>
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    Drop files to add to {fileDropDestName}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    PDFs, documents, spreadsheets, and images
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {readerDoc ? (
               resolveSourceCategory(activeReaderDoc) === "dbs" ? (
                 <DatabaseDetailView
@@ -1738,16 +2454,20 @@ export default function DocumentsPage({
                   });
                 }}
                 onClose={handleCloseReader}
+                initialAskSeed={readerAskSeed}
               />
               )
               ) : (
             <div
+              ref={listScrollRef}
               className={cn(
-                "flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-6 py-5",
+                "flex min-h-0 w-full flex-1 flex-col overflow-y-auto py-5",
+                workspaceMode ? "px-7" : "px-6",
                 selectionMode && selectedCount > 0 && "pb-24",
               )}
             >
               {allDocs.length > 0 ? (
+                workspaceMode ? null : (
                 <FileStatusSummaryBar
                   files={allDocs}
                   title="Documents"
@@ -1759,14 +2479,31 @@ export default function DocumentsPage({
                   activeFilter={filterStatus}
                   onFilter={setFilterStatus}
                 />
+                )
               ) : null}
 
-              {allDocs.length === 0 ? (
+              {showHubInsights ? (
+                <KnowledgeHubInsightsPanel
+                  className="shrink-0"
+                  hubId={scopeHubId}
+                  sourceCount={filteredDocs.length}
+                  onSuggestedQuestion={handleInsightSuggestedQuestion}
+                  onFindSources={handleInsightFindSources}
+                  onAddSource={() => canCreate && setWizardOpen(true)}
+                />
+              ) : allDocs.length === 0 ? (
                 <EmptyDocuments
                   canUpload={canCreate}
                   canCreateHub={canCreate}
                   onUpload={() => canCreate && setWizardOpen(true)}
                   onBrowseHubs={openHubsTab}
+                />
+              ) : isHubScoped && filteredDocs.length === 0 ? (
+                <ScopedHubEmpty
+                  hubName={scopeTitle ?? "this hub"}
+                  onViewAllSources={() => onScopeChange?.("all")}
+                  onAddSources={() => canCreate && setWizardOpen(true)}
+                  canCreate={canCreate}
                 />
               ) : filteredDocs.length === 0 ? (
                 <Empty className="flex-1 border border-dashed py-12">
@@ -1794,6 +2531,7 @@ export default function DocumentsPage({
                         hubId={doc.hubId}
                         file={doc}
                         hubLinks={doc.hubLinks}
+                        hubs={hubs}
                         selectionMode={selectionMode}
                         selected={selectedKeys.has(docKey(doc))}
                         highlighted={
@@ -1803,6 +2541,10 @@ export default function DocumentsPage({
                         onOpen={handleOpenDoc}
                         canEdit={canEdit}
                         onSyncFile={handleSyncFile}
+                        sourceDragEnabled={sourceDragEnabled}
+                        onSourceDragChange={onSourceDragChange}
+                        onLinkToHub={handleLinkSourceToHub}
+                        onNavigateToHub={handleNavigateToScope}
                       />
                     ))}
                   </div>
@@ -1817,19 +2559,33 @@ export default function DocumentsPage({
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <DocumentsListTable
-                      docs={docsPagination.items}
-                      selectionMode={selectionMode}
-                      selectedKeys={selectedKeys}
-                      highlightedIds={highlightIds}
-                      canEdit={canEdit}
-                      metricColumnLabel={metricColumnLabel}
-                      onToggleSelect={toggleSelect}
-                      onOpen={handleOpenDoc}
-                      onSyncFile={handleSyncFile}
-                      onUnlinkFromHub={handleUnlinkDocFromHub}
-                      onRequestRemove={requestRemoveDoc}
-                    />
+                    {listSections.map((section) => (
+                      <div key={section.id} className="mb-6 last:mb-0">
+                        {section.label ? (
+                          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            {section.label}
+                          </h2>
+                        ) : null}
+                        <DocumentsListTable
+                          docs={section.docs}
+                          selectionMode={selectionMode}
+                          selectedKeys={selectedKeys}
+                          highlightedIds={highlightIds}
+                          canEdit={canEdit}
+                          metricColumnLabel={metricColumnLabel}
+                          onToggleSelect={toggleSelect}
+                          onOpen={handleOpenDoc}
+                          onSyncFile={handleSyncFile}
+                          onUnlinkFromHub={handleUnlinkDocFromHub}
+                          onRequestRemove={requestRemoveDoc}
+                          sourceDragEnabled={sourceDragEnabled}
+                          onSourceDragChange={onSourceDragChange}
+                          hubs={hubs}
+                          onLinkToHub={handleLinkSourceToHub}
+                          onNavigateToHub={handleNavigateToScope}
+                        />
+                      </div>
+                    ))}
                   </div>
                   <DocsTablePagination
                     page={docsPagination.currentPage}
@@ -1861,6 +2617,8 @@ export default function DocumentsPage({
           onCreateHub={() => openCreateHubDialog({ fromSelection: true })}
           onAddToHub={handleAddToHub}
           onRemove={requestBulkRemove}
+          workspaceMode={workspaceMode}
+          railCollapsed={railCollapsed}
         />
       )}
 
@@ -1869,6 +2627,7 @@ export default function DocumentsPage({
         onOpenChange={setWizardOpen}
         onComplete={handleSourceAdded}
         defaultHubId={linkHubId ?? undefined}
+        defaultSourceType={filterCategoryToWizardType(filterCategory)}
       />
 
       <LinkingHelpDialog open={linkingHelpOpen} onOpenChange={setLinkingHelpOpen} />
@@ -1893,16 +2652,17 @@ export default function DocumentsPage({
           selectionMode && selectedCount > 0 ? "bottom-24" : "bottom-4",
         )}
       >
-        {toasts.map((t) => (
-          <Toast
-            key={t.id}
-            message={t.message}
-            variant={t.variant ?? "default"}
-            actionLabel={t.actionLabel}
-            onAction={t.onAction}
-            onDismiss={() => dismissToast(t.id)}
-          />
-        ))}
+        {!hideToastHost &&
+          toasts.map((t) => (
+            <Toast
+              key={t.id}
+              message={t.message}
+              variant={t.variant ?? "default"}
+              actionLabel={t.actionLabel}
+              onAction={t.onAction}
+              onDismiss={() => dismissToast(t.id)}
+            />
+          ))}
       </div>
 
       <Dialog open={Boolean(removeConfirm)} onOpenChange={(open) => !open && setRemoveConfirm(null)}>

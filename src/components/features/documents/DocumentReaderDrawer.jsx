@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Sparkles,
   Send,
-  Bot,
   FileText,
   Clock,
   Copy,
@@ -31,12 +30,30 @@ import {
   Wand2,
   Info,
   StickyNote,
+  Search,
+  PanelRight,
+  ListTree,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
+import { ReaderPillTabs } from "@/components/features/documents/ReaderPillTabs";
+import { DocumentFindBar } from "@/components/features/documents/DocumentFindBar";
+import { DocumentReadingSettingsPopover } from "@/components/features/documents/DocumentReadingSettingsPopover";
+import {
+  buildSearchHighlightNodes,
+  countChapterSearchMatches,
+} from "@/components/features/documents/documentFindUtils";
+import { useReadingSettings } from "@/components/features/documents/readingSettings";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useKnowledgeHubs } from "@/context/KnowledgeHubContext";
 import {
   ContentCaptureDropdown,
@@ -58,6 +75,17 @@ import { getSourceLifecycleMeta } from "@/lib/sourceCategories";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { HubFilePreviewViewer } from "@/components/features/knowledge/HubFilePreviewViewer";
 
+/** Respect the user's reduced-motion preference for programmatic scrolling. */
+function scrollBehavior() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return "auto";
+  }
+  return "smooth";
+}
+
 const PANEL_TABS = [
   { id: "chapter", label: "Ask AI", icon: MessageSquare },
   { id: "studio", label: "Studio", icon: Wand2 },
@@ -78,6 +106,47 @@ function panelTabsWithCounts(hubLinks = []) {
 // ─── Content map ──────────────────────────────────────────────────────────────
 
 const CONTENT_MAP = {
+  "Q3 Report.pdf": {
+    chapters: [
+      {
+        id: "c1",
+        num: 1,
+        title: "Executive Summary",
+        readMins: 3,
+        summary:
+          "Q3 closed at $4.2M revenue (+23%), with recurring base of $3.8M, NRR of 118%, and gross churn down to 1.4%.",
+        body: `The third quarter closed with revenue of $4.2M, a 23% increase over Q2 and the strongest quarterly result in the company's history. Growth was driven primarily by the expansion of the enterprise tier and a marked improvement in net revenue retention, which climbed to 118%.\n\nThree themes defined the quarter: the enterprise segment matured from experimental pilots into committed annual contracts, the self-serve funnel became measurably more efficient, and operating discipline held costs flat even as headcount grew. Together these moved the business decisively toward sustainable, capital-efficient growth.\n\nThis report walks through the financial results, the operational drivers behind them, and the strategic bets we are placing into Q4. Where the numbers tell a clear story we have kept commentary brief; where they require interpretation we have been explicit about assumptions.`,
+      },
+      {
+        id: "c2",
+        num: 2,
+        title: "Revenue & Retention",
+        readMins: 5,
+        summary:
+          "Recurring revenue reached $3.8M with NRR of 118% and gross churn falling to 1.4% monthly.",
+        body: `Recurring revenue reached $3.8M of the $4.2M total, with services and one-time fees making up the remainder. The recurring base now grows faster than it churns in every cohort acquired after January, a structural inflection we have been working toward for four quarters.\n\nNet revenue retention of 118% means existing customers expanded their spend faster than others contracted or left. Expansion came disproportionately from accounts that adopted a second product line within ninety days of onboarding — a pattern that argues strongly for investing in guided activation rather than broad top-of-funnel spend.\n\nGross churn fell to 1.4% monthly, down from 2.1% a year ago. The improvement traces almost entirely to the enterprise segment, where dedicated success coverage and quarterly business reviews have made renewals a formality rather than a negotiation.\n\nThe one cautionary note is concentration: our ten largest accounts now represent 31% of recurring revenue. None show churn risk today, but the board has asked us to model the downside and to accelerate diversification of the customer base in Q4.`,
+      },
+      {
+        id: "c3",
+        num: 3,
+        title: "Operating Efficiency",
+        readMins: 4,
+        summary:
+          "Operating expenses held flat while sales efficiency reached 0.9 and cash burn narrowed to $310K.",
+        body: `Operating expenses were essentially flat quarter over quarter despite a net addition of eleven employees. The apparent contradiction resolves in two facts: most hires were back-loaded into September, and we retired two vendor contracts whose combined annual cost exceeded the new payroll.\n\nSales efficiency, measured as new recurring revenue divided by the prior period's sales and marketing spend, reached 0.9 — approaching the 1.0 threshold at which growth begins to fund itself. Self-serve conversions, which carry almost no marginal sales cost, contributed an outsized share of this improvement.\n\nCash burn narrowed to $310K for the quarter, extending runway to roughly nineteen months at the current rate. If the Q4 plan executes as modeled, we expect to reach cash-flow breakeven without raising additional capital, though we retain the option to raise opportunistically.`,
+      },
+      {
+        id: "c4",
+        num: 4,
+        title: "Outlook for Q4",
+        readMins: 3,
+        summary:
+          "Three Q4 bets: guided activation, account diversification, and disciplined spend to reach breakeven.",
+        body: `We are placing three bets in Q4. First, guided activation: a redesigned onboarding that pushes new accounts toward their second product line inside the ninety-day window the retention data identifies as decisive. Second, account diversification to reduce concentration risk among our largest customers.\n\nThird, we will hold the line on spend. The temptation after a strong quarter is to accelerate hiring and marketing; the data says our highest-leverage investments are in activation and success, not acquisition. We would rather reach breakeven on our own terms than buy growth that does not retain.\n\nIf these bets land, Q4 revenue should exceed $4.9M with retention holding above 115%. We will know within six weeks whether guided activation is working, and we have instrumented the funnel to tell us early.`,
+      },
+    ],
+  },
+
   "QuantumLeap.pdf": {
     chapters: [
       {
@@ -701,28 +770,6 @@ function generateFallbackChapters(file) {
   }));
 }
 
-function mergeChaptersForReading(chapters, fileName) {
-  if (!chapters.length) return null;
-  const docTitle = fileName?.replace(/\.[^.]+$/, "") ?? chapters[0].title;
-
-  if (chapters.length === 1) {
-    return { ...chapters[0], title: docTitle };
-  }
-
-  const body = chapters
-    .filter((ch) => ch.body != null)
-    .map((ch) => `**${ch.title}**\n\n${ch.body}`)
-    .join("\n\n");
-
-  return {
-    ...chapters[0],
-    id: "document",
-    title: docTitle,
-    summary: chapters.map((c) => c.summary).filter(Boolean).join(" "),
-    body,
-    readMins: chapters.reduce((sum, c) => sum + (c.readMins ?? 0), 0),
-  };
-}
 
 // ─── Studio tools (mirrors KnowledgeHubWorkspaceView) ────────────────────────
 
@@ -768,6 +815,18 @@ const SUGGESTED_QUERIES = [
   "Explain this in simple terms",
 ];
 
+const Q3_REPORT_SUGGESTED = [
+  "Summarise this report",
+  "What drove revenue growth?",
+  "What are the risks?",
+  "Explain net revenue retention",
+];
+
+function suggestedQueriesForFile(fileName) {
+  if (fileName === "Q3 Report.pdf") return Q3_REPORT_SUGGESTED;
+  return SUGGESTED_QUERIES;
+}
+
 function mockChapterReply(question, chapter, fileName) {
   const q = question.trim().toLowerCase();
   if (!q) {
@@ -786,8 +845,9 @@ function mockChapterReply(question, chapter, fileName) {
   return `From **${chapter.title}** (Chapter ${chapter.num}):\n\n${chapter.summary}\n\nThis answer is drawn from the current chapter. Switch chapters or ask a more specific question for deeper detail.`;
 }
 
-function ChapterChatMessage({ message, sourceLabel, onCapture, showFeedbackActions = false }) {
+function ChapterChatMessage({ message, sourceLabel, onCapture, onRegenerate, showFeedbackActions = false }) {
   const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState(null);
   const plainText = message.text.replace(/\*\*(.*?)\*\*/g, "$1");
 
   if (message.role === "user") {
@@ -826,27 +886,40 @@ function ChapterChatMessage({ message, sourceLabel, onCapture, showFeedbackActio
             <button
               type="button"
               aria-label="Good response"
-              title="Good response"
-              className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-pressed={feedback === "up"}
+              title={feedback === "up" ? "Marked helpful" : "Good response"}
+              onClick={() => setFeedback((v) => (v === "up" ? null : "up"))}
+              className={cn(
+                "flex size-7 items-center justify-center rounded-full transition-colors hover:bg-muted hover:text-foreground",
+                feedback === "up" ? "text-success" : "text-muted-foreground",
+              )}
             >
               <ThumbsUp className="size-3.5" />
             </button>
             <button
               type="button"
               aria-label="Bad response"
-              title="Bad response"
-              className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-pressed={feedback === "down"}
+              title={feedback === "down" ? "Marked unhelpful" : "Bad response"}
+              onClick={() => setFeedback((v) => (v === "down" ? null : "down"))}
+              className={cn(
+                "flex size-7 items-center justify-center rounded-full transition-colors hover:bg-muted hover:text-foreground",
+                feedback === "down" ? "text-destructive" : "text-muted-foreground",
+              )}
             >
               <ThumbsDown className="size-3.5" />
             </button>
-            <button
-              type="button"
-              aria-label="Regenerate"
-              title="Regenerate"
-              className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <RotateCcw className="size-3.5" />
-            </button>
+            {onRegenerate ? (
+              <button
+                type="button"
+                aria-label="Regenerate"
+                title="Regenerate"
+                onClick={onRegenerate}
+                className="flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5" />
+              </button>
+            ) : null}
           </>
         ) : null}
         <button
@@ -872,21 +945,22 @@ function ChapterChatMessage({ message, sourceLabel, onCapture, showFeedbackActio
 
 // ─── Document reading view (center panel) ─────────────────────────────────────
 
-function ReadingMeta({ chapter }) {
-  if (!chapter.readMins) return null;
-  return (
-    <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-      <span className="flex items-center gap-1">
-        <Clock className="size-3" />
-        {chapter.readMins} min read
-      </span>
-    </div>
-  );
-}
+function MultiChapterDocumentView({
+  chapters,
+  activeChapterId,
+  readingSourceLabel,
+  canEdit,
+  openSelectionMenu,
+  scrollRef,
+  onScrollProgress,
+  onActiveChapterChange,
+  findQuery = "",
+  activeHitIndex = -1,
+  readingSettings,
+}) {
+  const firstChapter = chapters[0];
 
-function ChapterReaderView({ chapter, readingSourceLabel, canEdit, openSelectionMenu, scrollRef }) {
-  // Fallback chapter (body === null) — document not yet indexed
-  if (chapter?.body === null) {
+  if (firstChapter?.body === null) {
     return (
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-4 px-8 py-24 text-center">
@@ -895,48 +969,150 @@ function ChapterReaderView({ chapter, readingSourceLabel, canEdit, openSelection
           </div>
           <div className="space-y-1.5">
             <h2 className="text-lg font-semibold text-foreground">
-              {chapter.summary?.includes("being processed")
+              {firstChapter.summary?.includes("being processed")
                 ? "Processing document…"
                 : "Document stored"}
             </h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              {chapter.summary}
-            </p>
+            <p className="max-w-sm text-sm text-muted-foreground">{firstChapter.summary}</p>
           </div>
-          {chapter.summary?.includes("being processed") && (
-            <p className="text-xs text-muted-foreground">
-              Check back shortly — this usually takes under a minute.
-            </p>
-          )}
         </div>
       </div>
     );
   }
 
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollHeight - el.clientHeight;
+    onScrollProgress?.(max > 0 ? (el.scrollTop / max) * 100 : 0);
+
+    const markers = chapters
+      .map((ch) => ({
+        id: ch.id,
+        el: el.querySelector(`[data-chapter-id="${ch.id}"]`),
+      }))
+      .filter((m) => m.el);
+
+    const offset = el.scrollTop + el.clientHeight * 0.35;
+    let current = markers[0]?.id;
+    for (const marker of markers) {
+      if (marker.el.offsetTop <= offset) current = marker.id;
+    }
+    if (current && current !== activeChapterId) onActiveChapterChange?.(current);
+  };
+
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto">
-      <div className="mx-auto w-full max-w-4xl px-8 py-10 pb-24">
-        <h1 className="text-[2rem] font-bold leading-tight tracking-tight text-foreground">
-          {chapter?.title}
-        </h1>
-
-        <ReadingMeta chapter={chapter} />
-
-        <div className="my-6 h-px w-12 bg-primary/30" />
-
-        <div
-          className="space-y-5"
-          onContextMenu={(e) => canEdit && openSelectionMenu?.(e, null, readingSourceLabel)}
-        >
-          {(chapter?.body ?? "").split("\n\n").map((para, i) => (
-            <p
-              key={i}
-              className="whitespace-pre-wrap text-[0.9375rem] leading-[1.8] text-foreground/85 selection:bg-primary/20"
-            >
-              {para}
-            </p>
-          ))}
-        </div>
+    <div
+      ref={scrollRef}
+      className={cn(
+        "flex-1 overflow-y-auto overscroll-y-contain",
+        readingSettings?.theme === "sepia" && "bg-[#f4ecd8]",
+        readingSettings?.theme === "dark-read" && "bg-[#1a1a1a]",
+      )}
+      style={{
+        "--reader-font-size": `${readingSettings?.fontSize ?? 18}px`,
+        "--reader-line-height": readingSettings?.lineHeight ?? "1.75",
+        "--reader-width": `${readingSettings?.width ?? 680}px`,
+      }}
+      onScroll={handleScroll}
+    >
+      <div
+        className={cn(
+          "mx-auto w-full max-w-[var(--reader-width,680px)] px-10 py-11 pb-24 font-serif text-[var(--reader-font-size,18px)] leading-[var(--reader-line-height,1.75)]",
+          readingSettings?.theme === "sepia" && "text-[#5b4636]",
+          readingSettings?.theme === "dark-read" && "text-[#d8d4cc]",
+          !readingSettings?.theme || readingSettings?.theme === "light"
+            ? "text-foreground"
+            : null,
+        )}
+      >
+        {readingSourceLabel ? (
+          <h1 className="sr-only">{readingSourceLabel}</h1>
+        ) : null}
+        {(() => {
+          let hitOffset = 0;
+          return chapters.map((chapter, chapterIndex) => {
+            const section = (
+              <section
+                key={chapter.id}
+                data-chapter-id={chapter.id}
+                className="scroll-mt-4 mb-10 last:mb-0"
+              >
+                <div className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-primary font-sans">
+                  {String(chapter.num ?? chapterIndex + 1).padStart(2, "0")}
+                </div>
+                <h2 className="mb-2.5 font-sans text-[30px] font-bold leading-tight tracking-tight text-inherit">
+                  {chapter.title}
+                </h2>
+                {chapter.readMins ? (
+                  <div className="mb-7 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 font-sans text-xs text-muted-foreground">
+                    <Clock className="size-3" aria-hidden />
+                    {chapter.readMins} min read
+                  </div>
+                ) : null}
+                <div
+                  className="space-y-5"
+                  onContextMenu={(e) =>
+                    canEdit && openSelectionMenu?.(e, null, `${readingSourceLabel} · ${chapter.title}`)
+                  }
+                >
+                  {(chapter.body ?? "").split("\n\n").map((para, i) => {
+                    const { nodes, hitCount } = buildSearchHighlightNodes(
+                      para,
+                      findQuery,
+                      hitOffset,
+                      activeHitIndex,
+                    );
+                    hitOffset += hitCount;
+                    return (
+                      <p
+                        key={i}
+                        className={cn(
+                          "whitespace-pre-wrap opacity-90 selection:bg-primary/20",
+                          chapterIndex === 0 &&
+                            i === 0 &&
+                            "first-letter:float-left first-letter:mr-3 first-letter:pt-1 first-letter:text-[3.3em] first-letter:font-bold first-letter:leading-[0.78]",
+                          chapterIndex === 0 &&
+                            i === 0 &&
+                            readingSettings?.theme === "sepia"
+                            ? "first-letter:text-[#9a6a3a]"
+                            : "first-letter:text-primary",
+                        )}
+                      >
+                        {findQuery.trim()
+                          ? nodes.map((node) => {
+                              if (typeof node === "string") return node;
+                              if (node?.type === "hit") {
+                                return (
+                                  <mark
+                                    key={node.key}
+                                    data-search-hit={node.hitIndex}
+                                    className={cn(
+                                      "rounded-sm bg-sky-300/55 text-inherit",
+                                      node.active && "bg-amber-400 text-white",
+                                    )}
+                                  >
+                                    {node.text}
+                                  </mark>
+                                );
+                              }
+                              return null;
+                            })
+                          : para}
+                      </p>
+                    );
+                  })}
+                </div>
+                {chapterIndex < chapters.length - 1 ? (
+                  <div className="py-10 text-center text-[17px] tracking-[0.3em] text-muted-foreground/55">
+                    ⁂
+                  </div>
+                ) : null}
+              </section>
+            );
+            return section;
+          });
+        })()}
       </div>
     </div>
   );
@@ -977,7 +1153,7 @@ function ChapterTab({ chapter, fileName, onCapture, seedPrompt, onSeedPromptAppl
   }, [seedPrompt, onSeedPromptApplied]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [messages, loading]);
 
   function send(text) {
@@ -995,49 +1171,42 @@ function ChapterTab({ chapter, fileName, onCapture, seedPrompt, onSeedPromptAppl
     }, 700);
   }
 
+  function regenerate() {
+    if (loading) return;
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    setMessages((prev) => {
+      const next = [...prev];
+      if (next[next.length - 1]?.role === "ai") next.pop();
+      return next;
+    });
+    setLoading(true);
+    window.setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", text: mockChapterReply(lastUser.text, chapter, fileName ?? "this document") },
+      ]);
+      setLoading(false);
+    }, 700);
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* Conversation */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card/50 px-4 py-2.5">
-          <div className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-border bg-muted">
-            <Bot className="size-3.5 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold text-foreground">Conversation</p>
-            <p className="truncate text-[10px] text-muted-foreground">
-              Chapter {chapter.num}: {chapter.title}
-            </p>
-          </div>
-          <button
-            type="button"
-            title="Clear conversation"
-            aria-label="Clear conversation"
-            onClick={() =>
-              setMessages([
-                {
-                  role: "ai",
-                  text: "Conversation cleared. Ask a new question about this chapter.",
-                },
-              ])
-            }
-            className="flex size-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
-        </div>
-
         <div
           ref={scrollRef}
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
         >
-          <div className="flex-1" />
           {messages.map((msg, i) => (
             <ChapterChatMessage
               key={`${chapter.id}-${i}`}
               message={msg}
               sourceLabel={chatSourceLabel}
               onCapture={msg.role === "ai" ? onCapture : undefined}
+              showFeedbackActions={msg.role === "ai" && i > 0}
+              onRegenerate={
+                msg.role === "ai" && i === messages.length - 1 ? regenerate : undefined
+              }
             />
           ))}
           {loading && (
@@ -1046,7 +1215,7 @@ function ChapterTab({ chapter, fileName, onCapture, seedPrompt, onSeedPromptAppl
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="size-1.5 animate-bounce rounded-full bg-muted"
+                    className="size-1.5 animate-bounce rounded-full bg-muted motion-reduce:animate-none"
                     style={{ animationDelay: `${i * 150}ms` }}
                   />
                 ))}
@@ -1055,36 +1224,31 @@ function ChapterTab({ chapter, fileName, onCapture, seedPrompt, onSeedPromptAppl
           )}
         </div>
 
-        {/* Suggested prompts */}
         <div className="shrink-0 px-4 pb-2">
           <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_QUERIES.map((q) => (
+            {suggestedQueriesForFile(fileName).map((q) => (
               <button
                 key={q}
                 type="button"
                 disabled={loading}
                 onClick={() => send(q)}
-                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2.5 py-1 text-[10px] text-foreground/70 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:opacity-50"
               >
-                <Sparkles className="size-2.5 shrink-0 text-primary/60" />
+                <Sparkles className="size-3 shrink-0 text-primary/70" />
                 {q}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Prompt box — matches agent conversation panel */}
         <SourceAskPromptBox
           inputRef={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onSend={() => send()}
-          placeholder="Ask about this chapter…"
+          placeholder="Ask about this document…"
           loading={loading}
-          ariaLabel="Ask about this chapter"
-          footer={
-            <span className="text-xs text-muted-foreground">{KNOWLEDGE_TERMS.askAiSearchingChapter}</span>
-          }
+          ariaLabel="Ask about this document"
         />
       </div>
     </div>
@@ -1235,7 +1399,7 @@ function StudioTab({ chapter, fileName, onCapture }) {
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="size-1.5 animate-bounce rounded-full bg-primary"
+                  className="size-1.5 animate-bounce rounded-full bg-primary motion-reduce:animate-none"
                   style={{ animationDelay: `${i * 150}ms` }}
                 />
               ))}
@@ -1653,40 +1817,42 @@ function RightPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageUnderlineTabs
+      <ReaderPillTabs
         value={activeTab}
-        onValueChange={setTab}
+        onChange={setTab}
         tabs={panelTabs}
         ariaLabel="Document assistant sections"
-        className="px-3"
+        variant="underline"
       />
 
-      {activeTab === "chapter" ? (
-        <ChapterTab
-          chapter={chapter}
-          fileName={fileName}
-          onCapture={canEdit ? onCapture : undefined}
-          seedPrompt={seedPrompt}
-          onSeedPromptApplied={onSeedPromptApplied}
-        />
-      ) : activeTab === "studio" ? (
-        <StudioTab chapter={chapter} fileName={fileName} onCapture={canEdit ? onCapture : undefined} />
-      ) : (
-        <DetailsTab
-          file={file}
-          hubLinks={hubLinks}
-          hubs={hubs}
-          onNavigateToHub={onNavigateToHub}
-          onLinkToHub={onLinkToHub}
-          onLinkHubFileToHub={onLinkHubFileToHub}
-          onUnlinkFromHub={onUnlinkFromHub}
-          onRemoveHubFile={onRemoveHubFile}
-          onRemoveFromLibrary={onRemoveFromLibrary}
-          onCreateHub={onCreateHub}
-          canEdit={canEdit}
-          canCreate={canCreate}
-        />
-      )}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {activeTab === "chapter" ? (
+          <ChapterTab
+            chapter={chapter}
+            fileName={fileName}
+            onCapture={canEdit ? onCapture : undefined}
+            seedPrompt={seedPrompt}
+            onSeedPromptApplied={onSeedPromptApplied}
+          />
+        ) : activeTab === "studio" ? (
+          <StudioTab chapter={chapter} fileName={fileName} onCapture={canEdit ? onCapture : undefined} />
+        ) : (
+          <DetailsTab
+            file={file}
+            hubLinks={hubLinks}
+            hubs={hubs}
+            onNavigateToHub={onNavigateToHub}
+            onLinkToHub={onLinkToHub}
+            onLinkHubFileToHub={onLinkHubFileToHub}
+            onUnlinkFromHub={onUnlinkFromHub}
+            onRemoveHubFile={onRemoveHubFile}
+            onRemoveFromLibrary={onRemoveFromLibrary}
+            onCreateHub={onCreateHub}
+            canEdit={canEdit}
+            canCreate={canCreate}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -1708,6 +1874,7 @@ export function DocumentReaderDrawer({
   onNotify,
   canEdit = true,
   canCreate = true,
+  initialAskSeed = "",
 }) {
   const { addDocumentsToLibrary, downloadCloudFileToLibrary, downloadCloudFileToHub, updateHubFile, updateLibraryDocument } =
     useKnowledgeHubs();
@@ -1723,23 +1890,117 @@ export function DocumentReaderDrawer({
     return file ? generateFallbackChapters(file) : [];
   }, [file?.id, file?.name]);
 
-  const chapter = useMemo(
-    () => mergeChaptersForReading(chapters, file?.name),
-    [chapters, file?.name],
+  const [activeChapterId, setActiveChapterId] = useState(() => chapters[0]?.id ?? null);
+  const activeChapter = useMemo(
+    () => chapters.find((ch) => ch.id === activeChapterId) ?? chapters[0] ?? null,
+    [chapters, activeChapterId],
   );
 
   const [panelTab, setPanelTab] = useState("chapter");
   const [centerView, setCenterView] = useState("read");
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [askSeedPrompt, setAskSeedPrompt] = useState("");
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState("");
+  const [activeHitIndex, setActiveHitIndex] = useState(-1);
   const scrollRef = useRef(null);
+  const { settings: readingSettings, updateSettings: updateReadingSettings, setFontSize } =
+    useReadingSettings();
+
+  const findHitCount = useMemo(
+    () => countChapterSearchMatches(chapters, findQuery),
+    [chapters, findQuery],
+  );
+
+  const scrollToHit = useCallback((index) => {
+    if (index < 0 || findHitCount === 0) return;
+    window.requestAnimationFrame(() => {
+      scrollRef.current
+        ?.querySelector(`mark[data-search-hit="${index}"]`)
+        ?.scrollIntoView({ block: "center", behavior: scrollBehavior() });
+    });
+  }, [findHitCount]);
+
+  const jumpToChapter = useCallback((chapterId) => {
+    setCenterView("read");
+    setActiveChapterId(chapterId);
+    window.requestAnimationFrame(() => {
+      scrollRef.current
+        ?.querySelector(`[data-chapter-id="${chapterId}"]`)
+        ?.scrollIntoView({ block: "start", behavior: scrollBehavior() });
+    });
+  }, []);
+
+  const openFind = useCallback(() => {
+    setCenterView("read");
+    setFindOpen(true);
+  }, []);
+
+  const closeFind = useCallback(() => {
+    setFindOpen(false);
+    setFindQuery("");
+    setActiveHitIndex(-1);
+  }, []);
+
+  const gotoHit = useCallback(
+    (delta) => {
+      if (findHitCount === 0) return;
+      setActiveHitIndex((prev) => {
+        const base = prev < 0 ? 0 : prev;
+        const next = (base + delta + findHitCount) % findHitCount;
+        scrollToHit(next);
+        return next;
+      });
+    },
+    [findHitCount, scrollToHit],
+  );
 
   useEffect(() => {
+    if (!findQuery.trim()) {
+      setActiveHitIndex(-1);
+      return;
+    }
+    if (findHitCount === 0) {
+      setActiveHitIndex(-1);
+      return;
+    }
+    setActiveHitIndex(0);
+    scrollToHit(0);
+  }, [findQuery, findHitCount, scrollToHit]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        openFind();
+      }
+      if (e.key === "Escape" && findOpen) {
+        e.preventDefault();
+        closeFind();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [findOpen, openFind, closeFind]);
+
+  useEffect(() => {
+    setActiveChapterId(chapters[0]?.id ?? null);
     setPanelTab("chapter");
     setCenterView("read");
     setMobilePanelOpen(false);
     setAskSeedPrompt("");
-  }, [file?.id]);
+    setReadProgress(0);
+    closeFind();
+  }, [file?.id, chapters, closeFind]);
+
+  useEffect(() => {
+    if (initialAskSeed?.trim()) {
+      setAskSeedPrompt(initialAskSeed);
+      setPanelTab("chapter");
+    }
+  }, [file?.id, initialAskSeed]);
 
   const handleRequestDownload = useCallback(async () => {
     if (file?.isLibraryDocument) {
@@ -1792,7 +2053,7 @@ export function DocumentReaderDrawer({
   }, []);
 
   const panelProps = {
-    chapter,
+    chapter: activeChapter,
     fileName: file?.name,
     file,
     hubLinks,
@@ -1823,7 +2084,17 @@ export function DocumentReaderDrawer({
     [file?.type],
   );
 
-  if (!file) return null;
+  const centerTabs = useMemo(
+    () =>
+      FILE_CENTER_TABS.map((tab) =>
+        tab.id === "notes"
+          ? { ...tab, label: "Notes", badge: capture.notes.length }
+          : tab,
+      ),
+    [capture.notes.length],
+  );
+
+  if (!file || !activeChapter) return null;
 
   const readingSourceLabel = file.name;
 
@@ -1842,27 +2113,155 @@ export function DocumentReaderDrawer({
             ) : null}
           </>
         }
-        onClose={onClose}
-        center={
-          chapter ? (
-            <Tabs value={centerView} onValueChange={setCenterView} className="flex min-h-0 flex-1 flex-col gap-0">
-              <PageUnderlineTabs
-                value={centerView}
-                onValueChange={setCenterView}
-                tabs={FILE_CENTER_TABS}
-                ariaLabel="Document sections"
-                className="px-5"
-              />
-              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-                <TabsContent value="read" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
-                  <ChapterReaderView
-                    chapter={chapter}
-                    readingSourceLabel={readingSourceLabel}
-                    canEdit={canEdit}
-                    openSelectionMenu={capture.openSelectionMenu}
-                    scrollRef={scrollRef}
+        progress={readProgress}
+        headerLeading={
+          <>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileText className="size-4" aria-hidden />
+            </span>
+          </>
+        }
+        headerActions={
+          <>
+            {chapters.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      title="Jump to chapter"
+                      aria-label="Jump to chapter"
+                    />
+                  }
+                >
+                  <ListTree className="size-4" aria-hidden />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={8} className="max-h-[60vh] w-64 overflow-y-auto">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Chapters</DropdownMenuLabel>
+                    {chapters.map((chapter, i) => (
+                      <DropdownMenuItem
+                        key={chapter.id}
+                        onClick={() => jumpToChapter(chapter.id)}
+                        className="gap-2"
+                      >
+                        <span className="w-6 shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">
+                          {String(chapter.num ?? i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="flex-1 truncate text-sm">{chapter.title}</span>
+                        {chapter.id === activeChapterId ? (
+                          <Check className="size-3.5 shrink-0 text-primary" aria-hidden />
+                        ) : null}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => (findOpen ? closeFind() : openFind())}
+              title="Find in document"
+              aria-label="Find in document"
+              aria-pressed={findOpen}
+            >
+              <Search className="size-4" aria-hidden />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    title="Reading settings"
+                    aria-label="Reading settings"
+                    className="font-serif text-base"
                   />
-                </TabsContent>
+                }
+              >
+                Aa
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="border-0 bg-transparent p-0 shadow-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DocumentReadingSettingsPopover
+                  fontSize={readingSettings.fontSize}
+                  lineHeight={readingSettings.lineHeight}
+                  width={readingSettings.width}
+                  theme={readingSettings.theme}
+                  onFontSizeChange={setFontSize}
+                  onLineHeightChange={(lineHeight) => updateReadingSettings({ lineHeight })}
+                  onWidthChange={(width) => updateReadingSettings({ width })}
+                  onThemeChange={(theme) => updateReadingSettings({ theme })}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setRightCollapsed((v) => !v)}
+              title="Toggle assistant panel"
+              aria-label="Toggle assistant panel"
+              aria-pressed={!rightCollapsed}
+              className="hidden lg:flex"
+            >
+              <PanelRight className="size-4" aria-hidden />
+            </Button>
+          </>
+        }
+        headerOverlay={
+          findOpen
+            ? (
+              <DocumentFindBar
+                value={findQuery}
+                onChange={setFindQuery}
+                hitCount={findHitCount}
+                activeHitIndex={activeHitIndex}
+                onPrev={() => gotoHit(-1)}
+                onNext={() => gotoHit(1)}
+                onClose={closeFind}
+              />
+            )
+            : null
+        }
+        rightPanelClassName={cn(
+          "w-[388px]",
+          rightCollapsed && "lg:hidden",
+        )}
+        center={
+          <Tabs value={centerView} onValueChange={setCenterView} className="flex min-h-0 flex-1 flex-col gap-0">
+            <ReaderPillTabs
+              value={centerView}
+              onChange={setCenterView}
+              tabs={centerTabs}
+              ariaLabel="Document sections"
+              variant="segment"
+            />
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+              <TabsContent value="read" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+                <MultiChapterDocumentView
+                  chapters={chapters}
+                  activeChapterId={activeChapterId}
+                  readingSourceLabel={readingSourceLabel}
+                  canEdit={canEdit}
+                  openSelectionMenu={capture.openSelectionMenu}
+                  scrollRef={scrollRef}
+                  onScrollProgress={setReadProgress}
+                  onActiveChapterChange={setActiveChapterId}
+                  findQuery={findQuery}
+                  activeHitIndex={activeHitIndex}
+                  readingSettings={readingSettings}
+                />
+              </TabsContent>
                 <TabsContent value="preview" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
                   <div
                     className="flex min-h-0 flex-1 flex-col overflow-hidden"
@@ -1897,11 +2296,11 @@ export function DocumentReaderDrawer({
                 <TabsContent value="usage" className="mt-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
                   <SourceUsageTab usage={{}} hubLinks={hubLinks} />
                 </TabsContent>
-              </div>
-            </Tabs>
-          ) : null
+            </div>
+          </Tabs>
         }
-        rightPanel={chapter ? <RightPanel key={file?.id} {...panelProps} /> : null}
+        rightPanel={!rightCollapsed ? <RightPanel key={file?.id} {...panelProps} /> : null}
+        onClose={onClose}
         mobilePanelOpen={mobilePanelOpen}
         onMobilePanelOpenChange={setMobilePanelOpen}
         mobilePanelTitle="Document assistant"

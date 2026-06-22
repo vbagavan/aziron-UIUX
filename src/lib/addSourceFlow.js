@@ -34,11 +34,11 @@ export const SOURCE_TYPE_STEP_HINTS = {
 };
 
 export const STEP_META = {
-  "choose-type": { title: "Add a source", subtitle: "Choose a category, then connect or configure your source." },
+  "choose-type": { title: "Add sources", subtitle: "Choose a category, then connect or configure your source." },
 
   // Files (local upload + cloud storage)
   "files-intake": {
-    title: "Add files",
+    title: "Add sources",
     subtitle: "Upload from your computer or connect cloud storage",
   },
   upload: { title: "Upload files", subtitle: "Drag & drop or browse from your computer" },
@@ -66,6 +66,187 @@ export const STEP_META = {
   "api-sync": { title: "Sync strategy", subtitle: "When Aziron should fetch data" },
   "api-ai": { title: "AI configuration", subtitle: "Knowledge enrichment for responses" },
 };
+
+/** Map workspace filter category ids to wizard source type ids. */
+export function filterCategoryToWizardType(category) {
+  if (category === "files") return "files";
+  if (category === "dbs") return "databases";
+  if (category === "apis") return "apis";
+  return null;
+}
+
+/** Progress steps shown in the header (excludes skipped choose-type after user advances). */
+export function getWizardProgressSteps(steps, stepIndex) {
+  if (!steps.length) return [];
+  const chooseIdx = steps.indexOf("choose-type");
+  if (chooseIdx >= 0 && stepIndex > chooseIdx) {
+    return steps.filter((s) => s !== "choose-type");
+  }
+  return steps;
+}
+
+export function getWizardProgress(steps, stepIndex, currentKey) {
+  const displaySteps = getWizardProgressSteps(steps, stepIndex);
+  const total = Math.max(1, displaySteps.length);
+  const idx = displaySteps.indexOf(currentKey);
+  const stepNumber = Math.max(1, idx >= 0 ? idx + 1 : stepIndex + 1);
+  const meta = STEP_META[currentKey] ?? STEP_META["choose-type"];
+  return {
+    stepNumber,
+    total,
+    ariaValueNow: stepNumber,
+    ariaValueText: `Step ${stepNumber} of ${total}: ${meta.title}`,
+  };
+}
+
+const SYNC_FREQ_LABELS = Object.fromEntries(
+  [
+    { id: "manual", label: "Manual" },
+    { id: "daily", label: "Daily" },
+    { id: "hourly", label: "Hourly" },
+    { id: "realtime", label: "Real time" },
+  ].map((f) => [f.id, f.label]),
+);
+
+/** Settings applied automatically when express steps are skipped — shown on the final step. */
+export function getExpressSettingsSummary(state) {
+  const lines = [];
+  const dest = state.destination ?? {};
+
+  if (state.type === "databases") {
+    const syncType = state.db?.syncType ?? "incremental";
+    const syncFreq = state.db?.syncFreq ?? "realtime";
+    const embed = state.db?.embedStrategy ?? "full";
+    lines.push(`Sync: ${syncType === "full" ? "Full refresh" : "Incremental"} · ${SYNC_FREQ_LABELS[syncFreq] ?? syncFreq}`);
+    lines.push(`Embedding: ${embed === "full" ? "Full record" : "Selected columns"}`);
+  }
+
+  if (state.type === "apis") {
+    const strategy = state.api?.fetchStrategy ?? "scheduled";
+    const schedule = state.api?.schedule ?? "15m";
+    const scheduleLabel =
+      strategy === "scheduled"
+        ? { "5m": "Every 5 minutes", "15m": "Every 15 minutes", "1h": "Every hour", "24h": "Every 24 hours" }[schedule] ?? schedule
+        : strategy === "on-demand"
+          ? "On demand"
+          : "Event based";
+    lines.push(`Fetch: ${scheduleLabel}`);
+    lines.push("AI enrichment: knowledge index, semantic search, entity graph");
+  }
+
+  if (state.type === "files" && state.files?.intakeMode === "cloud") {
+    const mode = state.cloud?.importMode ?? "selected";
+    const modeLabel =
+      mode === "folder" ? "Entire folder" : mode === "drive" ? "Entire drive" : "Selected files";
+    const freq = SYNC_FREQ_LABELS[state.cloud?.syncFreq ?? "realtime"] ?? state.cloud?.syncFreq;
+    lines.push(`Import: ${modeLabel} · ${freq}`);
+  }
+
+  if (dest.mode === "existing-hub" && dest.hubId) {
+    lines.push("Destination: selected Knowledge Hub");
+  } else if (dest.mode === "new-hub") {
+    lines.push("Destination: new Knowledge Hub");
+  } else {
+    lines.push("Destination: All Sources library");
+  }
+
+  return lines;
+}
+
+/** Primary finish-button label with optional source count. */
+export function getWizardFinishLabel(state, { finishing = false } = {}) {
+  if (finishing) return "Adding…";
+
+  if (state.type === "files" && state.files?.intakeMode !== "cloud") {
+    const n = state.files?.items?.length ?? 0;
+    if (n === 1) return "Add 1 source";
+    if (n > 1) return `Add ${n} sources`;
+    return "Add sources";
+  }
+
+  if (state.type === "files" && state.files?.intakeMode === "cloud") {
+    const n = state.cloud?.selected?.length ?? 0;
+    if (n === 1) return "Add 1 source";
+    if (n > 1) return `Add ${n} sources`;
+    return "Add sources";
+  }
+
+  if (state.type === "databases") {
+    const n = state.db?.selectedTableIds?.length ?? 0;
+    if (n === 1) return "Add 1 source";
+    if (n > 1) return `Add ${n} sources`;
+    return "Add sources";
+  }
+
+  if (state.type === "apis") {
+    const n = state.api?.objectIds?.length ?? 0;
+    if (n === 1) return "Add 1 source";
+    if (n > 1) return `Add ${n} sources`;
+    return "Add sources";
+  }
+
+  return "Add sources";
+}
+
+export function getSuccessIndexedStatLabel(sourceType, intakeMode) {
+  if (sourceType === "databases") return "Rows ready for search";
+  if (sourceType === "apis") return "Items ready for search";
+  if (sourceType === "files" && intakeMode === "cloud") return "Files ready for search";
+  return "Sources added";
+}
+
+/** How many sources will be added from the current wizard state. */
+export function getWizardSelectionCount(state) {
+  if (state.type === "files" && state.files?.intakeMode !== "cloud") {
+    return state.files?.items?.length ?? 0;
+  }
+  if (state.type === "files" && state.files?.intakeMode === "cloud") {
+    return state.cloud?.selected?.length ?? 0;
+  }
+  if (state.type === "databases") {
+    return state.db?.selectedTableIds?.length ?? 0;
+  }
+  if (state.type === "apis") {
+    return state.api?.objectIds?.length ?? 0;
+  }
+  return 0;
+}
+
+/** Human-readable origin for the confirm strip. */
+export function getWizardOriginLabel(state) {
+  if (state.type === "files" && state.files?.intakeMode === "cloud") return "Cloud";
+  if (state.type === "files") return "Uploaded";
+  if (state.type === "databases") return "Database";
+  if (state.type === "apis") return "Connection";
+  return "Source";
+}
+
+/** Destination label for the confirm strip. */
+export function getWizardDestinationLabel(state, hubs = []) {
+  const dest = state.destination ?? {};
+  if (dest.mode === "existing-hub" && dest.hubId) {
+    const hub = hubs.find((h) => String(h.id) === String(dest.hubId));
+    return hub?.name ?? "Knowledge Hub";
+  }
+  if (dest.mode === "new-hub") {
+    return dest.newHubName?.trim() || "New Knowledge Hub";
+  }
+  return "All Sources";
+}
+
+/** Summary row for the sticky confirm strip. */
+export function getWizardConfirmSummary(state, hubs = []) {
+  const count = getWizardSelectionCount(state);
+  const origin = getWizardOriginLabel(state);
+  const destination = getWizardDestinationLabel(state, hubs);
+  const countLabel =
+    count === 0
+      ? "Nothing selected"
+      : count === 1
+        ? "1 source"
+        : `${count} sources`;
+  return { count, countLabel, origin, destination };
+}
 
 export function getFlowSteps(type) {
   return FLOW_STEPS[type] ?? [];

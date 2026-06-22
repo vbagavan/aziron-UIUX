@@ -9,7 +9,7 @@
 import {
   Database,
   FileText,
-  Zap,
+  MoreHorizontal,
 } from "lucide-react";
 
 /** Step 1 — three categories aligned with Documents / Knowledge Hub tabs. */
@@ -30,9 +30,9 @@ export const SOURCE_TYPES = [
   },
   {
     id: "apis",
-    label: "APIs",
-    description: "REST APIs, GraphQL, OpenAPI specs, and webhooks",
-    icon: Zap,
+    label: "Others",
+    description: "REST and GraphQL endpoints, webhooks, and custom integrations",
+    icon: MoreHorizontal,
     accent: "#d97706",
   },
 ];

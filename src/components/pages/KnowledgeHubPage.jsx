@@ -526,10 +526,10 @@ export default function KnowledgeHubPage({
       return;
     }
     const params = new URLSearchParams();
-    params.set("tab", "documents");
     if (opts?.linkHub) params.set("linkHub", String(opts.linkHub));
     if (opts?.openSource) params.set("openSource", String(opts.openSource));
-    navigate(`/knowledge?${params.toString()}`);
+    if (opts?.scope) params.set("scope", String(opts.scope));
+    navigate(`/knowledge${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   useEffect(() => {

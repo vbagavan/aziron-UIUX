@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  Check,
+  Copy,
   LayoutDashboard,
   Play,
   Route,
@@ -43,6 +45,28 @@ const METHOD_STYLES = {
   DELETE: "text-red-600 bg-red-500/10 border-red-500/20",
 };
 
+function CopyButton({ value, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(value).catch(() => {});
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label={copied ? "Copied" : label}
+      title={copied ? "Copied!" : label}
+      className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      {copied ? <Check className="size-3.5 text-success" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+    </button>
+  );
+}
+
 function MethodBadge({ method }) {
   return (
     <span
@@ -79,13 +103,18 @@ function OverviewTab({ detail }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Connection</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Connection</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div className="flex justify-between gap-2 border-b border-border/60 py-2">
-              <dt className="text-muted-foreground">Base URL</dt>
-              <dd className="truncate font-mono text-xs">{detail.baseUrl}</dd>
+            <div className="flex items-center justify-between gap-2 border-b border-border/60 py-2">
+              <dt className="shrink-0 text-muted-foreground">Base URL</dt>
+              <dd className="flex min-w-0 items-center gap-1">
+                <span className="truncate font-mono text-xs" title={detail.baseUrl}>
+                  {detail.baseUrl}
+                </span>
+                <CopyButton value={detail.baseUrl} label="Copy base URL" />
+              </dd>
             </div>
             <div className="flex justify-between gap-2 border-b border-border/60 py-2">
               <dt className="text-muted-foreground">Connection</dt>
@@ -119,13 +148,13 @@ function DiscoverTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint
       </div>
 
       <section>
-        <p className={SECTION_EYEBROW}>Purpose</p>
+        <h2 className={SECTION_EYEBROW}>Purpose</h2>
         <p className="mt-2 text-sm leading-relaxed text-foreground">{knowledge.purpose}</p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <p className={SECTION_EYEBROW}>Business functions</p>
+          <h2 className={SECTION_EYEBROW}>Business functions</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {knowledge.businessFunctions.map((f) => (
               <Badge key={f} variant="secondary">{f}</Badge>
@@ -133,7 +162,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint
           </ul>
         </section>
         <section>
-          <p className={SECTION_EYEBROW}>Suggested use cases</p>
+          <h2 className={SECTION_EYEBROW}>Suggested use cases</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {knowledge.suggestedUseCases.map((u) => (
               <Badge key={u} variant="outline">{u}</Badge>
@@ -143,7 +172,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint
       </div>
 
       <section>
-        <p className={SECTION_EYEBROW}>Suggested questions</p>
+        <h2 className={SECTION_EYEBROW}>Suggested questions</h2>
         <ul className="mt-3 space-y-2">
           {knowledge.suggestedQuestions.map((q) => (
             <li key={q}>
@@ -169,7 +198,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenPlayground, onSelectEndpoint
 
       {primaryEndpoint ? (
         <section className="rounded-lg border border-border bg-muted/20 p-4">
-          <p className={SECTION_EYEBROW}>Primary endpoint</p>
+          <h2 className={SECTION_EYEBROW}>Primary endpoint</h2>
           <button
             type="button"
             onClick={() => onSelectEndpoint?.(primaryEndpoint.id)}
@@ -230,7 +259,7 @@ function EndpointsTab({ detail, selectedEndpointId, onSelectEndpoint, onTryInPla
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <MethodBadge method={selected.method} />
-              <h3 className="font-mono text-lg font-semibold">{selected.path}</h3>
+              <h2 className="font-mono text-lg font-semibold">{selected.path}</h2>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={() => onTryInPlayground(selected.id)}>
               <Play data-icon="inline-start" aria-hidden />
@@ -241,7 +270,7 @@ function EndpointsTab({ detail, selectedEndpointId, onSelectEndpoint, onTryInPla
 
           <Card className="gap-0 py-0 shadow-none">
             <CardHeader className="px-4 py-3">
-              <CardTitle className="text-sm font-medium">Headers</CardTitle>
+              <CardTitle as="h3" className="text-sm font-medium">Headers</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 px-4 pb-4">
               {selected.headers.map((h) => (
@@ -261,7 +290,7 @@ function EndpointsTab({ detail, selectedEndpointId, onSelectEndpoint, onTryInPla
 
           <Card className="gap-0 py-0 shadow-none">
             <CardHeader className="px-4 py-3">
-              <CardTitle className="text-sm font-medium">Parameters</CardTitle>
+              <CardTitle as="h3" className="text-sm font-medium">Parameters</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 px-4 pb-4">
               {selected.parameters.length === 0 ? (
@@ -290,7 +319,7 @@ function EndpointsTab({ detail, selectedEndpointId, onSelectEndpoint, onTryInPla
 
           <Card className="gap-0 py-0 shadow-none">
             <CardHeader className="px-4 py-3">
-              <CardTitle className="text-sm font-medium">Response schema</CardTitle>
+              <CardTitle as="h3" className="text-sm font-medium">Response schema</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <p className="mb-2 font-mono text-sm font-medium">{selected.responseSchema.type}</p>
@@ -360,7 +389,7 @@ function PlaygroundTab({ detail, selectedEndpointId, onSelectEndpoint }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Request</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Request</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 px-4 pb-4">
           <pre className="rounded-lg border border-border bg-muted/30 px-4 py-3 font-mono text-sm">
@@ -397,7 +426,7 @@ function PlaygroundTab({ detail, selectedEndpointId, onSelectEndpoint }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Response</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Response</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
           {response ? (
@@ -428,7 +457,7 @@ function OperationsTab({ detail }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Sync & health</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Sync & health</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
@@ -446,7 +475,7 @@ function OperationsTab({ detail }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Recent requests</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Recent requests</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 px-4 pb-4">
           {operations.recentRequests.map((req, i) => (
@@ -546,6 +575,11 @@ export function ApiDetailView({
   return (
     <SourceDetailShell
       title={detail.title}
+      headerLeading={
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Zap className="size-4" aria-hidden />
+        </span>
+      }
       headerBadges={
         <>
           <SourceBadge record={record} size="sm" />

@@ -12,7 +12,7 @@ import { FeatureErrorBoundary } from "@/components/common/FeatureErrorBoundary";
 import { DocumentReaderDrawer } from "@/components/features/documents/DocumentReaderDrawer";
 import { DatabaseDetailView } from "@/components/features/databases/DatabaseDetailView";
 import { ApiDetailView } from "@/components/features/apis/ApiDetailView";
-import { DocumentsUploadDialog } from "@/components/features/documents/DocumentsUploadDialog";
+import { AddSourceWizard } from "@/components/features/sources/AddSourceWizard";
 import { DbBrowseTablesDialog } from "@/components/features/knowledge/sources/DbBrowseTablesDialog";
 import { getKnowledgeHubCloudProvider } from "@/components/features/knowledge/cloud/knowledgeHubCloudProviders";
 import ConnectionWizard from "@/components/connections/ConnectionWizard.jsx";
@@ -33,6 +33,7 @@ import {
 import { getMergedHubCloudConnections } from "@/lib/hubCloudConnections";
 import { DB_SOURCE_CONNECTORS, resolveSourceCategory } from "@/lib/sourceCategories";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import { goToConnectorsCatalog } from "@/lib/connectorsNavigation";
 
 export function KnowledgeHubDetailView({
   hub: hubProp,
@@ -65,11 +66,10 @@ export function KnowledgeHubDetailView({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [fileToDelete, setFileToDelete] = useState(null);
+  const [mainWizardOpen, setMainWizardOpen] = useState(false);
+  const [mainWizardSourceType, setMainWizardSourceType] = useState(null);
   const [addSourceWizardOpen, setAddSourceWizardOpen] = useState(false);
   const [addSourceProvider, setAddSourceProvider] = useState(null);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [uploadInitialFiles, setUploadInitialFiles] = useState(null);
-  const [uploadBrowseConnection, setUploadBrowseConnection] = useState(null);
   const [chooseSourceOpen, setChooseSourceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
@@ -87,11 +87,24 @@ export function KnowledgeHubDetailView({
         onBrowseDocumentsLibrary(hubId);
         return;
       }
-      const params = new URLSearchParams({ tab: "documents", linkHub: String(hubId) });
+      const params = new URLSearchParams({ linkHub: String(hubId) });
       navigate(`/knowledge?${params.toString()}`);
     },
     [navigate, onBrowseDocumentsLibrary],
   );
+
+  const handleBrowseAllConnectors = useCallback(() => {
+    setChooseSourceOpen(false);
+    window.setTimeout(
+      () =>
+        goToConnectorsCatalog(navigate, {
+          openNew: true,
+          openWizard: openIntegrationsWizard,
+          openWizardWithProvider: openIntegrationsWizardWithProvider,
+        }),
+      0,
+    );
+  }, [navigate, openIntegrationsWizard, openIntegrationsWizardWithProvider]);
 
   // Only fire when the hub ID changes (navigating to a different hub), not on every
   // hub-data refresh. Without this, recordHubAccess() → context update → liveHub new
@@ -119,22 +132,17 @@ export function KnowledgeHubDetailView({
     [liveHub],
   );
 
-  const cloudPickerExcludeExternalIds = useMemo(
-    () => allFiles.map((f) => f.externalFileId).filter(Boolean),
-    [allFiles],
-  );
-
-  const cloudPickerExcludeNames = useMemo(
-    () => allFiles.map((f) => f.name),
-    [allFiles],
-  );
-
   const detailsDirty =
     liveHub &&
     (name.trim() !== (liveHub.name ?? "").trim() ||
       description.trim() !== (liveHub.description ?? "").trim());
 
   const showDemoStatuses = inventoryPack?.hasDemoRows ?? false;
+
+  function openMainWizard(sourceType = null) {
+    setMainWizardSourceType(sourceType);
+    setMainWizardOpen(true);
+  }
 
   function openHubConnectorWizard(provider) {
     const providerConfig = getKnowledgeHubCloudProvider(provider);
@@ -150,36 +158,21 @@ export function KnowledgeHubDetailView({
     }
   }
 
-  function openUploadDialog(initialFiles = null) {
-    setUploadBrowseConnection(null);
-    setUploadInitialFiles(initialFiles?.length ? initialFiles : null);
-    setUploadDialogOpen(true);
+  function openUploadDialog(_initialFiles = null) {
+    openMainWizard("files");
   }
 
-  function handleUploadComplete(result) {
-    const count = result?.added?.length ?? 0;
-    const skipped = result?.rejected ?? 0;
-    if (count === 0) {
-      onNotify?.({
-        title: "Nothing added",
-        description:
-          skipped > 0
-            ? `${skipped} file${skipped === 1 ? "" : "s"} skipped (invalid or too large).`
-            : "No valid files were added to this hub.",
-        variant: skipped > 0 ? "destructive" : "default",
-      });
-      return;
-    }
-    const names = result.added.map((f) => (typeof f === "string" ? f : f?.name)).filter(Boolean);
-    onFilesAdded?.(names.length ? names : [`${count} sources`], "upload", { skipped });
-  }
-
-  function handleUploadError() {
+  function handleMainWizardComplete(result) {
+    if (!result) return;
+    const n = result.recordIds?.length ?? 1;
     onNotify?.({
-      title: "Could not add sources",
-      description: "Something went wrong. Please try again.",
-      variant: "destructive",
+      title: n === 1 ? "1 source added" : `${n} sources added`,
+      description: result.hubName
+        ? `${result.sourceName} linked to ${result.hubName}.`
+        : KNOWLEDGE_TERMS.addSourceSuccessDescription,
+      variant: "success",
     });
+    onFilesAdded?.([result.sourceName], result.sourceType ?? "upload");
   }
 
   const hasCloudFiles = allFiles.some((row) => row.source === "cloud");
@@ -258,7 +251,7 @@ export function KnowledgeHubDetailView({
       onOpenDocument(openId);
       return;
     }
-    navigate(`/knowledge?tab=documents&openSource=${encodeURIComponent(openId)}`);
+    navigate(`/knowledge?openSource=${encodeURIComponent(openId)}`);
   }
 
   function handleNavigateToHub(hId) {
@@ -272,10 +265,15 @@ export function KnowledgeHubDetailView({
     setHubSurface("control-center");
   }
 
-  function openCloudFilePicker(connection) {
-    if (!connection?.provider) return;
-    setUploadBrowseConnection(connection);
-    setUploadDialogOpen(true);
+  function openCloudFilePicker(_connection) {
+    openMainWizard("files");
+  }
+
+  function openSetupWizardFromMenu(categoryId) {
+    setChooseSourceOpen(false);
+    const type =
+      categoryId === "dbs" ? "databases" : categoryId === "apis" ? "apis" : "files";
+    window.setTimeout(() => openMainWizard(type), 0);
   }
 
   function handleConnectDbProvider(providerId) {
@@ -410,7 +408,7 @@ export function KnowledgeHubDetailView({
           allFiles={allFiles}
           canEdit={canEdit}
           showDemoStatuses={showDemoStatuses}
-          onOpenSources={canEdit ? () => setChooseSourceOpen(true) : undefined}
+          onOpenSources={canEdit ? () => openMainWizard(null) : undefined}
           onOpenSource={openHubSource}
           onDeleteFile={canEdit ? setFileToDelete : undefined}
           onDownloadCloudFile={handleDownloadCloudFile}
@@ -427,38 +425,12 @@ export function KnowledgeHubDetailView({
       )}
 
       {canEdit && (
-        <DocumentsUploadDialog
-          open={uploadDialogOpen}
-          onOpenChange={(nextOpen) => {
-            setUploadDialogOpen(nextOpen);
-            if (!nextOpen) {
-              setUploadBrowseConnection(null);
-              setUploadInitialFiles(null);
-            }
-          }}
-          initialLocalFiles={uploadInitialFiles}
-          onInitialLocalFilesConsumed={() => setUploadInitialFiles(null)}
-          hubId={liveHub.id}
-          hubName={name.trim() || liveHub.name}
-          cloudConnections={cloudConnections}
-          initialBrowseConnection={uploadBrowseConnection}
-          excludeExternalIds={cloudPickerExcludeExternalIds}
-          excludeNames={cloudPickerExcludeNames}
-          onUpload={(payload) => addDocumentsToHub(liveHub?.id, payload)}
-          onUploadComplete={(result) => {
-            if (result?.allSkipped) {
-              onNotify?.({
-                title: KNOWLEDGE_TERMS.toastAlreadyInHub,
-                description: KNOWLEDGE_TERMS.uploadSkippedDescription,
-              });
-              return;
-            }
-            if (result?.hasError && !result?.success) {
-              handleUploadError();
-              return;
-            }
-            handleUploadComplete(result);
-          }}
+        <AddSourceWizard
+          open={mainWizardOpen}
+          onOpenChange={setMainWizardOpen}
+          defaultHubId={liveHub.id}
+          defaultSourceType={mainWizardSourceType}
+          onComplete={handleMainWizardComplete}
         />
       )}
 
@@ -512,11 +484,12 @@ export function KnowledgeHubDetailView({
         onBrowseCloudConnection={openCloudFilePicker}
         onConnectHubProvider={openHubConnectorWizard}
         onConnectCatalogProvider={openIntegrationsWizardWithProvider}
-        onBrowseAllConnectors={openIntegrationsWizard}
+        onBrowseAllConnectors={handleBrowseAllConnectors}
         onCustomConnector={() =>
           openIntegrationsWizardWithProvider(HUB_CUSTOM_CONNECTOR_CATALOG_ID)
         }
         onUploadFiles={openUploadDialog}
+        onOpenSetupWizard={openSetupWizardFromMenu}
         onConnectDbProvider={handleConnectDbProvider}
         onBrowseDbConnection={handleBrowseDbConnection}
         onAddApiSource={handleAddApiSource}

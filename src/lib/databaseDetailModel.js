@@ -239,6 +239,51 @@ export function generateSqlFromNaturalLanguage(prompt, detail) {
   return `-- Generated for: ${detail.title}\nSELECT *\nFROM ${detail.focusedTable ?? "customers"}\nLIMIT 100;`;
 }
 
+const MOCK_RESULT_SETS = {
+  arr: {
+    columns: ["company", "arr"],
+    rows: [
+      ["Northwind Trading", "$1,240,000"],
+      ["Globex Corp", "$985,000"],
+      ["Initech", "$742,500"],
+      ["Soylent Systems", "$610,000"],
+      ["Hooli", "$534,200"],
+    ],
+  },
+  churn: {
+    columns: ["company", "plan", "mrr"],
+    rows: [
+      ["Vandelay Industries", "Starter", "$420"],
+      ["Wernham Hogg", "Starter", "$390"],
+      ["Pied Piper", "Growth", "$480"],
+    ],
+  },
+  revenue: {
+    columns: ["plan", "total_mrr"],
+    rows: [
+      ["Enterprise", "$182,400"],
+      ["Growth", "$96,250"],
+      ["Starter", "$41,800"],
+    ],
+  },
+};
+
+/** Mock query executor — returns a small result set inferred from the SQL. */
+export function runMockQuery(sql, detail) {
+  const q = (sql ?? "").toLowerCase();
+  let set = MOCK_RESULT_SETS.arr;
+  if (q.includes("mrr") && q.includes("group by")) set = MOCK_RESULT_SETS.revenue;
+  else if (q.includes("mrr") || q.includes("churn") || q.includes("risk")) set = MOCK_RESULT_SETS.churn;
+  else if (q.includes("arr")) set = MOCK_RESULT_SETS.arr;
+  return {
+    columns: set.columns,
+    rows: set.rows,
+    rowCount: set.rows.length,
+    durationMs: 40 + Math.floor(Math.random() * 120),
+    source: detail?.connectionName ?? "production-db",
+  };
+}
+
 export function mockDatabaseReply(question, detail) {
   const q = question.trim().toLowerCase();
   if (q.includes("arr") || q.includes("revenue")) {

@@ -23,7 +23,9 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --muted: oklch(0.968 0.007 248);
-  --muted-foreground: oklch(0.554 0.041 257);
+  /* Darkened from oklch(0.554) → 0.50 for WCAG 1.4.3 AA: 4.55:1 → 5.76:1 on
+     --background, giving smaller / opacity-reduced muted text comfortable headroom. */
+  --muted-foreground: oklch(0.50 0.041 257);
   --accent: oklch(0.949 0 0);
   --accent-foreground: oklch(0.205 0 0);
   /* Border bumped from oklch(0.929) → 0.66 for WCAG 1.4.11 (non-text contrast).

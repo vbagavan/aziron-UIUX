@@ -146,7 +146,9 @@ export function SourceUsageTab({ usage, hubLinks = [] }) {
                       <button
                         type="button"
                         className="font-medium hover:underline"
-                        onClick={() => navigate("/agents")}
+                        onClick={() =>
+                          navigate("/agents", { state: { searchAgents: agent.name } })
+                        }
                       >
                         {agent.name}
                       </button>
@@ -198,7 +200,9 @@ export function SourceUsageTab({ usage, hubLinks = [] }) {
                       <button
                         type="button"
                         className="font-medium hover:underline"
-                        onClick={() => navigate("/flows")}
+                        onClick={() =>
+                          navigate("/flows", { state: { searchFlows: flow.name } })
+                        }
                       >
                         {flow.name}
                       </button>

@@ -34,7 +34,13 @@ import {
   SUGGESTED_TAGS,
   VISIBILITY_OPTIONS,
 } from "@/data/addSourceCatalog";
+import { getSuccessIndexedStatLabel } from "@/lib/addSourceFlow";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { LocalComputerDropZone } from "@/components/features/knowledge/source-intake/LocalComputerDropZone";
 import { Separator } from "@/components/ui/separator";
 import { CloudProviderStep } from "@/components/features/sources/connectorFlowSteps";
@@ -105,7 +111,7 @@ export function ChooseSourceTypeStep({ state, onSelectType }) {
       ) : null}
 
       <p className="text-center text-xs text-muted-foreground">
-        These match the tabs in Documents.
+        {KNOWLEDGE_TERMS.wizardCategoryFootnote}
       </p>
     </div>
   );
@@ -120,6 +126,7 @@ export function FilesIntakeStep({
   onSelectConnected,
   onBrowseAll,
   onProviderPick,
+  onChooseDifferentType,
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -150,6 +157,19 @@ export function FilesIntakeStep({
           onProviderPick={onProviderPick}
         />
       </WizardSection>
+
+      {onChooseDifferentType ? (
+        <p className="text-center text-xs text-muted-foreground">
+          Connecting a database or API instead?{" "}
+          <button
+            type="button"
+            onClick={onChooseDifferentType}
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Choose a different source type
+          </button>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -482,29 +502,53 @@ export function DestinationStep({ state, update, hubs = [] }) {
   );
 }
 
+// ─── Express defaults summary (final step) ───────────────────────────────────
+
+export function ExpressSettingsSummary({ lines = [], className }) {
+  if (!lines.length) return null;
+  return (
+    <div className={cn("rounded-lg border border-border bg-muted/30 px-4 py-3", className)}>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {KNOWLEDGE_TERMS.wizardExpressDefaultsTitle}
+      </p>
+      <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        {lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ─── Shared — success ────────────────────────────────────────────────────────
 
 export function SuccessStep({ result, onViewSource, onOpenHub, onCreateAgent, onCreateFlow }) {
   if (!result) return null;
+
+  const indexedLabel = getSuccessIndexedStatLabel(result.sourceType, result.intakeMode);
 
   return (
     <div className="flex flex-col items-center gap-6 py-4 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-success/10">
         <CheckCircle2 className="size-7 text-success" aria-hidden />
       </div>
-      <div>
+      <div role="status" aria-live="polite">
         <p className="text-lg font-semibold text-foreground">{KNOWLEDGE_TERMS.addSourceSuccessTitle}</p>
         <p className="mt-1 text-sm text-muted-foreground">
           {result.hubName
-            ? `${result.sourceName} is in Documents and linked to ${result.hubName}.`
-            : `${result.sourceName} is in Documents.`}
+            ? `${result.sourceName} is in All Sources and linked to ${result.hubName}.`
+            : `${result.sourceName} is in All Sources.`}
         </p>
       </div>
 
       <div className="grid w-full grid-cols-2 gap-3 text-left sm:grid-cols-3">
         <StatTile label="Source" value={result.sourceName} />
-        <StatTile label="Indexed records" value={result.indexedRecords.toLocaleString()} accent="#2563eb" />
-        <StatTile label="Knowledge Hub" value={result.hubName ?? "Documents library"} />
+        <StatTile
+          label={indexedLabel}
+          value={result.indexedRecords.toLocaleString()}
+          accent="#2563eb"
+        />
+        <StatTile label="Knowledge Hub" value={result.hubName ?? "All Sources library"} />
       </div>
 
       <div className="flex w-full flex-col gap-2">
@@ -514,15 +558,26 @@ export function SuccessStep({ result, onViewSource, onOpenHub, onCreateAgent, on
             <Library data-icon="inline-start" aria-hidden />
             {KNOWLEDGE_TERMS.viewInDocuments}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!result.hubId}
-            onClick={onOpenHub}
-          >
-            <Database data-icon="inline-start" aria-hidden />
-            Open Knowledge Hub
-          </Button>
+          {result.hubId ? (
+            <Button type="button" variant="outline" onClick={onOpenHub}>
+              <Database data-icon="inline-start" aria-hidden />
+              Open Knowledge Hub
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="inline-flex w-full">
+                    <Button type="button" variant="outline" disabled className="w-full">
+                      <Database data-icon="inline-start" aria-hidden />
+                      Open Knowledge Hub
+                    </Button>
+                  </span>
+                }
+              />
+              <TooltipContent>{KNOWLEDGE_TERMS.successHubDisabledHint}</TooltipContent>
+            </Tooltip>
+          )}
           <Button type="button" variant="outline" onClick={onCreateAgent}>
             <Bot data-icon="inline-start" aria-hidden />
             Create Agent

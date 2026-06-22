@@ -1,4 +1,4 @@
-import { FileText, Database, Zap, LayoutGrid } from "lucide-react";
+import { FileText, Database, MoreHorizontal, LayoutGrid } from "lucide-react";
 import { PageUnderlineTabs } from "@/components/common/PageUnderlineTabs";
 import { CATEGORY_FILTER_OPTIONS } from "@/lib/sourceCategories";
 
@@ -6,7 +6,7 @@ const TAB_ICONS = {
   all: LayoutGrid,
   files: FileText,
   dbs: Database,
-  apis: Zap,
+  apis: MoreHorizontal,
 };
 
 const TABS = CATEGORY_FILTER_OPTIONS.map((tab) => ({

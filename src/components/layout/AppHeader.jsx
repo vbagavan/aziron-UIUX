@@ -3,6 +3,7 @@ import { Bell, ChevronDown, Check, HelpCircle, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/context/ThemeContext";
+import { useReaderHeader } from "@/context/ReaderHeaderContext";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 import { LinkingHelpDialog } from "@/components/features/knowledge/LinkingHelpDialog";
 import NotificationPanel from "@/components/layout/NotificationPanel";
@@ -151,15 +152,27 @@ export default function AppHeader({
   const pendingKudos = (approvals ?? []).filter((a) => a.status === "pending_approval").length;
   const hasBadge     = pendingKudos > 0;
 
+  // A source reader can take over this bar (single-bar focus mode). When active,
+  // it portals its own header into `readerHeader.slotEl` and we hide the default
+  // page title + global controls.
+  const readerHeader = useReaderHeader();
+  const readerActive = !!readerHeader?.active;
+
   return (
     <>
-      <header className="flex items-center justify-between h-12 px-4 border-b border-border flex-shrink-0 bg-background">
-        <div className="flex items-center gap-2">
-          <SidebarTrigger className="size-7 text-muted-foreground hover:bg-muted" />
-          {children}
+      <header className="relative flex items-center justify-between h-12 px-4 border-b border-border flex-shrink-0 bg-background">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <SidebarTrigger className="size-7 shrink-0 text-muted-foreground hover:bg-muted" />
+          {!readerActive ? children : null}
+          {readerHeader ? (
+            <div
+              ref={readerHeader.setSlotEl}
+              className={cn("min-w-0 flex-1 items-center gap-2", readerActive ? "flex" : "hidden")}
+            />
+          ) : null}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className={cn("flex items-center gap-1", readerActive && "hidden")}>
           {activePage === "knowledge" ? (
             <button
               type="button"

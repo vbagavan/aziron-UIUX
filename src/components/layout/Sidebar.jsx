@@ -476,16 +476,13 @@ function NavItem({
   const displayLabel = navItemDisplayLabel(item, role);
   const { state } = useSidebar();
   const sidebarCollapsed = state === "collapsed";
-  const isKnowledgeDocumentsTab =
-    location.pathname.startsWith("/knowledge") &&
-    new URLSearchParams(location.search).get("tab") === "documents";
+  const isKnowledgeRoute = location.pathname.startsWith("/knowledge");
   const isKnowledgeGroup = item.page === "knowledge" || item.page === "knowledge-research";
 
   function isSubItemActive(sub) {
     if (sub.trackActive === false) return false;
-    if (isKnowledgeGroup && sub.page === "documents") return isKnowledgeDocumentsTab;
-    if (isKnowledgeGroup && sub.page === "knowledge") {
-      return location.pathname.startsWith("/knowledge") && !isKnowledgeDocumentsTab;
+    if (isKnowledgeGroup && (sub.page === "documents" || sub.page === "knowledge")) {
+      return isKnowledgeRoute;
     }
     return sub.page === activePage;
   }

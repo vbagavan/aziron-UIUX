@@ -146,7 +146,7 @@ function SuccessBar({ pct }) {
 
 // ─── Agent card (grid view) ───────────────────────────────────────────────────
 
-function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, isSelected }) {
+function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, isSelected, isHighlighted }) {
   const isMenuOpen = openMenu === agent.id;
   const statusCfg  = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
   const btnRef     = useRef(null);
@@ -166,11 +166,12 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
 
   return (
     <>
+    <div data-agent-id={agent.id} className="h-full">
     <CatalogGridCard
       ariaLabel={`Open agent ${agent.name}`}
       selected={isSelected}
       onClick={() => onOpen(agent)}
-      className="gap-2"
+      className={cn("gap-2", isHighlighted && "ring-2 ring-primary shadow-md")}
       topAccent={
         <div
           className="absolute top-0 left-0 right-0 h-[2.5px] opacity-0 transition-opacity duration-200 rounded-t-xl group-hover:opacity-100 focus-visible:opacity-100"
@@ -287,13 +288,14 @@ function AgentCard({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFor
         </div>
       )}
     </CatalogGridCard>
+    </div>
     </>
   );
 }
 
 // ─── Agent table row (list view) ──────────────────────────────────────────────
 
-function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, zebra }) {
+function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork, onRequestDelete, onRequestVisibilityChange, zebra, isHighlighted }) {
   const isMenuOpen  = openMenu === agent.id;
   const statusCfg   = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.idle;
   const [hovered, setHovered] = useState(false);
@@ -314,7 +316,12 @@ function AgentRow({ agent, openMenu, setOpenMenu, onOpen, onView, onEdit, onFork
   return (
     <>
     <tr
-      className={`group border-b border-border dark:border-border transition-all duration-150 cursor-pointer ${zebra ? "bg-background dark:bg-background" : "bg-card dark:bg-card"}`}
+      data-agent-id={agent.id}
+      className={cn(
+        "group border-b border-border dark:border-border transition-all duration-150 cursor-pointer",
+        zebra ? "bg-background dark:bg-background" : "bg-card dark:bg-card",
+        isHighlighted && "ring-2 ring-inset ring-primary bg-primary/5",
+      )}
       style={hovered ? {
         backgroundColor: "color-mix(in oklch, var(--primary) 8%, var(--background))",
         boxShadow: `inset 3px 0 0 ${statusCfg.dot}, inset 0 0 0 1px color-mix(in oklch, var(--primary) 6%, transparent)`,
@@ -752,6 +759,7 @@ export default function AgentsListPage({
     setLabelFilters(prev => prev.filter(id => allLabels.some(l => l.id === id)));
   }, [allLabels]);
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [highlightedAgentId, setHighlightedAgentId] = useState(null);
   const [isConversationExpanded, setIsConversationExpanded] = useState(false);
   const kudosWorkflow = useKudosWorkflow();
   const isKudosAgent = selectedAgent?.name === KUDOS_AGENT_NAME;
@@ -777,6 +785,45 @@ export default function AgentsListPage({
     }
     navigate("/agents", { replace: true, state: null });
   }, [location.state?.openKudosAgent, agents, navigate]);
+
+  useEffect(() => {
+    const highlightId = location.state?.highlightAgentId;
+    if (highlightId == null || highlightId === "") return;
+
+    const agent = agents.find((a) => String(a.id) === String(highlightId));
+    navigate("/agents", { replace: true, state: null });
+
+    if (!agent) {
+      showToast("That agent is not in your catalog.", { variant: "destructive" });
+      return;
+    }
+
+    setSearchQuery("");
+    setSegmentFilter(null);
+    setLabelFilters([]);
+    setLabelFilterMode("any");
+    setIsConversationExpanded(false);
+    setSelectedAgent(agent);
+    setHighlightedAgentId(agent.id);
+
+    window.setTimeout(() => {
+      document
+        .querySelector(`[data-agent-id="${agent.id}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
+
+    const clearHighlight = window.setTimeout(() => setHighlightedAgentId(null), 3200);
+    return () => window.clearTimeout(clearHighlight);
+  }, [location.state?.highlightAgentId, agents, navigate, showToast]);
+
+  useEffect(() => {
+    const search = location.state?.searchAgents;
+    if (!search) return;
+    navigate("/agents", { replace: true, state: null });
+    setSegmentFilter(null);
+    setLabelFilters([]);
+    setSearchQuery(search);
+  }, [location.state?.searchAgents, navigate]);
 
   const handleKudosActionComplete = (message) => {
     if (message) showToast(message);
@@ -1218,6 +1265,7 @@ export default function AgentsListPage({
                         onRequestDelete={setAgentPendingDelete}
                         onRequestVisibilityChange={handleRequestVisibilityChange}
                         isSelected={selectedAgent?.id === agent.id}
+                        isHighlighted={highlightedAgentId === agent.id}
                       />
                     ))}
                   </div>
@@ -1250,6 +1298,7 @@ export default function AgentsListPage({
                             onRequestDelete={setAgentPendingDelete}
                             onRequestVisibilityChange={handleRequestVisibilityChange}
                             zebra={i % 2 !== 0}
+                            isHighlighted={highlightedAgentId === agent.id}
                           />
                         ))}
                       </tbody>

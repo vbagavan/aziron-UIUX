@@ -5,10 +5,10 @@ import {
   FileText,
   FolderOpen,
   LayoutGrid,
+  MoreHorizontal,
   Plus,
   UploadCloud,
   Wrench,
-  Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 const CATEGORY_TABS = [
   { id: "files", label: SOURCE_CATEGORIES.files.label, icon: FileText },
   { id: "dbs", label: SOURCE_CATEGORIES.dbs.label, icon: Database },
-  { id: "apis", label: SOURCE_CATEGORIES.apis.label, icon: Zap },
+  { id: "apis", label: SOURCE_CATEGORIES.apis.label, icon: MoreHorizontal },
 ];
 
 function deferAfterClose(action) {
@@ -267,7 +267,7 @@ function FilesSourcePanel({
 }
 
 /**
- * Add sources control — category tabs (Files · DBs · APIs) route to the right wizard.
+ * Add sources control — category tabs (Files · Database · Others) route to the right wizard.
  */
 export function HubAddSourcesMenu({
   className,
@@ -288,6 +288,7 @@ export function HubAddSourcesMenu({
   onCustomConnector,
   onUploadFiles,
   onBrowseCloudConnection,
+  onOpenSetupWizard,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("files");
@@ -361,7 +362,7 @@ export function HubAddSourcesMenu({
   const categoryDescriptions = {
     files: "Upload locally or connect cloud storage — OneDrive, Google Drive, AWS S3, and more.",
     dbs: "Connect a database, then pick tables, views, or collections.",
-    apis: "Configure a REST endpoint or webhook — the response becomes a source.",
+    apis: "Add REST or GraphQL endpoints, webhooks, and custom integrations.",
   };
 
   return (
@@ -387,9 +388,9 @@ export function HubAddSourcesMenu({
       >
         <DialogContent className={HUB_DIALOG_CONTENT_MD}>
           <DialogHeader className="shrink-0 px-6 py-4">
-            <DialogTitle>Add a source</DialogTitle>
+            <DialogTitle>{KNOWLEDGE_TERMS.addSources}</DialogTitle>
             <DialogDescription>
-              Choose a category, then connect or configure your source.
+              Same categories as All Sources filters — pick how you want to connect.
             </DialogDescription>
           </DialogHeader>
 
@@ -454,7 +455,19 @@ export function HubAddSourcesMenu({
             ) : null}
           </div>
 
-          <DialogFooter className="m-0 -mx-0 -mb-0 shrink-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 sm:justify-end">
+          <DialogFooter className="m-0 -mx-0 -mb-0 shrink-0 rounded-none border-t border-border bg-muted/30 p-0 px-6 py-4 sm:justify-between">
+            <div>
+              {onOpenSetupWizard ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => closeAndRun(() => onOpenSetupWizard(activeCategory))}
+                >
+                  Open setup wizard
+                </Button>
+              ) : null}
+            </div>
             <Button type="button" variant="ghost" onClick={() => setChooseOpen(false)}>
               Cancel
             </Button>

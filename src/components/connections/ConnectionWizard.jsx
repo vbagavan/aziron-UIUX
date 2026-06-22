@@ -462,7 +462,7 @@ function Step5Success() {
 
   function handleAddSource() {
     resetWizard()
-    navigate('/knowledge?tab=documents&addSource=1')
+    navigate('/knowledge?addSource=1')
   }
 
   function handleOpenHubs() {

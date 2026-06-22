@@ -25,8 +25,8 @@ export const KNOWLEDGE_TERMS = {
   sourceNotLinked: "Not in a hub",
   singleHubSourceRule:
     "Files can belong to many hubs. Databases and APIs can belong to one hub each.",
-  addSources: "Add source",
-  addSource: "Add source",
+  addSources: "Add sources",
+  addSource: "Add sources",
   fromComputer: "From your computer",
   fromCloudStorage: "From cloud storage",
   selectedSources: "Selected sources",
@@ -73,9 +73,20 @@ export const KNOWLEDGE_TERMS = {
   sourcesEmptyFilesDescription: "Upload from your computer or cloud storage, or link from a hub.",
   sourcesEmptyDbsTitle: "No databases yet",
   sourcesEmptyDbsDescription: "Connect a database and pick tables, views, or collections.",
-  sourcesEmptyApisTitle: "No APIs yet",
+  sourcesEmptyApisTitle: "No connections yet",
   sourcesEmptyApisDescription:
-    "Connect a REST or GraphQL endpoint. Aziron indexes responses so agents can use them.",
+    "Add a REST or GraphQL endpoint, or register a webhook. Aziron indexes responses so agents can use them.",
+  wizardCategoryFootnote: "Same categories as All Sources filters.",
+  wizardBrowseConnectorsLeaveTitle: "Leave setup?",
+  wizardBrowseConnectorsLeaveMessage:
+    "You'll go to Connectors to register integrations. Progress in this wizard is not saved.",
+  wizardExpressDefaultsTitle: "Using recommended settings",
+  wizardDemoHintShort: "Demo: connections are simulated. Nothing is sent to a server.",
+  successStatSources: "Sources added",
+  successStatRowsReady: "Rows ready for search",
+  successStatItemsReady: "Items ready for search",
+  successStatFilesReady: "Files ready for search",
+  successHubDisabledHint: "Added to All Sources only — link to a hub from the library.",
   sourcesEmptyAllTitle: "No sources yet",
   sourcesEmptyAllDescription:
     "Upload files or connect cloud storage. Link anything here to a Knowledge Hub when you're ready.",
@@ -129,7 +140,7 @@ export function sourcesCountLabel(count, category = "all") {
       : category === "dbs"
         ? "database source"
         : category === "apis"
-          ? "API source"
+          ? "other source"
           : "source";
   const plural =
     category === "files"
@@ -137,7 +148,7 @@ export function sourcesCountLabel(count, category = "all") {
       : category === "dbs"
         ? "database sources"
         : category === "apis"
-          ? "API sources"
+          ? "other sources"
           : "sources";
   return n === 1 ? `1 ${word}` : `${n} ${plural}`;
 }

@@ -60,6 +60,7 @@ import {
   ProviderMark,
   ProviderGrid,
   ProviderTile,
+  RadioGroup,
   RadioRow,
   StatTile,
   WizardSection,
@@ -67,6 +68,7 @@ import {
 import { getAllUploadConnections } from "@/lib/cloudUploadConnections";
 import { cloudProviderLabel } from "@/lib/hubCloudConnections";
 import { getWizardProviderLogo } from "@/lib/wizardProviderLogos";
+import { flattenDbTables } from "@/lib/addSourceFlow";
 import { KNOWLEDGE_TERMS } from "@/lib/knowledgeTerminology";
 
 function dbConnectionReady(conn = {}) {
@@ -333,30 +335,20 @@ export function CloudSyncStep({ state, update }) {
   return (
     <div className="flex flex-col gap-5">
       <WizardSection title="Import mode">
-        <div className="flex flex-col gap-2">
-          {CLOUD_IMPORT_MODES.map((mode) => (
-            <RadioRow
-              key={mode.id}
-              label={mode.label}
-              description={mode.description}
-              selected={cloud?.importMode === mode.id}
-              onClick={() => update("cloud", { importMode: mode.id })}
-            />
-          ))}
-        </div>
+        <RadioGroup
+          label="Import mode"
+          value={cloud?.importMode ?? "selected"}
+          options={CLOUD_IMPORT_MODES}
+          onChange={(id) => update("cloud", { importMode: id })}
+        />
       </WizardSection>
       <WizardSection title="Sync frequency">
-        <div className="flex flex-col gap-2">
-          {SYNC_FREQUENCIES.map((freq) => (
-            <RadioRow
-              key={freq.id}
-              label={freq.label}
-              description={freq.description}
-              selected={cloud?.syncFreq === freq.id}
-              onClick={() => update("cloud", { syncFreq: freq.id })}
-            />
-          ))}
-        </div>
+        <RadioGroup
+          label="Sync frequency"
+          value={cloud?.syncFreq ?? "realtime"}
+          options={SYNC_FREQUENCIES}
+          onChange={(id) => update("cloud", { syncFreq: id })}
+        />
       </WizardSection>
     </div>
   );
@@ -518,13 +510,25 @@ export function DbSelectDataStep({ state, update }) {
   const selected = state.db?.selectedTableIds ?? [];
   const selectedSet = new Set(selected);
 
+  function selectRecommended() {
+    const keys = flattenDbTables()
+      .slice(0, 3)
+      .map((row) => row.key);
+    update("db", { selectedTableIds: keys });
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">Select tables, views, or collections.</p>
-        <Badge variant={selected.length ? "default" : "secondary"} className="text-[10px]">
-          {selected.length} selected
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={selectRecommended}>
+            Select recommended
+          </Button>
+          <Badge variant={selected.length ? "default" : "secondary"} className="text-[10px]">
+            {selected.length} selected
+          </Badge>
+        </div>
       </div>
       {DB_DISCOVERY.schemas.map((schema) => (
         <div key={schema.id} className="flex flex-col gap-2">
@@ -603,30 +607,20 @@ export function DbSyncStep({ state, update }) {
   return (
     <div className="flex flex-col gap-5">
       <WizardSection title="Sync type">
-        <div className="flex flex-col gap-2">
-          {DB_SYNC_TYPES.map((type) => (
-            <RadioRow
-              key={type.id}
-              label={type.label}
-              description={type.description}
-              selected={db?.syncType === type.id}
-              onClick={() => update("db", { syncType: type.id })}
-            />
-          ))}
-        </div>
+        <RadioGroup
+          label="Sync type"
+          value={db?.syncType ?? "incremental"}
+          options={DB_SYNC_TYPES}
+          onChange={(id) => update("db", { syncType: id })}
+        />
       </WizardSection>
       <WizardSection title="Frequency">
-        <div className="flex flex-col gap-2">
-          {DB_SYNC_FREQUENCIES.map((freq) => (
-            <RadioRow
-              key={freq.id}
-              label={freq.label}
-              description={freq.description}
-              selected={db?.syncFreq === freq.id}
-              onClick={() => update("db", { syncFreq: freq.id })}
-            />
-          ))}
-        </div>
+        <RadioGroup
+          label="Sync frequency"
+          value={db?.syncFreq ?? "realtime"}
+          options={DB_SYNC_FREQUENCIES}
+          onChange={(id) => update("db", { syncFreq: id })}
+        />
       </WizardSection>
     </div>
   );
@@ -755,13 +749,23 @@ export function ApiDiscoverStep({ state }) {
 export function ApiObjectsStep({ state, update }) {
   const selected = state.api?.objectIds ?? [];
   const selectedSet = new Set(selected);
+
+  function selectRecommended() {
+    update("api", { objectIds: DEFAULT_API_OBJECTS.slice(0, 2).map((o) => o.id) });
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">Choose which objects become sources.</p>
-        <Badge variant={selected.length ? "default" : "secondary"} className="text-[10px]">
-          {selected.length} selected
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={selectRecommended}>
+            Select recommended
+          </Button>
+          <Badge variant={selected.length ? "default" : "secondary"} className="text-[10px]">
+            {selected.length} selected
+          </Badge>
+        </div>
       </div>
       <div className="flex flex-col gap-1.5">
         {DEFAULT_API_OBJECTS.map((obj) => (

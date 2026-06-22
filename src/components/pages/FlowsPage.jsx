@@ -604,6 +604,14 @@ export default function FlowsPage() {
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const search = location.state?.searchFlows;
+    if (!search) return;
+    navigate("/flows", { replace: true, state: null });
+    setStatFilter(null);
+    setSearchQuery(search);
+  }, [location.state?.searchFlows, navigate]);
+
   const total = flows.length;
   const publicN = flows.filter((f) => f.visibility === "public").length;
   const privateN = flows.filter((f) => f.visibility === "private").length;

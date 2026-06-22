@@ -2,9 +2,13 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   Bookmark,
+  Check,
   Database,
   History,
   LayoutDashboard,
+  Loader2,
+  Play,
+  Save,
   Sparkles,
   Table2,
   Terminal,
@@ -31,6 +35,7 @@ import { SourceUsageTab } from "@/components/features/sources/SourceUsageTab";
 import {
   generateSqlFromNaturalLanguage,
   getDatabaseDetail,
+  runMockQuery,
 } from "@/lib/databaseDetailModel";
 import { CAPTION, METRIC_VALUE, SECTION_EYEBROW } from "@/lib/typography";
 import { cn } from "@/lib/utils";
@@ -73,7 +78,7 @@ function OverviewTab({ detail }) {
 
       <Card className="gap-0 py-0 shadow-none">
         <CardHeader className="px-4 py-3">
-          <CardTitle className="text-sm font-medium">Connection</CardTitle>
+          <CardTitle as="h2" className="text-sm font-medium">Connection</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
@@ -114,13 +119,13 @@ function DiscoverTab({ detail, onAskQuestion, onOpenQueryStudio }) {
       </div>
 
       <section>
-        <p className={SECTION_EYEBROW}>Business summary</p>
+        <h2 className={SECTION_EYEBROW}>Business summary</h2>
         <p className="mt-2 text-sm leading-relaxed text-foreground">{knowledge.businessSummary}</p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <p className={SECTION_EYEBROW}>Key domains</p>
+          <h2 className={SECTION_EYEBROW}>Key domains</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {knowledge.domains.map((d) => (
               <Badge key={d} variant="secondary">{d}</Badge>
@@ -128,7 +133,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenQueryStudio }) {
           </ul>
         </section>
         <section>
-          <p className={SECTION_EYEBROW}>Business concepts</p>
+          <h2 className={SECTION_EYEBROW}>Business concepts</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {knowledge.concepts.map((c) => (
               <Badge key={c} variant="outline">{c}</Badge>
@@ -138,7 +143,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenQueryStudio }) {
       </div>
 
       <section>
-        <p className={SECTION_EYEBROW}>Suggested questions</p>
+        <h2 className={SECTION_EYEBROW}>Suggested questions</h2>
         <ul className="mt-3 space-y-2">
           {knowledge.suggestedQuestions.map((q) => (
             <li key={q}>
@@ -163,7 +168,7 @@ function DiscoverTab({ detail, onAskQuestion, onOpenQueryStudio }) {
       </section>
 
       <section className="rounded-lg border border-border bg-muted/20 p-4">
-        <p className={SECTION_EYEBROW}>SQL preview</p>
+        <h2 className={SECTION_EYEBROW}>SQL preview</h2>
         <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-muted-foreground">
           {sqlPreview}
         </pre>
@@ -235,7 +240,7 @@ function SchemaTab({ detail }) {
           <>
             <Card className="gap-0 py-0 shadow-none">
               <CardHeader className="px-4 py-3">
-                <CardTitle className="text-sm font-medium">
+                <CardTitle as="h2" className="text-sm font-medium">
                   Columns — {activeSchema.label}.{activeTable.name}
                 </CardTitle>
               </CardHeader>
@@ -266,7 +271,7 @@ function SchemaTab({ detail }) {
             <div className="grid gap-4 lg:grid-cols-2">
               <Card className="gap-0 py-0 shadow-none">
                 <CardHeader className="px-4 py-3">
-                  <CardTitle className="text-sm font-medium">Relationships</CardTitle>
+                  <CardTitle as="h2" className="text-sm font-medium">Relationships</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 px-4 pb-4 text-sm">
                   {activeTable.relationships.length === 0 ? (
@@ -288,7 +293,7 @@ function SchemaTab({ detail }) {
 
               <Card className="gap-0 py-0 shadow-none">
                 <CardHeader className="px-4 py-3">
-                  <CardTitle className="text-sm font-medium">Indexes</CardTitle>
+                  <CardTitle as="h2" className="text-sm font-medium">Indexes</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1 px-4 pb-4">
                   {activeTable.indexes.map((idx) => (
@@ -300,7 +305,7 @@ function SchemaTab({ detail }) {
 
             <Card className="gap-0 py-0 shadow-none">
               <CardHeader className="px-4 py-3">
-                <CardTitle className="text-sm font-medium">ER diagram (preview)</CardTitle>
+                <CardTitle as="h2" className="text-sm font-medium">ER diagram (preview)</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-wrap items-center justify-center gap-4 px-4 pb-6 pt-2">
                 {activeSchema.tables.map((table) => (
@@ -326,14 +331,64 @@ function SchemaTab({ detail }) {
   );
 }
 
+function QueryResultsTable({ results }) {
+  return (
+    <div className="space-y-2">
+      <p className={CAPTION}>
+        {results.rowCount} rows · {results.durationMs}ms · {results.source}
+      </p>
+      <Card className="gap-0 overflow-hidden py-0 shadow-none">
+        <CardContent className="px-0 pb-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                {results.columns.map((col) => (
+                  <TableHead key={col} className="font-mono text-xs">{col}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.rows.map((row, i) => (
+                <TableRow key={i}>
+                  {row.map((cell, j) => (
+                    <TableCell key={j} className="font-mono text-xs">{cell}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function QueryStudioTab({ detail }) {
   const [mode, setMode] = useState("natural");
   const [nlPrompt, setNlPrompt] = useState("Show top 10 customers by ARR");
   const [sql, setSql] = useState(() => generateSqlFromNaturalLanguage("Show top 10 customers by ARR", detail));
+  const [isRunning, setIsRunning] = useState(false);
+  const [results, setResults] = useState(null);
+  const [saveState, setSaveState] = useState("idle");
 
   function handleGenerate() {
     setSql(generateSqlFromNaturalLanguage(nlPrompt, detail));
     setMode("sql");
+  }
+
+  function handleRunQuery() {
+    if (isRunning) return;
+    setIsRunning(true);
+    setResults(null);
+    window.setTimeout(() => {
+      setResults(runMockQuery(sql, detail));
+      setIsRunning(false);
+    }, 700);
+  }
+
+  function handleSaveQuery() {
+    setSaveState("saved");
+    window.setTimeout(() => setSaveState("idle"), 2000);
   }
 
   return (
@@ -365,14 +420,46 @@ function QueryStudioTab({ detail }) {
         <TabsContent value="sql" className="mt-0 space-y-3 pt-4">
           <Textarea
             value={sql}
-            onChange={(e) => setSql(e.target.value)}
+            onChange={(e) => {
+              setSql(e.target.value);
+              setResults(null);
+            }}
             rows={10}
             className="resize-none font-mono text-xs"
           />
-          <div className="flex gap-2">
-            <Button type="button" size="sm">Run query</Button>
-            <Button type="button" size="sm" variant="outline">Save query</Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" onClick={handleRunQuery} disabled={isRunning}>
+              {isRunning ? (
+                <Loader2 data-icon="inline-start" className="animate-spin" aria-hidden />
+              ) : (
+                <Play data-icon="inline-start" aria-hidden />
+              )}
+              {isRunning ? "Running…" : "Run query"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleSaveQuery}
+              disabled={saveState === "saved"}
+            >
+              {saveState === "saved" ? (
+                <Check data-icon="inline-start" aria-hidden />
+              ) : (
+                <Save data-icon="inline-start" aria-hidden />
+              )}
+              {saveState === "saved" ? "Saved" : "Save query"}
+            </Button>
           </div>
+
+          {isRunning ? (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Running query…
+            </div>
+          ) : results ? (
+            <QueryResultsTable results={results} />
+          ) : null}
         </TabsContent>
 
         <TabsContent value="saved" className="mt-0 space-y-2 pt-4">
@@ -477,6 +564,11 @@ export function DatabaseDetailView({
   return (
     <SourceDetailShell
       title={detail.title}
+      headerLeading={
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Database className="size-4" aria-hidden />
+        </span>
+      }
       headerBadges={
         <>
           <SourceBadge record={record} size="sm" />
@@ -501,23 +593,23 @@ export function DatabaseDetailView({
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-5">
-            <TabsContent value="overview" className="mt-0">
+            <TabsContent value="overview" className="mt-0 min-h-0 flex-1">
               <OverviewTab detail={detail} />
             </TabsContent>
-            <TabsContent value="discover" className="mt-0">
+            <TabsContent value="discover" className="mt-0 min-h-0 flex-1">
               <DiscoverTab
                 detail={detail}
                 onAskQuestion={handleAskFromInsight}
                 onOpenQueryStudio={handleOpenQueryStudio}
               />
             </TabsContent>
-            <TabsContent value="schema" className="mt-0 flex min-h-[480px] flex-col">
+            <TabsContent value="schema" className="mt-0 min-h-0 flex-1 flex flex-col">
               <SchemaTab detail={detail} />
             </TabsContent>
-            <TabsContent value="usage" className="mt-0">
+            <TabsContent value="usage" className="mt-0 min-h-0 flex-1">
               <SourceUsageTab usage={detail.usage} hubLinks={hubLinks} />
             </TabsContent>
-            <TabsContent value="query" className="mt-0">
+            <TabsContent value="query" className="mt-0 min-h-0 flex-1">
               <QueryStudioTab detail={detail} />
             </TabsContent>
           </div>
